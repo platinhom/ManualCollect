@@ -1,0 +1,600 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>schrodinger.job.queue</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="schrodinger-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >Suite 2012 Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="schrodinger-module.html">Package&nbsp;schrodinger</a> ::
+        <a href="schrodinger.job-module.html">Package&nbsp;job</a> ::
+        Module&nbsp;queue
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="schrodinger.job.queue-module.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== MODULE DESCRIPTION ==================== -->
+<h1 class="epydoc">Module queue</h1><p class="nomargin-top"></p>
+<p>A class for running multiple jobs under job control.</p>
+  <p>This module provides an extended version of the class 
+  <code>JobDJ</code> from the <code 
+  class="link">schrodinger.job.jobdj</code> module.</p>
+  <p>The name <code>JobDJ</code> refers to an old implementation of 
+  &quot;Job-control for Distributed-Job drivers,&quot; and the module name 
+  &quot;queue&quot; reflects the fact that added jobs are queued until 
+  ready to run.</p>
+  <p>Like the original <code>JobDJ</code>, its main purpose is to provide 
+  for job distribution on multiple hosts. It will keep the number of active
+  jobs on each host at or under the number of processors specified. It can 
+  also restart jobs (see documentation on max_retries in the <a 
+  href="schrodinger.job.queue.JobDJ-class.html#__init__" 
+  class="link">JobDJ.__init__</a> method).</p>
+  <p>Additional functionality that is provided in this implementation 
+  includes the following:</p>
+  <ol start="1">
+    <li>
+      The ability to create dependencies between jobs so that <a 
+      href="schrodinger.job.queue.JobDJ-class.html" class="link">JobDJ</a> 
+      can avoid starting a job until its prerequisites are met. See the <a 
+      href="schrodinger.job.queue.BaseJob-class.html#addPrereq" 
+      class="link">BaseJob.addPrereq</a> method.
+    </li>
+    <li>
+      The ability to run jobs locally (i.e. not under job control). These 
+      jobs can also have dependencies.
+    </li>
+  </ol>
+  <p>Step by step instructions for basic use:</p>
+  <ol start="1">
+    <li>
+      Create a <code>JobDJ</code> instance. You can optionally specify the 
+      hosts to run the jobs on and the maximum number of jobs for each host
+      by passing a list (host, max_jobs) tuples. By default, the host list 
+      is read from the <code>SCHRODINGER_NODEFILE</code>, which is created 
+      from the -HOST host list by jlaunch. For example:
+<pre class="literalblock">
+   job_dj = queue.JobDJ( [('localhost',1), ('cluster',20)] )
+</pre>
+    </li>
+    <li>
+      Add commands to the <code>JobDJ</code> instance by using the <a 
+      href="schrodinger.job.queue.JobDJ-class.html#addJob" 
+      class="link">JobDJ.addJob</a> method.  The <code>addJob</code> method
+      takes either a command (as a list of strings) for a job control job, 
+      or a <a href="schrodinger.job.queue.BaseJob-class.html" 
+      class="link">BaseJob</a> instance. For example:
+<pre class="literalblock">
+   job_dj.addJob([&quot;impact&quot;, &quot;input1.inp&quot;])
+   job_dj.addJob([&quot;impact&quot;, &quot;input2.inp&quot;])
+</pre>
+    </li>
+    <li>
+      Run all jobs with the <a 
+      href="schrodinger.job.queue.JobDJ-class.html#run" 
+      class="link">JobDJ.run</a> method. This is simple:
+<pre class="literalblock">
+   job_dj.run()
+</pre>
+      <p>Alternatively, you can use the updatedJobs generator:</p>
+<pre class="literalblock">
+   for job in job_dj.updatedJobs():
+       job_dj.dump(filename)
+</pre>
+      <p>This yields a job every time its status changes. One reason to do 
+      things this way is to allow restarting from a pickle. (A 
+      <code>JobDJ</code> instance that is restored from a pickle can be 
+      started with the <code>run</code> method or <code>updatedJobs</code> 
+      generator.)</p>
+    </li>
+  </ol>
+  <p>Because an added job can be a <code>BaseJob</code> instance, 
+  additional functionality can be gained by subclassing. For example, the 
+  <code>JobDJ</code> instance that a job has been added to can be retrieved
+  with the <code>getJobDJ</code> method and new jobs can be added 
+  dynamically by a job at any point during its normal lifecycle.</p>
+  <p>Copyright Schrodinger, LLC. All rights reserved.</p>
+
+<!-- ==================== CLASSES ==================== -->
+<a name="section-Classes"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Classes</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Classes"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.job.queue.BaseJob-class.html" class="summary-name">BaseJob</a><br />
+      A base job class for jobs run under <code>JobDJ</code>.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.job.queue.RequirementsJob-class.html" class="summary-name">RequirementsJob</a><br />
+      This is a base class that indicates a job has special requirements 
+        (e.g.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.job.queue.LocalhostJob-class.html" class="summary-name">LocalhostJob</a><br />
+      This class should be used as a mixin on a job type that requires 
+        jobs to be run on localhost.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.job.queue.SubprocessJob-class.html" class="summary-name">SubprocessJob</a><br />
+      A job for running an external process.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.job.queue.ThreadedJob-class.html" class="summary-name">ThreadedJob</a><br />
+      This class is for jobs that don't run under job control yet can 
+        have significant computational requirements in the python part of 
+        the JobDJ process.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.job.queue.JobControlJob-class.html" class="summary-name">JobControlJob</a><br />
+      This class defines a job control job to be run under 
+        <code>JobDJ</code>.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.job.queue.LinkedListNode-class.html" class="summary-name">LinkedListNode</a><br />
+      A node for the LinkedList class, holding a value, and a reference 
+        to the previous and next node in the list.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.job.queue.LinkedList-class.html" class="summary-name">LinkedList</a><br />
+      A doubly linked list, providing constant time addition, size, and 
+        truth checks.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.job.queue.RunningJobs-class.html" class="summary-name">RunningJobs</a><br />
+      A LinkedList subclass that tracks running jobs and keeps a tally of
+        jobs running on each machine.
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.job.queue._MultiJobFinalizer-class.html" class="summary-name" onclick="show_private();">_MultiJobFinalizer</a><br />
+      A class to allow specification of a function to be invoked when the
+        final job of a group completes successfully.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.job.queue.JobDJ-class.html" class="summary-name">JobDJ</a><br />
+      Class for running commands/jobs in parallel under jobcontrol.
+    </td>
+  </tr>
+</table>
+<!-- ==================== FUNCTIONS ==================== -->
+<a name="section-Functions"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Functions</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Functions"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="backup_file"></a><span class="summary-sig-name">backup_file</span>(<span class="summary-sig-arg">log_file</span>,
+        <span class="summary-sig-arg">copy</span>)</span><br />
+      Backs up the file log_file copying it to *.1, *.2, etc.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="_host_is_queue"></a><span class="summary-sig-name">_host_is_queue</span>(<span class="summary-sig-arg">hostname</span>)</span><br />
+      Return True if specified host is a queue</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="get_command"></a><span class="summary-sig-name">get_command</span>(<span class="summary-sig-arg">base_command</span>,
+        <span class="summary-sig-arg">host</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">localhost</code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">procs</span>=<span class="summary-sig-default">1</span>,
+        <span class="summary-sig-arg">local</span>=<span class="summary-sig-default">False</span>)</span><br />
+      Given a base command and additional launching specifications, return 
+      a modified command that is ready to pass to jobcontrol.launch_job.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.queue-module.html#_wrap_job_finalizer" class="summary-sig-name" onclick="show_private();">_wrap_job_finalizer</a>(<span class="summary-sig-arg">function</span>,
+        <span class="summary-sig-arg">run_dir</span>=<span class="summary-sig-default">None</span>)</span><br />
+      Wrap a function that takes a single job as an argument so that it 
+      runs in a separate directory.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="add_multi_job_finalizer"></a><span class="summary-sig-name">add_multi_job_finalizer</span>(<span class="summary-sig-arg">function</span>,
+        <span class="summary-sig-arg">jobs</span>,
+        <span class="summary-sig-arg">run_dir</span>=<span class="summary-sig-default">None</span>)</span><br />
+      Create a finalizer function that will be called when all jobs in the 
+      jobs iterator are complete.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+</table>
+<!-- ==================== VARIABLES ==================== -->
+<a name="section-Variables"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Variables</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Variables"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="_version"></a><span class="summary-name">_version</span> = <code title="'$Revision: 1.8 $'"><code class="variable-quote">'</code><code class="variable-string">$Revision: 1.8 $</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="WAITING"></a><span class="summary-name">WAITING</span> = <code title="'waiting'"><code class="variable-quote">'</code><code class="variable-string">waiting</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="ACTIVE"></a><span class="summary-name">ACTIVE</span> = <code title="'active'"><code class="variable-quote">'</code><code class="variable-string">active</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="FAILED"></a><span class="summary-name">FAILED</span> = <code title="'failed'"><code class="variable-quote">'</code><code class="variable-string">failed</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="FAILED_RETRYABLE"></a><span class="summary-name">FAILED_RETRYABLE</span> = <code title="'failed but retryable'"><code class="variable-quote">'</code><code class="variable-string">failed but retryable</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="DONE"></a><span class="summary-name">DONE</span> = <code title="'done'"><code class="variable-quote">'</code><code class="variable-string">done</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="NOLIMIT"></a><span class="summary-name">NOLIMIT</span> = <code title="-1">-1</code>
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="_status_messages"></a><span class="summary-name">_status_messages</span> = <code title="{}"><code class="variable-group">{</code><code class="variable-group">}</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="logger"></a><span class="summary-name">logger</span> = <code title="log.get_output_logger(&quot;output.schrodinger.job.queue&quot;)">log.get_output_logger(&quot;output.schrodinger.job.queue&quot;)</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="syslog"></a><span class="summary-name">syslog</span> = <code title="log.get_logger(&quot;schrodinger.job.queue&quot;)">log.get_logger(&quot;schrodinger.job.queue&quot;)</code>
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="_host_is_queue_dict"></a><span class="summary-name">_host_is_queue_dict</span> = <code title="{}"><code class="variable-group">{</code><code class="variable-group">}</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="SUBMIT_DELAY"></a><span class="summary-name">SUBMIT_DELAY</span> = <code title="1">1</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="UPDATE_DELAY"></a><span class="summary-name">UPDATE_DELAY</span> = <code title="10">10</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="MONITOR_DELAY"></a><span class="summary-name">MONITOR_DELAY</span> = <code title="1">1</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="USE_JOB_CONTROL_MESSAGES"></a><span class="summary-name">USE_JOB_CONTROL_MESSAGES</span> = <code title="True">True</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="MESSAGE_TIMEOUT"></a><span class="summary-name">MESSAGE_TIMEOUT</span> = <code title="600">600</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="__package__"></a><span class="summary-name">__package__</span> = <code title="'schrodinger.job'"><code class="variable-quote">'</code><code class="variable-string">schrodinger.job</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+</table>
+<!-- ==================== FUNCTION DETAILS ==================== -->
+<a name="section-FunctionDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Function Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-FunctionDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="_wrap_job_finalizer"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_wrap_job_finalizer</span>(<span class="sig-arg">function</span>,
+        <span class="sig-arg">run_dir</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Wrap a function that takes a single job as an argument so that it runs
+  in a separate directory. If <code>run_dir</code> is not specified, run it
+  in the working directory of the job.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="schrodinger-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >Suite 2012 Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Tue Sep 25 02:22:45 2012
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

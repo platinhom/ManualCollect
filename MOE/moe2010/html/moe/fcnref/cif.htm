@@ -1,0 +1,374 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	cif.htm		CIF file I/O
+!!
+!!	30-apr-2009 (hf) added monlib
+!!	24-sep-2008 (kk) copy edit
+!!-->
+
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+
+
+<meta keywords>
+<meta functions cif_LoadDictionary>
+<meta functions cif_fread>
+<meta functions cif_ExtractInfo>
+<meta functions cif_CreateSystem>
+
+<title>CIF Molecular Data Functions</title>
+
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>CIF Molecular Data Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+<pre>
+    dict               = <a class="fcnlink" href="#cif_LoadDictionary">cif_LoadDictionary</a> 'filename'
+    [blockdata, state] = <a class="fcnlink" href="#cif_fread">cif_fread</a> [filenum, state, dict]
+    mol_data           = <a class="fcnlink" href="#cif_ExtractInfo">cif_ExtractInfo</a> [blockdata, opt_ex]
+    chain_keys         = <a class="fcnlink" href="#cif_CreateSystem">cif_CreateSystem</a> [mol_data, opt_cr]
+
+    opt_ex = [
+        type        : 'filetype',
+        multi_model : max_num_models,
+        symmetries  : 'symmetry_type',
+        fixmiss     : flag
+    ]
+    opt_cr = [ symmetries: 'symmetry_type' ]
+</pre>
+
+<h2>Description</h2>
+
+<p>These functions provide a low-level interface for reading Crystallographic
+Information Files (CIF) or macro-molecular CIF files (mmCIF).  To read and
+parse an entire file at once, use <tt>ReadCIF</tt> instead.  An optional
+dictionary pointer can be provided, used simply to assign types to the data
+read in: integer, floating point or string.  Otherwise a default dictionary
+will be used.
+
+<p><a name="cif_LoadDictionary"></a></p><hr noshade="noshade" />
+
+<pre>dict = <span class="fcndef">cif_LoadDictionary</span> 'filename'</pre>
+
+<p>
+Read in a CIF dictionary file to be passed to <tt>ReadCIF</tt> or
+<tt>cif_fread</tt>.
+
+The parsed dictionary is returned if the file is read successfully,
+otherwise <tt>[]</tt> is returned.
+
+<p>Some examples of possible dictionary files are <i>cif_core.dic</i>
+from the IUCr, and <i>mmcif_pdbx.dic</i> from RCSB.
+
+<p><a name="cif_fread"></a></p><hr noshade="noshade" />
+
+<pre>[blockdata, state] = <span class="fcndef">cif_fread</span> [filenum, state, dict]</pre>
+
+<p>
+Return a single data record from a CIF data file.  Data is read from the CIF or
+mmCIF file referred to by <tt>filenum</tt>, an internal <tt>state</tt> vector
+must be maintained for reading consecutive records and the optional argument
+<tt>dict</tt> may be used to provide alternate parsed CIF dictionaries.
+
+<p>
+CIF records are data blocks delimited by lines beginning with 'data_'. Parsed
+records are returned as <tt>blockdata</tt> tagged vectors with attributes
+matching the CIF field names and data values with type determined by the loaded
+dictionary.
+
+A special additional field of <tt>blockdata</tt>, <tt>blockname</tt>, denotes
+the name, as a string, assigned to each unique data block within the file.
+
+<p>
+The first time <tt>cif_fread</tt> is called, <tt>state</tt> must be
+<tt>[]</tt>.
+Subsequent calls to <tt>cif_fread</tt> must use the value of <tt>state</tt>
+returned from the previous call to properly read the next record.
+When the last record is read <tt>state</tt> will be set to <tt>[]</tt>,
+serving as an end-of-file marker.
+
+<p><b>Example:</b>
+<blockquote>
+<pre>
+local filenum = fopenr '$MOE/sample/mol/1omd.cif';
+local state = [], dict = [];
+
+loop
+    [blockdata, state] = cif_fread [filenum, state, dict];
+    // ... process blockdata ...
+until isnull state
+endloop
+fclose filenum;
+</pre>
+</blockquote>
+
+<p><a name="cif_ExtractInfo"></a></p><hr noshade="noshade" />
+
+<pre>
+mol_data = <span class="fcndef">cif_ExtractInfo</span> [blockdata, opt_ex]
+
+mol_data = [
+    occupancy    : [atom_occupancies],
+    B_factor     : [atom_temp_factors],
+    cell         : ['spacegroup', size, shape],
+    Rfactor      : crys_rF,
+    reference    : &quot;citation_string&quot;,
+    aniso        : [aniso_temp_factors],
+    models       : [moe_mdl1, moe_mdl2, ...],
+    type         : 'file_type_token',
+    fasta        : [&quot;chn1_fasta&quot;, &quot;chn2_fasta&quot;, ...],
+    PDBremarks   : [&quot;pdb_rem1&quot;, &quot;pdb_rem2&quot;, ...],
+    exptl_method : &quot;exp_method&quot;,
+    assembly     : [chain_assembly_identifiers]
+]
+
+opt_ex = [
+    type        : 'filetype',
+    multi_model : max_num_models,
+    symmetries  : 'symmetry_type',
+    fixmiss     : flag,
+    biomt       : token
+]
+</pre>
+
+<p>
+Converts a CIF data block into a MOE molecular object.  Returns a
+<tt>mol_data</tt> object that can be instantiated in the MOE main window with a
+call to <tt>cif_CreateSystem</tt>.
+
+<p>
+<tt>blockdata</tt> is a tagged vector returned from a call to
+<tt>cif_fread</tt>.  <tt>mol_data</tt> consists of one or more of
+the following fields:</p>
+
+<dl>
+
+<dt><tt>occupancy : [atom_occupancies]</tt>
+<dd>A vector of the atom occupancies.
+This option applies to CIF and mmCIF files only.
+
+<p><dt><tt>B_factor : [atom_temp_factors]</tt>
+<dd>A vector of the atom temperature factors.
+This option applies to CIF and mmCIF files only.
+
+<p><dt><tt>cell : ['spacegroup', size, shape]</tt>
+<dd>Unit cell parameters.
+This option applies to CIF and mmCIF files only.
+
+<p><dt><tt>Rfactor : crys_rF</tt>
+<dd>crystallographic R-Factor/R-Free.
+This option applies to CIF and mmCIF files only.
+
+<p><dt><tt>reference : &quot;citation_string&quot;</tt>
+<dd>primary journal citation pertaining to the molecule.
+This option applies to CIF and mmCIF files only.
+
+<p><dt><tt>aniso : [aniso_temp_factors]</tt>
+<dd>Anisotropic temperature factors for each atom.
+This option applies to CIF and mmCIF files only.
+
+<p><dt><tt>models : [moe_mdl1, moe_mdl2, ...]</tt>
+<dd>A vector of MOE mol objects, one per model.
+
+<p><dt><tt>type : 'file_type_token'</tt>
+<dd>'cif', 'mmcif' or 'monlibcif'
+
+<p><dt><tt>fasta : [&quot;chn1_fasta&quot;, &quot;chn2_fasta&quot;, ...]</tt>
+<dd>A vector of FASTA-like strings containing the sequences of the polymer
+chains.
+This option applies to mmCIF files only.
+
+<p><dt><tt>PDBremarks : [&quot;pdb_rem1&quot;, &quot;pdb_rem2&quot;, ...]</tt>
+<dd>The REMARK fields from the original PDB file.
+This option applies to mmCIF files only.
+
+<p><dt><tt>exptl_method : &quot;exp_method&quot;</tt>
+<dd>The experimental method use to determine the structure.
+This option applies to mmCIF files only.
+
+<p><dt><tt>assembly : [chain_assembly_identifiers]</tt>
+<dd>For each chain, the number of the biological assembly to which it
+belongs, if applicable.
+This option applies to mmCIF files only.
+
+</dl>
+
+<p><tt>opt_ex</tt> is a tagged vector:</p>
+
+<dl>
+<dt><tt>type : 'filetype'</tt>
+<dd>Specifies the CIF file format.  Normally this is
+auto-detected so this option should only be used if auto-detection has failed.
+Legal token values are:
+
+<blockquote>
+<table>
+<tr valign="top">
+    <td valign="baseline"><tt>'auto'</tt></td>
+    <td valign="baseline">The file type will be auto-detected. [default]</td>
+</tr>
+<tr valign="top">
+    <td valign="baseline"><tt>'cif'</tt></td>
+    <td valign="baseline">The file is in the basic CIF format.</td>
+</tr>
+<tr valign="top">
+    <td valign="baseline"><tt>'mmcif'</tt></td>
+    <td valign="baseline">The file is in mmCIF format.</td>
+</tr>
+<tr valign="top">
+    <td valign="baseline"><tt>'monlibcif'</tt></td>
+    <td valign="baseline">The file is in CCP4 MONLIB format.</td>
+</tr>
+</table>
+</blockquote>
+
+<p><dt><tt>multi_model : max_num_models</tt>
+
+<dd>Specifies maximum number of models to load, in a multi-model structure
+file.  Models are loaded in the order in which they appear, and not necessarily
+numerical order.  This applies only to mmCIF files.  The default value is 1.
+If there are fewer models in the file than specified, all models will be read.
+Additionally, if zero is specified for this argument, all models will be read.
+
+<p><dt><tt>symmetries : 'symmetry_type'</tt>
+<dd>Specifies whether to generate
+Non-Crystallographic Symmetry (NCS) images.
+The NCS images are given in the <tt>_struct_ncs_oper</tt> fields in the file.
+This option applies to mmCIF files only.
+
+<p>Possible values:
+<blockquote>
+<table cellpadding="3">
+<tr valign="top">
+    <td valign="baseline"><tt>'None'</tt></td>
+    <td valign="baseline">Do not generate NCS images. [default]</td>
+</tr>
+<tr valign="top">
+    <td valign="baseline"><tt>'All'</tt></td>
+    <td valign="baseline">Generate all NCS images (if any).</td>
+</tr>
+</table>
+</blockquote>
+The default value is <tt>'All'</tt>.
+
+<p><dt><tt>fixmiss : flag</tt>
+<dd>
+Specifies whether to to resolve missing coordinates when reading mmCIF files.
+<tt>flag</tt> is either 1 (default) or 0.  When set to 1,
+an attempt will be made to reconcile any differences between
+atoms with coordinates given in the atomic records section and
+sequences given in
+the polymer residue sequence section.  This can occur when a stretch of residues
+is missing coordinates because they could not be resolved,
+when a chemical tag is
+present at one end of the molecule, or when there is a mislabeling or
+misnumbering in the file.
+
+<p><dt><tt>biomt : token</tt>
+<dd>Specifies a Biological Assembly to generate.
+<tt>token</tt> should be
+one of the <tt>_pdbx_struct_assembly.id</tt> items present in the file.
+Setting <tt>token</tt> to <tt>'All'</tt> specifies that <i>all</i>
+assemblies provided in the
+<tt>_pdbx_struct_assembly</tt> table are to be generated.
+The <tt>biomt</tt> option applies to mmCIF files only.  
+Note that the <tt>symmetries</tt> option is ignored when this option is set.
+</dl>
+
+<p><a name="cif_CreateSystem"></a></p><hr noshade="noshade" />
+
+<pre>
+chain_keys = <span class="fcndef">cif_CreateSystem</span> [mol_data, opt_cr]
+
+opt_cr = [
+    symmetries : 'symmetry_type'
+]
+</pre>
+
+<p>
+Creates a MOE molecular system from a CIF <tt>mol_data</tt> object which is
+displayed in the MOE Window. The chain keys of the new molecular data are
+returned.
+
+<p><tt>opt_cr</tt> is a tagged vector:</p>
+
+<dl>
+<dt><tt>symmetries : 'symmetry_type'</tt>
+<dd>Controls how crystallographic symmetry is handled.  Permitted token values
+are:
+
+<blockquote>
+<table>
+<tr valign="top" cellpadding="3">
+    <td valign="baseline"><tt>'None'</tt></td>
+    <td valign="baseline">The cell parameters will be ignored and left as
+    they currently are. For
+    non-crystallographic structure files, this is option is automatically
+    chosen. [default]</td>
+</tr>
+<tr valign="top">
+    <td valign="baseline"><tt>'All'</tt></td>
+    <td valign="baseline">Unit cell will be computed and all images
+    of the molecule due to
+    crystallographic symmetry will be generated.  For non-mmCIF files, the unit
+    cell will also be displayed.</td>
+</tr>
+</table>
+</blockquote>
+
+</dl>
+
+<p>A warning is issued before overwriting any existing crystal cell parameters.
+Atomic occupancy will be set in the molecular Scalar value and Temperature
+Factors will be set, when appropriate.
+
+<p>
+<h2>See Also</h2>
+
+<a class="svl" href="molrw.html">ReadCIF</a><br />
+<a class="svl" href="extract.htm">mol_Extract</a><br />
+<a class="svl" href="mol.htm">mol_Create</a>
+
+<p>
+<h2>Reference</h2>
+
+    <a href="http://www.iucr.org/" target="_blank">International Union of
+    Crystallography (IUCr)</a>
+
+<br /><a href="http://mmcif.pdb.org/" target="_blank">RCSB Dictionary Resources
+    for mmCIF</a> <br />
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!--
+--- UCSF Chimera Copyright ---
+Copyright (c) 2009-2014 Regents of the University of California.
+All rights reserved.  This software provided pursuant to a
+license agreement containing restrictions on its disclosure,
+duplication and use.  This notice must be embedded in or
+attached to all copies, including partial copies, of the
+software or any revisions or derivations thereof.
+--- UCSF Chimera Copyright ---
+-->
+
+<html><head>
+<title>sop</title>
+<style type="text/css">
+A.nounder:link {text-decoration: none}
+A.nounder:visited {text-decoration: none}
+A.nounder:hover {text-decoration: underline; color: red;}
+</style>
+</head><body>
+<font size="-1">
+<a href="../framecommand.html" target="_top">Chimera Commands Index</a>
+</font>
+<a name="top"></a>
+<h3><a href="usageconventions.html">Usage</a>:
+<BR><b>sop</b> <i>operation</i> <i>arguments</i></h3>
+<p>
+The <b>sop</b> command performs operations on one or more
+<a href="../surfattrib.html#surfmodels">surface models</a>.
+See also: 
+<a href="surface.html"><b>surface</b></a>,
+<a href="scolor.html"><b>scolor</b></a>,
+<a href="setattr.html"><b>setattr</b></a>,
+<a href="shape.html"><b>shape</b></a>,
+<a href="define.html"><b>define</b></a>,
+<a href="volume.html"><b>volume</b></a>
+(<a href="volume.html#dispsurf">surface and mesh options</a>),
+<a href="vop.html"><b>vop</b></a>,
+<a href="../surfattrib.html">surface attributes</a>
+</p><p>
+The <i>operation</i> can be:
+</p>
+<ul>
+<li><a href="#cap"><b>cap</b></a> 
+- adjust capping of clipped surfaces
+<li><a href="#clip"><b>clip</b></a> 
+- spherically clip volume isosurfaces, with curved caps
+<li><a href="#finerMesh"><b>finerMesh</b></a> 
+- subdivide surface mesh
+<li><a href="#hideDust"><b>hideDust</b></a>
+- hide small blobs (disconnected parts)
+<li><a href="#hidePieces"><b>hidePieces</b></a> and
+<a href="#hidePieces"><b>showPieces</b></a>
+- hide/show specified <a href="../surfattrib.html#surfpiecedef">pieces</a>
+(independently selectable parts)
+<li><a href="#smooth"><b>smooth</b></a>
+- smooth surfaces by moving each vertex toward the average position 
+of its neighbors
+<li><a href="#split"><b>split</b></a>
+- split disconnected parts of a surface into
+independently selectable <a href="../surfattrib.html#surfpiecedef">pieces</a>
+<li><a href="#transform"><b>transform</b></a>
+- scale, rotate, and shift surfaces
+<li><a href="#zone"><b>zone</b></a>
+- show only surface parts within a cutoff distance of specified atoms
+</ul>
+<p>
+Operation keywords and their sub-keywords described below
+can be truncated to unique strings, and their case does not matter.
+Surface models can be specified by a model number or range of model 
+numbers preceded by #, or simply # to indicate all applicable surfaces.   
+Synonyms for true: True, 1.  Synonyms for false: False, 0.
+A vertical bar "|" designates mutually exclusive options,
+and default settings are indicated with <b>bold</b>.
+</p>
+
+<a href="#top" class="nounder">&bull;</a>
+  <a name="cap"><b>sop cap</b></a> &nbsp;on&nbsp;|&nbsp;off&nbsp;
+[&nbsp;<b>mesh</b>&nbsp;true&nbsp;|&nbsp;<b>false</b>&nbsp;]
+  [&nbsp;<b>offset</b>&nbsp;<i>d</i>&nbsp;]
+  [&nbsp;<b>subdivision</b>&nbsp;<i>f</i>&nbsp;]
+  [&nbsp;<b>color</b>&nbsp;&nbsp;<b>same</b>&nbsp;|&nbsp;<i>color-name</i>&nbsp;]
+<blockquote>
+Adjust capping, in which planar caps are drawn to hide the interior of a
+<a href="../surfattrib.html#surfmodels">surface model</a>
+sliced by a <a href="../clipping.html">clipping plane</a>.
+Capping can be toggled on or off, 
+and caps can be shown as a solid surface or as <b>mesh</b>.
+The <b>offset</b> distance <i>d</i> is how far to displace caps from
+the clipping plane (default <b>0.01</b> &Aring;). Some displacement is needed, 
+or the cap itself can be clipped (invisible) depending on floating-point 
+rounding errors and the specific graphics hardware being used.
+If <b><i>d</i></b> is large, however, the mismatch between the cap and the 
+cut edge of the surface will be evident.
+The <b>subdivision</b> factor <i>f</i> indicates how finely to subdivide 
+cap surfaces (default <b>1.0</b>, triangles approximately the same size as
+in the surface being capped); larger values yield smaller triangles
+and finer color gradations (when the cap is multicolored, for example with 
+<a href="../../ContributedSoftware/surfcolor/surfcolor.html"><b>Surface 
+Color</b></a>), but increase computational demands.
+There is no reason to increase the subdivision factor when caps
+are a single solid color.
+The cap <b>color</b> can be the <b>same</b> as that of the clipped surface model
+(<a href="../../ContributedSoftware/surfcapper/surfcapper.html#usecolor">details</a>)
+or indicated with any 
+<a href="color.html#colorname">color name</a> that specifies a single color.
+See also: 
+<a href="../../ContributedSoftware/surfcapper/surfcapper.html"><b>Surface 
+Capping</b></a>
+</blockquote>
+
+<a href="#top" class="nounder">&bull;</a>
+  <a name="clip"><b>sop clip</b></a>
+  &nbsp;<i>volume-model(s)</i>&nbsp;
+  [&nbsp;<b>center</b>&nbsp;<a href="frameatom_spec.html" 
+  target="_top"><i>atom-spec</i></a>&nbsp;|&nbsp;<i>x,y,z</i>&nbsp;]
+  [&nbsp;<b>radius</b>&nbsp;<i>r</i>&nbsp;]
+  [&nbsp;<b>coordinateSystem</b>&nbsp;<i>N</i></a>&nbsp;]
+  [&nbsp;<b>mesh</b>&nbsp;true&nbsp;|&nbsp;<b>false</b>&nbsp;]
+  [&nbsp;<b>color</b>&nbsp;&nbsp;<i>color-name</i>&nbsp;]
+  [&nbsp;<b>replace</b>&nbsp;<b>true</b>&nbsp;|&nbsp;false&nbsp;]
+<blockquote>
+Spherically clip <a href="../filetypes.html#volume">volume</a>
+isosurfaces, with curved caps covering holes.
+The clipping sphere <b>center</b> and <b>radius</b> can be specified;
+defaults are the geometric center of the isosurface and 40% of the
+largest dimension of its bounding box, respectively. 
+The coordinate system for interpreting center <i>x,y,z</i> specifications
+is indicated by reference model ID number preceded by #.
+Caps can be shown as a solid surface or as <b>mesh</b>.
+Cap <b>color</b> defaults to the same as the isosurface, 
+but can be indicated with any 
+<a href="color.html#colorname">color name</a> that specifies a single color,
+except with spaces collapsed (<i>e.g.</i>, <b>hotpink</b> instead
+of <b>hot pink</b>). The <b>replace</b> option indicates whether to remove
+any pre-existing spherical clipping caps.
+</blockquote>
+
+<a href="#top" class="nounder">&bull;</a>
+  <a name="finerMesh"><b>sop finerMesh</b></a> &nbsp;<i>surf-model(s)</i>&nbsp;
+  <b>spacing</b>&nbsp;<i>d</i>&nbsp;
+  &nbsp;<a href="#options"><i>surf-creation-options</i></a>
+<blockquote>
+Subdivide the surface mesh to achieve the specified vertex <b>spacing</b>
+<i>d</i>.  
+If the input surface already has a finer mesh
+than what is specified, it will simply be duplicated.
+</blockquote>
+
+<a href="#top" class="nounder">&bull;</a>
+  <a name="hideDust"><b>sop hideDust</b></a> &nbsp;<i>surf-model(s)</i>&nbsp;
+  <b>size</b>&nbsp;<i>s</i>&nbsp;
+[&nbsp;<b>metric</b>&nbsp;&nbsp;<b>size</b>&nbsp;|&nbsp;area&nbsp;|&nbsp;volume&nbsp;|&nbsp;sizeRank&nbsp;|&nbsp;areaRank&nbsp;|&nbsp;volumeRank&nbsp;]
+[&nbsp;<b>update</b>&nbsp;<b>true</b>&nbsp;|&nbsp;false&nbsp;]
+<br>
+<a href="#top" class="nounder">&bull;</a>
+  <b>~sop hideDust</b></a> &nbsp;<i>surf-model(s)</i>
+<blockquote>
+Hide smaller blobs (disconnected parts) of a surface.
+One use is to simplify the display of noisy 
+<a href="../filetypes.html#volume">volume data</a>.
+The cutoff <b>size</b> for hiding must be specified; blobs smaller
+than <i>s</i> will be hidden, where the units depend on the <b>metric</b>:
+  <ul>
+  <li><b>size</b> (default) - bounding box dimension (largest of X, Y, Z)
+  <li><b>area</b> - surface area
+  <li><b>volume</b> - enclosed volume
+  <li><b>sizeRank</b> - rank by largest <b>size</b> 
+  (a value of <i>N</i> indicates
+  showing the <i>N</i> largest blobs by the <b>size</b> criterion)
+  <li><b>areaRank</b> - rank by largest <b>area</b> 
+  <li><b>volumeRank</b> - rank by largest <b>volume</b> 
+  </ul>
+Size measurements will include any blob parts that have been undisplayed
+or hidden by <a href="#zone">zoning</a> or
+<a href="../clipping.html">clipping</a>,
+and blobs at or above the cutoff size will be displayed completely
+(although possibly still clipped) even if they had been hidden beforehand.
+The <b>update</b> option indicates whether to update hiding automatically 
+if the surface is changed (default <b>true</b>).  The command
+<b>~sop hideDust</b> stops hiding blobs of the specified surfaces.
+See also: 
+<a href="../../ContributedSoftware/volumeviewer/hidedust.html"><b>Hide 
+Dust</b></a>
+</blockquote>
+
+<a href="#top" class="nounder">&bull;</a>
+  <a name="hidePieces"><b>sop hidePieces</b></a> &nbsp;<i>surf-piece(s)</i>
+<br>
+<a href="#top" class="nounder">&bull;</a>
+  <b>sop showPieces</b></a> &nbsp;<i>surf-piece(s)</i>
+<blockquote>
+Hide and show <a href="../surfattrib.html#surfpiecedef">pieces</a> 
+(independently selectable parts) of a surface.
+Surface pieces can be specified by model number or as a 
+<a href="../selection.html">selection</a>
+(<a href="atom_spec.html#othermodels">details...</a>).
+</blockquote>
+
+<a href="#top" class="nounder">&bull;</a>
+<a name="smooth"><b>sop smooth</b></a> &nbsp;<i>surf-piece(s)</i>&nbsp;
+[&nbsp;<b>factor</b>&nbsp;&nbsp;<i>f</i>&nbsp;]
+[&nbsp;<b>iterations</b>&nbsp;&nbsp;<i>i</i>&nbsp;]
+  &nbsp;<a href="#options"><i>surf-creation-options</i></a>
+<blockquote>
+Smooth <a href="../surfattrib.html#surfpiecedef">surface pieces</a> 
+by moving each vertex toward the average position of its 
+neighboring vertices (those connected by triangle edges).
+In each of <i>i</i> iterations (default <b>2</b>), 
+each vertex is moved a fraction <b><i>f</i></b> (default <b>0.3</b>)
+of the way toward the average position of its neighbors.
+This will generally &ldquo;shrink&rdquo; a surface, <i>i.e.</i>,
+smoothing an enclosed surface will make it enclose a smaller volume.
+A <a href="../representation.html#surfaces">molecular surface</a>
+can be smoothed without shrinkage by instead increasing its vertex density
+(for example, command: <b><a href="setattr.html">setattr</a> s density 5</b>).
+See also: <a href="../print.html#smoothness">smoothness tips</a>
+</blockquote>
+
+<a href="#top" class="nounder">&bull;</a>
+<a name="split"><b>sop split</b></a> &nbsp;<i>surf-model(s)</i>&nbsp;
+  &nbsp;<a href="#options"><i>surf-creation-options</i></a>
+<blockquote>
+Copy a surface model into a new model in which the
+disconnected blobs (components) are independently selectable 
+<a href="../surfattrib.html#surfpiecedef">pieces</a>.
+</blockquote>
+
+<a href="#top" class="nounder">&bull;</a>
+<a name="transform"><b>sop transform</b></a> &nbsp;<i>surface(s)</i>&nbsp;
+  [&nbsp;<b>scale</b>&nbsp;<i>s</i>&nbsp;|&nbsp;<b>radius</b>&nbsp;<i>r</i>&nbsp;]
+  [&nbsp;<b>rotate</b>&nbsp;<i>angle</i>&nbsp;]
+  [&nbsp;<b>move</b>&nbsp;<i>x,y,z</i>&nbsp;]
+  [&nbsp;<b>center</b>&nbsp;<i>x,y,z</i>&nbsp;|&nbsp;<a href="frameatom_spec.html" target="_top"><i>atom-spec</i></a>&nbsp;]
+  [&nbsp;<b>axis</b>&nbsp;x&nbsp;|&nbsp;y&nbsp;|&nbsp;<b>z</b>&nbsp;|&nbsp;<i>x,y,z</i>&nbsp;|&nbsp;<a href="../../UsersGuide/midas/frameatom_spec.html"
+  target="_top"><i>atom-spec</i></a>&nbsp;]
+  [&nbsp;<b>coordinateSystem</b>&nbsp;<i>N</i></a>&nbsp;]
+<blockquote>
+Scale, rotate, and shift surface models and/or 
+<a href="../surfattrib.html#surfpiecedef">pieces</a>.
+Surface pieces can be specified by model number or as a 
+<a href="../selection.html">selection</a>
+(<a href="atom_spec.html#othermodels">details...</a>).
+Scaling about the center is applied first, then rotation about the center 
+and axis, and then translation (shifting).
+Scaling can be done with a multiplicative <b>scale</b> factor <i>s</i>,
+or such that the largest distance from a surface vertex to the center 
+is <b>radius</b> <i>r</i>
+(see the 
+<a href="http://www.cgl.ucsf.edu/chimera/data/movie-howto-mar2012/movie_examples.html#icosslice"
+target="_blank">video mini-example</a>).
+The <b>rotate</b> option indicates a rotation of <i>angle</i> degrees
+about the center and axis, and
+<b>move</b> indicates a shift of <i>x</i>, <i>y</i>, and <i>z</i>
+distance units along the X, Y, and Z axes, respectively.
+The <b>center</b> for scaling and rotation
+defaults to the area-weighted center of the surface,
+but can be given as <i>x</i>,<i>y</i>,<i>z</i> coordinates or an
+<a href="frameatom_spec.html" target="_top"><i>atom-spec</i></a>.
+The rotation <b>axis</b> can be given as:
+<ul>
+<li><b>x</b> - X-axis
+<li><b>y</b> - Y-axis
+<li><b>z</b> (default) - Z-axis
+<li><i>x,y,z</i>
+(three values separated by commas only) - an arbitrary vector
+<li>an <a href="frameatom_spec.html" target="_top"><i>atom-spec</i></a> of
+exactly two atoms (not necessarily bonded or in the same model) or one bond.
+A bond can only be specified by <a href="../selection.html">selecting</a>
+it and using the word <b>selected</b>, <b>sel</b>, or <b>picked</b>;
+any atoms also selected at the time will be ignored.
+</ul>
+The coordinate system for interpreting center, axis, and shift <i>x,y,z</i> 
+specifications is indicated by reference model ID number preceded by #.
+By default, the coordinate system of the first specified surface is used.
+</blockquote>
+
+<a href="#top" class="nounder">&bull;</a>
+<a name="zone"><b>sop zone</b></a> &nbsp;<i>surf-model(s)</i>&nbsp;
+  <a href="../../UsersGuide/midas/frameatom_spec.html" 
+  target="_top"><i>atom-spec</i></a>&nbsp; <i>radius</i>&nbsp;
+  [&nbsp;<b>bondPointSpacing</b>&nbsp;<i>s</i>&nbsp;]
+  [&nbsp;<b>maxComponents</b>&nbsp;<i>N</i>&nbsp;]
+  [&nbsp;<b>update</b>&nbsp;<b>true</b>&nbsp;|&nbsp;false&nbsp;]
+<br>
+<a href="#top" class="nounder">&bull;</a>
+  <b>~sop zone</b></a> &nbsp;<i>surf-model(s)</i>
+<blockquote>
+Show only parts of the surface within <i>radius</i> &Aring; of
+any atom in <a href="../../UsersGuide/midas/frameatom_spec.html" 
+target="_top"><i>atom-spec</i></a>.
+If <b>bondPointSpacing</b> <i>s</i> is specified, use points along bonds 
+in addition to the atoms to define the zone.
+The points along the bonds will be placed <i>s</i></b> &times; 
+(<a href="../inspection.html#bondprop">bond radius</a>) apart.
+<a href="../../ContributedSoftware/volumepathtracer/volumepathtracer.html#marker
+props">Link radii</a> 
+in <a href="../../ContributedSoftware/volumepathtracer/framevolpath.html" 
+target="_top"><b>Volume Tracer</b></a> 
+are equivalent to bond radii, except when a link radius is 0.0,
+the corresponding bond radius is 1.0.  
+The <b>maxComponents</b> option indicates hiding all but
+the <i>N</i> largest connected surface patches in the zone; 
+by removing the visual clutter of small patches,
+this can significantly enhance viewing of pocket surfaces.
+Ranking to determine the largest is based on maximum dimension 
+(along X, Y, or Z for a given patch), <i>including</i> any portions
+within the zone that are hidden by <a href="../clipping.html">clipping</a>.
+If <b>maxComponents</b> is not supplied, all patches within the zone
+will be shown. The <b>update</b> setting indicates whether to update 
+the zone automatically if the surface changes shape.  The command 
+<b>~sop zone</b> stops hiding the surface parts outside the zone.
+See also:
+<a href="../../ContributedSoftware/surfzone/surfzone.html"><b>Surface 
+Zone</b></a>
+</blockquote>
+
+<a name="options">
+<h3>Surface Creation Options</h3></a>
+<p>
+The following options apply to operations that create a new surface model.
+</p>
+<blockquote>
+  <b>modelId</b> <i>N</i>
+  <br>Open the new surface as model number <i>N</i> (an integer, optionally
+  preceded by #).  The default is the lowest unused number.
+</blockquote>
+<blockquote>
+  <b>inPlace</b> true|<b>false</b>
+  <br>Whether to overwrite the existing surface in Chimera instead of
+  creating a new one. 
+</blockquote>
+
+</body></html>

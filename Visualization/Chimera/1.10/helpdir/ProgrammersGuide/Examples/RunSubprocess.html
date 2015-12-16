@@ -1,0 +1,269 @@
+<!--
+--- UCSF Chimera Copyright ---
+Copyright (c) 2000 Regents of the University of California.
+All rights reserved.  This software provided pursuant to a
+license agreement containing restrictions on its disclosure,
+duplication and use.  This notice must be embedded in or
+attached to all copies, including partial copies, of the
+software or any revisions or derivations thereof.
+--- UCSF Chimera Copyright ---
+-->
+<h2>Example <a href="RunSubprocess.py"><i>RunSubprocess.py</i></a></h2>
+<p>
+Class <code>CountAtoms</code> assigns two attributes, &quot;numAtoms&quot; and &quot;numHetatms&quot;,
+to a molecule by exporting the molecule as a PDB file and running
+the &quot;grep&quot; program twice.  The &quot;grep&quot; invocations are run in the
+background so that Chimera stays interactive while they execute.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">class CountAtoms:<br></font>
+</code>
+<dl><dd>
+<p>
+The constructor sets up a temporary file for the PDB output,
+and a Chimera task instance for showing progress to the user.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">def __init__(self, m, grepPath):<br></font>
+</code>
+<dl><dd>
+<p>
+Generate a temporary file name for PDB file.
+We use Chimera's <code>osTemporaryFile</code> function
+because it automatically deletes the file when
+Chimera exits.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">import OpenSave<br></font>
+<font color="red">self.pdbFile = OpenSave.osTemporaryFile(suffix=".pdb", prefix="rg")<br></font>
+<font color="red">self.outFile = OpenSave.osTemporaryFile(suffix=".out", prefix="rg")<br></font>
+</code>
+<p>
+Write molecule in to temporary file in PDB format.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">self.molecule = m<br></font>
+<font color="red">import Midas<br></font>
+<font color="red">Midas.write([m], None, self.pdbFile)<br></font>
+</code>
+<p>
+Set up a task instance for showing user our status.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">from chimera import tasks<br></font>
+<font color="red">self.task = tasks.Task("atom count for %s" % m.name, self.cancelCB)<br></font>
+</code>
+<p>
+Start by counting the ATOM records first.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">self.countAtoms()<br></font>
+</code>
+</dl>
+<p>
+<code>cancelCB</code> is called when user cancels via the task panel<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">def cancelCB(self):<br></font>
+</code>
+<dl><dd>
+<code>
+<font color="red">self.molecule = None<br></font>
+</code>
+</dl>
+<p>
+<code>countAtoms</code> uses &quot;grep&quot; to count the number of ATOM records.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">def countAtoms(self):<br></font>
+</code>
+<dl><dd>
+<code>
+<font color="red">from chimera import SubprocessMonitor as SM<br></font>
+<font color="red">self.outF = open(self.outFile, "w")<br></font>
+<font color="red">self.subproc = SM.Popen([ grepPath, "-c", "^ATOM", self.pdbFile ], stdout=self.outF)<br></font>
+<font color="red">SM.monitor("count ATOMs", self.subproc, task=self.task, afterCB=self._countAtomsCB)<br></font>
+</code>
+</dl>
+<p>
+<code>_countAtomsCB</code> is the callback invoked when the subprocess
+started by <code>countAtoms</code> completes.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">def _countAtomsCB(self, aborted):<br></font>
+</code>
+<dl><dd>
+<p>
+Always close the open file created earlier<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">self.outF.close()<br></font>
+</code>
+<p>
+If user canceled the task, do not continue processing.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">if aborted or self.molecule is None:<br></font>
+</code>
+<dl><dd>
+<code>
+<font color="red">self.finished()<br></font>
+<font color="red">return<br></font>
+</code>
+</dl>
+<p>
+Make sure the process exited normally.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">if self.subproc.returncode != 0 and self.subproc.returncode != 1:<br></font>
+</code>
+<dl><dd>
+<code>
+<font color="red">self.task.updateStatus("ATOM count failed")<br></font>
+<font color="red">self.finished()<br></font>
+<font color="red">return<br></font>
+</code>
+</dl>
+<p>
+Process exited normally, so the count is in the output file.
+The error checking code (in case the output is not a number)
+is omitted to keep this example simple.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">f = open(self.outFile)<br></font>
+<font color="red">data = f.read()<br></font>
+<font color="red">f.close()<br></font>
+<font color="red">self.molecule.numAtoms = int(data)<br></font>
+</code>
+<p>
+Start counting the HETATM records<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">self.countHetatms()<br></font>
+</code>
+</dl>
+<p>
+<code>countHetatms</code> uses &quot;grep&quot; to count the number of HETATM records.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">def countHetatms(self):<br></font>
+</code>
+<dl><dd>
+<code>
+<font color="red">from chimera import SubprocessMonitor as SM<br></font>
+<font color="red">self.outF = open(self.outFile, "w")<br></font>
+<font color="red">self.subproc = SM.Popen([ grepPath, "-c", "^HETATM", self.pdbFile ], stdout=self.outF)<br></font>
+<font color="red">SM.monitor("count HETATMs", self.subproc, task=self.task, afterCB=self._countHetatmsCB)<br></font>
+</code>
+</dl>
+<p>
+<code>_countHetatmsCB</code> is the callback invoked when the subprocess
+started by <code>countHetatms</code> completes.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">def _countHetatmsCB(self, aborted):<br></font>
+</code>
+<dl><dd>
+<p>
+Always close the open file created earlier<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">self.outF.close()<br></font>
+</code>
+<p>
+If user canceled the task, do not continue processing.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">if aborted or self.molecule is None:<br></font>
+</code>
+<dl><dd>
+<code>
+<font color="red">self.finished()<br></font>
+<font color="red">return<br></font>
+</code>
+</dl>
+<p>
+Make sure the process exited normally.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">if self.subproc.returncode != 0 and self.subproc.returncode != 1:<br></font>
+</code>
+<dl><dd>
+<code>
+<font color="red">self.task.updateStatus("HETATM count failed")<br></font>
+<font color="red">self.finished()<br></font>
+<font color="red">return<br></font>
+</code>
+</dl>
+<p>
+Process exited normally, so the count is in the output file.
+The error checking code (in case the output is not a number)
+is omitted to keep this example simple.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">f = open(self.outFile)<br></font>
+<font color="red">data = f.read()<br></font>
+<font color="red">f.close()<br></font>
+<font color="red">self.molecule.numHetatms = int(data)<br></font>
+</code>
+<p>
+No more processing needs to be done.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">self.finished()<br></font>
+</code>
+</dl>
+<p>
+<code>finished</code> is called to clean house.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">def finished(self):<br></font>
+</code>
+<dl><dd>
+<p>
+Temporary files will be removed when Chimera exits, but
+may be removed here to minimize their lifetime on disk.
+The task instance must be notified so that it is labeled
+completed in the task panel.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">self.task.finished()<br></font>
+</code>
+<p>
+Set instance variables to None to release references.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">self.task = None<br></font>
+<font color="red">self.molecule = None<br></font>
+<font color="red">self.subproc = None<br></font>
+</code>
+</dl>
+</dl>
+<p>
+Below is the main program.  First, we find the path to
+the &quot;grep&quot; program.  Then, we run CountAtoms for each molecule.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">from CGLutil import findExecutable<br></font>
+<font color="red">grepPath = findExecutable.findExecutable("grep")<br></font>
+<font color="red">if grepPath is None:<br></font>
+</code>
+<dl><dd>
+<code>
+<font color="red">from chimera import NonChimeraError<br></font>
+<font color="red">raise NonChimeraError("Cannot find path to grep")<br></font>
+</code>
+</dl>
+<p>
+Add &quot;numAtoms&quot; and &quot;numHetatms&quot; attributes to all open molecules.<br>
+<spacer type="vertical" size=5>
+<code>
+<font color="red">import chimera<br></font>
+<font color="red">from chimera import Molecule<br></font>
+<font color="red">for m in chimera.openModels.list(modelTypes=[Molecule]):<br></font>
+</code>
+<dl><dd>
+<code>
+<font color="red">CountAtoms(m, grepPath)<br></font>
+</code>
+</dl>

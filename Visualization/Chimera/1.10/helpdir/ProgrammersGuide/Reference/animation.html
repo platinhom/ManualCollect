@@ -1,0 +1,157 @@
+<!doctype html public "-//W3C//DTD HTML 4.0//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<link rel="icon" href="/chimera/images/chimera16.png" type="image/png">
+<title>Making Tools Scene- and Animation-aware</title>
+</head>
+<body>
+
+<h1>
+Making Tools Scene- and Animation-aware
+</h1>
+
+<p>
+Chimera version 1.7 (November 5, 2012)
+</p>
+
+<p>
+The Animate package implements both scene and animation functionality.
+Core attributes such as model names, residue types and atom positions are
+handled automatically by the Animate package.  Tools
+are responsible for saving, restoring and animating objects and
+attributes that they introduce.  Notification of scene and animation events
+happen through the standard Chimera trigger mechanism.
+</p>
+
+<h2>Scene Triggers</h2>
+
+<p>
+There are two triggers associated with scenes:
+<dl>
+<dt><code>chimera.SCENE_TOOL_SAVE</code></dt>
+<dd>This trigger is fired when a scene is created or updated.
+The core attributes have already been saved.  The trigger
+data argument to registered handlers is the scene object.</dd>
+<dt><code>chimera.SCENE_TOOL_RESTORE</code></dt>
+<dd>This trigger is fired when a scene is restored (and
+just before an animation sequence completes,
+<a href="#finish">see below</a>).
+The core attributes have already been restored.  The trigger
+data argument to registered handlers is the scene object.</dd>
+<dd></dd>
+</dl>
+</p>
+
+<p>
+Each scene object has a dictionary, <code>tool_settings</code>,
+for managing tool-specific data.  Tools are responsible for creating
+their own keys and values for storing and accessing data in the
+dictionary.  Singleton tools such as <b>2DLabels</b>
+can use fixed strings such as &quot;2D Labels (gui)&quot; as their
+keys; multi-instance tools will need to come up with unique keys and
+make sure that they are not overwriting data for some other tool.
+Typically, data is saved in <code>SCENE_TOOL_SAVE</code> and accessed
+in <code>SCENE_TOOL_RESTORE</code> handlers.
+</p>
+
+<h2>Animation Triggers</h2>
+
+<p>
+<code>Animate</code> updates the graphics display during
+transitions.  There are three types of transitions:
+<dl>
+<dt>key frame transition</dt>
+<dd>When the user plays the animation, a transition occurs
+between each sequential pair of timeline items.
+ If the ending item is a key frame,
+then a playback transition results.  To transform from the starting state
+to the ending key frame state, data values are interpolated over the
+number of steps associated with the end key frame (the value
+is stored in the <code>frames</code> attribute of the key frame).
+There is a static &quot;transition&quot; for the initial frame if
+it has a non-zero <code>frames</code> value.</dd>
+<dt>scene transition</dt>
+<dd>When the user selects a scene (either from the <b>Scenes</b> list
+or by double-clicking on a key frame in the time line) , a transition with
+default parameters is used.  Currently, the &quot;transition&quot;
+is a one-frame update to the selected scene.</dd>
+<dt>action transition</dt>
+<dd>When an animation is played and one of the timeline items
+is an <b>action</b> rather than a <b>key frame</b>, an action
+transition results.  None of the triggers listed below are fired
+for action transitions because the target state is unknown.</dd>
+</dl>
+</p>
+
+<p>
+There are four triggers associated with key frame and scene transitions:
+<dl>
+<dt><code>chimera.ANIMATION_TRANSITION_START</code></dt>
+<dd>This trigger is fired when a transition from one key
+frame to the next starts.  No core attributes have
+been updated yet, so Chimera data represents the
+initial state of the transition.  The trigger
+data argument to registered handlers is the transition object.</dd>
+<dd></dd>
+<dt><code>chimera.ANIMATION_TRANSITION_STEP</code></dt>
+<dd>This trigger is fired for each step of the transition from one
+key frame to the next.  The core attributes have already
+been updated.  The trigger
+data argument to registered handlers is the transition object.</dd>
+<dd></dd>
+<dt><code>chimera.ANIMATION_TRANSITION_FINISH</code></dt>
+<dd>This trigger is fired after all steps of the transition from one
+key frame to the next have been completed.
+The trigger data argument to registered handlers is the transition object.</dd>
+<dd></dd>
+<dt><code>chimera.SCENE_TOOL_RESTORE</code></dt>
+<dd><a name="finish">
+This trigger is fired just prior to the
+<code>ANIMATION_TRANSITION_FINISH</code>.  The purpose for firing
+this trigger is to simplify writing tools that do not need
+step-by-step animation yet want to restore state when a scene
+state is reached.  These tools can just register for the
+<code>SCENE_TOOL_RESTORE</code>
+trigger and completely ignore the <code>ANIMATION_TRANSITION_*</code>
+triggers.  Tools that wants to handle both step-by-step animation
+and scene restoration will need to avoid getting the
+<code>SCENE_TOOL_RESTORE</code> trigger twice by deregistering for
+it in <code>ANIMATION_TRANSITION_START</code> and reregistering for
+it in <code>ANIMATION_TRANSITION_FINISH</code>.
+</a></dd>
+</p>
+
+<p>
+The transition object received by handlers has several useful attributes
+and methods:
+<dl>
+<dt><code>frames</code></dt>
+<dd>The total number of frames in this transition.</dd>
+<dt><code>frameCount</code></dt>
+<dd>The step number of the current frame in the transition.
+For <code>ANIMATION_TRANSITION_START</code>, this value should always be zero.
+For <code>ANIMATION_TRANSTION_STEP</code>,
+this value ranges from 1 to <code>frames</code>, inclusive.
+For <code>ANIMATION_TRANSITION_FINISH</code>,
+this value should be the same as <code>frames</code>.</dd>
+<dt><code>target()</code></dt>
+<dd>The end point for this transition, usually an instance
+of <code>Animate.Keyframe.Keyframe</code> for movie playback or
+<code>Animate.Scene.Scene</code> for scene restoration using the
+default transition.</dd>
+<dt><code>scene()</code></dt>
+<dd>The scene at the end point for this transition, or None
+if the target is neither a <code>Keyframe</code> nor a <code>Scene</code>.</dd>
+<dt><code>tool_settings</code></dt>
+<dd>A dictionary for managing tool-specific data in the
+same manner as scene objects.
+Unlike the dictionary in scene objects,
+the <code>tool_settings</code> in transition objects are transient.
+When a transition completes, the dictionary is automatically
+removed and any stored data will be lost.
+</dl>
+</p>
+
+</body>
+</html>

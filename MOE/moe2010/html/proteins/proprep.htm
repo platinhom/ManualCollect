@@ -1,0 +1,1683 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	proprep.htm	Preparing Protein and Protein Complex Data
+!!			moemanuals/moe/
+!!
+!!	22-oct-2010 (cw) revised
+!!	06-apr-2010 (al) created
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<meta keywords crystallographic data preparation>
+<meta keywords data preparation>
+<meta keywords receptor preparation>
+<meta keywords ligand preparation>
+<meta keywords protein preparation>
+<meta keywords protein complex>
+
+<title>Preparing a Protein or Protein-Ligand Complex</title>
+
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Preparing a Protein or Protein-Ligand Complex</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Introduction">Introduction</a>
+</li><li><a href="#Loading_the_Data">Loading Protein Structure Data</a>
+</li><li><a href="#Assessing_Data">Assessing Protein Structure Data</a>
+    <ul>
+    <li><a href="#Data_Quality">Data Quality</a>
+    <li><a href="#Verifying_Protein_Geometry_and_Structure">Verifying Protein Geometry
+	and Structure</a>
+	  <ul>
+        <li><a href="#Additional_Checks">Additional Checks</a>
+    	      <ul>
+            <li><a href="#Example_Proline_Geometry" class="example">Example:
+            Proline Geometry in 1CRN</a></ul>
+	  </li>
+	  </ul>
+    </ul>
+</li><li><a href="#Exploring_Alternate_Data">Exploring Alternate Data</a></li>
+<li><a href="#Replacing_Missing_Data">Replacing Missing Data</a>
+        <ul>
+        <li><a href="#Example_Missing_Backbone_Atoms_in_1HNV" class="example">
+	Example: Missing Backbone Atoms in 1HNV</a>
+        </li><li><a href="#Example_Missing_Sidechain_Atoms_in_2ITY" class="example">
+	Example: Missing Sidechain Atoms in 2ITY</a>
+    </li>
+    </ul>
+</li><li><a href="#Other_Considerations">Other Considerations</a>
+    <ul>
+    <li><a href="#Binding_Site">Binding Site Location</a></li>
+    <li><a href="#Bound_Waters">Dealing with Bound Waters</a></li>
+    <li><a href="#Correcting_Ligand">Inspecting and Correcting Ligand Structures</a></li>
+    </ul>
+<li><a href="#Adding_Hydrogens_to_the_Structure">Adding Hydrogens to the Structure</a>
+</li><li><a href="#Energy_Minimization">Energy Minimization</a></li>
+    <ul>
+    <li><a href="#Protonation_and_Partial_Charge">Setting Protonation States and Partial Charges</a></li>
+    <li><a href="#Fixing_and_Tethers">Fixing Atoms and Setting Tethers</a3></li>
+
+
+    <li><a href="#Restraints">Creating and Editing Restraints</a></li>
+    <li><a href="#Energy_Refinement">Energy Refinement</a></li>
+    </ul>
+</li><li><a href="#Using_LigX">Using LigX</a>
+</li><li><a href="#Saving_the_Prepared_Data">Saving the Prepared Data</a>
+</li><li><a href="#Conclusions">Conclusion</a>
+</li><li><a href="#See_Also">See Also</a>
+</li>
+</ul>
+
+<a name="Introduction"></a>
+<h2>Introduction</h2>
+
+<p>
+<div class="floatleft">
+<img src="proprep/xray_diffr.png" alt="X-ray diffraction pattern" />
+</div>
+
+The purpose of protein data preparation is to correct for errors
+in the structure and to prepare macromolecular data for further
+computational analysis. At present, the primary source of 
+3D protein structural data is X-ray crystallography.
+Since there are far fewer nuclear magnetic resonance (NMR) structure 
+files than X-ray files, and NMR files tend to contain fewer data-related issues
+such as missing atoms and residues, this document will focus primarily 
+on the preparation of X-ray crystallographic data. 
+
+
+
+<p>
+One major issue with macromolecular X-ray crystal structures is that
+of missing or poorly resolved atomic data. Areas that cannot be 
+well-resolved may result in either multiple models, alternate 
+locations (atoms are assigned &quot;partial occupancies&quot; based 
+on how often they are found in different locations) or data being absent 
+altogether.
+The severity of missing data ranges from occasional missing atoms through 
+to entire sections of the structure being absent. In many cases the
+missing data needs to be modeled and fixed before subsequent 
+computational analyses can proceed.
+</p>
+
+<p>
+Another issue with X-ray crystal structures is that the bonding  
+patterns of non-amino acids must be inferred from the positions of heavy
+atoms.  Bond orders of ligands and co-factors can in principle be 
+predicted from interatomic distances and angles (provided atomic coordinates 
+are sufficiently accurate) but flexible regions of a structure can 
+lead to positional ambiguities that make automatic bond perception difficult. 
+Furthermore, determination of bond orders relies on knowledge of hydrogen atoms, 
+which owing to their high mobility, cannot typically be located with any degree of 
+accuracy. As a result, the bond orders, charges and protonation 
+states of ligands and cofactors should be inspected and corrected manually if necessary.
+</p>
+
+<p>
+A full-blown processing of an x-ray protein structure
+proceeds as follows:
+</p>
+
+<ol>
+<li>Loading of the structure data from a PDB file.
+</li><li>Assessing the quality of the data with temperature 
+factors, protein geometry checks and electron density.
+</li><li>Exploring alternate structure data if necessary.
+</li><li>Replacing missing protein sections with homology modeling and 
+rotamer exploring.
+</li><li>Other considerations such as fixing bonding patterns in co-factors and 
+ligands, and deletion of unbound water molecules. 
+</li><li>Addition of hydrogens and optimization of their positions
+</li><li>Setting tethers and restraints.
+</li><li>A final energy minimization of the structure.
+</li>
+</ol>
+
+<p>
+The following sections cover the steps in the above procedure, which 
+can be used to prepare both <i>apo</i>protein structures and protein-ligand 
+complexes for simulations such as docking, electrostatic map calculations, 
+molecular mechanics minimizations and molecular dynamics.
+</p>
+
+
+<a name="Loading_the_Data"></a>
+<h2>Loading Protein Structure Data</h2>
+
+<p>In the public domain, the key source of protein data is the
+<a href="http://www.pdb.org">Protein Data Bank</a>
+(PDB), which serves as a universal repository for protein crystal
+structures.  Structures are usually distributed in PDB file format, but
+the newer
+<a href="http://ndbserver.rutgers.edu/mmcif">macromolecular
+Crystallographic Information File</a> (mmCIF) and
+<a href="http://pdbml.pdb.org">Protein Data Bank Markup Language</a>
+(PDBML) formats, which offer more structured and complete representation 
+of the data, are becoming more prevalent.
+Commercially available services exist to combine public PDB
+data with proprietary in-house data as well as to offer additional
+features; for example,
+<a href="http://www.chemcomp.com/psilo-info.htm">PSILO</a> 
+provides version control, visualization, advanced searching,
+and various statistical measures.
+Although the operations in this chapter do not
+require that the source data come from PDB files, PDB source data
+is used in all examples.
+</p>
+
+
+<p>Protein data can be loaded into MOE in a variety of ways.
+Three primary ways are described below:
+</p>
+
+<div class="floatright">
+<img src="../proteins/pdb_mdb/ReadPDB.png" alt="Load PDB File" />
+</div>
+
+<h4>Load PDB File</h4>
+
+<p>
+Structure data can be read into MOE by opening a
+<a href="../proteins/pdb_mdb.htm#OpeningPDBFiles">PDB file</a>
+directly using
+</p>
+
+<blockquote>
+<span class="menu">MOE | File |
+<a href="../moe/gui/fileopen.htm">Open</a> | <i><tt>pdbfile</tt></i></span>
+</blockquote>
+
+<p>which raises the Load PDB File panel.
+This panel offers options that address a number of issues:
+</p>
+
+<ul>
+<p><li>
+<b>Multiple Models</b>.  For files that contain more than
+one model, allow loading of all or just the first one.
+</li></p><p><li>
+<b>Sequence</b>. Allow residues having no atom information (i.e.
+whose structure could not be determined) to be created.
+</li></p><p><li>
+<b>Atom&nbsp;Connect</b>. Enable automatic bonding of non-amino acid
+atoms.  If <tt>CONECT</tt> records are missing or to
+be ignored, bonds are
+calculated from atom elements and atom 3D coordinates.
+It is preferable to ignore <tt>CONECT</tt> records, which can have
+errors.
+Atoms of amino acid residues are always automatically bonded.
+</li></p><p><li>
+<b>Alternate Locations</b>. Atoms with multiple solutions
+(partial occupancy) can have all alternates created (as inert atoms
+which are collected together into <i>named sets</i>)
+or ignored.
+</li></p>
+</ul>
+
+<p>Pressing <b>OK</b> loads the PDB file into MOE.</p>
+
+<h4>MOE PDB</h4>
+
+<p>The MOE distribution includes both <tt>$MOE/lib/pdb.mdb</tt>,
+a <a href="../mdb/db.htm">MOE database</a>
+comprising all the non-redundant chains from the PDB, as well as
+a full copy of the PDB (at the time of the MOE release) on a separate
+disc.  The following command opens the Protein Database panel:
+</p>
+
+<blockquote>
+<span class="menu">MOE | File |
+<a href="../proteins/pdb_mdb.htm#MOEPDB">Protein Database</a></span>
+</blockquote>
+
+<p>which searches, by default, <tt>$MOE/lib/pdb.mdb</tt>.
+The structures in this database have complete sequences (i.e.
+residues with no atom information are created), and any complexed
+ligands have had bonds created.
+</p>
+
+<h4>PSILO/RCSB Download</h4>
+
+<p>Files can also be loaded directly from the Protein Data Bank with
+</p>
+
+<blockquote>
+<span class="menu">MOE | File |
+<a href="../proteins/pdb_mdb.htm#RCSBDownload">PSILO/RCSB Download</a></span>
+</blockquote>
+
+<p>Entries can be searched, and
+individual files can be loaded into MOE as well as saved locally.
+When structures are loaded into MOE, automatic recalculation
+of bonds (ignoring <tt>CONECT</tt> records) is performed.
+</p>
+
+<a name="Assessing_Data"></a>
+<h2>Assessing Protein Structure Data</h2>
+
+
+<p>Once the protein structure is loaded into MOE, the first step is to
+determine which regions of the protein structure are reliable.
+For computational methods that focus on only a small region of 
+the protein (such as docking), the structural assessment steps can usually be 
+confined to the region of interest (e.g. the binding pocket).
+However, more complex calculations such as molecular mechanics minimizations
+of the full protein or molecular dynamics simulations require 
+that the entire protein structure be assessed for quality.
+</p>
+
+<a name="Data_Quality"></a>
+<h3>Data Quality</h3>
+<p>X-ray crystallographic data can contain errors related to resolution, 
+atom mobility (thermal variations), crystal imperfections
+(resulting in data distortion) and errors introduced in the model fitting 
+stage of the structure determination. Data quality can be 
+examined using a number of indicators:
+</p>
+
+<p>
+<table cellspacing="8" border="0">
+
+<tr>
+<td valign="top"><b>Resolution</b>
+</td>
+<td valign="top">Coupled with the <i>R</i> and <i>R<sub>free</sub></i>
+values associated with the refined crystallographic model,
+the resolution is a good preliminary indicator of the quality of the data.
+2&nbsp;&Aring; or finer (smaller) may be considered high-resolution and
+suggestive of a reliable model.
+The resolution is normally included as part of a PDB file.
+(Note: NMR files do not have an associated resolution value.)
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>R</b>, <b>R<sub>free</sub></b>
+</td>
+<td valign="top">
+These two values are
+measures of how well a model agrees with the observed data,
+and are usually included in PDB files.
+
+<p>
+The <i>R</i>-factor (&quot;residual&quot;
+or &quot;reliability&quot; factor)
+measures how well a model agrees with <i>all</i> observed data, and
+is calculated to be the sum of the residuals:
+
+<!-- LATEX proprep/math_rfactor \[
+R = \frac{\sum | F_{obs} - F_{calc} |}{\sum | F_{obs} | }
+\] ENDLATEX -->
+
+<center><p>
+<img src="proprep/math_rfactor.png" alt="R-factor equation" />
+</p></center>
+
+The smaller the value, the better the agreement; an <i>R</i> value
+of 0.5 or greater indicates a poor model.
+</p>
+<p>
+The Free R-factor (<i>R<sub>free</sub></i>) measures how well
+a model agrees with data that was not used for refining the
+model.  The calculation uses
+the statistical cross-validation technique of leaving a subset
+of randomly selected data out of the training set and then
+testing the model on just this subset (called the <i>free</i>
+or <i>test</i> set).  <i>R<sub>free</sub></i> is the <i>R</i>-factor
+calculated on this set alone.
+</p>
+<p>
+For a model to be reliable,  it should have both good resolution
+and low <i>R</i> and <i>R<sub>free</sub></i>.
+For a resolution of 2.5&nbsp;&Aring;, an <i>R</i> value of 0.2<sup>1</sup>
+would indicate a refined structure that is largely correct.
+A high <i>R<sub>free</sub></i> value associated with a high-resolution
+model may be indicative of model overfitting, and the structural model should
+therefore be used with caution.
+</p>
+
+<blockquote>
+<sup>1</sup><i>IUCr Online Dictionary of Crystallography (accessed
+16-apr-2010).</i>
+</blockquote>
+
+</td>
+</tr>
+
+<tr>
+<td valign="top">
+<b>Temperature Factor</b>
+</td>
+<td valign="top">
+<div class="floatright">
+<img src="proprep/a_bfactor.png" alt="Atoms colored by temperature factor" />
+</div>
+Temperature factor or <i>B</i>-factor in principle describes atom mobility
+(thermal variation).
+Areas of atoms with high temperature factor may point to
+regions of high flexibility or refinement errors.
+Conversely, atoms with low temperature factor
+are rare; regions of very low temperature factor
+indicate either a frozen crystal or refinement problems.
+Normal <i>B</i>-factors are in the range of 20-40.
+The temperature factor can be visualized using atom coloring.
+In the MOE Window, choose
+<span class="menu">MOE | Footer | Atoms |
+<a href="../moe/gui/mainwin.htm#Color">Color</a>: B-Factor</span>.
+Red means having a high temperature factor (hot) and blue
+means low (cool).
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Compare to Electron Density</b>
+</td>
+<td valign="top">
+<div class="floatright">
+<img src="proprep/a_edensity.png" alt="Atoms overlaid by electron density" />
+</div>
+If the electron density data are
+available, a visual comparison of the model to the experimental data can
+reveal which regions are well-predicted by the model and which are not.
+Electron density data can be read in from MTZ, CCP4, or CNS files.
+MTZ files can be opened directly using
+<span class="menu">MOE | File | Open</span>, which will open the
+<a href="../apps/edsurf.htm">Electron Density Surface</a> viewing
+application.  CCP4 and CNS files are opened from
+the <a href="../apps/surfmap.htm">Surfaces and Maps</a>
+panel (<span class="menu">MOE | Compute | Surfaces and Maps</span>).
+With the molecule loaded in MOE,
+select <span class="menu">Surface: External Grid File</span>.
+Press <b>Load</b> (next to the <b>Path</b> textfield) which will
+open a file browser to select the map file.  Once the map file is
+selected, it is loaded and, by default, rendered near the atoms in the system.
+</td>
+</tr>
+</table>
+
+
+<a name="Verifying_Protein_Geometry_and_Structure"></a>
+<h3>Verifying Geometry and Structure</h3>
+
+<p>
+The quality of a protein structure with respect to known geometric 
+constraints such as bond lengths, bond angles and torsion angles 
+should also be checked. For projects such as docking and 
+structure-based drug design, this assessment can be confined 
+to regions of interest, but for advanced all-atom 
+simulations such as MD, an extensive checking of the entire structure
+is recommended.</p>
+
+<p>The Ramachandran phi-psi plot is an good baseline indicator
+of backbone geometry quality.  Large deviations in
+bond lengths, angles, and torsions from the norm may indicate
+structural problems and should be investigated.
+Errors in residue chirality 
+may flag incorrectly positioned sidechains, and hence
+unusual conformations.
+</p>
+
+<p>
+<table cellspacing="5" border="0">
+
+<tr>
+<td valign="top" width="15%"><b>Protein Geometry</b>
+</td>
+<td valign="top">
+The <a href="../apps/progeom.htm">Protein Geometry</a>
+utility provides a number of
+stereochemical measurements for inspecting the structural
+quality of a protein.  These include backbone geometry,
+Ramachandran dihedral plots, sidechain strain,
+nonbonded contact energies, and atom clashes.
+Selecting outliers in the plots (by left-clicking) results in
+the associated atoms being selected in the MOE Window.
+If <span class="menu">MOE | Selection | Synchronize</span>
+(or, equivalently,
+<span class="menu">SE | Selection | Synchronize</span>) is on,
+the associated residues will also be selected in the
+Sequence Editor.
+Care must be used in appraising outliers.  For example, in
+enzymes, the large conformational changes that take
+place in the region of the active site
+during binding may involve extreme residue conformations,
+and so unusual geometries may not be unreasonable.
+
+<p>
+Molecular mechanics <a href="../apps/emin.htm">minimization</a>
+may be used to relieve strain and clashes.
+</p>
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Residue Chirality</b>
+</td>
+<td valign="top">A thorough assessment of a protein should include
+a chirality check.  All amino acids are <i>S</i>, except for
+cysteine, which is <i>R</i>, and threonine, which has two
+chiral centers and whose most important enantiomer,
+(2<i>R</i>,3<i>S</i>),
+contains one <i>R</i> chiral center. A quick check for
+chirality can be done as follows:
+<ol>
+<li><i>Clear atom selection.</i>
+<p class="indent_novspace">
+In the MOE Window, click on the background (away from atoms).
+</p>
+</li><li><i>Open the Sequence Editor.</i>
+<p class="indent_novspace">
+<span class="menu">MOE | Window | Sequence Editor</span>
+</p>
+</li><li><i>Synchronize selection between the MOE Window and the
+Sequence Editor.</i>
+<p class="indent_novspace">
+<span class="menu">SE | Selection | Synchronize</span>
+</p>
+</li><li><span class="menu">MOE | RHS | Select | Atom Selector</span>
+    <ol class="alpha">
+    <li>In the Atom Selector panel,
+	change <b>Connectivity</b> to <b>Chiral</b>.
+    </li><li>Press <b>R</b>.
+    </li>
+    </ol>
+</li>
+</ol>
+<i>R</i>-centers will be selected in
+the MOE Window, and their associated residues will be selected
+in the Sequence Editor.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Ligand Interactions</b>
+</td>
+<td valign="top">If the ligand is available, visual inspection of
+the binding site in 3D and 2D can reveal if there are steric
+clashes between ligand and protein atoms (site wall clash)
+and whether important interaction sites are preserved.
+The <a href="../apps/prolig2d.htm">Ligand Interactions</a>
+panel <span class="nobr">(<span class="menu">MOE
+| Compute | Ligand Interactions</span>)</span> can
+be used to render the binding site as a 2D diagram.  In
+this depiction, clashes (signaled in red) and
+important interactions are easily visible.
+</td>
+</tr>
+
+</table>
+
+<div class="extra_info">
+
+<a name="Additional_Checks"></a>
+<h4>Additional Checks</h4>
+
+<p>
+SVL functions exist to perform additional checks for possible
+problems such as proline puckering, violations of residue
+planarity, and excessive strain in disulfide bonds.
+</p>
+
+<p><b>Prolines.</b>
+Proline geometry can be verified using the following function
+call, entered at the <a href="../moe/gui/svlcommands.html">SVL Command</a> line
+(CLI).
+</p>
+
+<pre>
+    svl&gt; proline_data = pro_ProlineGeometries residue_keys
+    svl&gt; masks = <a href="./fcnref/progeomf.htm#pro_CheckProlineGeometries">pro_CheckProlineGeometries</a> proline_data 
+</pre>
+
+<div class="example">
+<a name="Example_Proline_Geometry"></a>
+<h3>Example: Proline Geometry in 1CRN</h3>
+
+<p>
+1CRN is a form of the plant seed protein crambin.
+</p>
+
+<ol>
+<p><li>
+<i>Load 1CRN.</i>
+<p class="indent_novspace">
+<span class="menu">MOE | File | Open | <tt>1crn.pdb</tt></span>
+</p>
+Press <b>OK</b> in the Load PDB File panel.
+
+</li></p><p><li>
+<i>Calculate the proline geometry masks.</i>
+<br />
+At the CLI, enter the following commands (do not type <tt>svl&gt;</tt> which
+is used here to indicate the CLI):
+
+<pre>
+svl&gt; data = pro_ProlineGeometries Residues[]
+svl&gt; masks = pro_CheckProlineGeometries data
+</pre>
+
+</li></p><p><li>
+<i>Select any proline residues which are outliers.</i>
+<br />
+<pre>
+    svl&gt; rSetSelected [Residues [], masks(6)]
+</pre>
+
+In the Sequence Editor
+(<span class="menu">MOE | Window | Sequence Editor</span>), Pro36 is selected.
+With the mouse cursor on the background of the Sequence Editor, choose
+<p class="indent_novspace">
+<span class="menu">SE | Selected Residues Popup | View | Isolate &amp; View</span>
+</p>
+to show just the proline in question.  Inspection of Pro36 in
+the MOE Window will reveal that the proline ring is planar; in this
+configuration, the ring is strained.
+
+</li></p>
+</ol>
+
+</div>
+
+<p>
+<b>S-S Bonds.</b>
+The quality of disulfide bonds can be assessed by calculating their
+associated strain energies:
+</p>
+
+<pre>
+    svl&gt; ssBondData = <a href="./fcnref/progeomf.htm#pro_SSBondGeometries">pro_SSBondGeometries</a> atom_keys
+    svl&gt; ssBondEnergies = <a href="./fcnref/progeomf.htm#pro_CheckSSBondGeometries">pro_CheckSSBondGeometries</a> ssBondData 
+</pre>
+
+<p>The atoms involved in the S-S bonds can be obtained using:
+</p>
+
+<pre>
+    svl&gt; ssBondData = <a href="./fcnref/progeomf.htm#pro_SSBondGeometries">pro_SSBondGeometries</a> atom_keys
+    svl&gt; ss_atoms = cat [ssBondData(1), ssBondData(1)]
+</pre>
+
+<p>
+<b>Sidechain planarity.</b>
+Nine of the twenty standard amino acids contain a planar group in their
+sidechain.  The planarity of these groups can be assessed using:
+</p>
+
+<pre>
+    svl&gt; [planarity, mask] = <a href="./fcnref/progeomf.htm#pro_CheckPlanarity">pro_CheckPlanarity</a> residue_keys
+</pre>
+
+<p>The <tt>mask</tt> is non-zero for those residues whose
+sidechains violate a planarity threshold.
+
+</div>
+
+
+<a name="Exploring_Alternate_Data"></a>
+<h2>Exploring Alternate Data</h2>
+
+<p>When regions of crystallographic data cannot be clearly resolved, multiple
+partial models may result.
+These are presented in PDB files both as alternate locations of atoms and
+as alternate residues in the sequence (when the actual sequence at that point
+cannot be uniquely identified).
+As a rule, the main structure uses the atom coordinates and residues of the
+most commonly occurring alternatives (largest partial occupancy).
+It is sometimes useful, however, to examine alternate possibilities
+when performing detailed structural analysis.
+</p>
+
+<table cellspacing="5" border="0">
+
+<tr>
+<td valign="top"><b>Alternate Locations</b>
+</td>
+<td valign="top">Atoms that resolve to multiple locations, owing for example
+to structural flexibility or multiple conformations, have
+a fractional occupancy value (between 0 and 1) associated with each solution.
+Usually, the highest partial occupancy solution is used.
+The other locations (usually also present in a PDB file)
+can, however, be loaded for inspection using the
+<a href="../proteins/pdb_mdb.htm#OpeningPDBFiles"><b>Alternate Locations</b></a>
+option in the Load PDB File panel.
+These alternate atoms are located in the same residue as the
+main structure atoms and are inert.
+
+</td>
+</tr>
+
+<tr>
+<td valign="top"><a name="Sequence_Variants"><b>Sequence Variants</b></a>
+</td>
+<td valign="top">Where the actual identities of amino acid residues
+cannot be resolved, alternative possibilities may exist.
+When loaded into MOE, these are collated into a separate chain.
+If inspection reveals that an alternative residue type is preferred,
+the current protein sequence can be mutated.
+If atom coordinates are available, the alternate atoms can be
+bonded into the main structure, otherwise the residue must be mutated.
+Depending on the nature of the task,
+it may be sufficient to use the simple
+<span class="menu">SE | Edit | Protein |
+<a href="../apps/rotamer.htm">Mutate</a></span> command
+(possibly followed by a brief
+<a href="../apps/emin.htm">minimization</a> to relieve any clashes).
+For a more sophisticated placement methodology, the
+<span class="menu">SE | Edit |
+<a href="../apps/rotamer.htm">Rotamer Explorer</a></span>
+can be used.  This utility
+allows for manual examination of the different sidechain
+atom conformations.
+
+</td>
+</tr>
+
+</table>
+
+<a name="Replacing_Missing_Data"></a>
+<h2>Replacing Missing Data</h2>
+
+<p>Missing data is not uncommon in PDB files. Missing data can range from 
+a few missing atoms to entire sections of protein structure with no 
+atomic data, corresponding to either regions where atoms could not be resolved, 
+regions with high flexibility, or regions invisible to
+X-ray diffraction techniques. In addition, places where the crystallographic 
+model has placed
+atoms too far apart (e.g. due to erroneously associating non-corresponding
+alternate locations) can result in unbonded atoms. 
+</p>
+
+<p>
+Depending on the location of the missing structural information, it may not
+need correction.
+For example, missing atoms distant from the binding site might not require repair
+for a docking simulation. Any reconstruction can be confined to the 
+region of interest such as the binding pocket. However, if the protein structure is 
+intended for a full MM minimization or an MD simulation, all of the missing 
+regions should be considered and possibly repaired.  
+</p>
+
+
+<p>The <a href="../proteins/promodel.htm">Homology Model</a> application
+can be used to fill in missing residue atoms and loops by creating a <i>self-homology
+model</i>, in which the original sequence is used as the template.
+For exploration of sidechain geometry or for residue mutation, the
+<a href="../apps/rotamer.htm">Rotamer Explorer</a> can be
+used.  Simple mutations can also be achieved using
+the <a href="../apps/rotamer.htm">Mutate</a> prompt
+(<span class="menu">SE | Edit | Protein | Mutate</span>).
+</p>
+
+<p>
+The first step in exploring and repairing missing protein data is to locate regions with missing, 
+incomplete or non-standard data. These regions can be located using the Sequence Editor and the  
+<a href="../moe/gui/select.htm#ResidueSelector">Residue Selector</a>
+(<span class="menu">SE | Selection | Residue Selector)</span> application.
+</p>
+
+
+<p>
+<table cellspacing="5" border="0">
+
+
+<tr>
+<td valign="top"><b>Chain Breaks in the Sequence Editor</b>
+</td>
+<td valign="top">
+<div class="floatright">
+<img src="proprep/SE_1GIH.png" alt="Sequence Editor showing chain breaks" />
+</div>
+
+In the 3-letter residue display mode in the Sequence Editor
+(i.e. when <span class="menu">SE | Display | Single Letter Residues</span> is
+disabled), chain breaks are indicated by an absence of 
+a bond line between adjacent residues.
+Examination of the residues selected by the Residue Selector will reveal 
+which, if any, of the residues are implicated in chain breaks.
+</tr>
+
+
+<tr>
+<td valign="top"><b>Backbone Integrity</b>
+</td>
+<td valign="top">
+<div class="floatright">
+<img src="proprep/residue_selector_missing.png" alt="Residue Selector" />
+</div>
+Chain breaks, empty residues, residues with missing atoms and 
+residues with non-standard atom names can be identified using the Residue
+Selector (<span class="menu">SE | Selection | Residue Selector</span>).
+In the Residue Selector, under <span class="menu">More: Amino Acid Atom Data</span>,
+the buttons <b>Incomplete Backbone</b> and <b>No Atoms</b>
+will select those residues with missing backbone atoms and no atoms,
+respectively (note that these sets do not overlap). The 
+<span class="menu">Missing Atoms</span> and <span class="menu">Nonstandard Atom Names</span> 
+buttons will select residues with <i>any</i> missing atoms and incorrect backbone atom names
+respectively
+</p>
+
+
+<p>
+The protein backbone atoms should be made correct in the following ways:
+</p>
+    <ul>
+    <li>All backbone atoms must be present.  
+    </li><li>Atoms must be correctly named (<tt>N</tt>, <tt>CA</tt>,
+	<tt>C</tt>, <tt>O</tt>).  Although not generally an issue anymore for
+	data arising from the PDB (names are typically
+	well-standardized in submissions from recent years),
+	it may be an issue for
+	in-house structures for which standard naming practice
+	may not have been rigorously enforced.
+    </li>
+    </ul>
+
+<p><a name="Missing_Backbone_Atoms"><b>Backbone Atoms.</b></a>
+Missing backbone atoms and entire loops can be reconstructed
+by building a <i>self-homology model</i> 
+using the <a href="../proteins/promodel.htm">Homology Model</a>
+application.  In this type
+of model, the protein serves as its own template.
+Note that the resulting model will be complete - <i>all</i> of the
+missing atoms (mainchain and sidechain) will be reconstructed.
+
+<div class="example">
+<a name="Example_Missing_Backbone_Atoms_in_1HNV"></a>
+<h3>Example: Missing Backbone Atoms in 1HNV</h3>
+
+<p>1HNV is the structure of the human immunodeficiency virus 1 (HIV-1)
+reverse transcripterase, engineered and expressed in <i>Escherichia coli</i>.
+The PDB file contains two residues in which backbone atoms are missing.
+</p>
+
+</p>
+    <ol>
+    <p><li><i>Load 1HNV into MOE.</i>
+    <p class="indent_novspace">
+    <span class="menu">MOE | File | Open | <tt>$MOE/sample/mol/1hnv.pdb</tt></span>
+    </p>
+
+    </li></p><p><li>
+    <i>Open the Sequence Editor.</i>
+    <p class="indent_novspace">
+    <span class="menu">MOE | Window | Sequence Editor</span>
+    </p>
+    or
+    <p class="indent_novspace">
+    <span class="menu">MOE | SEQ</span> (upper right corner
+    </p>
+
+    </li></p><p><li>
+    <i>Identify which residues are missing backbone atoms.</i>
+    <p class="indent_novspace">
+    <span class="menu">SE | Selection | Residue Selector</span>
+    </p>
+    <p class="indent_novspace">
+    <span class="menu">More: Amino Acid Atom Data</span>
+    </p>
+    Press <b>Incomplete Backbone</b>.  Pro1 and Tyr are selected.
+
+    <p>For the purposes of clarity, we will delete the other
+    chains in the system.
+    Select Chain 1, which contains the two residues with missing
+    backbone atoms.  Right click on <b>Chain</b> and choose
+    <p class="indent_novspace">
+    <span class="menu">SE | Chain Header Popup | Invert Selection</span>
+    </p>
+    <p class="indent_novspace">
+    <span class="menu">SE | Chain Header Popup | Delete Selected Chains</span>
+    </p>
+
+    </li></p><p><li>
+    <i>Open the Homology Model panel.</i>
+	<p class="indent_novspace">
+	<span class="menu">SE | Homology | Homology Model</span>
+	</p>
+
+    </li></p><p><li>
+	<i>Create the model sequence (sequence-only).</i>
+	<br />
+	Clear the residue selection (left click on the Sequence Editor
+	background).  Select Chain 1.
+
+	<p class="indent_novspace">
+	<span class="menu">SE | Edit | Copy SEQ | FastA (.fst)</span>
+	</p>
+	<p class="indent_novspace">
+	<span class="menu">SE | Edit | Paste</span>
+	</p>
+
+	Chain 2, a sequence-only copy of Chain 1, is created.
+
+    </li></p><p><li>
+	<i>Set the homology modeling parameters.</i>
+	<br />
+	In the <b>Models &amp; Templates</b> area of the Homology Model panel,
+	the following will be set by default:
+	<p class="indent_novspace">
+	<span class="menu">Sequence: Chain 2</span>
+	</p>
+	<p class="indent_novspace">
+	<span class="menu">Template: Chain 1</span>
+	</p>
+	Pro1, at the start of the chain, will be treated as an outgap.
+	To model it, outgap modeling must be enabled.
+	<p class="indent_novspace">
+	<span class="menu">Disable C-terminal &amp; N-terminal Outgap
+	    Modeling: off</span>
+	</p>
+	Turn off refinement to preserve the existing structure.
+	<p class="indent_novspace">
+	<span class="menu">Intermediates: None</span>
+	</p>
+	<p class="indent_novspace">
+	<span class="menu">Final Model: None</span>
+	</span>
+	</p>
+	Select a forcefield parameterized for proteins by pressing the
+	<b>Potential Setup</b> button.  In the Potential Setup
+	panel, use the <b>Load</b> button to select <b>AMBER99</b>.
+	Changes take effect immediately.  Press <b>Close</b>.
+	The forcefield is used for model scoring.
+
+    </li></p><p><li>
+	<i>Perform homology modeling.</i>
+	<br />
+	Press <b>OK</b>.  When the operation
+	is complete, the top-ranked model will be loaded into MOE.
+	This is an all-atom model that includes hydrogens.
+	The original system was
+	stored by default in the file <tt>promodel.moe</tt>.
+
+    </li></p><p><li>
+	<i>Compare the final model to the original system.</i>
+	<br />
+	<p class="indent_novspace">
+	<span class="menu">MOE | File | Open | <tt>promodel.moe</tt></span>.
+	</p>
+	Turn on selection synchronization.
+	<p class="indent_novspace">
+	<span class="menu">SE | Selection | Synchronize</span>
+	</p>
+	Use the Residue Selector to once more identify the residues
+	with missing backbone atoms.  With selection synchronization on,
+	the atoms of the original structure are selected (and so
+	can be identified). Isolate the atoms of the
+	residues in the original and modeled structures with the
+	following command in the Sequence Editor ruler:
+	<p class="indent_novspace">
+	<span class="menu">SE | Residue Column Popup |
+	View | Isolate &amp; View</span>
+	</p>
+	In this way, the original residues
+	and the reconstituted residues can be viewed together in the
+	MOE Window.
+	
+    </li></p><p><li><i>Minimize the restored residues.</i>
+	<br />
+	This step is usually unnecessary as
+	the homology modeler uses the rotamer library for intelligent
+	placement of residue sidechains.  However, if local
+	geometry is difficult,
+	there may be excess strain in the area of the restored atoms
+	as no refinement was performed during homology modeling.
+
+	<p>
+	<ol class="alpha">
+	<li><i>If not already on, turn on selection synchronization</i>
+	<br />
+	<p class="indent_novspace">
+	<span class="menu">SE | Selection | Synchronize</span>
+	</p>
+	</li><li>
+	Select the residues which were reconstituted.  The corresponding
+	atoms will be selected in the MOE Window.  If desired, the atom
+	selection can be extended slightly on either side:
+	<p class="indent_novspace">
+	<span class="menu">MOE | Extend | Bonded To</span>
+	</p>
+	To extend by a whole residue, choose
+	<p class="indent_novspace">
+	<span class="menu">MOE | Extend | Residue</span>
+	</p>
+
+	</li><li><i>Open the Energy Minimize panel.</i>
+	<p class="indent_novspace">
+	<span class="menu">MOE | Compute |
+	    <a href="../apps/emin.htm">Energy Minimize</a></span>
+	</p>
+	</li><li>
+	In the Energy Minimize panel, turn on <b>Selected Atoms Only</b>
+	and <b>Chiral Constraints</b>.
+	Press <b>OK</b>.
+	</li>
+	</ol>
+	</p>
+    </li></p>
+    </ol>
+
+</div>
+
+<p><b>Atom Names.</b>
+Incorrect atom names can be corrected using one of:
+</p>
+
+<ul>
+<li>MOE <a href="../moe/gui/mainwin.htm#FooterEditing">Footer</a>
+editing area.  When a single atom is selected, the footer area
+displays a text field for editing the atom name.
+</li>
+<li><a href="../moe/gui/atommgr.html">Atom Manager</a>.
+<p class="indent_novspace">
+<span class="menu">MOE | Window | Atom Manager</a></span>
+</p>
+Select an
+atom from the list, modify its name in the panel footer, then
+press <b>Apply</b>.
+</li>
+</ul>
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Missing Sidechain Atoms</b>
+</td>
+<td valign="top">
+Missing sidechain atoms can be detected using the Residue
+Selector (<span class="menu">SE | Selection | Residue Selector</span>).
+Under <span class="menu">More: Amino Acid Atom Data</span>,
+the button <b>Missing Atoms</b> will select those residues with
+missing atoms.
+
+<p>
+Missing sidechain atoms can be reconstructed using either the
+<a href="../apps/rotamer.htm">Rotamer Explorer</a> or
+the <a href="../proteins/promodel.htm">Homology Model</a> application.
+When there are many residues with missing atoms, homology
+modeling is the method of choice.
+The use of Homology Model is the same as described above for
+<a href="#Missing_Backbone_Atoms">restoring missing backbone atoms</a>.
+When only a few residues are affected, the Rotamer Explorer,
+which operates on a single residue at a time,
+may preferable as it gives control over which rotamer
+to use &ndash;  
+rotamers can be individually inspected before making a choice.
+</p>
+
+<!--
+With the Sequence Editor open (<span class="menu">MOE | Window | Sequence Editor</span>),
+</p>
+
+<p>
+<ol>
+    <li>
+    <i>Open the Rotamer Explorer</i>.
+    <p class="indent_novspace">
+    <span class="menu">SE | Edit | Rotamer Explorer</span>
+    </p>
+
+    </li><li>
+    Select a residue with missing sidechain atoms.  In the panel, press
+    <b>Get from SE</b>.  The rotamers of that residue are calculated and
+    are listed in the panel.
+
+    </li><li>
+    <i>Isolate the atoms for better visualization.</i>
+    <p class="indent_novspace">
+    <span class="menu">Rotamer Explorer | Isolate: Atoms</span>
+    </p>
+    </li><li>
+    Selecting different entries in the rotamer list displays the
+    corresponding rotamer in the MOE Window.  Once the desired
+    rotamer is identified, press <b>Mutate</b> in the panel to
+    permanently modify the selected residue.
+    </li>
+</ol>
+</p>
+-->
+
+<div class="example">
+<a name="Example_Missing_Sidechain_Atoms_in_2ITY"></a>
+<h3>Example: Missing Sidechain Atoms in 2ITY</h3>
+
+<p>
+2ITY is the crystal structure of epidermal growth factor
+receptor (EGFR) kinase domain in complex with Iressa,
+a quinazoline-based inhibitor in trials as an anti-cancer therapeutic.
+The PDB file contains two residues that are missing sidechain atoms.
+Note that these residues are fairly far from the binding site,
+and normally might not warrant reconstruction.
+</p>
+
+<ol>
+    <p><li>
+    <i>Load 2ITY into MOE.</i>
+    <br />
+    <p class="indent_novspace">
+    <span class="menu">MOE | File | Open |
+	<tt>$MOE/sample/mol/2ity.pdb</tt></span>
+    </p>
+
+    </li></p><p><li>
+    <i>Open the Sequence Editor.</i>
+    <p class="indent_novspace">
+    <span class="menu">MOE | Window | Sequence Editor</span>
+    </p>
+
+    </li></p><p><li>
+    <i>Identify the residues with missing sidechain atoms.</i>
+    <br />
+    <p class="indent_novspace">
+    <span class="menu">SE | Selection | Residue Selector</span>
+    </p>
+    <p class="indent_novspace">
+    <span class="menu">More: Amino Acid Atom Data</span>
+    </p>
+    Press <b>Missing Atoms</b>.  Lys860 and His988 are selected.
+    The Rotamer Explorer operates on a single residue at a time.
+    Click on Lys860 to select just that residue.
+
+    </li></p><p><li>
+    <i>Open the Rotamer Explorer</i>.
+    <p class="indent_novspace">
+    <span class="menu">SE | Edit | Rotamer Explorer</span>
+    </p>
+    Note that to use the Rotamer Explorer, backbone
+    atoms are needed.  In the panel, press
+    <b>Get from SE</b> to calculate the rotamers of Lys860.
+
+    </li></p><p><li>
+    <i>Improve visualization.</i>
+    <br />
+    Right click on the Sequence Editor background and choose
+    <p class="indent_novspace">
+    <span class="menu">SE | Selected Residues Popup | View |
+	Isolate &amp; View</span>
+    </p>
+    <p class="indent_novspace">
+    <span class="menu">SE | Selected Residues Popup | Atoms |
+	Color: Chain</span>
+    </p>
+    The atoms of Lys860 are isolated in the MOE Window and are
+    colored the same color as that of the chain number in the
+    Sequence Editor.
+
+    <p>In the Rotamer Explorer, turn on
+    <span class="menu">Isolate: Show Current</span>.  This
+    will display the rotamer currently selected in the panel list.
+    </p>
+    
+    </li></p><p><li>
+    <i>Inspect different rotamers.</i>
+    <br />
+    Selecting different entries in the rotamer list
+    results in the different rotamers being displayed in the MOE Window.
+    
+Once the desired rotamer is found, press
+<b>Mutate</b> to permanently modify the residue atoms.
+</ol>
+
+</td>
+</tr>
+</table>
+
+
+<a name="Other_Considerations"></a>
+<h2>Other Considerations</h2>
+
+<p>
+<table cellspacing="5" border="0">
+
+<tr>
+<td valign="top">
+<a name="Binding_Site"></a>
+<b>Binding Site Location</b>
+</td>
+<td valign="top">
+Following the preparation of the protein structure,
+it is often useful or necessary to identify and define the binding pocket
+region. If there is a ligand present, this can be done using the 
+<b>Site View</b> on the right-hand button bar to isolate the active site.
+If there no ligand present or if alternate binding sites are sought, the
+<span class="nobr"><a href="../apps/sitefind.htm">Site Finder</a></span>
+application, which uses a geometric method for locating possible active 
+sites, can be used. Binding pockets located by the <b>Site Finder</b>
+can be specified by:
+</p>
+
+<ul>
+<li>The site points (&quot;dummy&quot; atoms) created by Site Finder; or</li>
+<li>The atoms or residues of the pocket
+(<span class="menu">MOE | Popup | Select | Pocket</span>); or</li>
+<li>The atoms (or proximity thereto) of a co-crystallized
+ligand and any other small
+molecules present in the site, if available.</li>
+</ul>
+
+
+<a href="../moe/gui/select.htm#NamedSets">Named sets</a> can be used to 
+facilitate the marking of atoms / residues / site point dummies atoms in 
+multiple active sites.
+
+<p>
+Further analysis of the pocket can be performed using, for example,
+the <a href="../apps/surfmap.htm">Surfaces and Maps</a>
+application, which can depict the binding site using
+a variety of graphical surfaces with various coloring schemes.
+Of particular interest is the
+<a href="../apps/surfmap.htm#ContactPreferences">Non-bonded
+Contact Preferences</a> map, which calculates preferred locations
+of hydrophobic and hydrophilic ligand atoms.
+If the ligand is available, the
+<a href="../apps/prolig2d.htm">Ligand Interactions</a> diagram can
+be examined to identify regions in the pocket that are important
+for binding.
+</p>
+
+</td>
+
+
+
+<tr>
+<td valign="top"><a name="Bound_Waters"></a>
+<b>Dealing with Bound Waters</b>
+</td>
+<td valign="top">
+In PDB files, waters are usually collected into their
+own separate chain.
+Depending on the kind of protein analysis to be performed, waters may or
+may not be omitted from subsequent calculations.
+For example, in docking, it may be
+acceptable to preserve only those waters bound
+in the binding site, and for homology modeling,
+the waters may be eliminated entirely.  Molecular dynamics,
+however, may require full solvation.  Note that since
+bound waters may be difficult to identify computationally,
+visual inspection is usually recommended to assist with the
+water deletion process.
+
+<p>
+The 
+<span class="menu">LigX </span> panel can be used to 
+identify and delete unbound waters based on proximity to the 
+receptor or ligand atoms.
+</p>
+</td>
+</tr>
+
+<tr>
+<td valign="top">
+<a name="Correcting_Ligand"></a>
+<b>Inspecting and Correcting Ligand Structures</b>
+</td>
+<td valign="top">
+Depending on the operation to be performed, the ligand may
+be preserved or not.  For example, homology models both with
+and without the ligand may be desired.
+The ligand should be inspected and corrections made for
+incorrect bonding patterns, protonation states and tautomers:
+
+<ol>
+<p><li>
+<i>Visualize the ligand.</i>
+<br />
+In 3D, the ligand can be isolated in the MOE Window using
+
+<p class="indent_novspace">
+<span class="menu">MOE | Popup | Hide | All</span>
+</p>
+<p class="indent_novspace">
+<span class="menu">MOE | Popup | Show | Ligand</span>
+</p>
+
+The ligand's chemical composition is easily verified from a 2D depiction:
+<p class="indent_novspace">
+<span class="menu">MOE | Compute |
+<a href="../apps/view2d.htm">2D&nbsp;Molecules</a></span>
+</p>
+
+
+</li></p><p><li>
+<i>Correct Errors.</i>
+<br />
+Errors in molecular structure can be done using the Builder
+<p class="indent_novspace">
+<span class="menu">MOE | RHS | Builder</span>
+</p>
+which can be used to make manual corrections to ionization state,
+chirality, tautomeric state, atom name, and bond order.
+
+</li></p><p><li>
+<i>Adjust protonation and tautomeric state.</i>
+<br />
+When the protomeric/tautomeric state is of importance,
+<p class="indent_novspace">
+<span class="menu">MOE | Compute | Protomers</span>
+</p>
+can be used to select the appropriate state.
+
+</li></p><p><li>
+<i>Refine the structure.</i>
+<br />
+The ligand can be minimized on its own by selecting its atoms
+<p class="indent_novspace">
+<span class="menu">MOE | Popup | Select | Ligand</span>
+</p>
+and then in the Energy Minimize panel
+choosing <span class="menu">Selected Atoms Only</span> before
+running the calculation.
+<p class="indent_novspace">
+<span class="menu">MOE | Compute | Energy Minimize</span>
+</p>
+
+For minimizing the ligand, a forcefield
+appropriate to small molecules, e.g. MMFF94x, should be
+used.  This can be specified using the
+<a href="../moe/pot.htm">Potential Setup</a> panel, which can opened with
+<p class="indent_novspace">
+<span class="menu">MOE | Footer | <i>Forcefield</i></span>
+</p>
+The forcefield must be set prior to minimization.
+
+
+</li></p><p><li>
+<i>Tether atoms.</i>
+<br />
+During refinement, it may be desirable to restrain certain atoms
+positionally (e.g. to keep them in contact with the binding
+site at important locations) or stereochemically.
+Atom tethers must be set prior to initiating the refinement calculation.
+</li></p>
+</ol>
+</td>
+</tr>
+</table>
+</p>
+
+
+
+<a name="Adding_Hydrogens_to_the_Structure"></a>
+<h2>Adding Hydrogens to the Structure</h2>
+<div class="floatright">
+<img src="proprep/histidine.png" alt="Histidine residues" />
+</div>
+Another issue with X-ray crystallographic structures is the
+lack of information about hydrogens.  The number and placement of
+hydrogens must be inferred from local chemistry.  The general
+problem is addressed by the
+<a href="../apps/protonate3d.htm">Protonate&nbsp;3D</a>
+application, which is a sophisticated tool for assigning
+macromolecular protonation and ionization states and
+for positioning hydrogens.
+<p>Open the application using:</p>
+<p class="indent_novspace">
+<span class="menu">MOE | Compute | Protonate 3D</span>
+</p>
+<p>Press <b>OK</b> to run the application with the defaults.
+</p>
+
+<p>
+Within the binding site, the ionization and protonation
+states of particular residues may require manual attention.
+For example, histidine residues can take on a number of
+protonation states.  This ability makes it possible for
+HIS residues present in a
+binding site to play different roles in the different stages of
+a catalytic reaction.
+However, the location of the hydrogen is invisible to
+X-ray crystallography and must be inferred, for example
+from the surrounding hydrogen-bonding environment.
+Aspartate and Lysine residues
+can also assume non-conventional protonation states.
+</p>
+
+
+
+<a name="Energy_Minimization"></a>
+<h2>Energy Minimization</h2>
+
+<a name="Protonation_and_Partial_Charge"></a>
+<h3>Setting Protonation States and Partial Charges</h3>
+<p>Once the backbone and sidechains are complete and any errors 
+in the ligand and cofactor structures have been corrected, a 
+typical protein preparation workflow includes
+<a href="../apps/protonate3d.htm">addition of hydrogens</a>
+and calculation of
+<a href="../moe/pot.htm#Charges">partial charges</a> followed by
+tethered energy minimization (molecular mechanics refinement)
+to relieve bad crystallographic contacts or other bad geometries.
+The actual steps depend on the type of study being done, and may vary.
+Indeed, many computational procedures involve energy minimization or
+require that the geometry already have been optimized.  For example,
+docking simulations typically feature a minimization stage in which
+the docked ligand and binding site are relaxed together.  Molecular dynamics
+requires structural strain to have already been relieved, so the input 
+structures for MD runs should be well-minimized.
+</p>
+
+<p>To perform molecular mechanics refinement to
+relieve strain, the protein must first have
+hydrogens added and partial charges assigned. 
+These operations can be done through the
+<a href="../apps/emin.htm">Energy Minimize</a> application
+(<span class="menu">MOE | Compute | Energy Minimize</span>)
+by choosing the
+<span class="menu">Adjust H and LP</span> and
+<span class="menu">Calculated Forcefield Partial Charges</span> options.
+</p>
+
+<p>However, a more sophisticated
+algorithm for calculating protonation state and hydrogen placement,
+designed especially for macromolecular systems, is provided by
+</p>
+
+<blockquote>
+<span class="menu">MOE | Compute |
+<a href="../apps/protonate3d.htm">Protonate 3D</a></span>
+</blockquote>
+
+<p>This is the method of choice for proteins, as the 
+<b>Protonate3D</b> application automatically optimizes the hydrogen 
+orientations so as to maximize H-bond networks and minimize the 
+overall self-energy. This typically results in a structure where the 
+hydrogen atoms undergo little displacement upon minimization.</p>
+
+<p>
+The <b>Protonate3D</b> application applies the partial charge model of 
+the currently loaded forcefield. However, if a different partial charge 
+method is desired, the</p>
+
+<blockquote>
+<span class="menu">MOE | Compute |
+<a href="../moe/pot.htm#Charges">Partial Charges</a></span>
+</blockquote>
+
+<p>
+application allows for explicitly selecting the method
+used to calculate the charges.
+</p>
+
+<p>Protonation state and partial charges, if calculated separately,
+must be calculated prior to forcefield minimization.
+</p>
+
+<a name="Fixing_and_Tethers"></a>
+<h3>Fixing Atoms and Setting Tethers</h3>
+
+<p>During minimization, fixing prevents atoms from moving entirely,
+<i>tethering</i> prevents atoms from deviating too far from their
+initial positions, and restraints enforce geometric constraints such
+as distances, bond angles and torsion angles.</p>
+
+<p>To <i>fix</i> atoms, simply select the atoms to fix and use the command 
+<span class="menu">MOE | Edit | Potential | Fix</span>. Note that fixed atoms
+will not move unless unfixed. To unfix atoms, use the command 
+<span class="menu">MOE | Selection | Potential | Fixed</span> to select the 
+fixed atoms and then use the command 
+<span class="menu">MOE | Edit | Potential | Unix</span> to unfix
+the selected atoms.</p>
+
+<p>Atom <i>tethers</i> can be enforced for just the refinement calculation 
+by turning on the <b>Tether Atoms</b>
+option in the <a href="../apps/emin.htm">Energy Minimize</a> panel.
+Alternatively, the <span class="menu">LigX </span> panel 
+can be used to set tethers of different strengths on the receptor, ligand
+and solvent atoms.</p>
+
+<p>
+<a name="Restraints"></a>
+<h3>Creating and Editing Restraints</h3>
+
+<p>Distance, bond angle and torsion angle <i>restraints</i> are used to 
+enforce desired distance, angle and torsion values. Individual restraints 
+can be set using the <span class="menu">MOE | Edit |
+<a href="../moe/gui/mainwin.htm#EditPotential">Restrain</a></span> 
+prompt and edited using the
+<a href="../moe/pot.htm#Restraints"><b>Restraints</b></a> page of
+the Potential Setup panel. For molecular mechanics refinement, 
+it may be desirable to apply restraints on certain atoms.  This can be done
+in several ways:
+</p>
+
+<p>
+<ul>
+<p><li>
+Chiral constraints can be set on the currently
+<a href="../moe/gui/mainwin.htm#Selecting">selected atoms</a>
+using:
+    <p>
+    <ul>
+    <li>
+
+    <div style="float:left; vertical-align: text-top; padding: 0 5px 10px 0;">
+    <img src="proprep/builder_stereo_buttons.png"
+    alt="Builder Stereochemistry Buttons" />
+    </div>
+    The <b>Stereochemistry</b>
+    buttons of the <a href="../moe/molsystems/build.html">Builder</a>.
+
+    <br clear="both" />
+
+    </li><li>
+    <div style="float:left; vertical-align: text-top; padding: 0 5px 10px 0;">
+    <img src="proprep/edit_chirality_menu.png" alt="MOE | Edit | Chirality" />
+    </div>
+
+    The <span class="menu">MOE | Edit |
+    <a href="../moe/gui/mainwin.htm#Chirality">Chirality</a></span> menu.
+
+    <br clear="both" />
+    </li>
+    </ul>
+    </p>
+
+</li></p><p><li>
+Relative atom positions can be restrained using
+
+    <p>
+    <ul>
+    <li>The <span class="menu">MOE | Edit | Potential |
+    <a href="../moe/pot.htm#Restraints">Restrain</a></span> prompt, which
+    can set restraints on the distance between two atoms, the angle
+    as defined by three atoms, or the dihedral angle as specified
+    by four atoms (press
+    <tt>&lt;Esc&gt;</tt> to Cancel).
+
+    <p>
+    <div style="text-align:center;">
+    <img src="proprep/restraint_prompt.png" alt="Restraint Prompt" />
+    </div>
+
+    <br clear="both" />
+    </p>
+
+    </li>
+    </ul>
+    </p>
+
+<p>
+Once created, the restraints can be edited
+from the <b>Restraints</b> page of the
+<a href="../moe/pot.htm#Restraints">Potential Setup</a> panel.
+</p>
+
+</li></p><p><li>
+<a href="../moe/pot.htm#Wall">Wall restraints</a> restrict
+atoms to a particular region in space.
+The <span class="menu">MOE | Edit | <a href="../moe/pot.htm#Wall">Wall</a></span>
+command marks the selected atoms as "walled"; these atoms
+will be restrained if Wall restraints are enabled in the system.
+<b>Note:</b> Wall restraints
+must be explicitly enabled from the <b>Wall</b> page of the
+<a href="../moe/pot.htm#Wall">Potential Setup</a> panel.
+The specification of the walled region is also made on this page.
+</li></p>
+
+</ul>
+</p>
+
+<br clear="both" />
+
+<a name="Energy_Refinement"></a>
+<h3>Energy Refinement</h3>
+<p>Molecular mechanics refinement of proteins and protein-ligand complexes
+should be conducted under a molecular mechanics 
+forcefield parameterized for proteins, such as AMBER or CHARMM.
+The <span class="menu">MOE | Footer | <i>Forcefield</i></span>
+opens the <a href="../moe/pot.htm">Potential Setup</a> panel, which
+is used to select the forcefield and solvation model.
+If the system is explicitly solvated, the
+<b>Solvation</b> model in the Potential Setup panel should be set to
+<b>R-Field</b> (Reaction Field).
+</p>
+<p>To run the minimization, use either the <b>Minimize</b> button in 
+the right-hand button bar, or use the <b>Energy Minimize</b> panel with the 
+<span class="menu">MOE | Compute | Minimize</span> command.
+
+
+
+
+<a name="Using_LigX"></a>
+<h2>Using LigX Panel for Protein Preparation</h2>
+
+<p>
+The <a href="../apps/ligx.htm">LigX</a> panel in MOE provides
+an automated process for the protonation, tethering and 
+minimization stages of protein preparation.
+Once the missing atoms of the protein have been modeled and 
+the ligand/co-factor bonding patterns have been checked and corrected
+(see previous sections), the <b>LigX</b> panel allows the user perform the 
+remaining preparation steps in a semi-automated fashion. 
+The <b>LigX</b> panel can be configured to 
+perform protein preparation operations in the following order:
+</p>
+
+<ol>
+<li>Protonate the structure with <b>Protonate 3D.</b>
+</li><li>Delete "unbound" water molecules.
+</li><li>Set tethers of different strengths on the receptor, ligand 
+and solvent atoms.
+</li><li>Fix atoms beyond a cut-off distance from the active site.
+</li><li>Minimize the structure to a specified gradient.
+</ol>
+
+<p>The panel is opened using the <b>LigX</b> command in the right-hand 
+button bar. The LigX panel is shown below:
+<p>
+<center>
+<img src="proprep/ligx_panel.png">
+</center>
+</p>
+<p>
+</p>
+<p>To perform the preparation operations, press <b>OK</b> in the 
+<b>LigX</b> panel.
+
+
+<a name="Saving_the_Prepared_Data"></a>
+<h2>Saving the Prepared Data</h2>
+
+<p>
+Molecular data that has been prepared should be saved prior to any further 
+work. This is recommended to allow a good initial starting point to be 
+used subsequently without having to repeat the preparation steps.
+
+The <b>MOE | File | Save</b> command allows the current system to be saved in 
+a number of data formats. However, the MOE (.moe) format is recommended if 
+the prepared system contains graphical objects, fixed atoms, 
+tethers and/or restraints, as these properties can be saved into the 
+MOE file format.
+
+
+<a name="Conclusions"></a>
+<h2>Conclusion</h2>
+The above sections describe procedures and considerations
+for preparing a protein (or any large macromolecule) 
+for subsequent computational analysis. The product of this procedure 
+is a fully-prepared structure, where important missing atomic data has 
+been modeled, hydrogens have been added, tethers and restraints have been
+applied to the relevant atoms, and a forcefield minimization has been performed.
+This structure is now ready to use as input in docking, MD and other 
+atomistic simulations.
+
+
+<a name="See_Also"></a>
+<h2>See Also</h2>
+
+    <ul class="nobullet_novspace">
+    <li><a href="../mdb/dbio.html">Import and Export Data</a>
+    </li><li><a href="../apps/ligx.htm#Prepare">LigX:
+	Prepare a Molecular System</a><br />
+    </li>
+    </ul>
+<br />
+
+Validating Molecular Structure
+    <ul class="nobullet_novspace">
+    <li><a href="../apps/progeom.htm">
+	Protein Geometry: Assess Stereochemical Quality</a>
+    </li><li><a href="../apps/prolig2d.htm">
+	Ligand Interactions: Site Wall Clash</a>
+    </li><li><a href="../moe/moeweb_intro.htm#SFCHECK">
+	SFCHECK (MOE/web application)</a>
+    </li>
+    </ul>
+<br />
+
+Cleaning the Data
+    <ul class="nobullet_novspace">
+    </li><li><a href="../apps/protoview.htm">Protomer and Tautomer Viewer</a>
+    </li><li><a href="../apps/protonate3d.htm">
+	Protonate&nbsp;3D: Macromolecular Protonation</a>
+    </li>
+    </ul>
+<br />
+
+Refining 3D Structures
+    <ul class="nobullet_novspace">
+    <li><a href="../moe/pot.htm#Charge">Partial Charges</a>
+    </li><li><a href="../apps/emin.htm#DBMin">Database Minimize:
+	Refine 3D Structures</a>
+    </li><li><a href="../apps/emin.htm">Energy Minimize</a>
+    </li>
+    </ul>
+
+<p>
+<a href="http://www.chemcomp.com/psilo-info.htm">PSILO: A Repository for
+Protein-Ligand Structural Information</a>
+</p>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

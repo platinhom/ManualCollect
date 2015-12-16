@@ -1,0 +1,732 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<link rel="stylesheet" href="../support/help.css" charset="ISO-8859-1" type="text/css" />
+<title>Covalent Docking Panel</title>
+</head>
+<body>
+<table bgcolor="#dcdcdc" border="0" cellspacing="0" width="100%">
+<tr><td>
+<p><img src="../images/common/schrodinger_logo.png" align="left" alt=""
+ border="0" hspace="5" vspace="5" /></p>
+</td></tr>
+<tr><td>
+<h1 class="title">Covalent Docking Panel</h1>
+</td></tr>
+</table>
+
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#opening">Opening the <span class="GUI">Covalent Docking</span> Panel</a></li>
+<li><a href="#using">Using the <span class="GUI">Covalent Docking</span> Panel</a></li>
+<li><a href="#features"><span class="GUI">Covalent Docking</span> Panel Features</a></li>
+<li><a href="#links">Related Topics</a></li>
+</ul>
+
+<a name="summary"></a>
+<h2>Summary</h2>
+
+<p>Dock a set of ligands to a receptor, in which the ligands form a covalent
+bond to a receptor residue or site by a specified type of reaction (such as a
+Michael addition). The ligands must all contain the reactive group, which is
+specified by a SMARTS pattern.
+</p>
+
+<a name="opening"></a>
+<h2>Opening the Covalent Docking Panel</h2>
+
+<p>To open the <span class="GUI">Covalent Docking</span> panel, you can:</p>
+<ul>
+<li><p>Choose <span class="GUI">Applications &rarr; Glide &rarr; Covalent Docking</span> 
+in the main window.
+</p></li>
+</ul>
+
+
+<a name="using"></a> 
+<h2>Using the Covalent Docking Panel</h2> 
+
+
+<p>Covalent docking has two main goals:
+</p>
+<ul>
+<li>Locate the best docked pose for each ligand and rank the poses for each
+ligand by energy.</li>
+<li>Rank ligands according to the ability of the ligand to bind noncovalently in
+a suitable pose for reaction to form a covalent bond.</li>
+</ul>
+<p>The ligands must be a series of related compounds, all of which react with
+the receptor at the same site and by the same mechanism. Use of covalent docking
+to compare different mechanisms or different types of compound will not produce
+meaningful results. 
+</p>
+
+<p>The covalent docking process has several stages:
+</p>
+<ol>
+<li><p>Dock the ligands into noncovalently bound poses that are suitable for
+covalent bond formation. To allow for different possible conformations of the
+side chains of the reactive residue, it is mutated to alanine in this stage. This
+removes any bias towards a particular ligand conformation that would occcur if
+the side chain were regarded as fixed. The ligands are docked with Glide,
+subject to constraints between the attachment atoms on the receptor and the
+ligand.
+</p></li>
+<li><p>Form the bond between the receptor and the ligand. First, the reactive
+residue side chain is restored, and its rotamers are sampled to find the best
+conformation for each ligand pose. The bond is then formed and poses are
+discarded if the ligand-receptor bond is too long. The ligand and reactive
+residue, now covalently bound, are then minimized and the poses clustered. 
+</p></li>
+<li><p>Minimize and rank the poses. After clustering, a representative pose is
+selected from each cluster, and the poses are minimized with Prime. The poses for
+each ligand are then ranked by the Prime energy.
+</p></li>
+<li><p>Score poses for the affinity of the ligand to the receptor for
+noncovalent binding prior to reaction. Ligands that do not score well are
+considered less likely to approach the receptor in a way that permits covalent
+bond formation. In this stage, the bond is broken again, the reactive receptor
+residue is mutated to alanine, and the bond to the ligand is capped with
+hydrogen. Scoring is then done with Glide, and the affinity is reported as the
+average of the pre-reacted and post-reacted GlideScore for a given pose. 
+</p></li>
+</ol>
+<p>There is also a virtual screening mode, in which rotamer sampling and
+minimizations are not performed, and ligand sampling is reduced.
+</p>
+
+<p>To set up a covalent docking run, you must have a receptor that is prepared
+for modeling and a set of prepared ligands that all have the required functional
+group for reaction. It is recommended that you use the <a
+href="protein_preparation.html">Protein Preparation Wizard</a> for preparing the
+protein, and <a href="../ligprep/ligprep.html">LigPrep</a> to prepare the
+ligands. You might also have to filter the ligands to ensure that they all have
+the required functional group, which you can do in the <a
+href="../tools_menu/ligfilter.html"><span class="GUI">Ligand Filtering</span> 
+panel</a>. With these structures available, the process for setting up a default
+job is described in the steps below.
+</p>
+
+<ol>
+<li><p>Open the <span class="GUI">Covalent Docking</span> panel.
+</p></li>
+<li><p>Choose the source of ligands from the <span class="GUI">Use ligands
+from</span> option menu, and if using a file, specify the file.
+</p></li>
+<li><p>Display the receptor in the Workspace and choose the reactive residue:
+in the <span class="GUI">Receptor</span> tab,
+select <span class="GUI">Pick</span> and pick a residue in the Workspace.</p> 
+<p>The reactive residue must be of the correct type for the desired reaction&mdash;see
+the <a href="#feature3.1">table</a> below for a list of allowed residues.
+</p></li>
+<li><p>Define the center of the grid box for the Glide docking.</p>
+<p>If you want to define the center with a ligand, you must include the ligand
+in the Workspace. 
+</p></li>
+<li><p>Choose the reaction type: in the <span class="GUI">Reaction
+Type</span> tab, select a reaction from the <span class="GUI">Reaction
+type</span> option menu. 
+</p></li>
+<li><p>(Optional) Edit the SMARTS pattern for the ligand reactive group, and add
+SMARTS patterns, or import a set of SMARTS patterns defined previously.</p>
+<p>The default SMARTS pattern is generic and minimal, and might match groups on
+your ligands that you do not want to consider. Editing the default pattern and
+adding other patterns allows you more control over the matching.  It may be
+useful to have a ligand displayed in the Workspace on which you can select atoms
+for the SMARTS pattern that define the functional group.
+</p>
+<p>To edit or add SMARTS patterns, click <span class="GUI">Edit</span>
+or <span class="GUI">New</span>, and modify the SMARTS pattern directly, 
+or pick atoms in the Workspace to define the group and click 
+<span class="GUI">Get From Selection</span>. Choose an atom in the SMARTS
+pattern from the <span class="GUI">Position</span> option menu as the reactive
+atom, and click <span class="GUI">OK</span>. When you have edited the default
+pattern, you can add more patterns.
+</p></li>
+<li><p>In the <span class="GUI">Docking</span> tab, choose a docking
+mode: <span class="GUI">Pose prediction</span> for the most thorough treatment,
+or <span class="GUI">Virtual screening</span>, for a faster treatment that can
+be used on thousands of ligands.</p>
+<p>The virtual screening mode leaves out most of the minimization and
+conformational searching, and is at least 10 times faster. Pose prediction mode
+can take an hour or two per ligand.
+</p></li>
+<li><p>Specify the number of output poses per ligand that you want returned.
+</p></li>
+<li><p>Start the job.</p>
+<p>The process can take several hours per ligand. You should therefore consider
+distributing the job over multiple processors, which you can do by clicking the
+<span class="GUI"> Job Settings</span> button (gear icon) and choosing the host,
+the number of processors, and the number of subjobs. The number of subjobs
+should not be greater than the number of ligands.
+</p></li>
+
+</ol>
+<p>The results of a covalent docking run are the covalently bound poses in a
+Maestro file. Each pose has three main properties associated with it: the
+affinity score, the Prime energy of the pose, and an index that identifies the
+reactive site on the ligand if the ligand has more than one such site. Since
+comparing poses is only meaningful for poses bonded at the same site, you can
+use the index to select and compare poses for a particular site.
+</p>
+
+<a name="features"></a> 
+<h2>Covalent Docking Panel Features</h2> 
+
+<ul>
+<li><a href="#feature1">Ligand source</a></li>
+<li><a href="#feature2"><span class="GUI">Receptor</span> tab</a>
+<ul>
+<li><a href="#feature2.1"><span class="GUI">Reactive residue</span> text box and <span class="GUI">Pick</span> option</a></li>
+<li><a href="#feature2.2"><span class="GUI">Box center</span> options</a></li>
+<li><a href="#feature2.3"><span class="GUI">Box size</span> options</a></li>
+</ul>
+</li>
+<li><a href="#feature3"><span class="GUI">Reaction Type</span> tab</a>
+<ul>
+<li><a href="#feature3.1"><span class="GUI">Reaction type</span> option menu</a></li>
+<li><a href="#feature3.0"><span class="GUI">Custom chemistry file</span> text box and <span class="GUI">Browse</span> button</a></li>
+<li><a href="#feature3.3">Ligand reactive groups table</a></li>
+<li><a href="#feature3.4"><span class="GUI">Edit</span> button</a></li>
+<li><a href="#feature3.5"><span class="GUI">Delete</span> button</a></li>
+<li><a href="#feature3.6"><span class="GUI">Import</span> button</a></li>
+<li><a href="#feature3.7"><span class="GUI">Export</span> button</a></li>
+</ul>
+</li>
+<li><a href="#feature4"><span class="GUI">Constraints</span> tab</a>
+<ul>
+<li><a href="#feature4.1"><span class="GUI">Restrict docking to reference position</span> option</a></li>
+<li><a href="#feature4.2"><span class="GUI">Workspace ligand</span> option, text box and <span class="GUI">Pick</span> option</a></li>
+<li><a href="#feature4.3"><span class="GUI">Reference file</span> option, text box and <span class="GUI">Browse</span> button</a></li>
+<li><a href="#feature4.4"><span class="GUI">Tolerance</span> text box</a></li>
+<li><a href="#feature4.5"><span class="GUI">All heavy atoms</span> option</a></li>
+<li><a href="#feature4.6"><span class="GUI">All atoms</span> option</a></li>
+<li><a href="#feature4.7"><span class="GUI">SMARTS pattern</span> option and text box</a></li>
+<li><a href="#feature4.8"><span class="GUI">Get from Selection</span> button</a></li>
+</ul>
+</li>
+<li><a href="#feature5"><span class="GUI">Docking</span> tab</a>
+<ul>
+<li><a href="#feature5.1"><span class="GUI"> Docking mode</span> option menu</a></li>
+<li><a href="#feature5.2"><span class="GUI">Cutoff to retain poses for further refinement</span> text box</a></li>
+<li><a href="#feature5.3"><span class="GUI">Max number of poses to retain for further refinement</span> text box</a></li>
+<li><a href="#feature5.4"><span class="GUI">Minimization radius</span> option and text box</a></li>
+<li><a href="#feature5.5"><span class="GUI">Calculate affinity score using Glide</span> option</a></li>
+<li><a href="#feature5.6"><span class="GUI">Perform MM-GBSA scoring</span> option</a></li>
+<li><a href="#feature5.7"><span class="GUI">Output poses per ligand reaction site</span> text box</a></li>
+<li><a href="#feature5.8"><span class="GUI">Max number of top-scoring ligands to report</span> text box</a></li>
+</ul>
+</li>
+<li><a href="#job_toolbar">Job toolbar</a></li>
+<li><a href="#status_bar">Status bar</a></li>
+</ul>
+
+
+<a name="feature1"></a>
+<h3>Ligand source</h3>
+<p>Specify the source of the ligands.
+</p>
+<dl>
+
+<a name="feature1.1"></a>
+<dt><span class="GUI">Use ligands from</span> option menu</dt>
+<dd><p>Specify the source of the ligands to be docked:</p>
+<ul>
+<li><span class="GUI">Project Table (selected entries)</span>&mdash;Use the
+entries that are currently selected in the Project Table.
+</li>
+<li><span class="GUI">File</span>&mdash;Use the structures from the specified
+file. When this option is selected, the <span class="GUI">File</span> text 
+box and <span class="GUI">Browse</span> button become available. You can either
+enter the file name in the text box, or click <span class="GUI">Browse</span>
+and navigate to the file.
+</li>
+</ul>
+</dd>
+
+<a name="feature1.2"></a>
+<dt><span class="GUI">File name</span> text box and <span class="GUI">Browse</span> button</dt>
+<dd><p>If you chose <span class="GUI">File</span> from the <span class="GUI">Use
+ligands from</span> option menu, enter the file name in this text box, or
+click <span class="GUI">Browse</span> and navigate to the structure file.
+</p></dd>
+</dl>
+
+<a name="feature2"></a>
+<h3>Receptor tab</h3>
+<p>In this tab you can specify the reactive site on the receptor, and define the
+grid (enclosing) box for the Glide docking stage. 
+</p>
+
+<dl>
+<a name="feature2.1"></a>
+<dt><span class="GUI">Reactive residue</span> text box and <span class="GUI">Pick</span> option</dt>
+<dd><p>Specify which residue (or site) in the receptor the ligand is bound to.
+You can pick the residue in the Workspace by selecting <span class="GUI">Pick</span> and
+picking an atom in the desired receptor residue, or you can enter the chain name
+and residue number in the text box, separated by a colon. The residue must be
+one of those defined by the reaction type&mdash;see the <a
+href="covalent_docking_reaction_type.html#using">table</a> in the <span
+class="GUI">Choose Reaction Type</span> dialog box for a list of allowed
+residues. It must also have a standard residue name.
+</p></dd>
+
+<a name="feature2.2"></a>
+<dt><span class="GUI">Box center</span> options</dt>
+<dd><p>Specify the center of the docking grid box for Glide docking.
+</p>
+<ul>
+<li><p><span class="GUI">Centroid of Workspace ligand</span>&mdash;This option
+centers the grid at the centroid of the ligand molecule that is displayed in the
+Workspace. You must display a ligand in the Workspace as well as the receptor to
+use this option. Select <span class="GUI">Pick</span>, then pick a ligand atom
+in the Workspace.
+</p></li>
+<li><p><span class="GUI">Centroid of selected residues</span>
+Center the grid at the centroid of a set of selected residues. This
+allows you to define the active site (where grids should be centered) with only
+the receptor in the Workspace. When this option is chosen, the <span
+class="GUI">Select</span> button becomes available. This button opens the <a
+href="../misc/asd.html"><span class="GUI">Atom Selection</span> dialog
+box</a>, so you can select the residues. You can also enter an ASL expression
+directly in the text box.</p>
+<p>If you use this option, you should not simply select the reactive residue, as
+the reactive residue can be on the periphery of the binding site. Instead, you
+should select residues whose centroid is approximately at the center of the
+binding site. Alternatively, use the <span class="GUI">Centroid of Workspace
+ligand</span> option.
+</p></li>
+</ul>
+<p>When you have specified the box center, the box should be displayed in the
+Workspace.
+</p>
+</dd>
+
+<a name="feature2.3"></a>
+<dt><span class="GUI">Box size</span> options</dt>
+<dd><p>Select an option for determining the size of the grid box.</p>
+<ul>
+<li><p><span class="GUI">Auto</span>&mdash;Select this option to automatically
+determine the size of the grid box. If the <span class="GUI">Docking box
+center</span> option is <span class="GUI">Centroid of Workspace ligand</span>,
+the enclosing box size is calculated automatically from the size of the ligand.
+If the <span class="GUI">Docking box center</span> option is <span
+class="GUI">Centroid of selected residues</span>, the enclosing box size is set
+to a cube with sides of length 26&nbsp;&Aring;. 
+</p></li>
+<li><p><span class="GUI">Dock ligands with length &lt;= <i>N</i>
+&Aring;</span>&mdash;Select this option to set the size of the grid box. Enter
+the desired side length in the text box, in angstroms. The grid box has sides of
+equal length given by the value in the text box.
+</p></li>
+</ul>
+</dd>
+</dl>
+
+<a name="feature3"></a>
+<h3>Reaction Type tab</h3>
+<p>The task in this tab is simple: choose a reaction type for the
+formation of the covalent bond between the ligand and the receptor. The reaction
+type defines the functional group on the ligand, the allowed residue types in
+the receptor with which the ligand can react, and the operations that must be
+performed on the structures to create the covalent bond. The reaction types, the
+ligand functional groups in terms of a SMARTS pattern, and the allowed residue
+types are given in the table below. The notation R-SH,OH means one of six
+residues with an SH or OH bond: CYS, SER, THR, ASP, GLU, TYR.
+</p>
+<p>If you want to investigate some other reaction type, you must have a custom
+chemistry file, which defines all the required quantities. You can make your own
+custom chemistry file using the procedure described in the <i>Covalent
+Docking</i> manual. This feature allows you to specify a reactive site on the
+receptor other than a standard residue, for example. 
+</p>
+<p>The ligands are automatically analyzed for matches to the SMARTS patterns
+when any change is made to the reaction type or the SMARTS patterns. This
+process is fast, but a warning is posted if you have more than 1000 ligands. A
+progress bar is displayed for the analysis. 
+</p>
+
+<dl>
+<a name="feature3.1"></a>
+<dt><span class="GUI">Reaction type</span> option menu</dt>
+<dd><p>Choose the reaction type from this option menu. The reaction types are
+listed below. If the reaction type that you are interested in is not supplied in
+the default set, you can create a custom reaction type, then
+choose <span class="GUI">Custom</span> to import the definitions for 
+this reaction, and import it using the <span class="GUI">Custom chemistry
+file</span> text box and <span class="GUI">Browse</span> button.
+</p>
+
+<table rules="groups" frame="hsides" cellpadding=5>
+<thead>
+<tr>
+<th style="padding-right: 20px;">Reaction type</th>
+<th style="padding-right: 30px;">Default Ligand SMARTS</th>
+<th>Reactive Residues</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Michael Addition</td>
+<td>[C,c]=[C,c]-[C,c,S,s]=[O]</td>
+<td>R-SH,OH</td>
+</tr>
+<tr>
+<td style="padding-right: 25px;">Nucleophilic Addition to a Double Bond</td>
+<td>[C,c]=[O,S]</td>
+<td>R-SH,OH</td>
+</tr>
+<tr>
+<td style="padding-right: 25px;">Nucleophilic Addition to a Triple Bond</td>
+<td>[C]#[N]</td>
+<td>R-SH,OH</td>
+</tr>
+<tr>
+<td>Nucleophilic Substitution</td>
+<td>[*][F,Cl,Br,I]</td>
+<td>R-SH,OH</td>
+</tr>
+<tr>
+<td>Boronic Acid Addition</td>
+<td>[B]([O])[O]</td>
+<td>R-SH,OH</td>
+</tr>
+<tr>
+<td>Epoxide Opening</td>
+<td>[C;r3][O;r3][C;r3]</td>
+<td>HIS, R-SH,OH</td>
+</tr>
+<tr>
+<td>Imine Condensation</td>
+<td>[C](=[O])-[C]</td>
+<td>LYS, ASN, GLN, ARG</td>
+</tr>
+<tr>
+<td>Phosphonate Addition</td>
+<td>[P]-[O;H1,-1]</td>
+<td>R-SH,OH</td>
+</tr>
+<tr>
+<td>Beta Lactam Addition</td>
+<td>[O-0X1]=[C]1[C][C][N]1</td>
+<td>CYS, SER</td>
+</tr>
+<tr>
+<td>Conjugate Addition to Alkene (nitrile activated)</td>
+<td>[C,c]=[C,c]-[C,c]#[N,n]</td>
+<td>CYS, SER</td>
+</tr>
+<tr>
+<td>Conjugate Addition to Alkyne (carbonyl activated)</td>
+<td>[C-0X2]#[C-0X2][C-0X3]=[O-0X1]</td>
+<td>CYS, SER</td>
+</tr>
+<tr>
+<td>Conjugate Addition to Alkyne (aryl activated)</td>
+<td>[C]#[C]-[c]</td>
+<td>CYS, SER</td>
+</tr>
+<tr>
+<td style="padding-right: 25px;">Ion Pair to Covalent Bond: Lig(-1)/Rec(+1)</td>
+<td>[-1]</td>
+<td>LYS, ARG, HIS (HIP)</td>
+</tr>
+<tr>
+<td style="padding-right: 25px;">Ion Pair to Covalent Bond: Lig(+1)/Rec(-1)</td>
+<td>[+1]</td>
+<td>ASP, GLU</td>
+</tr>
+</tbody>
+</table>
+</dd>
+
+<a name="feature3.0"></a>
+<dt><span class="GUI">Custom chemistry file</span> text box and <span class="GUI">Browse</span> button</dt>
+<dd><p>Specify the name of the custom chemistry file in this text box, or click
+<span class="GUI">Browse</span> to navigate to the file. The file must have a
+<code>.cdock</code> extension. This text box and button are only available if
+you choose <span class="GUI">Custom</span> from the <span class="GUI">Reaction
+type</span> option menu. 
+</p></dd>
+
+<a name="feature3.3"></a>
+<dt>Ligand reactive groups table</dt>
+<dd><p>The SMARTS patterns that define the ligand reactive group are listed in
+the table, along with the atom in the pattern that forms the bond to the
+receptor (<span class="GUI">Position</span> 
+column). The table also lists the total number of reaction sites over all ligands
+and the average number per ligand. If these values indicate that some ligands
+may have more that one reactive site, you might want to edit the SMARTS pattern
+to provide a more restrictive expression and eliminate unwanted sites.
+</p></dd>
+
+<a name="feature3.4"></a>
+<dt><span class="GUI">Edit</span> button</dt>
+<dd><p>Modify the SMARTS pattern for the reaction. You may want to do this to
+create a more specific pattern. The SMARTS pattern cannot be edited directly in
+the table. The button opens the <span class="GUI">Edit Reactive Group</span>
+dialog box, where you can edit the pattern in
+the <span class="GUI">SMARTS</span> text box, or select the atoms in the
+Workspace for the SMARTS pattern and click <span class="GUI">Get From
+Selection</span> to create a SMARTS pattern. Then you specify which atom in the
+SMARTS pattern is the atom that bonds to the receptor, using
+the <span class="GUI">Position</span> option menu.  
+</p>
+<p>Once you have edited the default SMARTS pattern, you can add more
+patterns. The button changes from <span class="GUI">Edit</span> to <span
+class="GUI">New</span>. 
+</p></dd>
+
+<a name="feature3.5"></a>
+<dt><span class="GUI">Delete</span> button</dt>
+<dd><p>Delete the selected SMARTS pattern from the table. If you delete the last
+remaining pattern, the default pattern is restored. 
+</p></dd>
+
+<a name="feature3.6"></a>
+<dt><span class="GUI">Import</span> button</dt>
+<dd><p>Import a set of SMARTS patterns from a file in CSV format. The file must
+contain the SMARTS pattern in the first field, and the atom number of the
+reactive atom in the second field.  Opens a file selector, so you can navigate
+to a location and select the file.
+</p></dd>
+
+<a name="feature3.7"></a>
+<dt><span class="GUI">Export</span> button</dt>
+<dd><p>Export the <span class="GUI">SMARTS</span> and <span
+class="GUI">Position</span> columns of the table to a CSV file. This allows you
+to store patterns that define a reactive group for later use. Opens a file
+selector, so you can navigate to a location and name the file.
+</p></dd>
+</dl>
+
+<a name="feature4"></a>
+<h3>Constraints tab</h3>
+<p>In this tab you can set constraints on the core of the docked ligands, to
+reproduce the position of a reference ligand. 
+</p>
+
+<dl>
+<a name="feature4.1"></a>
+<dt><span class="GUI">Restrict docking to reference position</span> option</dt>
+<dd><p>Restrict the docking of ligands so that the ligand &quot;core&quot;
+lies within a given RMSD of the core in the reference ligand. The core is
+defined in terms of a set of atoms or a SMARTS pattern; if the ligand does not
+contain these atoms, it is skipped.
+</p></dd>
+
+<a name="feature4.2"></a>
+<dt><span class="GUI">Workspace ligand</span> option, text box and <span class="GUI">Pick</span> option</dt>
+<dd><p>Use the Workspace ligand for the reference ligand. If you used a ligand
+to define the grid, this ligand is chosen by default. The identity of the
+ligand is shown in the text box. If you want to use a different ligand, add it
+to the Workspace, then select <span class="GUI">Pick</span> and pick the ligand
+in the Workspace.
+</p></dd>
+
+<a name="feature4.3"></a>
+<dt><span class="GUI">Reference file</span> option, text box and <span class="GUI">Browse</span> button</dt>
+<dd><p>Use the first ligand in the specified file as the reference ligand. Click
+<span class="GUI">Browse</span> to navigate to the file, or enter the file name
+in the text box.  You must ensure that the structure in the file is positioned
+properly with respect to the receptor.
+</p></dd>
+
+<a name="feature4.4"></a>
+<dt><span class="GUI">Tolerance</span> text box</dt>
+<dd><p>Tolerance in angstroms for the RMSD of the docked ligand core to the
+reference core. If the RMSD is less than this tolerance, the ligand is skipped.
+</p></dd>
+
+<a name="feature4.5"></a>
+<dt><span class="GUI">All heavy atoms</span> option</dt>
+<dd><p>Use all non-hydrogen atoms in the reference ligand as the core atoms. 
+</p></dd>
+
+<a name="feature4.6"></a>
+<dt><span class="GUI">All atoms</span> option</dt>
+<dd><p>Use all atoms in the reference ligand as the core atoms.
+</p></dd>
+
+<a name="feature4.7"></a>
+<dt><span class="GUI">SMARTS pattern</span> option and text box</dt>
+<dd><p>Define the core atoms in terms of a SMARTS pattern. You can pick atoms in
+the Workspace and click <span class="GUI">Get From Selection</span> to define
+the SMARTS pattern, or you can type a SMARTS pattern  into the text box.
+</p></dd>
+
+<a name="feature4.8"></a>
+<dt><span class="GUI">Get from Selection</span> button</dt>
+<dd><p>Select atoms in the Workspace, and click this button to define a SMARTS
+pattern from the selection. The SMARTS pattern replaces the content of the
+<span class="GUI">SMARTS pattern</span> text box.
+</p></dd>
+</dl>
+
+<a name="feature5"></a>
+<h3>Docking tab</h3>
+<p>In this tab you set options for docking, refinement, scoring, and output. 
+</p>
+
+<dl>
+<a name="feature5.1"></a>
+<dt><span class="GUI"> Docking mode</span> option menu</dt>
+<dd><p>Choose the kind of docking job to perform.
+</p>
+<ul>
+<li><p><span class="GUI">Pose prediction (thorough)</span>&mdash;This mode is
+intended for more accurate docking of a smaller number of ligands. The
+calculation can take an hour or two per ligand.
+</p></li>
+<li><p><span class="GUI">Virtual screening (fast)</span>&mdash;This mode is
+intended for docking of a large number of ligands, and is 10-40 times faster
+than pose prediction mode. Virtual screening mode skips the ligand
+conformational sampling, rotamer sampling of the protein side chain, and
+minimization of the poses. The limit on the number of ligands is 10&nbsp;000. If
+you have more ligands you will have to split them into batches of no more than
+10&nbsp;000.
+</p></li>
+</ul>
+</dd>
+
+<a name="feature5.2"></a>
+<dt><span class="GUI">Cutoff to retain poses for further refinement</span> text box</dt>
+<dd><p>Cutoff on the GlideScore used to select Glide poses for covalent bond
+formation and further refinement. The default is 2.5 kcal/mol.
+</p></dd>
+
+<a name="feature5.3"></a>
+<dt><span class="GUI">Max number of poses to retain for further refinement</span> text box</dt>
+<dd><p>Maximum number of Glide poses to keep for covalent bond formation and
+further refinement. The default is 200. 
+</p></dd>
+
+<a name="feature5.4"></a>
+<dt><span class="GUI">Minimization radius</span> option and text box</dt>
+<dd><p>Select this option to refine other protein residues as well as the ligand
+and the reactive residue before clustering. Residues that have any atoms within
+the specified distance of any atom in the ligand or reactive residue are
+included in the minimization.
+</p></dd>
+
+<a name="feature5.5"></a>
+<dt><span class="GUI">Calculate affinity score using Glide</span> option</dt>
+<dd><p>Calculate a noncovalent binding affinity score using the results of Glide
+docking and a score-in-place calculation using the final docked pose. The
+average of the two GlideScore values is used for the affinity. This option is
+selected by default.
+</p></dd>
+
+<a name="feature5.6"></a>
+<dt><span class="GUI">Perform MM-GBSA scoring</span> option</dt>
+<dd><p>Score the final docked pose using Prime MM-GBSA, to produce a binding
+affinity. Note that this binding affinity does <i>not</i> include the covalent
+binding: it is the noncovalent binding of the capped final pose to the mutated
+receptor. This option is not selected by default.
+</p></dd>
+
+<a name="feature5.7"></a>
+<dt><span class="GUI">Output poses per ligand reaction site</span> text box</dt>
+<dd><p>Set the number of output poses to return per ligand reaction site.
+</p></dd>
+
+<a name="feature5.8"></a>
+<dt><span class="GUI">Max number of top-scoring ligands to report</span> text box</dt>
+<dd><p>Set the maximum number of poses to return. The ligands are ranked by
+score and the top scoring ligands are selected. This option is intended for use
+with the <span class="GUI">Virtual screening</span> docking mode.
+</p></dd>
+</dl>
+
+<a name="job_toolbar"></a>
+<h3>Job toolbar</h3>
+<p>The Job toolbar is used to make settings for a job and to start it. </p>
+
+<dl>
+<dt><span class="GUI">Job name</span> text box</dt>
+<dd><p>Enter a name for the job in this text box.
+</p></dd>
+<dt><span class="GUI">Settings</span> button menu</dt>
+<dd><p>This button opens the <a href="../misc/job_settings.html"><span
+class="GUI">Job Settings</span> dialog box</a>. The arrow to the right opens
+a menu, from which you can make settings or perform actions that are related to
+the job. </p>
+<img src="../images/MaestroToolbarIcons/settings.png" />
+<p>The menu items are described below.</p>
+<ul>
+<li><span class="GUI">Job Settings</span>&mdash;Make and save settings for the
+incorporation of the job into the Maestro project, the job name, the host,
+the distribution of subjobs, and any other application-specific job settings.
+Opens the <span class="GUI">Job Settings</span> dialog box.</li>
+<li><span class="GUI">Preferences</span>&mdash;Set general preferences for
+running jobs. Opens the <span class="GUI">Preferences</span> panel at the <a
+href="../maestro_menu/preferences.html#jobs_starting"><span class="GUI">Jobs - 
+Starting</span> section</a>.</li>
+<li><span class="GUI">Write</span>&mdash;Write the input files for the job but do not start it. 
+The file names are based on the current job name, and the files are written to
+a subdirectory of the current working directory that is named with the job
+name.</li>
+</ul>
+</dd>
+
+<dt><span class="GUI">Job status</span> button</dt>
+<dd><p>This icon indicates when there are jobs running for the application that
+belong to the current project. It starts spinning when the first job starts, and
+stops when there are no more jobs running. If a job fails to start, it changes
+to an exclamation point. 
+</p>
+<img src="../images/MaestroToolbarIcons/job_status.png" />
+<p>
+Clicking the button shows a small job status window that lists the job name and
+status for all active jobs submitted from the current panel (for Jaguar and
+MacroModel this means all jobs from any of the application panels). You can
+double-click on a row to open the <a href="../misc/monitor_panel.html"><span
+class="GUI">Monitor</span> panel</a> and monitor the job, or click the <span
+class="GUI">Monitor</span> button to open the <span class="GUI">Monitor</span>
+panel and close the job status window. The job status is updated while the
+window is open. If a job finishes while the window is open, the job remains
+displayed but with the new status.  The rows are colored according to the
+status: yellow for submitted, green for launched, running, or finished, red for
+incorporated, died, or killed.  Click anywhere outside the window to close it.
+</p></dd>
+
+<dt><span class="GUI">Run</span> button</dt>
+<dd><p>Run the job with the current job settings.
+</p></dd>
+</dl>
+
+<a name="status_bar"></a>
+<h3>Status bar</h3>
+<p>The status bar displays information about the current job settings for the
+panel. This includes the job name, task name and task settings (if any), number
+of subjobs (if any) and the host name and job incorporation setting. It also
+displays a message for a short time when you start a new job.</p>
+<p>The status bar also contains the <span class="GUI">Help</span> button, which
+opens the help topic for the panel.</p>
+<img src="../images/MaestroToolbarIcons/help.png" />
+
+
+<a name="links"></a>
+<h2>Related Topics</h2>
+<ul>
+
+<li><a href="covalent_docking_edit_group.html">Edit Reactive Group Dialog Box</a></li>
+<li><a href="dock_core.html">Ligand Docking &mdash; Core Tab</a></li>
+
+</ul>
+<hr />
+<table width="100%">
+<tr><td><p class="small"><a href="../support/legal_notice.html" target="LegalNoticeWindow">Legal Notice</a></p></td>
+<td>
+<table align="right">
+<tr><td><p class="small">
+File: glide/covalent_docking.html<br />
+Last updated: 28 Apr 2015
+</p></td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

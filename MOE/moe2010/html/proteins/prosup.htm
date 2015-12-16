@@ -1,0 +1,972 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	prosup.htm	Protein Superpose chapter
+!!
+!!	28-oct-2009 (mk) updated tutorial
+!!	16-oct-2009 (mk) updated for 2009.10 release
+!!	07-oct-2008 (kk) minor style edits
+!!	02-oct-2008 (mk) more changes for 2008.10 release
+!!	24-sep-2008 (mk) updated for 2008.10 release
+!!	12-feb-2001 (ms) converted math to LaTeX
+!!	16-jan-2001 (al) updated for 2001.01 release
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<meta panel Protein Superpose>
+
+<title>Protein Structure Superposition</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Protein Structure Superposition</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Introduction">Introduction</a>
+<li><a href="#Methodology">Methodology</a>
+<li><a href="#Running">Running Protein Superpose</a>
+    <ul>
+    <li><a href="#GroupChains">How to Group Chains With Tags</a>
+    <li><a href="#Controls">Protein Superpose Controls</a>
+    </ul>
+<li><a href="#Analyzing">Analyzing Superposition</a>
+<li><a class="example" href="#WorkedExample">Worked Examples</a>
+<li><a href="#SVLCommands">SVL Commands</a>
+<li><a href="#References">References</a>
+</ul>
+
+<a name="Introduction"></a><h2>Introduction</h2>
+
+
+<p>The Protein Structure Superposition application is used to superpose a
+set of 3D protein structures in such a way as to maximize the spatial overlap
+of a common atom subset. Such a superposition is useful because it highlights
+both the regions of conserved structure and the areas of divergence or
+modification in the protein set. It can also be used to overlay and study
+active sites of related proteins.
+<br />
+The application also provides interactive plots and a detailed textual report
+to analyze the results of a superposition.
+
+<a name="Methodology"></a><h2>Methodology</h2>
+<p>A weighted non-linear optimization is used to determine the solid-body
+transformations required to maximize the superposition of the protein
+atomic coordinates. This process invokes the SVL
+<a class="svl" href="../moe/fcnref/superpos.htm">Superpose</a>
+command, which uses the Mean Square Distance (MSD) deviation of corresponding
+protein atoms to optimize the atomic coordinate superposition. Following
+[Shapiro&nbsp;1992], we take the MSD between protein
+atomic coordinates to be:
+
+<p align="center"><img src="prosup/msdformula.png" alt="MSD formula" /></p>
+<!-- LATEX prosup/msdformula \[
+    \sum_{k=1}^M
+    \sum_{l>k} v_{kl}
+    \sum_{i=1}^{N_{k}} w_{i} \;
+    \big| R_k (x_{ik} - t_k) - R_l (x_{il} - t_l) \big| ^ 2
+\] ENDLATEX -->
+
+<p>where
+<ul>
+<li><i>M</i> is the number of proteins
+<li><i>N</i><sub><i>k</i></sub> is the number of corresponding atoms
+<li><i>v<sub>kl</sub></i> is the protein-to-protein importance weights
+<li><i>w<sub>i</sub></i> is the importance weight of each atom correspondence
+<li><i>R<sub>k</sub></i> and
+    <i>R<sub>l</sub></i> are the rotation matrices
+<li><i>x<sub>ik</sub></i> are the coordinates of the
+    <i>i</i><sup>th</sup> corresponding atom in the
+    <i>k</i><sup>th</sup> protein
+<li><i>x<sub>il</sub></i> are the coordinates of the
+    <i>i</i><sup>th</sup> corresponding atom in the
+    <i>l</i><sup>th</sup> protein
+<!--
+<li><i>x<sub>ik</sub></i> denotes the coordinates of the atom
+    <i>i</i> in the <i>k</i><sup>th</sup> protein
+-->
+<li><i>t<sub>k</sub></i> and
+    <i>t<sub>l</sub></i> are the translation vectors
+</ul>
+
+<p>
+The rotation matrices and translation vectors are calculated so as to
+minimize the MSD. Once these transformations are calculated, they can
+be applied to the atomic coordinates of the proteins.
+</p>
+
+<p>
+The protein superposition application uses the current sequence alignment
+to determine correspondences between aligned residues. If no formal
+sequence alignment operation has been performed, the superposition is
+calculated according to how residues are lined up in the Sequence Editor
+(a superposition in this case can be expected to be poor). By default
+a check of the alignment will be done. A warning panel pops up when
+the selected sequences do not seem to be aligned and gives the user the
+choice to realign them before continuing with the superposition.
+</p>
+
+<p>
+The superposition calculations use only those atoms that are in fully
+populated alignment positions, i.e. alignment positions with no gaps.
+Alignment positions containing gaps are ignored. Non-protein chains -
+waters, ions and other non-peptide moieties - are automatically ignored
+for the determination of the transformation, but moved together with its
+associated protein chains.
+</p>
+
+The six atom classes which are available for calculating the
+superposition are:
+<img src="prosup/alanine.png" align="right" alt="Peptide Labels" />
+<ul>
+<li>alpha carbon (<tt>CA</tt>)
+<li>backbone (<tt>C</tt>)
+<li>backbone (<tt>N</tt>)
+<li>backbone (<tt>O</tt>)
+<li>beta carbon (<tt>CB</tt>)
+<li>all atoms
+</ul>
+<br clear="both" />
+
+
+<a name="Running"></a><h2>Running Protein Superpose</h2>
+
+The Protein Superposition panel can be opened from either the MOE window or
+the Sequence Editor by choosing:
+<ul>
+<li><span class="nobr"><b>MOE | Compute | Biopolymer | Superpose</b></span>
+<li><span class="nobr"><b>SE | Homology | Superpose</b></span>
+</ul>
+
+<p align="center">
+<img src="prosup/prosuper.png" alt="Protein Superpose Panel" /></p>
+</p>
+
+<p>
+Use the following steps to perform a protein superposition:
+</p>
+
+<ol>
+
+<p>
+<li>Perform a multiple sequence alignment on a collection of homologous
+proteins using <a href="align.htm">MOE's alignment application</a>
+<span class="nobr">(<b>SE | Homology | Align</b>).</span>
+If this step is skipped and the sequence alignment is deemed poor,
+a warning will popup and you can choose to realign the sequences using
+<a class="svl" href="fcnref/pro_alig.html">pro_Align</a>
+with default parameters.
+
+</p>
+
+<p>
+<li>Open the Protein Superpose panel.
+</p>
+
+<p>
+<li>If you want to superpose a subset of the chains in the system,
+select them in the chain list of the Protein Superpose panel.
+</p>
+
+<p>
+<li>If you want to superpose using only selected residue columns,
+select them in the Sequence Editor and choose <b>Selected Residues</b>
+from the <b>Options</b> menu.
+</p>
+
+<p>
+<li>Press <b>Superpose</b> in the Protein Superpose panel to start the RMSD
+calculation.
+</p>
+
+<p>
+<li>To get detailed results of the superposition, open the
+Protein Superpose RMSD panel by pressing <b>Report RMSD</b>.
+</p>
+
+</ol>
+
+
+<a name="GroupChains"></a><h3>How to Group Chains With Tags</h3>
+
+Protein structures often include non-protein structures (e.g. ligands),
+which are stored in different chains. Some protein complexes also consist
+of multiple protein chains. The Protein Superpose panel uses the
+<a href="../moe/fcnref/chain.htm">chain tag</a>
+information to group associated chains together.
+
+<p>
+By default all chains (protein, ligand, water, etc.) within the same tag are
+handled and moved as one group. I.e., ligands with the same chain tag as the
+protein chain will move with this protein during superposition.
+If multiple protein chains within one tag are selected (e.g. dimers,
+trimers), they are superposed also as a unit to protein chains
+in other tags.
+The first selected protein is superposed to the first protein chains
+in the other tags, the second chain is superposed to the other second
+chains, and so on. The exception to this rule is if only chains of one tag
+are selected for superposition. In this case the selected protein chains
+are superposed onto each other, even though they have the same tag.
+</p>
+
+<p>
+Since the Protein Superpose panel relies on the chain tag for grouping chains,
+it is important to have correct and appropriate tags.
+The panel makes it easy to check the tags in the chain list and to
+change them if needed with the <b>New Tag</b> field.
+</p>
+
+<p>
+The following panel options provide control over chains groups.
+<ul>
+<li><a href="#ChainList"><b>Chains to Superpose</b></a>
+<li><a href="#NewTag"><b>New Tag</b></a>
+<li><a href="#MoveByTag"><b>Move All Chains in Tag as Group</b></a>
+<li><a href="#AutoAssociate"><b>Auto-Associate Non-Protein Chains</b></a>
+</ul>
+</p>
+
+
+<a name="Controls"></a><h3>Protein Superpose Controls</h3>
+
+<table width="100%" cellspacing="5" cellpadding="5">
+
+<tr>
+<td valign="top"><b>Superpose</b>
+<td valign="top">
+
+Superpose and move the selected protein chains.
+
+<p>
+If the <b>Sequence Alignment</b> option is set to <b>Check and Realign
+Sequences</b> and a poor sequence alignment is detected, a warning panel will
+ask, if the selected chain sequences should be automatically realigned
+using <tt>pro_Align</tt> before the superposition calculation is performed.
+</p>
+
+<p>
+The selected protein structures are moved to the new coordinates calculated by
+the superposition. The first selected protein chain will be the
+reference and its position fixed. All other chains will be rotated
+and translated to their optimal superposition coordinates relative to
+the first chain. Because the actual coordinates of the proteins are to be
+modified, it is imperative that no atoms be held fixed in space during the
+transformation operation. If fixed atoms are present in one chain, the user
+is notified that this chain will be the reference. If fixed atoms are present
+in more than one chain, one can choose to temporarily unfix the atoms
+for the transformation and refix them afterward.
+</p>
+
+</tr>
+
+<tr>
+<td valign="top"><b>Undo</b>
+<td valign="top">
+Restore previous atom coordinates and sequence alignment positions.
+After restoring, the RMSD value is recomputed with the current settings
+and the <a href="#Analyzing">Protein Superpose RMSD panel</a> updated (if it is
+open). The button is disabled if no undo data is stored.
+<p>
+<b>Caution!</b>
+The undo steps are only kept as long as the Protein Superpose dialog is
+open. If the molecules in the system are changed (e.g. deleting chains,
+residues, atoms, etc.) the undo information prior these modifications is
+lost and cannot be restored.
+</p>
+
+</tr>
+
+<tr>
+<td valign="top"><b>Report RMSD</b>
+<td valign="top">
+Open the <a href="#Analyzing">Protein Superpose RMSD panel</a> to analyze the
+results of the superposition or show the current RMSD of the selected protein
+chains. If the <b>Sequence Alignment</b> option is set to <b>Check and Realign
+Sequences</b> and a poor sequence alignment is detected, one can choose
+to realign the selected chains before the Protein Superpose RMSD panel
+is opened or updated.
+
+</tr>
+
+<tr>
+<td valign="top">
+<a name="ChainList"></a>
+<b>Chains to Superpose</b>
+<td valign="top">
+<img src="prosup/sup_chn.png" alt="Protein Superpose Chains to Superpose"
+align="right" />
+
+Select the protein chains to be superposed in the chain list in the left of
+the Protein Superpose panel. If no chains are selected all chains will be used
+for the superposition calculation.
+
+<p>
+Each entry includes the chain number, name, and header. Depending on the setting
+of the <b>Group by Chain Tag</b> checkbox the chain tag is shown after the
+name in brackets <b>[]</b> or in an extra header line.
+Non-protein chains such as DNA/RNA, ligands, etc. are shown in brackets
+<b>()</b>. If a chain contains fixed atoms it is marked by a fletch
+<b>></b> in the leftmost column.
+</p>
+
+</tr>
+
+<tr>
+<td valign="top">
+<td valign="top">
+<img src="prosup/sup_tg.png" alt="Chain List Grouped by Tags" align="top" />
+<img src="prosup/sup_ntg.png" alt="Ungrouped Chain List" align="top" />
+
+<p>
+<b>Group by Chain Tag.</b> Select if the list entries should be grouped
+by chain tags or sorted by ascending chain number. If grouping is toggled on,
+then chains belonging to the same chain tag are grouped together in the list.
+If only one chain per chain tag is present the list display reverts to
+the sorting by chain number.
+</p>
+
+<p>
+<span class="tip"><b>Tip!</b></span>
+Selecting the chain tag header line in the list will select or deselect
+the entire group.
+</p>
+
+<p>
+<b>Synchronize Selection.</b> If on, the list selection is synchronized
+with the chain selection in the Sequence Editor.
+</p>
+
+<p>
+<b>Selection Hint.</b> Automatically select chains in the list suitable for
+superposition. The algorithm looks for chains in different tags with
+similar sequences.
+In molecular systems with multiple chain tags only one chain per tag will
+be selected.
+</p>
+
+<p>
+<b>?.</b> Briefly select then deselect (flash) the atoms of the chains
+selected in the list.
+</p>
+
+<p>
+<a name="NewTag"></a>
+<b>New Tag.</b> Change chain tag of the selected chains. Press <b>Apply</b>
+or hit <tt>Enter</tt> in the text field to apply the changes. The short cut
+list of the text field lists the current chain tags of the molecular system.
+</p>
+
+</tr>
+
+
+<tr>
+<td valign="top"><b>Sequence Alignment</b>
+<td valign="top">
+In order to superpose chains and/or
+calculate the RMSD a good sequence alignment of the chains is needed to match
+up the atoms to be superposed.
+
+<p>
+<img src="prosup/sup_aln.png" alt="Protein Superpose Sequence Alignment" />
+</p>
+
+<p>
+<b>Check and Realign Sequences.</b> Checks the quality of the sequence
+alignment before performing a superposition or RMSD calculation. If the
+alignment between the selected chains is deemed poor, a warning dialog
+pops up and asks if a sequence alignment of the selected chains
+should be done before continuing with the calculation.
+The default sequence alignment options will be used.
+</p>
+
+<p>
+<b>Use Current Alignment.</b> When a superposition or RMSD is calculated,
+no check of the sequence alignment is done and the current alignment from the
+Sequence Editor is used to perform the calculation.
+</p>
+
+<p>
+<b>Force Realignment.</b> The selected chains are automatically 
+realigned before performing a superposition or RMSD calculation.
+The default sequence alignment options will be used.
+</p>
+
+<p>
+<b>Optimize Gap Penalties for Superposition.</b> When superposing very
+dissimilar chains with low sequence identities, the sequence realign step
+with default options may not produce an alignment that yields
+a good superposition. In such situations it can help to select this checkbox.
+If on, different gap penalties are tried out during the sequence realignment
+in order to produce a better superposition.
+</p>
+
+</tr>
+
+
+<tr>
+<td valign="top"><b>Atom Sets</b>
+<td valign="top">
+<img src="prosup/sup_set.png" alt="Protein Superpose Atom Sets" />
+
+<p>
+<b>CA.</b> Use only alpha carbon atoms to calculate the superposition.
+</p>
+
+<p>
+<b>Main.</b> Use only mainchain backbone atoms (CA, C, N, O) to calculate
+the superposition.
+</p>
+
+<p>
+<b>All.</b> Use all atoms to calculate the superposition.
+</p>
+
+<p>
+<b>Custom.</b> Choose the atoms (CA, C, N, O, CB) that will be used to
+calculate the superposition.
+</p>
+
+<p>
+<b>Symm.</b> If on, sidechain symmetries of the amino acids
+Phe, Tyr, Arg, Glu, and Asp will be taken into consideration during
+the superposition. This option is only available if all atoms are used 
+to calculate the superposition.
+</p>
+
+</tr>
+
+
+<tr>
+<td valign="top"><b>Options</b>
+<td valign="top">
+<img src="prosup/sup_opt.png" alt="Protein Superpose Options" />
+
+<p>
+<b>Accent Secondary Structure Matches.</b> If on, the weights of residues
+with matching regular (helix, sheet) secondary structures are increased. This
+accents protein secondary structure in the superposition. If off, all
+residues are weighted equally.
+</p>
+
+<p>
+<b>Refine with Gaussian Distance Weights.</b> If on, an iterative
+algorithm with dynamic residues weights [Damm&nbsp;2006] is used to 
+improve the superposition. 
+At each step the weights of the residues are recomputed to reflect
+the distance between residue pairs. Residues pairs with low distances
+have higher weights assigned.
+</p>
+
+<p>
+<span class="tip"><b>Tip!</b></span>
+This option can be useful to superpose proteins which have
+a floppy tail but similar cores.
+</p>
+
+<p>
+<b>All Residues.</b> No restriction on the residues is made.
+All residues of the selected proteins chains will be used for the calculation.
+</p>
+
+<p>
+<b>Pocket Residues.</b> If chosen, only the coordinates of atoms
+in columns of pocket residues (residues around ligands) are used to calculate
+the superposition.
+</p>
+
+<p>
+<b>Selected Residues.</b> If chosen, only the coordinates of
+atoms in columns of selected residues are included in the transformation
+optimization calculation.
+</p>
+
+<p>
+<b><i>Set Name</i>.</b>
+If any user-defined sets with residues exist in the system
+then the names of these sets will appear in the <b>Options</b> menu. If a set
+name is chosen as the restricting residue set then all residues in the set
+(and no other residues) will be used for the calculations. Note that if the
+set contains atom or chain keys these keys will be ignored.
+</p>
+
+<p>
+<span class="tip"><b>Tip!</b></span>
+User defined residue sets can be created using the
+<a href="../moe/gui/select.htm">Residue Selector</a>.
+
+</p>
+
+</tr>
+
+
+<tr>
+<td valign="top"><b>Actions</b>
+<td valign="top">
+<img src="prosup/sup_act.png" alt="Protein Superpose Actions" />
+
+<p>
+<a name="MoveByTag"></a>
+<b>Move All Chains in Tag as Group.</b> If on, all chains (selected or not)
+within a chain tag are moved with the first selected protein chain in this tag.
+If the checkbox is off, only the selected chains within the chain tag group will
+be moved.
+This checkbox is only enabled if chains in more than one chain tag are
+selected for superposition.
+</p>
+
+<p>
+<a name="AutoAssociate"></a>
+<b>Auto-Associate Non-Protein Chains.</b>
+If this checkbox is on, the selected non-protein chains will be
+automatically associated to the selected protein chains. This is done by
+calculating the number of close contacts, and associating the ligand to the
+protein chain with the most contacts.
+<br />
+This is useful, if only structures in one chain tag are present,
+or only chains of the same chain tag selected. Non-protein chains in
+(e.g. ligands) are by default associated to the first protein chain
+in the tag and would not be moved during the superposition.
+<br />
+This option is not needed and disabled, if
+<b>Move All Chains in Tag as Group</b> is selected.
+</p>
+
+<p>
+<b>Print RMSD Table to CLI.</b> If on, the pairwise root mean square
+distance (RMSD) matrix of the superposed proteins is printed in the <a
+href="../moe/gui/svlcommands.html">SVL Commands window</a>. The matrix
+contains both the pairwise and global RMSD between the superposed protein
+structures. The following is a sample output:
+</p>
+
+<pre><small>
+Pairwise RMSD
+    - lower triangle is pairwise superposition RMSD
+    - upper triangle is optimal global superposition RMSD
+
+    Chains     1     2     3     4     5
+  1:1MCT.A         0.00  0.00  0.00  0.00
+  2:1BIT     1.36        0.00  0.00  0.00
+  3:2CGA.A   1.97  2.22        0.00  0.00
+  4:1ELG     1.10  1.81  2.12        0.00
+  5:1FUJ.A   1.43  1.72  2.18  1.56
+
+
+Superpose RMSD: 1.784 A
+</small></pre>
+
+<p>
+The lower triangle shows the optimal pairwise RMSD obtained by superposing the
+chains in a pairwise fashion, while the upper triangle shows the difference
+between the optimal pairwise RMSD and the actual pairwise RMSD values measured
+in the context of the optimal global superposition. Large differences in the
+two values suggest that the global superposition is not capturing all the
+important pairwise similarities between the chains. The final
+<tt>Superpose RMSD</tt> value is the cumulative global RMSD.
+</p>
+
+<img src="prosup/sup_rmsd.png" alt="Protein Superpose RMSD" align="right" />
+
+<p>
+If off, no table is printed. In either case, the cumulative global
+RMSD is reported in the Protein Superpose panel itself.
+</p>
+
+</tr>
+</table>
+
+<br clear="both" />
+
+
+<a name="Analyzing"><h2>Analyzing Superposition</h2>
+
+<p>
+The Protein Superpose RMSD panel provides visual information (in form of a
+heat map) about the superposition of the protein chains (selected in the
+<a href="#Running">Protein Superpose</a> panel). Detailed information is
+accessible via an interactive <b>RMSD by Residue</b> plot and a textual
+<b>Report</b> option.
+</p>
+
+<table width="100%" cellspacing="5" cellpadding="5">
+
+<tr>
+<td valign="top"><b>Pairwise RMSD Matrix</b>
+<td valign="top">
+<img src="prosup/plotrmsd.png" alt="Protein Superpose RMSD" align="right" />
+The pairwise RMSD matrix is visualized as a color-coded heat map. Column and
+rows list the superposed protein chains (chain name or number). The RMSD
+value of each chain pair is represented at the intersection of the
+column and row by one colored box.
+
+<p>
+The color legend is shown on the right side. The color scale is clamped
+at 4.0 Angstrom; all values above 4.0 are colored dark red in the plot.
+</p>
+
+<b>Grayscale Matrix.</b> Switch between a colored or grayscale matrix plot
+representation of the pairwise RMSD values. This is useful when printing.
+
+<p>
+<b>RMSD Values.</b> If on, show the RMSD value of the chain-chain
+superposition in the corresponding cell of the matrix plot.
+This checkbox is on by default, if the panel is opened with less than 10
+protein chains selected.
+</p>
+
+<p>
+<b>Chain Names.</b> If on, show the chain names in the row headers.
+</p>
+
+</tr>
+
+
+<tr>
+<td valign="top"><b>RMSD by Residue</b>
+<td valign="top">The RMSD by Residue plot shows the quality of the superposition
+of the selected chains on a residue-by-residue level.
+
+<p>
+For each alignment column (i.e. residue pair) used during the superposition the
+RMSD value is represented by a vertical bar. Poor RMSD values are highlighted
+by the dotted red horizontal line cutoff at 2.0 Angstrom.
+Too many residues pairs above this line can indicate a problem in the
+superposition (e.g. caused by an inadequate sequence alignment).
+</p>
+
+<p>
+<img src="prosup/plot_sel.png" alt="RMSD by Residue Selection" align="right"/>
+The residues corresponding to the RMSD bars can be selected by either clicking
+on or dragging with the left mouse button over the bar heads.
+Selected residues are represented by a red circle around the RMSD bar head.
+The residue selection is synchronized with the Sequence Editor.
+</p>
+
+<p>
+<b>Selecting Chain Pair</b>
+</p>
+
+<p>
+<img src="prosup/plot_chn.png" alt="RMSD by Residue Chain Selection" />
+</p>
+
+<p>
+Use the two option menus to select the protein chain pair to be inspected
+in detail.
+On the second option menu the RMSD value of the selected chain pair is appended.
+The current selection is marked in the matrix plot with frames around
+the row and column headers and the corresponding cell.
+</p>
+
+<p>
+<b>Average Chain</b>
+</p>
+
+<p>
+<img src="prosup/plot_avg.png" alt="RMSD by Residue Average Option" />
+</p>
+
+<p>
+The first option menu includes an <em>Average</em> item.
+If <em>Average</em> is selected, the RMSD by Residue plot will show for each
+alignment column the RMSD value to an averaged chain. The atom positions of
+the average chain are calculated from the atoms of the superposed protein
+chains.
+<br />
+This can be useful to examine conserved regions in the superposed proteins.
+</p>
+
+<p>
+<span class="tip"><b>Tip!</b></span>
+To select the conserved residues of a superposition, choose the
+<em>Average</em> chain option and drag with the left mouse button
+over all RMSD bars below 1.0-2.0 Angstrom.
+</p>
+
+<p>
+<b>Zoom.</b> Use the dials at the X/Y-Axis to zoom into the plot.
+Press the reset button (gray box attached to the dial) to reset the
+Axis scale.
+</p>
+
+<p>
+<b>Start.</b> Change the start (left border value) alignment
+position of the RMSD by Residue plot to pan left and right, when using the
+<b>Zoom</b>.
+The slider is disabled when the plot is not zoomed.
+</p>
+
+<p>
+<b>Clear Selection.</b> Deselect all residues associated with the RMSD bars in
+the current RMSD by Residue plot.
+</p>
+
+<tr>
+<td valign="top"><b>Report</b>
+<td valign="top">
+<img src="prosup/ted_rmsd.png" alt="Textual RMSD Report" align="right"/>
+Pressing the <b>Report</b> button will open an SVL Text Editor with a textual
+report of the superposition results. The report includes the RMSD matrix
+and, for each chain pair, the list of residue pairings and their RMSD value.
+
+<p>
+Residue pairs with a RMSD value above 2.0 Angstrom are
+flagged with an exclamation mark (<b>!</b>). If the option
+<b>Accent Secondary Structure Matches</b> was selected in the
+<a href="#Running">Protein Superpose</a> panel.
+The affected residue pairs are marked by a star (<b>*</b>).
+</p>
+
+</tr>
+
+<tr>
+<td valign="top"><b>Export</b>
+<td valign="top">
+The pairwise RMSD matrix plot may be exported into a common image format or
+printed by clicking the <b>Export</b> button, which opens the
+<a href="../apps/print.htm#GraphicExportPanel">Graphic Export Panel</a>.
+
+</tr>
+
+</table>
+
+<br clear="both" />
+
+
+<a name="WorkedExample"></a>
+
+<div class="example">
+
+<h2>Example 1</h2>
+
+<ol>
+<li>Clear the molecular data in MOE with
+<span class="nobr"><b>MOE | File | Close</b></span>
+and ensure that there are no running tasks (use the Cancel menu in the
+MOE window).
+
+<p>
+<li>Load several proteins with
+<span class="nobr"><b>MOE | File | Open</b></span>:
+Select <b><tt>$MOE/sample/mol/1ets.pdb</tt></b>,
+<b><tt>1fax.pdb</tt></b>, and
+<b><tt>1pph.pdb</tt></b>.
+</p>
+
+<p>
+<li>Open the Protein Superpose panel with
+<span class="nobr"><b>MOE | Compute | Biopolymer | Superpose</b></span>.
+</p>
+
+<p>
+<li>Press <b>Selection Hint</b> to select protein chains for superposition.
+</p>
+
+<p>
+Notice that 1ETS.H, 1FAX.A, and 1PPH.E are selected for superposition.
+In this example the chains in the different PDB files are not sorted by a
+unifying scheme, and a default selection would try to superpose
+chain 1ETS.L instead of 1ETS.H with chain 1FAX.A and 1PPH.E.
+</p>
+
+<p>
+<li>Make sure that <b>Move All Chains in Tag as Group</b> is on, so that the
+ligands in the protein complexes are moved along with the protein chains.
+</p>
+
+<p>
+<li>Press <b>Superpose</b>. A dialog appears, explaining, that the protein
+sequences are not aligned. Choose <b>Yes</b> to realign the sequence before
+continuing with the superposition calculation. Alternatively you could have
+aligned the sequences upfront with
+<span class="nobr"><b>MOE | Compute | Biopolymer | Align</b></span>.
+</p>
+
+<p>
+<li>The superposition was successful. Press
+<span class="nobr"><b>MOE | Render | View</b></span>
+to center the structures on the screen.
+To inspect the superposition in the MOE window use:
+<p><ul>
+<li><span class="nobr"><b>MOE | Render | Ribbon | Line</b></span>
+<li><span class="nobr"><b>MOE | Render | Ribbon | Chain Color</b>
+</span>
+<li><span class="nobr"><b>MOE | Render | Hide | Receptor</b></span>
+<li><span class="nobr"><b>MOE | Render | Hide | Solvent</b></span>
+</ul>
+</p>
+
+<p>
+<li>Open the Protein Superpose RMSD panel with the <b>Report RMSD</b> button to
+get details of the superposition: The overall RMSD of the superposition
+was 1.474 A. Select <b>Show RMSD Values</b> to see the RMSD values of the chain
+pairs in the Matrix.
+</p>
+
+<p>
+<li>The lowest pairwise RMSD (1.38A) belongs to the pair 1FAX.A versus 1PPH.E.
+Choose the two chains in the options for the <b>RMSD by Residue</b> plot. You
+can now see the RMSD for each residue pair. A couple of them are standing out
+above
+the 2.0 Angstrom marker. Select them by picking on them in the plot with
+the left mouse button. Once selected (make sure
+<span class="nobr"><b>MOE | Selection | Synchronize</b></span> is on),
+notice that the selected residues are in loop regions of the protein.
+High RMSD values in core regions of the proteins, which seem superposed,
+may indicate a problem with the sequence alignment.
+</p>
+
+</ol>
+
+</div>
+
+<div class="example">
+
+<h2>Example 2</h2>
+
+This second example demonstrates how to use custom chain tags
+to superpose the chains of a protein dimer complex:
+
+<ol>
+<li>Clear the molecular data in MOE with
+<span class="nobr"><b>MOE | File | Close</b></span>
+and ensure that there are no running tasks
+(use the Cancel menu in the MOE window).
+
+<p>
+<li>Load the protein 1AWH with
+<span class="nobr"><b>MOE | File | Open</b></span>:
+Select <b><tt>$MOE/sample/mol/1awh.pdb</tt></b>.
+</p>
+
+<p>
+1AWH is a dimer of a protease/inhibitor complex with four protein
+chains overall.
+</p>
+
+<p>
+<li>Change the Rendering Style:
+<p><ul>
+<li><span class="nobr"><b>MOE | Render | Ribbon | Line</b></span>
+<li><span class="nobr"><b>MOE | Render | Ribbon | Chain Color</b>
+</span>
+<li><span class="nobr"><b>MOE | Render | Hide | Receptor</b></span>
+</ul>
+</p>
+
+<p>
+<li>Open the Protein Superpose panel with
+<span class="nobr"><b>MOE | Compute | Biopolymer | Superpose</b></span>.
+</p>
+
+<p>
+If you now use the <b>Superpose</b> button and accept the realignment
+step, the superposition will fail. The Protein Superpose application
+tries to superpose all four chains onto each other, but the inhibitor chain
+cannot be matched with the protease chain. The dimer has to be split
+before continuing with chain tags.
+</p>
+
+<p>
+<li>Select
+<b><tt>1AWH.A</tt></b>,
+<b><tt>1AWH.B</tt></b>,
+<b><tt>1AWH.L</tt></b>, and
+<b><tt>1AWH.W</tt></b> in the chain list of the
+Protein Superpose panel. Enter "<tt>1AWH.2</tt>" in the <b>Chain Tag</b>
+text field and press <b>Apply</b>.
+</p>
+
+<p>
+<li> The dimer is now split into two chain tags and is ready to be superposed.
+Press <b>Superpose</b>.
+</p>
+
+<p>
+<li>When you open the Protein Superpose RMSD panel with <b>Report RMSD</b>,
+you will see two domains in the RMSD by Residue plot. The first represents the
+inhibitor chains, the second the protease chains.
+Use <b>Zoom</b> and <b>Start</b> to zoom into the spike of the protease chain
+(around alignment position 410).
+Select the RMSD bars above the 2.0 Angstrom marker line
+(make sure MOE | Selection | Synchronize is on).
+The RMSD spike is caused by a deviation of the two chains around ALA 149A.
+</p>
+
+</ol>
+</div>
+
+<a name="SVLCommands"></a><h2>SVL Commands</h2>
+
+<a class="svl" href="fcnref/pro_sup.html">pro_Superpose</a><br />
+<a class="svl" href="fcnref/pro_alig.html">pro_Align</a><br />
+<a class="svl" href="../moe/fcnref/superpos.htm">Superpose</a><br />
+<a class="svl" href="../moe/fcnref/chain.htm">cSetTag</a><br />
+<a href="fcnref/intropro.html">Protein Functions</a><br />
+
+
+<a name="References"></a><h2>References</h2>
+
+
+<table cellpadding=5 border=0>
+
+<tr>
+<td valign=top>[Shapiro&nbsp;1992]
+<td valign=top>
+Shapiro, A., <i>et al.</i>; A Method for Multiple Superposition of Structures;
+<i>Acta Cryst A48</i> (<b>1992</b>) 11&ndash;14.
+
+</tr>
+<tr>
+
+<td valign=top>[Damm&nbsp;2006]
+<td valign=top>
+Damm, K., Carlson, H.; 
+Gaussian-Weighted RMSD Superposition of Proteins: A Structural
+Comparison for Flexible Proteins and Predicted Protein Structures;
+<i>Biophys J 90</i> (<b>2006</b>) 4558&ndash;4573.
+
+</tr>
+
+</table>
+
+
+<h2>See Also</h2>
+
+<a href="pdb_mdb.htm">MOE Protein Database</a><br />
+<a href="propred.htm">Secondary Structure and Solvent Accessibility
+Prediction</a><br />
+<a href="align.htm">Sequence and Structure Alignment</a><br />
+<a href="procore.htm">Structural Core Analysis and Modeling</a><br />
+<a href="../moe/gui/select.htm">Residue Selector</a><br />
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

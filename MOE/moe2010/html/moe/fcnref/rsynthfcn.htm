@@ -1,0 +1,302 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<!--
+!!	rsynthfcn.htm			Retrosynthesis Functions
+!!
+!!	01-aug-2009 (pl) created
+!!
+!!-->
+
+<meta keywords />
+<meta functions RetrosynthOpen, RetrosynthClose />
+<meta functions RetrosynthScoreMOL, RetrosynthScoreCTAB />
+<meta functions RetrosynthScoreSMI, RetrosynthScore />
+<meta functions RetrosynthTrainSDF />
+
+<title>Synthetic Feasibility Functions</title>
+
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Synthetic Feasibility Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    ctx = <a class="fcnlink" href="#RetrosynthOpen">RetrosynthOpen</a> []
+    ctx = <a class="fcnlink" href="#RetrosynthOpen">RetrosynthOpen</a> ctx
+          <a class="fcnlink" href="#RetrosynthClose">RetrosynthClose</a> ctx
+
+    <a class="fcnlink" href="#RetrosynthTrainSDF">RetrosynthTrainSDF</a> [in_files, mdbfile, opt]
+    opt = [update: flag]
+
+    filename = GetRC ['RetrosynthMaterials', '$MOE/lib/rsynth.smi'];
+               SetRC ['RetrosynthMaterials', filename]
+
+    [mscore, ascore] = <a class="fcnlink" href="#RetrosynthScoreMOL">RetrosynthScoreMOL</a>  [ctx, mol   ]
+    [mscore, ascore] = <a class="fcnlink" href="#RetrosynthScoreCTAB">RetrosynthScoreCTAB</a> [ctx, ctab  ]
+    [mscore, ascore] = <a class="fcnlink" href="#RetrosynthScoreSMI">RetrosynthScoreSMI</a>  [ctx, smiles]
+    [mscore, ascore] = <a class="fcnlink" href="#RetrosynthScore">RetrosynthScore</a>     [ctx, atoms ]
+</pre>
+
+<h2>Description</h2>
+
+<p>
+The <tt>Retrosynth*</tt> functions are intended to assess synthetic
+feasibility of a molecule.  The results of the analysis are summarized
+in two ways a)&nbsp;as single score between 0 and 1 with 1 meaning fully
+feasible and 0 meaning not feasible; and b)&nbsp;as a score per heavy atom of
+the molecule (indicating which parts of the molecule are problematic).
+The method of assessment is as follows:
+</p>
+
+<ol>
+<li>
+Perform repeated bond disconnections according to retrosynthetic rules until
+no more disconnections can be made.
+Each disconnection fragments the molecule into one or more further fragments
+each of which is a molecule.  For example, in hydrolysis reactions, hydroxyl
+groups are added to &quot;cap&quot; the fragments.
+</li>
+<p>
+<li>
+Each resulting molecule fragment resulting from the disconnection is
+converted to a unique SMILES representation and a lookup is conducted
+in a &quot;starting materials&quot; database.  The starting materials
+database was produced from a large collection of molecules subjected
+to the disconnection procedure.
+</li>
+</p>
+<p>
+<li>
+A score is derived for each heavy atom in the original molecule.  If
+an original atom ended up in a fragment that was found in the
+starting materials database, then the atom is considered <i>covered</i>.
+The score for the whole molecule is the percentage of covered heavy atoms
+in the original molecule.
+</li>
+</p>
+</ol>
+
+<p>
+The collection of chemical bonds considered in the generalized retrosynthetic
+disconnections include:
+</p>
+
+<ul>
+<li>Imine, (thio)amide, (thio)ester, enamine and acetal hydrolysis
+<li>Glycine C&ndash;N, glycerol, disulfide and biphenyl bonds
+<li>Aldol, malonate and conjugate addition reactions
+<li>Mono aryl diketone groups
+<li>Amino benzyl, aryl ether, and amino pyridine bonds
+<li>Aklyl imide bonds
+<li>Claisen reactions
+<li>Epoxide opening
+<li>2+3 cycloaddition (triazole and tetrazole) and certain diazo bonds
+<li>Electrophilic, nucleophilic aromatic substitution and ortho lithiation
+</ul>
+
+<p>
+A typical use of this analysis is to assign a synthetic feasibility or
+plausibility score to hypothesized <i>de novo</i> assemblies of chemical
+structures.
+</p>
+
+<blockquote>
+<pre>
+local ctx = RetrosynthOpen [];
+...
+local mol = ...
+local [mscore,ascore] = RetrosynthScoreMOL [ctx,mol];
+...
+RetrosynthClose ctx;
+</pre>
+</blockquote>
+
+<p><a name="RetrosynthClose"></a></p>
+<p><a name="RetrosynthOpen"></a></p>
+<p><a name="RetrosynthTrainSDF"></a></p>
+<p><hr noshade /></p>
+
+<pre>ctx =  <span class="fcndef">RetrosynthOpen</span> []
+ctx =  <span class="fcndef">RetrosynthOpen</span> ctx
+       <span class="fcndef">RetrosynthClose</span> ctx
+
+<span class="fcndef">RetrosynthTrainSDF</span> [in_files, mdbfile, opt]
+opt = [update: flag]
+
+file = GetRC ['RetrosynthMaterials', $MOE/lib/rsynth.smi'];
+       SetRC ['RetrosynthMaterials', filename]
+</pre>
+
+<p>
+The <tt>RetrosynthOpen</tt> function returns an object key suitable for
+use in the <tt>RetrosynthScore*</tt> functions.  When no longer needed,
+<tt>RetrosynthClose</tt> must be called to free the resources allocated
+by <tt>RetrosynthOpen</tt>.  For each call to <tt>RetrosynthOpen</tt>,
+there must be a corresponding call to <tt>RetrosynthClose</tt>.
+The starting materials database used by <tt>RetrosynthOpen</tt> is specified
+in the <tt>moe-rc</tt> file entry <tt>RetrosynthMaterials</tt> which
+specifies a file in <tt>$MOE/lib</tt> by default.
+</p>
+<p>
+A new database can be trained with <tt>RetrosynthTrainSDF</tt> which
+processes a collection of SD files specified by <tt>in_files</tt>.
+Wildcards are permitted; for example, <tt>'src*.sdf'</tt> can be used
+instead of <tt>['src1.sdf','src2.sdf','src3.sdf']</tt>.
+</p>
+
+<p>
+The output fragments are written to a MOE molecular database file
+specified by <tt>mdbfile</tt>.
+Three fields will be output:
+</p>
+
+<center>
+<table class="titlebar" border="1" cellpadding="3" width="85%">
+
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="baseline"><tt>mol</tt>
+</td>
+<td valign="baseline">A molecule field for storing the fragments obtained
+from applying the disconnection procedure to all the molecules found
+in the <tt>in_files</tt>.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>smi</tt>
+</td>
+<td valign="baseline">A character data field for storing the unique
+SMILES string of each fragment.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>freq</tt>
+</td>
+<td valign="baseline">A numeric data field containing
+the frequency of occurrence of each fragment in the input molecules.
+</td>
+</tr>
+</table>
+
+</center>
+
+<p>
+<tt>opt</tt> is an optional argument
+that is used to specify how <tt>mdbfile</tt> is to be updated.
+The default action (<tt>flag</tt> is 0) is to overwrite the file
+(all previous contents are lost).
+If <tt>flag</tt> is 1, the contents of <tt>mdbfile</tt> are updated:
+if the fragment under consideration already exists in the file,
+the newly calculated frequency of occurrence is added to the value
+already there.
+If the fragment is not found in the file, it is appended
+along with its unique SMILES string and frequency of occurrence value.
+</p>
+
+<p>
+Once the <tt>mdbfile</tt> has been written, it should be inspected and
+filtered for reasonable structures with reasonable frequencies.  The
+resulting <tt>mdbfile</tt> is then ready for use by <tt>RetrosynthOpen</tt>.
+For <tt>RetrosynthOpen</tt> to reference the new file, the
+<tt>RetrosynthMaterials</tt> value in
+the <tt>moe-rc</tt> file must be updated.  This can be achieved using the
+<tt>SetRC</tt> command.
+The <tt>GetRC</tt> command will retrieve the current value of
+<tt>RetrosynthMaterials</tt>.  If an entry of this name
+is missing from the <tt>moe-rc</tt>
+file, <tt>GetRC</tt> will return its second argument, the default value, which
+will also be used by <tt>RetrosynthOpen</tt>.
+</p>
+
+<p><a name="RetrosynthScore"></a></p>
+<p><a name="RetrosynthScoreSMI"></a></p>
+<p><a name="RetrosynthScoreCTAB"></a></p>
+<p><a name="RetrosynthScoreMOL"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+[mscore, ascore] = <span class="fcndef">RetrosynthScoreMOL</span>  [ctx, mol   ]
+[mscore, ascore] = <span class="fcndef">RetrosynthScoreCTAB</span> [ctx, ctab  ]
+[mscore, ascore] = <span class="fcndef">RetrosynthScoreSMI</span>  [ctx, smiles]
+[mscore, ascore] = <span class="fcndef">RetrosynthScore</span>     [ctx, atoms ]
+</pre>
+
+<p>
+The <tt>RetrosynthScore*</tt> functions calculate synthetic feasibility
+scores when given a molecule structure and a valid context as returned by
+<tt>RetrosynthOpen</tt>.  The functions are capable of handling MOL, CTAB,
+SMILES strings and system atom keys, as indicated by the function names.
+These functions return two values:
+</p>
+
+<blockquote>
+
+<dl>
+
+<dt><tt>mscore</tt></dt>
+<dd>A scalar score in the range [0,1] for an entire molecule
+denoting the fraction of the
+heavy atoms of the input molecule that ultimately ended up in a retrosynthetic
+fragment found in the starting materials database.  A value of one indicates
+that the molecule is very likely synthesizable.
+</dd>
+
+<dt><tt>ascore</tt></dt>
+<dd>
+A score for each atom in the input molecule indicating whether or not
+that atom ended up in a retrosynthetic fragment found in the starting
+materials database (a covered atom).  These values can be used to locate
+the synthetically problematic areas in the input molecule.
+</p>
+</dd>
+
+</dl>
+</blockquote>
+
+<h2>See Also</h2>
+<p>
+<a class="svl" href="smartsfcn.htm">sm_ExtractUnique</a><br />
+<a class="svl" href="ctabfcn.htm">ctab_Extract</a><br />
+<a class="svl" href="extract.htm">mol_Extract</a><br />
+<a class="svl" href="obj.htm">Atoms</a><br />
+<a class="svl" href="rc.htm">GetRC</a><br />
+<a class="svl" href="rc.htm">SetRC</a>
+</p>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

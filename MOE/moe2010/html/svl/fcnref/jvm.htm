@@ -1,0 +1,547 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+<meta keywords>
+<meta functions jvm>
+
+<title>SVL/java Subsystem</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>SVL/java Subsystem</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+<pre>
+    [result, code] = <a class="fcnlink" href="#jvm">jvm</a> ['class', arg]
+</pre>
+
+<h2>Java Syntax</h2>
+<pre>
+    public interface <a class="fcnlink" href="#SVLJavaDriver">SVLJavaDriver</a> {
+	public SVLVar run(SVLvar arg, int tid) throws SVLJavaException;
+    }
+
+    void SVLJava.print(String string)
+
+    public final class <a class="fcnlink" href="#SVLVar">SVLVar</a>
+
+	SVLVar()
+	SVLVar(String str, boolean mktoken)
+	SVLVar(String[] toklist)
+	SVLVar(byte val)
+	SVLVar(byte[] vals)
+	SVLVar(int val)
+	SVLVar(int[] vals)
+	SVLVar(double val)
+	SVLVar(double[] vals)
+	SVLVar(SVLVar var)
+	SVLVar(SVLVar[] vlist)
+	SVLVar(SVLVar[] vlist, int len)
+	SVLVar(String[] tags, SVLVar[] vals)
+
+	void	clear()
+	void	copyFrom(SVLVar src)
+
+	byte[]   getBytes()		throws SVLJavaException
+	int      getInt()		throws SVLJavaException
+	int[]    getInts()		throws SVLJavaException
+	double   getReal()		throws SVLJavaException
+	double   getReals()		throws SVLJavaException
+	String   getTokn()		throws SVLJavaException
+	String[] getTokns()		throws SVLJavaException
+	String   getString()		throws SVLJavaException
+	SVLVar   getTagVar(String tag)	throws SVLJavaException
+	boolean  isNull()
+	boolean  isByte()
+	boolean  isChar()
+	boolean  isInt()
+	boolean  isReal()
+	boolean  isTokn()
+	boolean  isList()
+	void	 keep(int n)
+	int      length()
+	SVLVar   peek(int pos)			     throws SVLJavaException
+	void	 untag(String[] tags, SVLVar[] vals) throws SVLJavaException
+
+    int <a class="fcnlink" href="#Persistent_Objects">SVLjvm.addResource</a>(Object obj, int tid, String dtor, String javaClass)
+	throws SVLJavaException
+
+    Object <a class="fcnlink" href="#SVLjvm_getResourceObject">SVLjvm.getResourceObject</a>(int rid)
+    int    <a class="fcnlink" href="#SVLjvm_getResourceTID">SVLjvm.getResourceTID</a>(int rid)
+    void   <a class="fcnlink" href="#SVLjvm_removeResource">SVLjvm.removeResource</a>(int rid)
+</pre>
+
+<h2>Description</h2>
+
+<p>
+The <a class="fcndef" name="jvm">jvm</a>
+function provides for execution of Java class code from
+SVL programs.  The <tt>class</tt> argument to <tt>jvm</tt> is a token
+containing the Java class that is to be accessed.
+This class must implement the
+<a class="svl" href="#SVLJavaDriver">SVLJavaDriver</a> interface
+(described below).  <tt>arg</tt> is the SVL argument vector
+to be given to the class.  The <tt>jvm</tt> function will invoke
+the following operations:
+
+<ol>
+<li>The current SVL task is blocked.
+<li>A Java Virtual Machine will be started (if one is not already running).
+<li>The <tt>class</tt> token and <tt>arg</tt> vector are sent to the JVM.
+<li>A new object of class <tt>class</tt> will be initialized with <tt>arg</tt>.
+<li>The methods of <tt>class</tt> run in a separate Java thread.
+<li>The result of the <tt>class</tt> is transmitted back to <tt>SVL</tt>.
+<li>The SVL task is unblocked.
+</ol>
+
+<p>Note: It is assumed that Java has been properly installed and that
+the location of the installation is found either in the system
+<tt>PATH</tt> environment variable or in the <tt>SVL_JVM</tt>
+environment variable which points to the Java executable to use.
+It is also assumed that either the <tt>CLASSPATH</tt>
+or <tt>SVL_CLASSPATH</tt> environment variable is set.  These
+specify the default search path used by all Java programs to
+find Java class files.
+</p>
+
+<p>
+The return values of <tt>jvm</tt> are similar to those of
+<a class="svl" href="tskcall.html">task_call</a>.
+The value of <tt>code</tt> will be an empty token if the function executed
+successfully, otherwise it is <tt>'error'</tt>.
+In the case of an error, the value of
+<tt>result</tt> is a token describing the error. Otherwise, <tt>result</tt> is
+the output vector returned by the Java <tt>class</tt> program.
+It is typical to package a number of functions into a single Java class, and
+implement each of them based on a switch parameter. Each distinct function can
+be encapsulated in an SVL wrapper function. The following example defines an
+SVL interface for a set of Java functions for opening a ZIP file,
+reading a list of contained files, then closing it:
+
+<blockquote><pre>
+local function jvmzip arg
+    local [result,code] = jvm ['SVL_ZipReader', arg];
+    if code == 'error' then exit result; endif
+    return result;
+endfunction
+
+global function zip_open  name = jvmzip ['open' , name ];
+global function zip_list  key  = jvmzip ['list' , key  ];
+global function zip_close key  = jvmzip ['close', key  ];
+
+function main []
+    local key = zip_open 'test.zip';
+    print zip_list key;
+    zip_close key;
+endfunction
+</pre></blockquote>
+
+<p>
+<a name="SVLJavaDriver"><b>SVLJavaDriver</b></a>.
+Java code that is to be callable from SVL must be wrapped in a class
+that implements the <tt>SVLJavaDriver</tt> interface.  The interface
+<tt>run</tt> method accepts an <tt>SVLVar</tt> object containing the
+input <tt>arg</tt> into which the results must be written with
+<tt>arg.copyFrom</tt>.  The <tt>tid</tt> argument identifies the
+SVL task that initiated the request and is used
+to associate persistent objects with the task.
+To implement the above example,
+
+<blockquote><pre>
+import svljava.*;
+import java.io.*;
+import java.util.*;
+import java.util.zip.*;
+
+public class SVL_ZipReader implements SVLJavaDriver
+{
+    private int taskID = 0;		// SVL task identifier
+
+	// These will be defined fully, below
+
+    private SVLVar z_open  (SVLVar var) throws SVLJavaException, IOException {...};
+    private SVLVar z_close (SVLVar var) throws SVLJavaException, IOException {...};
+    private SVLVar z_list  (SVLVar var) throws SVLJavaException, IOException {...};
+
+	// the run method must implement thread-safe functionality
+
+    public SVLVar run(SVLVar arg, int tid) throws SVLJavaException
+    {
+	taskID = tid;
+
+	try {
+	    String cmd = arg.getTokn(1);	// subcommand
+	    SVLVar res = arg.peek(2);		// its argument
+
+	    if      (cmd.equals(&quot;open&quot; )) res = z_open(res);
+	    else if (cmd.equals(&quot;close&quot;)) res = z_close(res);
+	    else if (cmd.equals(&quot;list&quot; )) res = z_list(res);
+	    else {
+		throw new SVLJavaException(&quot;Unknown command: '&quot; + cmd + &quot;'.&quot;);
+	    }
+	    return res;
+	}
+	catch (Exception ex) {
+	    StringWriter sw = new StringWriter();
+	    ex.printStackTrace(new PrintWriter(sw));
+	    throw new SVLJavaException(&quot;Exception:\n&quot;+sw.toString());
+	}
+    }
+}
+</pre></blockquote>
+
+<p>
+Exception details are written to the log file (if enabled via the JVM
+command line).  Other data may be written to the log file with the
+<tt>SVLJava.print</tt> method.
+
+<p>
+<a name="SVLVar"><b>SVLVar</b></a>.
+All communication between SVL and the Java class is done by passing instances
+of the <tt>SVLVar</tt> variable, which is a Java representation of an SVL
+vector, of arbitrary shape. An <tt>SVLVar</tt> instance is largely immutable
+and extracted values must not be modified.
+The different constructor forms are:
+
+</table></blockquote>
+<blockquote><dl>
+<p>
+<dt><tt>SVLVar()</tt>
+<dd>
+Create a null vector (length 0).
+<p>
+<dt><tt>SVLVar(String str, boolean mktoken)</tt>
+<dd>
+If <tt>mktoken</tt> is true, creates a vector which contains a single token
+with the value specified by  <tt>str</tt>. Otherwise a flat vector
+of characters is created which are taken from <tt>str</tt>.
+<p>
+<dt><tt>SVLVar(String[] toklist)</tt>
+<dd>
+Create a flat vector of tokens.
+<p>
+<dt><tt>SVLVar(byte bval)</tt><br><tt>SVLVar(byte[] bvals)</tt>
+<dd>
+Create a scalar or a flat vector of byte values.
+<b>Warning!</b> Currently byte values are actually converted to character
+vectors but future versions of SVL will distinguish bytes and characters.
+<p>
+<dt><tt>SVLVar(int num)</tt><br><tt>SVLVar(int[] nums)</tt>
+<dd>Create a scalar or a flat vector of integers.
+<p>
+<dt><tt>SVLVar(double real)</tt><br><dt><tt>SVLVar(double[] reals)</tt>
+<dd>Create a scalar or a flat vector of floating point values.
+<p>
+<dt><tt>SVLVar(SVLVar var)</tt>
+<dd>
+Create a nested version of <tt>var</tt>, i.e. <tt>[var]</tt>.
+<b>Warning!</b> The result will be converted to the flattest possible
+representation; for example, if <tt>var</tt> is a scalar then the
+result will be a scalar.
+<p>
+<dt><tt>SVLVar(SVLVar[] vlist)</tt><br><dt><tt>SVLVar(SVLVar[] vlist, int len)</tt>
+<dd>
+Create a vector of vectors.  If <tt>len</tt> is given, only the first
+<tt>len</tt> elements of <tt>vlist</tt> are used.
+<b>Warning!</b> The result will be converted to the flattest possible
+representation; for example, if all of the <tt>vlist</tt> items contain
+integers, the returned <tt>SVLVar</tt> will contain a flat vector of integers. 
+<p>
+<dt><tt>SVLVar(String[] tags, SVLVar[] vals)</tt>
+<dd>
+Create a tagged vector usings the strings in <tt>tags</tt> as the tags
+and the vectors in <tt>vals</tt> as the values.
+</dl></blockquote>
+
+<p>An instance of <tt>SVLVar</tt> cannot be modified, except by
+the following methods
+
+<blockquote><dl>
+<dt><tt>clear()</tt>
+<dd>
+Clear the data references of the <tt>SVLVar</tt> effectively setting
+the value to a null vector (length 0).
+<p>
+<dt>
+<dt><tt>copyFrom(SVLVar src)</tt>
+<dd>
+Copy the data references of <tt>var</tt> resulting in an identical copy
+of <tt>var</tt> (which is not modified).
+<b>Note!</b> The copy is shallow; i.e. not a clone.
+</dl></blockquote>
+
+<p>
+For example, to create a Java representation of the vector
+<tt>['hello',&nbsp;&quot;world&nbsp;world&quot;,&nbsp;25]</tt>
+in the Java variable <tt>var</tt>, the following Java code can be used
+
+<blockquote><pre>
+SVLVar[] vals = new SVLVar[3];
+
+vals[0] = new SVLVar(&quot;hello&quot;,true);		// make a token
+vals[1] = new SVLVar(&quot;world world&quot;,false);	// make a string
+vals[2] = new SVLVar(25);
+
+SVLVar var = new SVLVar(vals);
+</pre></blockquote>
+
+<p>
+and to create the tagged vector
+<tt> [t_val:'hello', c_val:&quot;world world&quot;, i_val:25]</tt>
+in the Java variable <tt>tvar</tt>, the following Java code can be added
+
+<blockquote><pre>
+String[] tags = { &quot;t_val&quot;, &quot;c_val&quot;, &quot;i_val&quot; };
+SVLVar tvar = new SVLVar(tags, vals);
+</pre></blockquote>
+
+<p>
+The contents of an <tt>SVLVar</tt> may be inspected by a variety of
+methods.  In general, value extraction methods will throw an
+<tt>SVLJavaException</tt> if the contained data is not convertible
+to the desired return data type; e.g. extracting an integer value
+from an <tt>SVLVar</tt> that contains a token will throw an excpetion.
+<b>Warning!</b> The values returned by the inspection methods
+must be treated as read only.
+
+
+<blockquote><dl>
+<dt><tt>byte[] getBytes() throws SVLJavaException</tt>
+<dd>
+Return a byte array containing the <tt>SVLVar</tt> contents for
+character, byte, integer and real types.  An exception is thrown for
+other types or if the contained data is not a flat vector.
+The returned array is of size zero for null vectors.
+<p>
+<dt><tt>int getInt() throws SVLJavaException</tt>
+<br><tt>double getReal() throws SVLJavaException</tt>
+<br><tt>String getTokn() throws SVLJavaException</tt>
+<dd>
+Return the scalar integer (real, token) value of
+<tt>SVLVar</tt>.
+An exception is thrown for non-1-length vectors or for inappropriate data types.
+Use <tt>peek</tt> to access individual members of non-scalar vectors.
+<p>
+<dt><tt>int[] getInts() throws SVLJavaException</tt>
+<br><tt>double[] getReals() throws SVLJavaException</tt>
+<br><tt>String[] getTokns() throws SVLJavaException</tt>
+<dd>
+Return the vector integer (real, token) values of
+<tt>SVLVar</tt> as a Java array.
+An exception is thrown for inappropriate data types.  An array of zero size
+is returned for null vectors.
+<p>
+<dt><tt>String getString() throws SVLJavaException</tt>
+<dd>
+Return a (possibly empty) string containing the bytes
+of flat character vectors or token scalars.  An exception is thrown
+for other data types.
+
+<p>
+<dt><tt>SVLVar getTagVar(String tag) throws SVLJavaException</tt>
+<dd>
+Return a value from a tagged vector.  If the <tt>SVLVar</tt> is not
+a tagged vector than an exception is thrown.  If <tt>tag</tt> is not
+present in the <tt>SVLVar</tt> then a null vector is returned.
+
+<p>
+<dt><tt>boolean isNull()</tt>
+<dd>
+Return true if the <tt>SVLVar</tt> has length 0.
+<p>
+<dt><tt>boolean isByte()</tt>
+<br><dt><tt>boolean isChar()</tt>
+<br><dt><tt>boolean isInt()</tt>
+<br><dt><tt>boolean isReal()</tt>
+<br><dt><tt>boolean isTokn()</tt>
+<dd>
+Return true if the <tt>SVLVar</tt> is a flat vector of one or more
+bytes, characters, integers, reals or tokens (respectively).
+<p>
+<dt><tt>boolean isList()</tt>
+<dd>
+Return true if the <tt>SVLVar</tt> is an inhomogeneous vector of
+one or more vectors; i.e. a vector in which the other <tt>is*</tt>
+methods would all return false.
+<p>
+<dt><tt>void keep(int n)</tt>
+<dd>
+Keep up to the first <tt>n</tt> elements of the <tt>SVLVar</tt>.  Any other
+elements are lost. 
+This is equivalent to the SVL <tt>keep</tt> function.
+<p>
+<dt><tt>int length()</tt>
+<dd>
+Return the length of the <tt>SVLVar</tt>.
+<p>
+<dt><tt>SVLVar peek(int pos) throws SVLJavaException</tt>
+<dd>Return the element at index <tt>pos</tt> of the <tt>SVLVar</tt>.
+The <tt>pos</tt> index must be strictly greater than 0 otherwise an
+exception is thrown.  If <tt>pos</tt> is greater than the length of
+the <tt>SVLVar</tt> then the null vector is returned.
+<p>
+<dt><tt>void untag(String[] tags, SVLVar[] vals) throws SVLJavaException</tt>
+<dd>
+Store the tags and values of a tagged vector into two separate arrays.
+This is similar to the <tt>untag</tt> SVL function.
+The input arrays should be declared to be of size equal to the vector
+length (or larger).  If the <tt>SVLVar</tt> is not a tagged vector
+then an exception is thrown.
+</dl></blockquote>
+
+<p>
+For example, to extract data from an <tt>SVLVar</tt> object
+<tt>var</tt> that contains
+<tt>['hello',&nbsp;&quot;world&nbsp;world&quot;,&nbsp;25]</tt>
+the following Java code can be used:
+
+<blockquote><pre>
+String t_val = var.peek(1).getTokn();
+String c_val = var.peek(2).getString();
+int i_val = var.peek(3).getInt();
+</pre></blockquote>
+
+<p>
+and to extract data from an <tt>SVLVar</tt> object <tt>var</tt> that
+contains
+<tt> [t_val:'hello', c_val:&quot;world world&quot;, i_val:25]</tt>
+the following Java code can be used:
+
+<blockquote><pre>
+String t_val = &quot;&quot; , c_val = &quot;&quot;;		    // set default values
+int i_val = 0;
+
+String[] tags = new String[var.length()];   // untag the data
+SVLVar[] vals = new SVLVar[var.length()];
+var.untag(tags,vals);
+
+for (int i = tags.length; --i &gt;= 0; ) {
+    if      (tags[i].equals(&quot;t_val&quot;)) t_val = vals[i].getTokn();
+    else if (tags[i].equals(&quot;c_val&quot;)) c_val = vals[i].getString();
+    else if (tags[i].equals(&quot;i_val&quot;)) i_val = vals[i].getInt();
+}
+</pre></blockquote>
+
+<p>
+Note that this code takes the first instance of a tag if there are multiple
+instances (since the tagged vector is scanned in last-to-first order).
+Also, default values will be used when tags are missing.
+
+<p>
+<a name="Persistent_Objects"><b>Persistent Objects</b></a>.
+Objects and resources that are to persist between calls to
+<tt>SVLJavaDriver</tt> methods must be registered as <tt>SVLResource</tt>
+objects.  This will form an association between an object, an
+<tt>SVLJavaDriver</tt> class and an owning SVL task.  Each such resource
+will have an identifier that can be returned to the calling SVL task
+to serve as a key for future calls to the class methods.
+Additionally, the resource will automatically be destroyed when
+the owning SVL task terminates.
+
+<p>
+In the <tt>SVL_ZipReader</tt> example, the <tt>z_open</tt> method is given
+a filename which must be used to open a Zip file.  This Zip file must be
+be persistent so that future calls to <tt>z_getfile</tt> and <tt>z_close</tt>
+can use the Zip file opened by <tt>z_open</tt>.
+The persistence and key allocation are performed with
+<a class="fcndef" name="addResource">SVLjvm.addResource</a>
+which accepts an object, a task id, the name of
+a destruction method and a Java class name.
+The following code can be used to implement <tt>z_open</tt>:
+
+<blockquote><pre>
+private SVLVar z_open (SVLVar var) throws SVLJavaException, IOException
+{
+    String filename = var.getTokn();
+    ZipFile zip = new ZipFile(filename);
+    int key = SVLjvm.addResource(zip, taskID, &quot;close&quot;, &quot;ZipFile&quot;);
+    return new SVLVar(key);
+}
+</pre></blockquote>
+
+<p>
+<a name="SVLjvm_getResourceObject"></a>
+The <tt>z_list</tt> method accepts a previously opened key and
+returns the list of files in the Zip file.  To do this, the ZipFile
+associated with the key must be located with
+<a class="fcndef" name="getResourceObject">SVLjvm.getResourceObject</a>.
+
+<blockquote><pre>
+private SVLVar z_list (SVLVar var) throws SVLJavaException, IOException
+{
+    int key = var.getInt();
+    ZipFile zip = (ZipFile)SVLjvm.getResourceObject(key);
+
+	// extract out the filenames from the zip file into a string
+	// array and return to SVL (tokens)
+
+    String[] name = new String[zip.size()];
+    int i = 0;
+    for (Enumeration e = zip.entries(); e.hasMoreElements(); i++)
+	name[i] = ((ZipEntry)(e.nextElement())).getName();
+
+    return new SVLVar(name);
+}
+</pre></blockquote>
+
+<p>
+<a name="SVLjvm_removeResource"></a>
+<a name="SVLjvm_getResourceTID"></a>
+The <tt>z_close</tt> method closes a Zip file previously opened with
+<tt>z_open</tt>.  By calling the
+<a class="fcndef" name="removeResource">SVLjvm.removeResource</a> method,
+the underlying registered destructor for the object will be called.
+The only complication is that, by convention, we only destroy the
+resource if the calling task is the same as the one that created
+the resource, which is obtained with
+<a class="fcndef" name="getResourceTID">SVLjvm.getResourceTID</a>.
+
+<blockquote><pre>
+private SVLVar z_close (SVLVar var) throws SVLJavaException, IOException
+{
+    int key = var.getInt();
+    Object obj = SVLjvm.getResourceObject(key);
+    if (obj != null &amp;&amp; SVLjvm.getResourceTID(key) == taskID)
+	SVLjvm.removeResource(key);
+    return new SVLVar();
+}
+</pre></blockquote>
+
+<p>
+For complex persistent objects, a separate class may be required to
+hold all of the associated data and/or provide a simple destroy method.
+
+<h2>See Also</h2>
+
+<p>
+<a href="jdbc_fcn.htm">JDBC functions</a><br />
+<a href="../../moe/fcnref/sockfcn.htm">Socket functions</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

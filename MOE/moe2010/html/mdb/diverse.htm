@@ -1,0 +1,350 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<meta panel Diverse Subset>
+<meta panel Database Diverse Subset>
+<title>Calculating Diverse Subsets</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Calculating Diverse Subsets</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Methodology">Methodology</a>
+<li><a href="#RunningDiverseSubset">Running Diverse Subset</a>
+<li><a href="#Panel">Diverse Subset Panel Reference</a>
+</ul>
+
+<p>The Diverse Subset application is used to select diverse subsets of compounds 
+by ranking entries in a database based on their
+distance from a reference set and from each other, using some 
+diversity metric. The ranking order is used  
+to extract a diverse subset of a user-specified size.
+</p>
+
+<a name="Methodology"></a>
+<h2>Methodology</h2>
+
+<p>
+<p>
+The MOE Diverse Subset application assigns a diversity ranking order to 
+entries in a database.  The <i>N</i> reference set entries are all given 
+a rank of 1. The diverse subset entries are given ranks 2 (highest rank)
+to (<i>M</i>+1), where <i>M</i> is the number of diverse entries to be ranked,
+as specified in the <b>Output Limit</b> option. 
+The rank numbers are written to the database in a field named $DIVPRIO.
+If the database has been clustered, Diverse Subset can be used to rank 
+the entries in each cluster separately.  In this case the <i>N</i> reference set 
+entries in each cluster are assigned the rank number of 1, with 
+the diverse subset in each cluster assigned ranks 2 to (<i>M</i>+1). Since each cluster is ranked
+separately, the same rank numbers can be assigned to diverse entries from 
+different clusters.  
+
+<p>
+To choose the subset, Diverse Subset repeatedly chooses entries 
+that are the farthest from both the <i>N</i> reference entries
+and the currently-ranked entries. 
+The calculation for determining which entry is the farthest 
+is described <a href="#CalculatingDistance">below</a>.  
+The ranking process stops when the number of entries ranked reaches
+either the user-specified limit <b>Output Limit</b> (<i>M</i>), or
+when all entries in the database have been ranked 
+(when the <b>Output Limit</b> is set to 0).  
+Any remaining unranked entries are all assigned the same rank <i>X</i>, 
+where <i>X</i> is larger than any of the ranks already assigned.
+
+<p>
+The reference set is always the first <i>N</i> entries in the 
+database, if no cluster field is specified, or the first <i>N</i>
+entries in each cluster, if a cluster field is specified. The number 
+of reference compounds, <i>N</i>, is specified in the <b>Seed Count</b>
+option in the panel. Since the first <i>N</i> database entries are 
+used as the reference set, the final rank orders will depend on the 
+initial ordering of the entries in the database.  Thus, to prepare 
+data for ranking, you should sort the database so that the <i>N</i> 
+reference entries are the first <i>N</i> entries in the database
+(if no cluster field is used) or so that the reference entries
+are the first <i>N</i> entries in each cluster (if a cluster field 
+is used).
+</p>
+
+<a name="CalculatingDistance"></a>
+<h4>Determining the Farthest Entry</h4>
+
+<p>
+To determine which unranked entry is next to be ranked, 
+the minimum of its distances between the ranked entries and the 
+reference set are computed, and the entry with the largest such
+minimum distance is deemed to be the farthest.
+
+<p>
+There are several ways to calculate the distance between two entries,
+depending on the data used in the distance calculation:
+
+<p>
+<ol>
+<li><a href="../quasar/descr.htm">Descriptors.</a> Suppose you have selected
+<i>n</i> descriptor values (scalar numbers, e.g. QuaSAR
+descriptors) for the distance calculation.  Then the distance between two
+entries is calculated to be the Euclidean distance between their
+corresponding points in <i>n</i>-dimensional descriptor space.
+
+<p>
+If descriptors span significantly different value ranges (e.g.
+0.01 to 0.02 <i>vs.</i> -1000 to 1000), you can stipulate that the
+descriptor values be first normalized to unit variance before distances
+are calculated.
+
+<p>
+<li><a href="ph4intro.htm">Fingerprints.</a> Distance is calculated using a
+similarity metric, such as the Tanimoto Coefficient.  You can choose from
+any of the currently loaded similarity metrics.
+
+<p>
+<li><a href="../apps/confsrch.htm">Conformation Data.</a>
+Distance is calculated as the root mean square distance (RMSD) between
+a pair of molecular conformations.  You can specify whether to do an
+optimal rigid-body superposition of the two conformations before
+calculating their RMSD, and whether or not to include polar or hydrophobic
+hydrogens in the calculation.
+
+<p>
+<b>Note:</b> Calculating distances using conformation data requires that
+the database contain conformational data; i.e. all molecules
+used for calculations must be conformations of the same molecule.
+
+</ol>
+
+<a name="RunningDiverseSubset"></a><h2>Running Diverse Subset</h2>
+
+<p>
+The following steps describe how to use Diverse Subset to rank a database,
+and how to obtain a diverse subset of the database entries using the
+resulting ranking.
+
+<p>
+<ol>
+<p><li>
+Open the database from which you wish to extract a
+diverse subset.
+
+<p><li>
+Pre-process the database, if necessary.  Cluster the database if you want
+to extract a diverse subset per data cluster.  Since the order of the
+entries in the database determines the reference set (and hence the 
+ranking order) sort the database so that the <i>N</i> reference
+entries are the first <i>N</i> entries in the database. If 
+a cluster field is used, the database should be sorted
+so that the reference entries for each cluster are the 
+first <i>N</i> entries in that cluster.
+
+
+<p><li>Open the Diverse Subset panel from the Database Viewer using
+<b><nobr>DBV | Compute | Diverse Subset</b></nobr>.
+
+<p><li>
+In the Diverse Subset panel, choose the <b>Method</b> by which the distance
+between two database entries is to be calculated, i.e. using
+Descriptors, Fingerprint data, or Conformation data.
+
+<p><table>
+<tr>
+<td valign=top><b>Descriptors</b>
+<td>When the method is descriptor, the option list will display all
+numeric fields in the database. Select the names of the fields
+to use in the calculation.
+
+<tr>
+<td valign=top><b>Fingerprint</b>
+<td>You may choose any fingerprint type which is currently loaded in the
+system.  Use <b>Set Fingerprint...</b> to change the value.  If the
+database contains the chosen fingerprint as a field then this field will
+be used.  If, however, the field does not exist in the database then you
+must set the <b>Molecule</b> field to use for fingerprint calculation.
+
+<tr>
+<td valign=top><b>Conformation</b>
+<td>Set the <b>Molecule</b> field from which to
+obtain the conformations.
+</table>
+
+<p><li>
+In the <b>Output Limit</b> field, specify the number of entries
+to be ranked.  Zero indicates that all entries in the database are
+to be ranked.
+
+
+<p><li>
+In the <b>Seed Count</b> field, specify the reference set size, <i>N</i>.
+
+<p><li>
+Specify a <b>Cluster Field</b> if you wish to calculate a diverse subset
+per cluster.
+
+<p><li>
+Press OK.  Diverse Subset will rank the database entries and write out
+the rank numbers to a field named $DIVPRIO.  Ranking may take some time
+if the number of entries to be ranked is large.
+
+<p><li>
+Sort the database according to rank using <nobr><b>DBV | Compute | Sort</b></nobr> in
+the Database Viewer.  If ranks have been calculated on a per-cluster
+basis, use the cluster field as the highest priority (Priority 1) field in
+the sort operation, and $DIVPRIO as the second.  This will result in
+entries belonging to the same cluster appearing consecutively in the
+database, ordered by rank within the cluster (1 being the ranks
+given to the reference set entries).
+</ol>
+
+<a name="Panel"></a>
+<h2>Diverse Subset Panel Reference</h2>
+
+<p>This section describes the Diverse Subset panel, which is opened from
+the Database Viewer using <nobr><b>DBV | Compute | Diverse Subset</b></nobr>.
+
+<p><center><img src="diverse/diverse.png" alt="Diverse Subset Panel"></center>
+
+<p><table width="100%" cellpadding=5>
+
+<tr>
+<td valign=top><b>Database</b>
+<td valign=top>
+Path and filename of the database on which to run the Diverse Subset
+calculation.
+
+<p>
+If <b>Selected Entries Only</b> is on, only selected entries in the
+Database Viewer are used in the calculation.  The rank numbers ($DIVPRIO
+field values) of the unselected entries will be unaffected.  The default
+is to use all entries.
+
+<tr>
+<td valign=top><b>Molecule</b>
+<td valign=top>
+Option menu containing a list of all the molecule fields in the database.
+
+<p>
+The molecule field is only used when the distance
+calculation Method is set to Conformation, or when it is set to
+Fingerprint and fingerprints are not already calculated in the database.
+
+<tr>
+<td valign=top><b>Output Limit</b>
+<td valign=top>
+Number of molecules to be ranked. Once the output limit has been reached,
+the remaining entries are assigned a value that is larger than any of the
+rankings that have already been assigned.  Zero means no limit;
+<i>i.e</i>, all entries in the database are ranked.  If a cluster field is
+specified, the specified limit is applied to every cluster.  The default
+limit is 0.
+
+<tr>
+<td valign=top><b>Seed Count</b>
+<td valign=top>
+Number of entries (<i>N</i>) to use as the reference set. With no cluster
+field, the first <i>N</i> entries will be used as the reference set.
+If a cluster field is specified, the first <i>N</i> entries 
+in each cluster will be used as the reference set for that 
+cluster. Reference set compounds are given a rank of 1.
+
+
+<tr>
+<td valign=top><b>Cluster Field</b>
+<td valign=top>
+Option menu containing a list of all the numeric fields in the database. If no
+cluster field is chosen, the entire database is treated as a single
+cluster.  The default is none.
+
+<tr>
+<td valign=top><b>Method</b>
+<td valign=top>
+Method to use for calculating distance, determined by the data
+used in the distance calculation.  The panel displays different options
+for the different methods.  The default is Descriptors.
+
+<tr>
+<td valign=top><b>Descriptors</b>
+<td valign=top>
+
+The Options list displays the names of all the numeric fields in the
+database.  If fields are selected, only they will be used in the
+calculation. If none are selected, all will be used (except $DIVPRIO, if
+it exists).  Descriptors must have been calculated beforehand
+(e.g. using <nobr><b>DBV | Compute | Descriptors</b></nobr> in the Database
+Viewer).
+
+<p>
+The <b>Normalize Descriptors to Unit Variance</b> option scales data in
+the selected descriptor fields so that the variance of each field is 1.
+Turn this option on if the descriptors used to calculate distance have
+very different ranges of values.  The default is on.
+
+<tr>
+<td valign=top><b>Fingerprint</b>
+<td valign=top>
+<img src="diverse/finger.gif" align=right vspace=2>
+The Options area reports the currently selected fingerprint and similarity
+metric for distance calculations.  The fingerprints need not have been
+calculated beforehand; Diverse Subset will calculate them from the
+specified Molecule field.  Note that, in this case, fingerprint values are
+not written to the database.
+
+<p>Press <b>Set Fingerprint</b> to specify a different fingerprint or a different
+similarity metric.  
+
+<tr>
+<td valign=top><b>Conformation</b>
+<td valign=top>
+This method can only be used on conformational databases, i.e.
+databases in which all molecules in the field used for the calculations
+are conformations of the same molecule.
+
+<p><center><img src="diverse/conf.gif"></center>
+
+<p>
+If <b>Superpose Conformations Before Comparison</b> is turned on, MOE
+performs an optimal rigid body superposition before calculating the RMSD.
+If this option is not turned on, MOE compares the absolute coordinates of
+the conformations.  The default is on.
+
+</tr>
+
+</table>
+
+<h2>See Also</h2>
+<a href="db.htm">Database Viewer</a><br>
+<a href="../apps/confsrch.htm">Generating Conformations</a><br>
+<a href="../quasar/descr.htm">Molecular Descriptors</a><br>
+<a href="ph4intro.htm">Molecular Fingerprints</a>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

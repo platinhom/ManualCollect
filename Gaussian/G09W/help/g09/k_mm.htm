@@ -1,0 +1,899 @@
+<html><head>
+<title></title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style type="text/css">
+<!--
+
+p {
+	font-family: "Times New Roman", Times, serif;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+}
+
+div#tipDiv {
+    padding:4px;
+    color:#000; font-size:11px; line-height:1.2;
+    background-color:#CCCCFF; border:1px solid #0000FF;
+    width:250px;
+}
+-->
+</style>
+<script src="dw_event.js" type="text/javascript"></script>
+<script src="dw_viewport.js" type="text/javascript"></script>
+<script src="dw_tooltip.js" type="text/javascript"></script>
+<script src="dw_tooltip_aux.js" type="text/javascript"></script>
+<script src="refs_inc.js" type="text/javascript"></script>
+</head><body>
+<h1>Molecular Mechanics Methods</h1>
+<h3><font size="-1" color="#222222">DESCRIPTION</font></h3>
+<p>There are three Molecular Mechanics methods available in Gaussian. They were implemented for use in ONIOM calculations, but they are also available as independent methods. No basis set keyword should be specified with these keywords.</p>
+<p>The following force fields are available:</p>
+<p><b><font color="#0000FF">Amber</font></b>: The Amber force field as described in <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Cornell95" class="showTip Cornell95">Cornell95</a>]</font>. The actual parameters (<font color="#009933">parm96.dat</font>) have been updated slightly since the publication of this paper. We use this current version from the Amber web site (<a href="http://amber.scripps.edu"><font color="#006699">amber.scripps.edu</font></a>).</p>
+<p><b><font color="#0000FF">Dreiding</font></b>: The Dreiding force field as described in <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Mayo90" class="showTip Mayo90">Mayo90</a>]</font>.</p>
+<p><b><font color="#0000FF">UFF</font></b>: The UFF force field as described in <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Rappe92" class="showTip Rappe92">Rappe92</a>]</font>.</p>
+<h3><font size="-1" color="#222222">MOLECULAR MECHANICS MOLECULE SPECIFICATIONS</font></h3>
+<p>Molecular Mechanics calculations use atom types to determine the functions and parameters which make up the force field. For a single element, such as carbon, there can be many different MM atom types. Which one to use depends on aspects such as the hybridization, chemical environment, and so on.</p>
+<p>Gaussian will attempt to assign atom types automatically for UFF and Dreiding calculations. However, Amber calculations require that all atom types be explicitly specified within the molecule specification section, as in these examples:</p>
+<pre>
+C-CT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Specifies an SP3 aliphatic carbon atom, denoted by the Amber CT keyword.</i></font></font>
+C-CT-0.32&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Specifies an SP3 aliphatic carbon atom with a partial charge of +0.32.</i></font></font>
+O-O--0.5&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Specifies a carbonyl group oxygen atom (type O) with a partial charge of -0.5.</i></font></font>
+</pre>
+<p>The atom type keyword is specified following the element symbol and a separating hyphen. Consult the Amber paper <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Cornell95" class="showTip Cornell95">Cornell95</a>]</font> for definitions of atom types and their associated keywords.</p>
+<p>As the second and third lines in the example illustrate, partial charges may also be specified, as the third component of the atom description, preceded again by a hyphen separator. Partial atomic (point) charges are used to compute the electrostatic interactions. Gaussian can assign these charges automatically using the QEq formalism <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Rappe91" class="showTip Rappe91">Rappe91</a>]</font>. Request this by specifying the <b><font color="#0000FF">QEq</font></b> option to the MM keyword: e.g., <b><font color="#0000FF">Dreiding=QEq</font></b>. Note that these charges depend on the geometry and are computed at the beginning of the calculation; however, they are not updated during the course of an optimization or other process that changes the geometry.</p>
+<p>Atom types and charges may also be provided for UFF and Dreiding calculations if desired. Be aware that the automatic assignment of UFF and Dreiding atom types is only reliable for well-defined systems, and it is often safer to specify them explicitly.</p>
+<p>When using MM methods, and especially when you are modifying force field terms or defining new ones (as discussed below), it is often necessary to specify the connectivity between atoms explicitly, using <b><font color="#0000FF">Geom=Connectivity</font></b>. Note that GaussView includes this input section automatically when it constructs input files.</p>
+<h3><font size="-1" color="#222222">CHARGE ASSIGNMENT-RELATED OPTIONS</font></h3>
+<p>Unless set in the molecule specification input, no charges are assigned to atoms by default when using any molecular mechanics force field. Options are available to estimate charges at the initial point using the QEq algorithm <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Rappe91" class="showTip Rappe91">Rappe91</a>]</font>, under control of the following options, for any of the mechanics keywords:</p>
+<p><b><font color="#0000FF">QEq</font></b><br>
+Assign charges to all atoms using the QEq method.
+</p>
+<p><b><font color="#0000FF">UnTyped</font></b><br>
+Assign QEq charges only to those atoms for which the user did not specify a particular type in the input.
+</p>
+<p><b><font color="#0000FF">UnCharged</font></b><br>
+Assign QEq charges for all atoms which have charge zero (i.e., all atoms which were untyped or which were given a type but not a charge in the input).
+</p>
+<h3><font size="-1" color="#222222">PARAMETER PRECEDENCE OPTIONS</font></h3>
+<p><font face="Times New Roman, Times, serif" size="3"><i>Terminology</i></font>: Gaussian contains built-in parameter sets for the built-in force fields listed above; these are referred to as <font face="Times New Roman, Times, serif" size="3"><i>hard-wired</i></font> parameters. <font face="Times New Roman, Times, serif" size="3"><i>Soft</i></font> parameters are ones specified by the user in the input stream for the current job (or a previous job when reading parameters from the checkpoint file). By default, when no relevant option is given, the hard-wired parameters are the <font face="Times New Roman, Times, serif" size="3"><i>only ones</i></font> used. This topic is discussed in detail in &ldquo;General MM Force Field Specifications&rdquo; below.</p>
+<p><b><font color="#0000FF">HardFirst</font></b><br>
+Read additional parameters from the input stream, with hard-wired parameters having priority over the read-in, soft ones. Hence, read-in parameters are used only if there is no corresponding hard-wired value. Note that wildcard matches within the hard-wired parameter set take precedence over soft parameters, even when the latter contains an exact match for the same item. Use <b><font color="#0000FF">SoftFirst</font></b> if you want to override hard-wired parameter matches.
+</p>
+<p><b><font color="#0000FF">SoftFirst</font></b><br>
+Read additional parameters from the input stream, with soft (read-in) parameters having priority over the hard-wired values.
+</p>
+<p><b><font color="#0000FF">SoftOnly</font></b><br>
+Read parameters from the input stream and use only them, ignoring hard-wired parameters.
+</p>
+<h3><font size="-1" color="#222222">HANDLING MULTIPLE PARAMETER SPECIFICATION MATCHES</font></h3>
+<p>Since parameters can be specified using wildcards (see below), it is possible for more than one parameter specification to match a given structure. The default is to abort if there are any ambiguities in the force field. The following options specify other ways of dealing with multiple matches.</p>
+<p><b><font color="#0000FF">FirstEquiv</font></b><br>
+If there are equivalent matches for a required parameter, use the first one found.
+</p>
+<p><b><font color="#0000FF">LastEquiv</font></b><br>
+If there are equivalent matches for a required parameter, use the last one found.
+</p>
+<h3><font size="-1" color="#222222">READING MM PARAMETERS FROM THE CHECKPOINT FILE</font></h3>
+<p>By default, when the geometry is read-in from the checkpoint file with <b><font color="#0000FF">Geom=Check</font></b> or <b><font color="#0000FF">Geom=AllCheck</font></b>, any non-standard (soft) parameters present in the checkpoint file are also retrieved. These read-in parameters are used with higher priority than corresponding hard-wired parameters, unless <b><font color="#0000FF">HardFirst</font></b> is also specified. The following options can be used to modify this default behavior.</p>
+<p><b><font color="#0000FF">ChkParameters</font></b><br>
+Read only the MM parameters from the checkpoint file. Any non-standard (soft) parameters present in the checkpoint file are used with higher priority than corresponding hard-wired parameters, unless <b><font color="#0000FF">HardFirst</font></b> is also specified. Not valid with <b><font color="#0000FF">Geom=Check</font></b> or <b><font color="#0000FF">Geom=AllCheck</font></b>.
+</p>
+<p><b><font color="#0000FF">NewParameters</font></b><br>
+Ignore any parameters in the checkpoint file when reading the geometry.
+</p>
+<p><b><font color="#0000FF">Modify</font></b><br>
+Read additional parameter specifications and modifications after combining any soft parameters from the checkpoint file and the hard-wired parameters (as controlled by the precedence options). This option works analogously to <b><font color="#0000FF">Geom=Modify</font></b>.
+</p>
+<h3><font size="-1" color="#222222">PRINTING MM PARAMETERS</font></h3>
+<p><b><font color="#0000FF">Print</font></b><br>
+By default, only the contributions to the energy are printed (i.e., from bond stretches, bends, electrostatics, etc.) when <b><font color="#0000FF">#P</font></b> is specified. The <b><font color="#0000FF">Print</font></b> option will also print the energy contributions and the force field parameters at the first geometry, and the energy contributions at later ones (since the parameters don&rsquo;t change). It will print two sets of parameters for ONIOM(MO:MM) since different parameters are assigned for the model and real systems (i.e., since H may replace a C link atom).
+<br><br>Note that the parameters are printed for all atoms in the system, but not in a form suitable for input. The internally stored parameters are already provided in the form of input files in the main Gaussian directory (<font color="#009933">amber.prm</font>, <font color="#009933">uff.prm</font>, etc.), along with files for some force fields which are not stored internally (<font color="#009933">amber98.prm</font> and <font color="#009933">oplsaa.prm</font>). Printing for all atoms in the current job is still useful because complex rules are involved in deciding what parameters are actually applied to a given bond, dihedral, etc.
+</p>
+<h3><font size="-1" color="#222222">AVAILABILITY</font></h3>
+<p>Analytic energies, gradients, and frequencies.</p>
+<h3><font size="-1" color="#222222">RELATED KEYWORDS</font></h3>
+<p><b><font color="#0000FF">ONIOM</font></b>, <b><font color="#0000FF">Geom=Connectivity</font></b></p>
+<h3><font size="-1" color="#222222">GENERAL MOLECULAR MECHANICS FORCE FIELD SPECIFICATIONS</font></h3>
+<p>Gaussian offers a tremendous amount of flexibility to users that want to modify or otherwise customize MM force fields. This section discusses the specifics of doing so, and it begins with some required background information necessary for understanding the function and parameter input.</p>
+<p>A basic MM potential function;for MM is usually of the form:</p>
+<p align="center"><img src="pix/mm_eqn_web.jpg" alt="Molecular Mechanics Potential Function"><br><b><i>Molecular Mechanics Potential Function</i></b></p>
+<p>As noted, the terms of the expansion are the stretch terms (bonds), bend terms (bond angles), torsional terms (dihedral angles), and non-bonded interactions. The particular forms of the individual functions in this equation are from the Amber force field, which uses simple harmonic functions for stretches and bends, a cosine function for torsions, and the standard functions for electrostatic and van der Waals interactions. Other force fields use different functions, and some include additional types of terms not included by Amber, such as dipole interactions or stretch-bend couplings.</p>
+<p>In order to evaluate the MM potential function, Gaussian needs to know which structures&mdash;stretches, bends, and torsion&mdash;are present in the system, as well as the functions and parameters to be used for them. The structures can be identified from the molecular connectivity. By default, Gaussian determines which atoms are bonded and the corresponding bond orders (single, double, and so on). It does a good job when the input geometry is reasonable and the bond orders (single, double, etc.) are all well defined. However, if the calculation is started with a more approximate geometry, or if there are bonds whose orders are not easy to identify, it is safer to specify the connectivity list explicitly in the input stream, using <b><font color="#0000FF">Geom=Connectivity</font></b> keyword (see the discussion of <b><font color="#0000FF">Geom</font></b> for details).</p>
+<p>The remainder of this section discusses MM functions and their parameters in general, and the following section documents all of the available functions.</p>
+<p><b>Viewing the MM functions.</b> A useful way to begin consideration of this topic is to examine the output from a Gaussian MM job. Here is the input file we used for an Amber calculation on methane:</p>
+<pre>
+#P Amber Geom=Connectivity IOp(4/33=3)
+ 
+Methane
+ 
+0 1
+C-CT--0.4    -0.85  0.42  0.00
+H-HC-0.1     -0.50 -0.57  0.00
+H-HC-0.1     -0.50  0.93  0.87
+H-HC-0.1     -0.50  0.93 -0.87
+H-HC-0.1     -1.92  0.42  0.00
+</pre>
+<p>Note that the atoms types are <font color="#009933">CT</font> for the carbon atom and <font color="#009933">HC</font> for the hydrogen atoms. We have also assigned partial charges to each atom.</p>
+<p>Here is the portion of the output produced by IOp(4/33=3) in the job&rsquo;s route section:</p>
+<pre>
+ Atomic parameters: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>MM functions for single atoms.</i></font></font>
+ Center  VDW
+      1 1.9080  .1094000
+      2 1.4870  .0157000
+      3 1.4870  .0157000
+      4 1.4870  .0157000
+      5 1.4870  .0157000
+ Molecular mechanics terms: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>MM functions of 2 of more atoms.</i></font></font>
+ NBDir 3 1      0      0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Non-bonded interactions master function.</i></font></font>
+ HrmStr1 1-2  340.00 1.0900 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Stretch terms.</i></font></font>
+ HrmStr1 1-3  340.00 1.0900
+ HrmStr1 1-4  340.00 1.0900
+ HrmStr1 1-5  340.00 1.0900
+ HrmBnd1 2-1-3  35.00 109.50 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Bend terms.</i></font></font>
+ HrmBnd1 2-1-4  35.00 109.50
+ HrmBnd1 2-1-5  35.00 109.50
+ HrmBnd1 3-1-4  35.00 109.50
+ HrmBnd1 3-1-5  35.00 109.50
+ HrmBnd1 4-1-5  35.00 109.50 
+ NBPair 2-1 3 1      0      0 -1.000 -1.000 <font face="Times New Roman, Times, serif" color="#CC0000"><i>Non-bonded interactions</i></font></font>
+ NBPair 3-1 3 1      0      0 -1.000 -1.000 <font face="Times New Roman, Times, serif" color="#CC0000"><i>of close neighbors.</i></font></font>
+ NBPair 3-2 3 1      0      0 -1.000 -1.000
+ NBPair 4-1 3 1      0      0 -1.000 -1.000
+ NBPair 4-2 3 1      0      0 -1.000 -1.000
+ NBPair 4-3 3 1      0      0 -1.000 -1.000
+ NBPair 5-1 3 1      0      0 -1.000 -1.000
+ NBPair 5-2 3 1      0      0 -1.000 -1.000
+ NBPair 5-3 3 1      0      0 -1.000 -1.000
+ NBPair 5-4 3 1      0      0 -1.000 -1.000
+</pre>
+<p><b>Atomic parameters.</b> Some MM functions depend only on the atom type of the atom in question. In our example, Amber includes the van der Waals interaction for each atom, and the resulting values are listed in the preceding output under Atomic parameters. The center number corresponds to the atom position within the molecule specification. The DREIDING and UFF force fields contain only terms of this type. </p>
+<p><b>Molecular mechanics terms.</b> The Molecular mechanics terms section list terms within the total potential that describe the interactions of multiple atoms. For example, there are stretch terms involving each bonded pair of atoms (1-2, 1-3 and 1-4), computed via the function called <font color="#009933">HrmStr1</font>, using a force constant value of 340 kcal/(mol-&Aring;<sup>2</sup>) and an equilibrium bond length of 1.09 &Aring;. These parameter values are determined from the atom types of centers 1 and 2: <font color="#009933">CT</font> and <font color="#009933">HC</font> (respectively). </p>
+<p>The particular function and parameters are chosen as follows: from the connectivity, the program knows that a bond exists between centers 1 and 2. The Amber force field calls for a stretch term between all bonded pairs of atoms, and the various functions and parameters are stored in internal tables within the program. In the simplest case, Gaussian uses the two atom types to look up functions and parameters to use. In this case, the entry</p>
+<pre>
+HrmStr1 CT HC 340 1.09
+</pre>
+<p>is used since it corresponds to the two atom types in the C&ndash;H bond in methane. The force constant and equilibrium bond length specified in the entry are then used within the computation. When we look up this function in the reference section below, we see that the actual term will be computed as <font color="#009933">ForceC</font>*(R&ndash;<font color="#009933">R</font><sub><font color="#009933">eq</font></sub>)<sup>2</sup> where <font color="#009933">ForceC</font> is the force constant, <font color="#009933">R</font><sub><font color="#009933">eq</font></sub> is the equilibrium bond length and R is the bond length; in this case, this becomes 340.0*(R&ndash;1.09)<sup>2</sup>.</p>
+<p>The list of terms includes stretch terms for all bonded pairs of atoms and bend terms for all corresponding bond angles. </p>
+<p><b>Non-bonded interaction terms.</b> The remaining terms in the list are those corresponding to non-bonded interactions: contributions to the potential arising from interactions between atoms which are not bonded. Before considering them specifically, we need to look at how they are computed.</p>
+<p>In general, the list of non-bonded terms is formed from all possible pairs of atoms, and thus the number of terms scales quadratically with the number of atoms. However, interactions between atoms that are close together, based on the number of bonds that separate them, are usually scaled down. Typically, one- and two-bond separated interactions are scaled to zero (since these interactions are described by stretch and bend terms). Similarly, three-bond separated interactions are scaled with a factor between zero and one, depending on the force field. It is clear that for larger systems, the list of non-bonded terms can become very long. In most MM programs, cutoffs are used the keep the list manageable. In Gaussian, we use a less common approach to efficiently deal with the non-bonded interactions.</p>
+<p>The total non-bonded energy in the system can be written as follows:</p>
+<p align="center"><img src="pix/mm_eqn2_web.jpg" alt="Total Non-Bonded Energy Expression"><br><b><i>Total Non-Bonded Energy Expression</i></b></p>
+<p>where <font color="#009933">E</font><sup><font color="#009933">vdW</font></sup> and <font color="#009933">E</font><sup><font color="#009933">Q</font></sup> are the van der Waals and electrostatic interactions between the two centers (respectively), and the corresponding <font color="#009933">s</font> values are the associated scaling factors.</p>
+<p>The first equation is expressed in the usual form for the non-bonded interactions, and the second one is an equivalent expression where all possible non-bonded interactions (regardless of distance) are evaluated without scaling (first term) followed by subtraction of the overcounted pairs (second term).</p>
+<p>This reformulation has significant computational advantages. The first term can be evaluated in an efficient manner, using linear scaling and other techniques. In addition, most of the pairs in the second term give a zero interaction (provided the system is not too small), because the scaling factor <font color="#009933">s</font><sub><font color="#009933">ij</font></sub> is 1 for most pairs. The program simply keeps a list of those pairs that give non-zero interactions to compute the second term. The result is an efficient algorithm that does not use cutoffs, and requires only a list whose length scales linearly with the size of the system. </p>
+<p>The functions <font color="#009933">NBDir</font> and <font color="#009933">NBTerm</font> are used when forming these two non-bonded interaction terms. As the previous methane job output illustrates, a single <font color="#009933">NBDir</font> function describes the complete set of interactions between all pairs of atoms, i.e., the first term of the rewritten equation. The various <font color="#009933">NBTerm</font> entries comprise the second term in the equation. The final two parameters to these functions are the scale factors for van der Waals and Coulomb interactions (respectively). In the methane example, both scale factors are 1 for all terms since no atoms are separated by more than two bonds in methane, and the final non-bonded interaction is accordingly 0.</p>
+<p><b>Specifying missing parameters.</b> Consider the following molecule: 2-methylpropene. We&rsquo;ve set up an Amber calculation for this system, specifying the SP2 hybridized carbons as atom type <font color="#009933">CM</font>, and the SP3 hybridized carbons as <font color="#009933">CT</font>.</p>
+<p align="center"><img src="pix/mm_mol_web.jpg" alt="2-MethylPropene"><br><b><i>2-MethylPropene</i></b></p>
+<pre>
+# Amber
+
+2-methylpropene
+
+0 1
+ C-CM       -2.53    0.19    0.00
+ H-HA       -2.00   -0.73    0.00
+ H-HA       -3.60    0.19    0.00
+ C-CM       -1.86    1.37    0.00
+ C-CT       -2.63    2.70    0.00
+ H-HC       -1.93    3.51    0.07
+ H-HC       -3.24    2.76   -0.88
+ H-HC       -3.24    2.76    0.85
+ C-CT       -0.32    1.37    0.00
+ H-HC        0.03    1.87   -0.83
+ H-HC        0.03    1.87    0.81
+ H-HC        0.03    0.36   -0.00
+</pre>
+<p>When we run this job, the program terminates with the following error message:</p>
+<pre>
+ Angle bend undefined between atoms    2    1    3
+ Angle bend undefined between atoms    5    4    9
+ MM function not complete
+</pre>
+<p>Atoms 2-1-3 correspond to types <font color="#009933">HA-CM-HA</font>, and 5-4-9 correspond to <font color="#009933">CT-CM-CT</font>. Even though the atom types and the sequence are chemically reasonable, there are no entries for these bending terms in the hard-wired tables. The reason is that the Amber force field has been developed specifically for biochemical systems, in which these particular sequences of atom types do not occur. Hence, the parameters have not been defined by Amber. Note that Gaussian only checks if functions are found for all the stretches and bends; torsional and other terms are simply left out of the total potential function if no entries exist in the tables.</p>
+<p><b>Adding and replacing parameters.</b> When hard-wired parameters are not available, either from incomplete tables or the introduction of new atom types, they need to be specified in the input stream. Determining the appropriate parameters to use can be challenging. They can often be found in the literature; otherwise they need to be derived from experimental or accurate computational data (this topic is beyond the scope of our discussion here). </p>
+<p>To specify new parameters, use the <b><font color="#0000FF">Amber=HardFirst</font></b> keyword, and then add them to the input file in a separate section. In this case, we define <font color="#009933">HrmBnd1</font> functions for the missing atom type sequences. The 2-methylpropene job then looks like:</p>
+<pre>
+# Amber=HardFirst
+
+2-methylpropene
+
+0 1
+ C-CM       -2.53    0.19    0.00
+ <font face="Times New Roman, Times, serif"><i>molecule specification continues&hellip;</i></font></font>
+
+HrmBnd1 CT CM CT 70.0 120.0
+HrmBnd1 HA CM HA 40.0 120.0
+</pre>
+<p>The parameter values used in this example are a rough guess based on existing Amber parameters. The <b><font color="#0000FF">HardFirst</font></b> option indicates that the usual Amber hard-wired parameters tables are checked first for functions&mdash;referred to as the hard parameters&mdash;and that functions defined in the input file are to be used only when no match is present. With the <b><font color="#0000FF">SoftFirst</font></b> option, one can replace parameters from the hard-wired set. Note that the ordering specified by <b><font color="#0000FF">HardFirst</font></b> and <b><font color="#0000FF">SoftFirst</font></b> only matters when one or more functions is defined in both parameter lists. Finally, the <b><font color="#0000FF">SoftOnly</font></b> option indicates that the complete force field definition will be provided in the input file, ignoring the hard-wired set completely.</p>
+<p><b>Using external parameter files.</b> It is possible to include MM function entries within an external file by replacing the entries within the input file with the usual Gaussian include file mechanism: e.g., <b><font color="#0000FF">@oplsaa.prm</font></b>. Parameter files for various force fields are included within the main Gaussian directory (i.e., <font color="#009933">$g09root/g09</font>). If you want to specify the entire force field via an external file, use an input file like the following:</p>
+<pre>
+# UFF=SoftOnly
+
+Read-in force field example
+
+<font face="Times New Roman, Times, serif"><i>molecule specification</i></font></font>
+
+@$g09root/g09/oplsaa.prm
+</pre>
+<p>Note that the choice of a molecular mechanics keyword is arbitrary as the entire force field depends on the read-in functions and parameters and not on any internal ones (in other words, specifying <b><font color="#0000FF">Amber</font></b> would yield the same result as <b><font color="#0000FF">UFF</font></b>).</p>
+<p><b>Wildcards within function specifications.</b> Wildcards can be used in function specifications given in the input file. For example, this Amber bend function specifies that all the bends with a central carbon atom of type <font color="#009933">CM</font> will have the same parameter values:</p>
+<pre>
+HrmBnd1 * CM * 70.0 120.0
+</pre>
+<p>One could also include a generic entry using wildcards as well as other more specific entries:</p>
+<pre>
+HrmBnd1 *  CM *  70.0 120.0
+HrmBnd1 HA CM HA 40.0 120.0
+</pre>
+<p>By default, the program uses the most specific entry that applies to a specific structure (here, a bond angle centered on a <font color="#009933">CM</font> carbon). Relative specificity is determined by the number of wildcards within an entry. If there happen to be different entries that are equally specific, the program terminates with a multiple matching entries error message. In such cases, you can direct the program to use either the first or last match with the <b><font color="#0000FF">FirstEquiv</font></b> or <b><font color="#0000FF">LastEquiv</font></b> options, respectively. Be aware, however, that the multiple matching entries message typically indicates some inconsistency in the soft parameter set which needs to be investigated and resolved.</p>
+<p>Note that wildcards/entry specificity do not affect whether an entry from the hard-wired or soft set is used. Thus, when <b><font color="#0000FF">SoftFirst</font></b> is specified, an entry in the input file with three wildcards will be used even if there is an entry containing the exact atom type sequence in question within the hard-wired set.</p>
+<p><b>Substructures: using bond orders and other structural features to select parameters.</b> Substructures provide a mechanism for using additional structural information like bond orders and bond angle values to determine which parameters are used. Consider butadiene (illustrated below). The carbon atoms are all of type <font color="#009933">CM</font>, but two bonds are formally double, and one is single. By default, Amber uses the same force constant and equilibrium bond length for the stretching term for each defined atom type combination. However, substructures can be used to assign different values for the different types of bonds. </p>
+<p>Substructure numbers are appended to the function name, separated by a hyphen: e.g., <font color="#009933">HrmStr-1</font>, <font color="#009933">HrmStr-2</font>, and so on. In this case, the numbers refer to the bond order (see substructure definitions below). Sometimes, multiple substructure suffixes will be used (e.g., <font color="#009933">AmbTrs-1-2</font>).</p>
+<p>The butadiene calculations input file is shown below the molecular structure:</p>
+<p align="center"><img src="pix/mm_mol2_web.jpg" alt="Butadiene Molecule"><br><b><i>Butadiene Molecule</i></b></p>
+<pre>
+# Amber=SoftFirst Geom=Connectivity
+
+Butadiene
+
+0 1
+ C-CM    -2.49  -0.07   0.00
+ H-HA    -1.96  -1.00   0.00
+ H-HA    -3.56  -0.07   0.00
+ C-CM    -1.82   1.09   0.00
+ H-HA    -2.35   2.02   0.00
+ C-CM    -0.28   1.09   0.00
+ H-HA     0.24   0.16   0.00
+ C-CM     0.39   2.26  -0.00
+ H-HA    -0.13   3.19   0.00
+ H-HA     1.46   2.26  -0.00
+
+ 1 2 1.0 3 1.0 4 2.0
+ 2
+ 3
+ 4 5 1.0 6 1.0
+ 5
+ 6 7 1.0 8 2.0
+ 7
+ 8 9 1.0 10 1.0
+ 9
+ 10
+
+HrmBnd1 HA CM HA 40.0 120.0 &nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Parameters values for illustration purposes only!</i></font></font>
+HrmBnd1 CM CM CM 70.0 120.0
+HrmStr1-1 CM CM 350.0 1.51 &nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Substructures: bond order-specific stretch parameters.</i></font></font>
+HrmStr1-2 CM CM 500.0 1.37
+</pre>
+<p>This example specifies a larger force constant value and a smaller equilibrium bond length for double bonds for use with the <font color="#009933">HrmStr1</font> function.</p>
+<p>Note that the values used for the parameters in this example are only for illustration purposes only. In fact, for a production calculation, we would also need to define torsional parameters that are specific for single or double central bonds, using the same substructures mechanism. </p>
+<p>Besides the bond order, other examples of substructures are whether the term lies in a cyclic structure, how many hydrogen atoms are connected to it, and the like. Note that multiple substructure suffixes can be used with many functions: e.g., <font color="#009933">HrmStr1-1-0-4</font>.</p>
+<p>Substructure slots have relatively consistent meanings in the contexts of different functions. The first substructure suffix defines the bond order or angle range, the second specifies the number of atoms bonded to the current atom, and the third describes the ring environment (if any). A 0 value in any substructure slot acts are a wildcard/placeholder and means that the particular substructure is to be ignored for that entry. Unneeded terminal substructures can be similarly set to 0 or be simply omitted.</p>
+<p>The following substructure applies to functions that depend only on the atom type:</p>
+<table border="0">
+<tr valign="top"><td align="left" colspan="2"><font face="Times New Roman, Times, serif" size="3"><i>Third substructure: ring context (the first and second substructures must be 0):</i></font></td></tr>
+<tr valign="top"><td align="left">-0-0-1</td><td align="left">None of the following ring contexts apply</td></tr>
+<tr valign="top"><td align="left">-0-0-3</td><td align="left">Atom is in a 3-membered ring</td></tr>
+<tr valign="top"><td align="left">-0-0-4</td><td align="left">Atom is in a 4-membered ring</td></tr>
+<tr valign="top"><td align="left">-0-0-5&nbsp;&nbsp;</td><td align="left">Atom is in a 5-membered ring</td></tr>
+</table>
+<p>The following substructures apply to functions related to bond stretches:</p>
+<table border="0">
+<tr valign="top"><td align="left" colspan="2"><font face="Times New Roman, Times, serif" size="3"><i>First substructure: bond order</i></font></td></tr>
+<tr valign="top"><td align="left">-0</td><td align="left">Ignore this substructure (substructure &ldquo;wildcard&rdquo;)</td></tr>
+<tr valign="top"><td align="left">-1</td><td align="left">Single bond: 0.00 &le; <font face="Times New Roman, Times, serif" size="3"><i>bond order</i></font> &lt; 1.50 </td></tr>
+<tr valign="top"><td align="left">-2</td><td align="left">Double bond: 1.50 &le; <font face="Times New Roman, Times, serif" size="3"><i>bond order</i></font> &lt; 2.50 </td></tr>
+<tr valign="top"><td align="left">-3</td><td align="left">Triple bond: <font face="Times New Roman, Times, serif" size="3"><i>bond order</i></font> &ge; 2.50</td></tr>
+<tr valign="top"><td align="left" colspan="2"></td></tr>
+<tr valign="top"><td align="left" colspan="2"><font face="Times New Roman, Times, serif" size="3"><i>Third substructure: ring context (if used, the second substructure must be 0):</i></font></td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-0-1</td><td align="left">None of the following ring contexts apply</td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-0-3</td><td align="left">Bond is in a 3-membered ring</td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-0-4</td><td align="left">Bond is in a 4-membered ring</td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-0-5&nbsp;&nbsp;</td><td align="left">Bond is in a 5-membered ring</td></tr>
+</table>
+<p>The following substructures apply to functions for bond angles (angle values are in degrees):</p>
+<table border="0">
+<tr valign="top"><td align="left" colspan="2"><font face="Times New Roman, Times, serif" size="3"><i>First substructure: angle value range</i></font></td></tr>
+<tr valign="top"><td align="left">-1</td><td align="left">0&deg;&nbsp;&le; &theta; &le; 45&deg;</td></tr>
+<tr valign="top"><td align="left">-2</td><td align="left">45&deg;&nbsp;&lt; &theta; &le; 135&deg;</td></tr>
+<tr valign="top"><td align="left">-3</td><td align="left">135&deg;&nbsp;&lt; &theta; &le; 180&deg;</td></tr>
+<tr valign="top"><td align="left" colspan="2"></td></tr>
+<tr valign="top"><td align="left" colspan="2"><font face="Times New Roman, Times, serif" size="3"><i>Second substructure: numbers of bonded atoms</i></font></td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-0 </td><td align="left">Ignore this substructure (substructure &ldquo;wildcard&rdquo;)</td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>n</i></font> </td><td align="left"><font face="Times New Roman, Times, serif" size="3"><i>n</i></font> is the number of atoms bonded to the central atom.</td></tr>
+<tr valign="top"><td align="left" colspan="2"></td></tr>
+<tr valign="top"><td align="left" colspan="2"><font face="Times New Roman, Times, serif" size="3"><i>Third substructure: ring context</i></font></td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>y</i></font>-0 </td><td align="left">Ignore this substructure (substructure &ldquo;wildcard&rdquo;)</td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>y</i></font>-1</td><td align="left">None of the following ring contexts apply</td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>y</i></font>-3</td><td align="left">Bend is in a 3-membered ring</td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>y</i></font>-4</td><td align="left">Bend is in a 4-membered ring</td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>y</i></font>-5&nbsp;&nbsp;</td><td align="left">Bend is in a 5-membered ring</td></tr>
+<tr valign="top"><td align="left" colspan="2"></td></tr>
+<tr valign="top"><td align="left" colspan="2"><font face="Times New Roman, Times, serif" size="3"><i>Fourth substructure: number of bonded hydrogens</i></font></td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>y</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>z</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>n</i></font>&nbsp;&nbsp;</td><td align="left">There are <font face="Times New Roman, Times, serif" size="3"><i>n</i></font>+1 hydrogen atoms bonded to the central atom (other than ones comprising the bond angle itself).</td></tr>
+</table>
+<p>The following substructures apply to functions involving dihedral angles.</p>
+<table border="0">
+<tr valign="top"><td align="left" colspan="2"><font face="Times New Roman, Times, serif" size="3"><i>First substructure: bond order</i></font></td></tr>
+<tr valign="top"><td align="left">-0</td><td align="left">Skip this substructure (substructure &ldquo;wildcard&rdquo;)</td></tr>
+<tr valign="top"><td align="left">-1</td><td align="left">Single central bond:  0.00 &le; <font face="Times New Roman, Times, serif" size="3"><i>bond order</i></font> &lt; 1.50 </td></tr>
+<tr valign="top"><td align="left">-2</td><td align="left">Double central bond: 1.50 &le; <font face="Times New Roman, Times, serif" size="3"><i>bond order</i></font> &lt; 2.50 </td></tr>
+<tr valign="top"><td align="left">-3</td><td align="left">Triple central bond: <font face="Times New Roman, Times, serif" size="3"><i>bond order</i></font> &ge; 2.50</td></tr>
+<tr valign="top"><td align="left" colspan="2"></td></tr>
+<tr valign="top"><td align="left" colspan="2"><font face="Times New Roman, Times, serif" size="3"><i>Second substructure: bond type of the central bond</i></font></td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-0 </td><td align="left">Skip this substructure (substructure &ldquo;wildcard&rdquo;)</td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-1 </td><td align="left">Resonance central bond (1.30 &le; <font face="Times New Roman, Times, serif" size="3"><i>bond order</i></font> &le; 1.70)</td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-2 </td><td align="left">Amide central bond (priority over resonance)</td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-3 </td><td align="left">Other central bond type</td></tr>
+<tr valign="top"><td align="left" colspan="2"></td></tr>
+<tr valign="top"><td align="left" colspan="2"><font face="Times New Roman, Times, serif" size="3"><i>Third substructure: ring context</i></font></td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>y</i></font>-1</td><td align="left">None of the following ring contexts apply</td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>y</i></font>-4</td><td align="left">Dihedral is in a 4-membered ring</td></tr>
+<tr valign="top"><td align="left">-<font face="Times New Roman, Times, serif" size="3"><i>x</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>y</i></font>-5&nbsp;&nbsp;</td><td align="left">Dihedral is in a 5-membered ring</td></tr>
+</table>
+<p>For example, <font color="#009933">HrmStr1-2-0-4</font> specifies that the <font color="#009933">HrmStr1</font> term applies only to a stretch that involves a double bond that lies in a four-membered ring (compare to <font color="#009933">HrmStr1-2</font> which applies to all double bonds). A substructure value of zero is similar to a wildcard: <font color="#009933">HrnStr1-0-0-4</font> specifies that the term applies to a stretch of any bond order, but it must be in a four-membered ring.</p>
+<p>Note that substructures are not always needed. Some functions explicitly include bond orders and similar structural information within their definitions. For example, the <font color="#009933">HrmStr3</font> stretch term from the UFF force field includes the bond order as its third parameter. This parameter can be passed to this function during a UFF calculation for each bond by specifying &ndash;1.0 as the value, using a specification like the following in the input file (and the appropriate option to the <b><font color="#0000FF">UFF</font></b> keyword):</p>
+<pre>
+HrmStr3 * * -1.0 0.1332
+</pre>
+<p><b>Defining new atom types.</b> Gaussian understands the standard MM atom types from the Dreiding, UFF, and Amber force fields. However, when a system is studied that these force fields are not parametrized for, none of the available atom types may be suitable. In that case, one can define a new atom type simply by using a new atom type label within the molecule specification. Naturally, since any new atom types will not exist in the hard-wired tables, you will need to also define all required functions using them within the input file.</p>
+<p><b>The non-bonded interaction master function.</b> As we&rsquo;ve seen, specifying non-bonded interaction terms can be quite lengthy, requiring many <font color="#009933">NBTerm</font> terms. When non-bonded interactions are specified in the input (using one of the options to the MM keyword), they can be specified using the <font color="#009933">NonBon</font> function. This function uses a single entry to define the non-bonded interaction, and it is expanded automatically by the program into the appropriate <font color="#009933">NBDir</font> and <font color="#009933">NBTerm</font> entries.</p>
+<p>This function has the following general form:</p>
+<p><b>NonBon</b> <font face="Times New Roman, Times, serif" size="3"><i>V-Type C-Type V-Cutoff C-Cutoff VScale1 VScale2 VScale3 CScale1 CScale2 CScale3</i></font></p>
+<p><font face="Times New Roman, Times, serif" size="3"><i>V-Type</i></font> and <font face="Times New Roman, Times, serif" size="3"><i>C-Type</i></font> are integers indicating the kind of van der Waals and Coulomb interactions to be used (respectively). The remaining terms are cutoff values and three scale factors for each of the two interaction types; the latter are scale factors for atoms separated by 1, 2 and 3 or more bonds (respectively). When any scale factor is set to &ndash;1.0, the standard Amber scale factor of 1.0/1.2 is used.</p>
+<p>As an example, here is the function used for the standard Amber force field:</p>
+<pre>
+NonBon 3 1 0 0 0.0 0.0 0.5 0.0 0.0 -1.0
+</pre>
+<p>This function specifies the Amber arithmetic van der Waals interaction, 1/R Coulomb interaction, and no cutoffs. Van der Waals interactions are scaled by 0.5 for atoms more than 2 bonds distant and are removed for nearer pairs. Coulomb interactions are scaled by 1.0/1.2 for atoms more than 2 bonds distant and are also removed for nearer pairs</p>
+<p><b>Global parameters.</b> In some cases, a parameter needed for the potential function is not related to a specific atom type at all. One example is the dielectric constant. For such cases, we use global parameters: defined values which may be used as parameters within potential functions. Any defined global parameters are listed in the MM force field definition section of the output (requested with <b><font color="#0000FF">IOp(4/33=3)</font></b>). Here is an example definition of the dielectric constant:</p>
+<pre>
+Dielc  78.39
+</pre>
+<p>Global parameters also can be specified in vector or matrix format. The following extract from the MM2 force field definition illustrates the use of a matrix in functions which specify the shift of the hydrogen (i.e., interatomic distance scaling) when calculating van der Waals interactions:</p>
+<pre>
+VDWShf1 * 1 0.0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>By default, use index value 1 with VDWShf2</i></font></font>
+VDWShf1 MM5 2 -1.0&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Use index value 2 for atom type MM5</i></font></font>
+VDWShf1 MM36 3 -1.0&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Use index value 3 for atom type MM36</i></font></font>
+VDWShf2 1 2 0.915&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Scale factor: matrix element (1,2)</i></font></font>
+VDWShf2 1 3 0.915&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Scale factor: matrix element (1,3)</i></font></font>
+</pre>
+<p>We&rsquo;ll consider these two functions in reverse order. <font color="#009933">VDWShf2</font> sets up a lower triangular matrix of scale factors for the interatomic distance. The elements (1,2) and (1,3) are both set to 0.915; the other elements&mdash;(1,1), (2,2), (2,3) and (3,3)&mdash;are left as the default value, meaning that the distance is unscaled in the van der Waals interaction computation. Note that this formulation is independent of atom type.</p>
+<p>The <font color="#009933">VDWShf1</font> function defines which matrix elements to use for various atom types. The first entry specifies the default index value as 1, and the remaining two entries specify index values 2 and 3 for atom types <font color="#009933">MM5</font> and <font color="#009933">MM36</font>. The third parameter to this function specifies the second center involved in the interaction. In the first entry, the 0.0 value functions as a wildcard, while in the other two entries, the value of &ndash;1 tells the program to enter the appropriate center automatically.</p>
+<p>These functions result in only bonds involving an atom of type <font color="#009933">MM5</font> (H) or <font color="#009933">MM36</font> (D) and another of a different type being shifted. When these functions are evaluated, interactions of type <font color="#009933">MM5-X</font> use element (1,2) and ones of type <font color="#009933">MM36-X</font> use (1,3). Interactions involving other types use (1,1), while <font color="#009933">MM5-MM5</font>, <font color="#009933">MM5-MM36</font> and <font color="#009933">MM36-MM36</font> use (2,2), (2,3) and (3,3), respectively&mdash;all of which use unscaled interatomic distances.</p>
+<p>Using this mechanism, parameter specification is much clearer and compact. Without it, an entry for every <font face="Times New Roman, Times, serif" size="3"><i>pair</i></font> of atoms would have been needed to achieve the same goal.</p>
+<p><b>Step-down tables.</b> Wildcards provide a mechanism for specifying generic parameters/defaults that do not explicitly depend on each of the atom types involved in a particular term. Step-down tables have the same purpose, but are more sophisticated. Consider the following example, which is taken from the UFF force field. In these entries, the <font color="#009933">UseTable</font> and <font color="#009933">StepDown</font> entries are not potential functions and do not contain parameters, but instead describe the step-down mechanism that is used to process entries that do refer to potential functions and contain parameters.</p>
+<p>In the following example, the first set of <font color="#009933">UFFBnd3</font> lines define potential functions, while the <font color="#009933">UFFBnd2</font> lines and the second set of <font color="#009933">UFFBnd3</font> lines use the step-down mechanism:</p>
+<pre>
+UseTable UFFBnd2 #3 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Specify step-down table used for specified functions</i></font></font>
+UseTable UFFBnd3 #3
+StepDown UFFBnd2 0 1 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Matching rules for specified functions</i></font></font>
+StepDown UFFBnd2 0 2 0
+StepDown UFFBnd3 0 1 0    
+StepDown UFFBnd3 0 2 0    
+Table #3 C_R  Trig &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Define alternate atoms types</i></font></font>
+Table #3 N_R  Trig      
+Table #3 H_   Lin       
+Table #3 Li   Lin       
+UFFBnd3   0 C_3   0 109.471   -1.0 -1.0 0.1332 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Functions defined with</i></font></font>
+UFFBnd3   0 N_3   0 106.700   -1.0 -1.0 0.1332 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>explicit atom types</i></font></font>
+UFFBnd3   0 N_2   0 111.200   -1.0 -1.0 0.1332    
+UFFBnd3   0 O_3   0 104.510   -1.0 -1.0 0.1332    
+UFFBnd2-0-2   0 Lin   0 2     -1.0 -1.0 0.1332 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Functions defined with step-</i></font></font>
+UFFBnd2-0-3   0 Trig  0 3     -1.0 -1.0 0.1332 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>down types &amp; substructures</i></font></font>
+UFFBnd3-0-3   0 Lin   0 180.0 -1.0 -1.0 0.1332
+UFFBnd3-0-4   0 Lin   0 180.0 -1.0 -1.0 0.1332
+UFFBnd3-0-5   0 Lin   0 180.0 -1.0 -1.0 0.1332
+UFFBnd3-0-6   0 Lin   0 180.0 -1.0 -1.0 0.1332
+UFFBnd3-0-2   0 Trig  0 120.0 -1.0 -1.0 0.1332
+UFFBnd3-0-4   0 Trig  0 120.0 -1.0 -1.0 0.1332
+UFFBnd3-0-5   0 Trig  0 120.0 -1.0 -1.0 0.1332
+UFFBnd3-0-6   0 Trig  0 120.0 -1.0 -1.0 0.1332
+</pre>
+<p><font color="#009933">H_</font> and <font color="#009933">N_R</font> are UFF atom types in the UFF force field. If there is a bond angle involving such atoms in the molecule&mdash;<font color="#009933">H_&ndash;N_R&ndash;H_</font>&mdash;the program needs to determine the appropriate function and parameters to use. First, it determines the appropriate step-down tables for the available bend function. In this example, table #3 is used for both available bend functions: <font color="#009933">UFFBnd2</font> and <font color="#009933">UFFBnd3</font>.</p>
+<p>The <font color="#009933">Table</font> entries define alternate types for specified atom types. Typically, they map many specific atom types to a more generic pseudo-type (e.g., <font color="#009933">Lin</font> and <font color="#009933">Trig</font> in the example). These alternate types allow wide-ranging default values to be specified for function parameters, effectively enabling undefined parameters to be automatically estimated.</p>
+<p>The <font color="#009933">StepDown</font> entries specify matching rules for selecting specific function entries. In this example, both bend functions use the same two entries: 0 1 0 and 0 2 0. They specify that first the program should look for an entry specifying the original atom type as the center atom (zero values function as wild cards). If no such entry is present, then an entry specifying the first alternate atom type as the central atom should be used. </p>
+<p>In the example, the program would look for bend functions specifying <font color="#009933">N_R</font> as the central atom, but none is defined. Next, it would look for functions with <font color="#009933">Trig</font> as the type of the central atom. There are four such functions: <font color="#009933">UFFBnd2-0-3</font> and <font color="#009933">UFFBnd3-0</font> with second substructures 2, 4 and 5. Which one is used will depend on the number of atoms bonded to the central nitrogen atom.</p>
+<p>Note that in practice, step-down tables can specify multiple alternates for the various atom types and also include many more types mapped to each listed alternate.</p>
+<p>When a step-down table is in use, then any wildcards within other function specifications are ignored. In other words, of you choose to use a step-down table, then wildcards cannot be used anywhere else.</p>
+<h3><font size="-1" color="#222222">AVAILABLE FORCE FIELD TERMS (FUNCTIONS)</font></h3>
+<p>Some preliminary notes:</p>
+<ul>
+<li>
+<p><font face="Times New Roman, Times, serif" size="3"><i>Units</i></font>: Unless otherwise indicated, distances are in Angstroms, angles are in degrees, energies are in kcal/mol and charges are in atomic units.</p>
+</li>
+<li>
+<p>In equations, R refers to distances and &theta; refers to angles. Numerical and variable subscripts refer to centers, and &ldquo;<font face="Times New Roman, Times, serif" size="3"><i>eq</i></font>&rdquo; refers to equilibrium: e.g., R<sub>12</sub> and R<sub>ij</sub> are the bond distances between atoms 1 and 2 and atoms <font face="Times New Roman, Times, serif" size="3"><i>i</i></font> and <font face="Times New Roman, Times, serif" size="3"><i>j</i></font> (respectively), R<sub>i</sub> is the bond radii for atom <font face="Times New Roman, Times, serif" size="3"><i>i</i></font>, R<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub> and &theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub> are the equilibrium bond length and bond angle, and R<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font>12</sub> is the equilibrium bond length between atoms 1 and 2 (typically used in an angle term).</p>
+</li>
+<li>
+<p>Wildcards may be used in any function definition. They are indicated by a 0 or an asterisk.</p>
+</li>
+<li>
+<p>Function equivalencies to those found in standard force fields are indicated in parentheses following the description.</p>
+</li></ul>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">VDW</font></b>: van der Waals parameters, used for <font color="#009933">NBDir</font> and <font color="#009933">NBTerm</font> (See <font color="#009933">MMFF94</font> below for MMFF94-type van der Waals parameters)</p>
+<p><b>VDW </b>Atom-type Radius Well-depth</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">VDW94</font></b>: MMFF94 type van der Waals parameters (used for <font color="#009933">NBDir</font> and <font color="#009933">NBTerm</font>)</p>
+<p><b>VDW94 </b>Atom-type Atomic-pol  NE  Scale1  Scale2  DFlag</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Atomic-pol</i></font>
+</td><td>Atomic polarizability (Angstrom<sup>3</sup>).</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>NE</i></font>
+</td><td>Slater-Kirkwood effective number of valence electrons (dimensionless).</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Scale1</i></font>
+</td><td>Scale factor (Angstrom<sup>1/4</sup>).</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Scale2</i></font>
+</td><td>Scale factor (dimensionless).</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>DFlag</i></font>
+</td><td>1.0 for donor type atom, 2.0 for acceptor type, otherwise 0.0.</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">Buf94</font></b>: MMFF94 electrostatic buffering</p>
+<p><b>Buf94 </b>Atom-type Value</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">NonBon</font></b>: Non-bonded interaction master function. This function will be expanded into pairs and a direct function (<font color="#009933">NBDir</font> and <font color="#009933">NBTerm</font>) before evaluation of the MM energy.</p>
+<p><b>NonBon </b>V-Type C-Type, V-Cutoff C-Cutoff VScale1 VScale2 VScale3 CScale1 CScale2 CScale3</i></font></font></b></p>
+<p><font face="Times New Roman, Times, serif" size="3"><i>V-Type</i></font> is the van der Waals type:</p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>0</i></font>
+</td><td>No van der Waals</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>1</i></font>
+</td><td>Arithmetic (as for Dreiding)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>2</i></font>
+</td><td>Geometric (as for UFF)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>3</i></font>
+</td><td>Arithmetic (as for Amber)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>4</i></font>
+</td><td>MMFF94-type van der Waals</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>5</i></font>
+</td><td>MM2-type van der Waals</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>6</i></font>
+</td><td>OPLS-type van der Waals</td></tr>
+</table>
+<p><font face="Times New Roman, Times, serif" size="3"><i>C-Type</i></font> is the Coulomb type:</p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>0</i></font>
+</td><td>No Coulomb</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>1</i></font>
+</td><td>1/R</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>2</i></font>
+</td><td>1/R<sup>2</sup></td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>3</i></font>
+</td><td>1/R buffered (MMFF94)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>10</i></font>
+</td><td>Form dipole-dipole interactions without cutoffs</td></tr>
+</table>
+<p><font face="Times New Roman, Times, serif" size="3"><i>V-Cutoff </i></font>and <font face="Times New Roman, Times, serif" size="3"><i>C-Cutoff</i></font> are the van der Waals and Coulomb cutoffs (respectively):</p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>0</i></font>
+</td><td>No cutoff</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>&gt;0</i></font>
+</td><td>Hard cutoff</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>&lt;0</i></font>
+</td><td>Soft cutoff</td></tr>
+</table>
+<p><font face="Times New Roman, Times, serif" size="3"><i>Vscale1-3</i></font> are van der Waals scale factors for 1- to 3-bond separated pairs. <font face="Times New Roman, Times, serif" size="3"><i>CScale1-3</i></font> are Coulomb scale factors for 1- to 3-bond separated pairs. If any scale factor &lt; 0.0, the 1.0/1.2 scaling is used (as for Amber).</p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">NBDir</font></b>: Coulomb and van der Waals direct (evaluated for all atom pairs)</p>
+<p><b>NBDir </b>V-Type C-Type V-Cutoff C-Cutoff</i></font></font></b></p>
+<p><font face="Times New Roman, Times, serif" size="3"><i>V-Type</i></font>, <font face="Times New Roman, Times, serif" size="3"><i>C-Type</i></font>, <font face="Times New Roman, Times, serif" size="3"><i>V-Cutoff</i></font>, and <font face="Times New Roman, Times, serif" size="3"><i>C-Cutoff</i></font> as above.</p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">NBTerm</font></b>: Coulomb and van der Waals single term cutoffs</p>
+<p><b>NBTerm </b>Atom-type1 Atom-type2 V-Type C-Type V-Cutoff C-Cutoff  V-Scale C-Scale</i></font></font></b></p>
+<p><font face="Times New Roman, Times, serif" size="3"><i>V-Type</i></font>, <font face="Times New Roman, Times, serif" size="3"><i>C-Type</i></font>, <font face="Times New Roman, Times, serif" size="3"><i>V-Cutoff</i></font>, <font face="Times New Roman, Times, serif" size="3"><i>C-Cutoff</i></font>, <font face="Times New Roman, Times, serif" size="3"><i>V-Scale</i></font>, and <font face="Times New Roman, Times, serif" size="3"><i>C-Scale</i></font> as above.</p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">AtRad</font></b>: Atomic single bond radius</p>
+<p><b>AtRad </b>Atom-type Radius</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">EffChg</font></b>: Effective charge (UFF)</p>
+<p><b>EffChg </b>Atom-type Charge</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">EleNeg</font></b>: GMP Electronegativity (UFF)</p>
+<p><b>EleNeg </b>Atom-type Value</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">Table</font></b>: Step down table</p>
+<p><b>Table </b>Original-atom-type Stepping-down-type(s)</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">HrmStr1</font></b>: Harmonic stretch I (Amber 1): <font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>*(R&ndash;<font face="Times New Roman, Times, serif" size="3"><i>R</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)<sup>2</sup></p>
+<p><b>HrmStr1 </b>Atom-type1 Atom-type2  ForceC R</i></font></font><sub></b>eq</i></font></font></sub></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>R<sub>eq</sub></i></font>
+</td><td>Equilibrium bond length</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">HrmStr2</font></b>: Harmonic stretch II (Dreiding 4a): <font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>*[R&ndash;(R<sub>i</sub>+R<sub>j</sub>&ndash;<font face="Times New Roman, Times, serif" size="3"><i>Delta</i></font>)]<sup>2</sup></p>
+<p><b>HrmStr2 </b>Atom-type1 Atom-type2  ForceC Delta</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Delta</i></font>
+</td><td>Delta</td></tr>
+</table>
+<p>R<sub>i</sub> and R<sub>j</sub> are atomic bond radii specified with <font color="#009933">AtRad</font>.</p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">HrmStr3</font></b>: Harmonic stretch III (UFF 1a): <font face="Times New Roman, Times, serif" size="3"><i>k</i></font>*(R&ndash;R<sub>ij</sub>)<sup>2</sup></p>
+<p>Equilibrium bond length R<sub>ij</sub> = (1 &ndash; <font face="Times New Roman, Times, serif" size="3"><i>PropC</i></font>*ln<font face="Times New Roman, Times, serif" size="3"><i>BO</i></font>)*(R<sub>i</sub> + R<sub>j</sub>) &ndash; R<sub>en</sub><br>
+Force constant: <font face="Times New Roman, Times, serif" size="3"><i>k</i></font> = 664.12*Z<sub>i</sub>*Z<sub>j</sub>/(R<sub>ij</sub><sup>3</sup>)<br>
+Electronegativity correction: R<sub>en</sub> = R<sub>i</sub>*R<sub>j</sub>*[SQRT(X<sub>i</sub>) &ndash; SQRT(X<sub>j</sub>)]<sup>2</sup>/(X<sub>i</sub>*R<sub>i</sub> + X<sub>j</sub>*R<sub>j</sub>)</p>
+<p><b>HrmStr3 </b>Atom-type1 Atom-type2 BO PropC</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>BO</i></font>
+</td><td>Bond order (if &lt;0, it is determined on-the-fly)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>PropC</i></font>
+</td><td>Proportionality constant</td></tr>
+</table>
+<p>R<sub>i</sub> and R<sub>j</sub> are atomic bond radii defined with <font color="#009933">AtRad</font>. X<sub>i</sub> and X<sub>j</sub> are GMP electronegativity values defined with <font color="#009933">EleNeg</font>. Z<sub>i</sub> and Z<sub>j</sub> are the effective atomic charges defined with <font color="#009933">EffChg</font>.</p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">MrsStr1</font></b>: Morse stretch I (Amber): <font face="Times New Roman, Times, serif" size="3"><i>DLim</i></font>*(e<sup>-a(R&ndash;<font face="Times New Roman, Times, serif" size="3"><i>R</i></font>eq)</sup>&ndash;1)<sup>2</sup> where <font face="Times New Roman, Times, serif" size="3"><i>a</i></font> = SQRT(<font face="Times New Roman, Times, serif" size="3"><i>ForceC/DLim</i></font>)</p>
+<p><b>MrsStr1 </b>Atom-type1 Atom-type2 ForceC  R</i></font></font><sub></b>eq</i></font></font></sub>  </b>DLim</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>R<sub>eq</sub></i></font>
+</td><td>Equilibrium bond length</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>DLim</i></font>
+</td><td>Dissociation limit</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">MrsStr2</font></b>: Morse stretch II (Dreiding 5a): <font face="Times New Roman, Times, serif" size="3"><i>DLim</i></font>*(e<sup>-a(Ri+Rj&ndash;Delta)</sup>&ndash;1)<sup>2</sup> where <font face="Times New Roman, Times, serif" size="3"><i>a</i></font> = SQRT(<font face="Times New Roman, Times, serif" size="3"><i>ForceC/DLim</i></font>)</p>
+<p><b>MrsStr2 </b>Atom-type1  Atom-type2  ForceC  Delta  DLim</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Delta</i></font>
+</td><td>Delta</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>DLim</i></font>
+</td><td>Dissociation limit</td></tr>
+</table>
+<p>R<sub>i</sub> and R<sub>j</sub> are atomic bond radii defined with <font color="#009933">AtRad</font>.</p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">MrsStr3</font></b>: Morse stretch III (UFF 1b): <font face="Times New Roman, Times, serif" size="3"><i>BO</i></font>*<font face="Times New Roman, Times, serif" size="3"><i>DLim</i></font>*(e<sup>-a(R&ndash;Rij)</sup>&ndash;1)<sup>2</sup> where <font face="Times New Roman, Times, serif" size="3"><i>a</i></font> = SQRT(<font face="Times New Roman, Times, serif" size="3"><i>k</i></font>/[<font face="Times New Roman, Times, serif" size="3"><i>BO</i></font>*<font face="Times New Roman, Times, serif" size="3"><i>DLim</i></font>])</p>
+<p>Equilibrium bond length R<sub>ij</sub> = (1 &ndash; <font face="Times New Roman, Times, serif" size="3"><i>PropC</i></font>*ln<font face="Times New Roman, Times, serif" size="3"><i>BO</i></font>)*(R<sub>i</sub> + R<sub>j</sub>) &ndash; R<sub>en</sub><br>
+Force constant: <font face="Times New Roman, Times, serif" size="3"><i>k</i></font> = 664.12*Z<sub>i</sub>*Z<sub>j</sub>/(R<sub>ij</sub><sup>3</sup>)<br>
+Electronegativity correction: R<sub>en</sub> = R<sub>i</sub>*R<sub>j</sub>*[SQRT(X<sub>i</sub>) &ndash; SQRT(X<sub>j</sub>)]<sup>2</sup>/(X<sub>i</sub>*R<sub>i</sub> + X<sub>j</sub>*R<sub>j</sub>)</p>
+<p><b>MrsStr3 </b>Atom-type1 Atom-type2  BO  PropC DLim</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>BO</i></font>
+</td><td>Bond order (if &lt;0, it is determined on-the-fly)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>PropC</i></font>
+</td><td>Proportionality constant</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>DLim</i></font>
+</td><td>Dissociation limit</td></tr>
+</table>
+<p>R<sub>i</sub> and R<sub>j</sub> are atomic bond radii defined with <font color="#009933">AtRad</font>. X<sub>i</sub> and X<sub>j</sub> are GMP electronegativity values defined with <font color="#009933">EleNeg</font>. Z<sub>i</sub> and Z<sub>j</sub> are the effective atomic charges defined with <font color="#009933">EffChg</font>.</p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">QStr1</font></b>: Quartic stretch I (MMFF94 2):</p>
+<p>(<font face="Times New Roman, Times, serif" size="3"><i>R</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>/2)*(R&ndash;<font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>)<sup>2</sup>*[1+<font face="Times New Roman, Times, serif" size="3"><i>CStr</i></font>*(R&ndash;<font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>+(7/12)*<font face="Times New Roman, Times, serif" size="3"><i>CStr</i></font><sup>2</sup>*(R&ndash;<font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>)<sup>2</sup>]</p>
+<p><b>QStr1 </b>Atom-type1 Atom-type2  ForceC  R</i></font></font><sub></b>eq</i></font></font></sub>  </b>CStr</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant (md-Angstrom<sup>-1</sup>)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>R<sub>eq</sub></i></font>
+</td><td>Equilibrium bond length</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>CStr</i></font>
+</td><td>Cubic stretch constant (Angstrom<sup>-1</sup>)</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">UFFVOx</font></b>: Atomic torsional barrier for the oxygen column (UFF 16)</p>
+<p><b>UFFVOx </b>Atom-type Barrier</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">UFFsp3</font></b>: Atomic SP3 torsional barrier (UFF 16)</p>
+<p><b>UFFVsp3 </b>Atom-type Barrier</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">UFFVsp2</font></b>: Atomic SP2 torsional barrier (UFF 17)</p>
+<p><b>UFFVsp2 </b>Atom-type Barrier</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">HrmBnd1</font></b>: Harmonic bend (Amber 1): <font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>*(&theta;&ndash;&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)<sup>2</sup></p>
+<p><b>HrmBnd1 </b>Atom-type1 Atom-type2 Atom-type3 ForceC</i></font></font>  &theta;<sub>eq</sub></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant (in kcal/(mol*rad<sup>2</sup>))</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>&theta;<sub>eq</sub></i></font>
+</td><td>Equilibrium angle</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">HrmBdn2</font></b>: Harmonic Bend (Dreiding 10a): [<font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>/sin(&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub><sup>2</sup>)]*(cos(&theta;)&ndash;cos(&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>))<sup>2</sup></p>
+<p><b>HrmBnd2 </b>Atom-type1 Atom-type2 Atom-type3  ForceC</i></font></font> &theta;<sub>eq</sub></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>&theta;<sub>eq</sub></i></font>
+</td><td>Equilibrium angle</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">LinBnd1</font></b>: Dreiding Linear Bend (Dreiding 10c): <font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>*(1+cos(&theta;))</p>
+<p><b>LinBnd1 </b>Atom-type1 Atom-type2 Atom-type3 ForceC</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">UFFBnd3</font></b>: UFF 3-term bend (UFF 11):  k*(C0 + C1*cos(&theta;))+C2*cos(2&theta;) where C2=1/(4 * sin(&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub><sup>2</sup>)),<br> C1&nbsp;=&nbsp;&ndash;4*C2*cos(&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>) and C0=C2*(2*cos(&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub><sup>2</sup>)+1)</p>
+<p>Force constant: k = 664.12*Z<sub>i</sub>*Z<sub>k</sub>*(3*R<sub>ij</sub>*R<sub>jk</sub>*(1&ndash;cos(&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub><sup>2</sup>))&ndash;cos(&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)*R<sub>ik</sub><sup>2</sup>)/R<sub>ik</sub><sup>5</sup></p>
+<p><b>UFFBnd3 </b>Atom-type1 Atom-type2  Atom-type3</i></font></font>  &theta;<sub></b>eq</i></font></font></sub>  </b>BO</i></font></font><sub>12</sub>  </b>BO</i></font></font><sub>23</sub>  </b>PropC</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>&theta;<sub>eq</sub></i></font>
+</td><td>Equilibrium angle</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>BO<sub>12</sub></i></font>
+</td><td>Bond order for <font face="Times New Roman, Times, serif" size="3"><i>Atom-type1&ndash;Atom-type2</i></font> (when &lt;0, it is determined on-the-fly)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>BO<sub>23</sub></i></font>
+</td><td>Bond order for <font face="Times New Roman, Times, serif" size="3"><i>Atom-type2&ndash;Atom-type3</i></font> (when &lt;0, it is determined on-the-fly)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>PropC</i></font>
+</td><td>Proportionality constant</td></tr>
+</table>
+<p>R<sub>i</sub>, R<sub>j</sub> and R<sub>k</sub> are atomic bond radii defined with <font color="#009933">AtRad</font>. X<sub>i</sub>, X<sub>j</sub> and X<sub>k</sub> are GMP electronegativity defined with <font color="#009933">EleNeg</font>. Z<sub>i</sub>, Z<sub>j</sub> and Z<sub>k</sub> are effective atomic charges defined with <font color="#009933">EffChg</font>.</p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">UFFBnd2</font></b>: UFF 2-term bend (UFF 10): [k/(<font face="Times New Roman, Times, serif" size="3"><i>Per</i></font><sup>2</sup>)]*[1&ndash;cos(<font face="Times New Roman, Times, serif" size="3"><i>Per</i></font>*&theta;)]</p>
+<p>Force constant: k = 664.12*Z<sub>i</sub>*Z<sub>k</sub>*(3*R<sub>ij</sub>*R<sub>jk</sub>*(1&ndash;cos(<font face="Times New Roman, Times, serif" size="3"><i>Per</i></font><sup>2</sup>))&ndash;cos(<font face="Times New Roman, Times, serif" size="3"><i>Per</i></font>)*R<sub>ik</sub><sup>2</sup>)/R<sub>ik</sub><sup>5</sup></p>
+<p><b>UFFBnd2 </b>Atom-type1 Atom-type2 Atom-type3  Per BO</i></font></font><sub>12</sub>  </b>BO</i></font></font><sub>23</sub>  </b>PropC</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Per</i></font>
+</td><td>Periodicity: 2 for linear, 3 for trigonal, 4 for square-planar.</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>BO<sub>12</sub></i></font>
+</td><td>Bond order for <font face="Times New Roman, Times, serif" size="3"><i>Atom-type1&ndash;Atom-type2</i></font> (when &lt;0, it is determined on-the-fly)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>BO<sub>23</sub></i></font>
+</td><td>Bond order for <font face="Times New Roman, Times, serif" size="3"><i>Atom-type2&ndash;Atom-type3</i></font> (when &lt;0, it is determined on-the-fly)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>PropC</i></font>
+</td><td>Proportionality constant</td></tr>
+</table>
+<p>R<sub>i</sub>, R<sub>j</sub> and R<sub>k</sub> are atomic bond radii defined with <font color="#009933">AtRad</font>. X<sub>i</sub>, X<sub>j</sub> and X<sub>k</sub> are GMP electronegativity defined with <font color="#009933">EleNeg</font>. Z<sub>i</sub>, Z<sub>j</sub> and Z<sub>k</sub> are effective atomic charges defined with <font color="#009933">EffChg</font>.</p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">ZeroBnd</font></b>: Zero bend term: used in rare cases where a bend is zero. This term is needed for the program not to protest about undefined angles.</p>
+<p><b>ZeroBnd </b>Atom-type1 Atom-type2 Atom-type3</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">CubBnd</font></b>: Cubic bend (MMFF94 3): (<font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>/2)*(1+<font face="Times New Roman, Times, serif" size="3"><i>CBend</i></font>*(&theta;&ndash;&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>))*(&theta;&ndash;&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)<sup>2</sup></p>
+<p><b>CubBnd </b>Atom-type1  Atom-type2  Atom-type3  ForceC</i></font></font>  &theta;<sub>eq</sub>  </b>CBend</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant (in md*Angstrom/rad<sup>2</sup>)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>&theta;<sub>eq</sub></i></font>
+</td><td>Equilibrium angle</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>CBend</i></font>
+</td><td>Cubic Bend constant (in deg<sup>-1</sup>)</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">LinBnd2</font></b>: MMFF94 Linear Bend (MMFF94 4): <font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>*(1+cos(&theta;))</p>
+<p><b>LinBnd2 </b>Atom-type1 Atom-type2 Atom-type3 ForceC</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant (md)</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">AmbTrs</font></b>: Amber torsion (Amber 1): <font size="+1">&Sigma;</font><sub>i=1,4</sub> (<font face="Times New Roman, Times, serif" size="3"><i>Mag</i></font><sub>i</sub>*[1+cos(<font face="Times New Roman, Times, serif" size="3"><i>i</i></font>*&theta;&ndash;I(<font face="Times New Roman, Times, serif" size="3"><i>i</i></font>+4))])/<font face="Times New Roman, Times, serif" size="3"><i>NPaths</i></font></p>
+<p><b>AmbTrs </b>Atom-type1 A-type2 A-type3 A-type4 PO1 PO2 PO3 PO4  Mag</i></font></font><sub>1</sub> </b>Mag</i></font></font><sub>2</sub> </b>Mag</i></font></font><sub>3</sub> </b>Mag</i></font></font><sub>4</sub> </b>NPaths</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>PO1&ndash;PO4</i></font>
+</td><td>Phase offsets</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Mag<sub>1</sub>&ndash;Mag<sub>4</sub></i></font>
+</td><td>V/2 magnitudes</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>NPaths</i></font>
+</td><td>Number of paths. When zero or less, determined on-the-fly.</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">DreiTrs</font></b>: Dreiding torsion (Dreiding 13): <font face="Times New Roman, Times, serif" size="3"><i>V</i></font>*[1&ndash;cos(<font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>*(&theta;&ndash;<font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>))]/(2*<font face="Times New Roman, Times, serif" size="3"><i>NPaths</i></font>)</p>
+<p><b>DreiTrs </b>Atom-type1 Atom-type2 Atom-type3 Atom-type4 V  PO  Period  NPaths</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>V</i></font>
+</td><td>Barrier height V</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>
+</td><td>Phase offset</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>
+</td><td>Periodicity</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>NPaths</i></font>
+</td><td>Number of paths. When zero or less, determined on-the-fly.</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">UFFTorC</font></b>: UFF torsion with constant barrier height (UFF 15): [<font face="Times New Roman, Times, serif" size="3"><i>V</i></font>/2]*[1&ndash;cos(<font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>*<font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>)*cos(<font face="Times New Roman, Times, serif" size="3"><i>V</i></font>*&theta;)]/<font face="Times New Roman, Times, serif" size="3"><i>NPaths</i></font></p>
+<p><b>UFFTorC </b>Atom-type1 Atom-type2 Atom-type3 Atom-type4  Period  PO  V  NPaths</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>
+</td><td>Periodicity</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>
+</td><td>Phase offset</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>V</i></font>
+</td><td>Barrier height V</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>NPaths</i></font>
+</td><td>Number of paths. When zero or less, determined on-the-fly.</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">UFFTorB</font></b>: UFF torsion with bond order based barrier height (UFF 17): [<font face="Times New Roman, Times, serif" size="3"><i>V</i></font>/2]*[1&ndash;cos(<font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>*<font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>)* cos(<font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>*&theta;)]/<font face="Times New Roman, Times, serif" size="3"><i>NPaths</i></font> where <font face="Times New Roman, Times, serif" size="3"><i>V</i></font> = 5*SQRT(<font face="Times New Roman, Times, serif" size="3"><i>U</i></font><sub>j</sub>*<font face="Times New Roman, Times, serif" size="3"><i>U</i></font><sub>k</sub>)*[1+4.18*Log(<font face="Times New Roman, Times, serif" size="3"><i>BO</i></font><sub>12</sub>)]</p>
+<p><b>UFFTorB </b>Atom-type1 Atom-type2 Atom-type3 Atom-type4  Period  PO  BO</i></font></font><sub>12</sub>  </b>NPaths</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>
+</td><td>Periodicity</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>
+</td><td>Phase offset</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>BO<sub>12</sub></i></font>
+</td><td>Bond order for <font face="Times New Roman, Times, serif" size="3"><i>Atom-type1&ndash;Atom-type2</i></font> (when &lt;0, it is determined on-the-fly)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>NPaths</i></font>
+</td><td>Number of paths. When zero or less, determined on-the-fly.</td></tr>
+</table>
+<p><font face="Times New Roman, Times, serif" size="3"><i>U</i></font><sub>j</sub> and <font face="Times New Roman, Times, serif" size="3"><i>U</i></font><sub>k</sub> are atomic constants defined with <font color="#009933">UFFVsp2</font>.</p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">UFFTor1</font></b>: UFF torsion with atom type-based barrier height (UFF 16): [<font face="Times New Roman, Times, serif" size="3"><i>V</i></font>/2]*[1&ndash;cos(<font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>*<font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>)* cos(<font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>*&theta;)]/<font face="Times New Roman, Times, serif" size="3"><i>NPaths</i></font> where <font face="Times New Roman, Times, serif" size="3"><i>V</i></font>=SQRT(<font face="Times New Roman, Times, serif" size="3"><i>V</i></font><sub>j</sub>*<font face="Times New Roman, Times, serif" size="3"><i>V</i></font><sub>k</sub>)</p>
+<p><b>UFFTor1 </b>Atom-type1 Atom-type2 Atom-type3 Atom-type4  Period  PO  NPaths</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>
+</td><td>Periodicity</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>
+</td><td>Phase offset</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>NPaths</i></font>
+</td><td>Number of paths. When zero or less, determined on-the-fly.</td></tr>
+</table>
+<p><font face="Times New Roman, Times, serif" size="3"><i>V</i></font><sub>j</sub> and <font face="Times New Roman, Times, serif" size="3"><i>V</i></font><sub>k</sub> are atomic constants defined with <font color="#009933">UFFVsp3</font>.</p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">UFFTor2</font></b>: UFF torsion with atom type based barrier height (UFF 16) (differs from <font color="#009933">UFFTor1</font> in the atomic parameter that is used): [<font face="Times New Roman, Times, serif" size="3"><i>V</i></font>/2]*[1&ndash;cos(<font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>*<font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>)*cos(<font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>*&theta;)]/<font face="Times New Roman, Times, serif" size="3"><i>NPAths</i></font> where <font face="Times New Roman, Times, serif" size="3"><i>V</i></font>=SQRT(<font face="Times New Roman, Times, serif" size="3"><i>V</i></font><sub>j</sub>*<font face="Times New Roman, Times, serif" size="3"><i>V</i></font><sub>k</sub>)</p>
+<p><b>UFFTor2 </b>Atom-type1 Atom-type2 Atom-type3 Atom-type4  Period  PO  NPaths</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>
+</td><td>Periodicity</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>
+</td><td>Phase offset</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>NPaths</i></font>
+</td><td>Number of paths. When zero or less, determined on-the-fly.</td></tr>
+</table>
+<p><font face="Times New Roman, Times, serif" size="3"><i>V</i></font><sub>j</sub> and <font face="Times New Roman, Times, serif" size="3"><i>V</i></font><sub>k</sub> are atomic constants from <font color="#009933">UFFVOx</font>.</p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">VDWDreiTRS</font></b>: Dreiding special torsion for compatibility with Gaussian 98 code. During processing, it is replaced with <font color="#009933">DreiTRS</font>, with the following parameters:</p>
+<ul>
+<li><p>If there are three atoms bonded to the third center and the fourth center is H, it is removed.</p></li>
+<li><p>If there are three atoms bonded to the third center, and at least one of them is H, but the fourth center is not H, then these values are used: <font face="Times New Roman, Times, serif" size="3"><i>V</i></font>=4.0, <font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>=0.0, <font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>=3.0, and <font face="Times New Roman, Times, serif" size="3"><i>NPaths</i></font>=&ndash;1.0.</p></li>
+<li><p>Otherwise, these values are used: <font face="Times New Roman, Times, serif" size="3"><i>V</i></font>=1.0, <font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>=0.0, <font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>=6.0, and <font face="Times New Roman, Times, serif" size="3"><i>NPaths</i></font>=&ndash;1.0.</p></li>
+</ul>
+<p><b>OldTor </b>Atom-type1 Atom-type2 Atom-type3 Atom-type4</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">ImpTrs</font></b>: Improper torsion (Amber 1): <font face="Times New Roman, Times, serif" size="3"><i>Mag</i></font>*[1+cos(<font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>*(&theta;&ndash;<font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>))]</p>
+<p><b>ImpTrs </b>Atom-type1 Atom-type2 Atom-type3 Atom-type4 Mag PO Period</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Mag</i></font>
+</td><td><font face="Times New Roman, Times, serif" size="3"><i>V</i></font>/2 Magnitude</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>PO</i></font>
+</td><td>Phase offset</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Period</i></font>
+</td><td>Periodicity</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">Wilson</font></b>: Three term Wilson angle (Dreiding 28c, UFF 19): <font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>*(<font face="Times New Roman, Times, serif" size="3"><i>C1</i></font> + <font face="Times New Roman, Times, serif" size="3"><i>C2</i></font>*cos(&theta;) + <font face="Times New Roman, Times, serif" size="3"><i>C3</i></font>*cos(2&theta;)) averaged over all three Wilson angles &theta;</p>
+<p><b>Wilson </b>Atom-type1 Atom-type2 Atom-type3 Atom-type4 ForceC C1 C2 C3</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>C1, C2, C3</i></font>
+</td><td>Coefficients</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">HrmWil1</font></b>: Harmonic Wilson angle I (MMFF94 6): (<font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>/2)*(&theta;<sup>2</sup>) summed over all 3 Wilson angles &theta;</p>
+<p><b>HrmWil1 </b>Atom-type1 Atom-type2 Atom-type3 Atom-type4 ForceC</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">MM2Wil</font></b>: MM2 Wilson sixth order bend (MM2): <font size="+1">&Sigma;</font><sub>i=1,2,3</sub>(<font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font><sub>i</sub>/2)*(&theta;<sub>i</sub><sup>2</sup>)*[1+<font face="Times New Roman, Times, serif" size="3"><i>6Bend</i></font>*(&theta;<sub>i</sub><sup>4</sup>)]</p>
+<p><b>MM2Wil </b>Atom-type1 Atom-type2 Atom-type3 Atom-type4 ForceC1 ForceC2 ForceC3 6Bend</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC1&ndash;ForceC3</i></font>
+</td><td>Force constants</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>6Bend</i></font>
+</td><td>Sixth order bend constant (in deg<sup>-4</sup>)</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">StrBnd</font></b>: Stretch-bend (MMFF94 5): (<font face="Times New Roman, Times, serif" size="3"><i>ForceC1</i></font>*(R<sub>12</sub>&ndash;<font face="Times New Roman, Times, serif" size="3"><i>R</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font>12</sub>)+<font face="Times New Roman, Times, serif" size="3"><i>ForceC2</i></font>*(R<sub>23</sub>&ndash;<font face="Times New Roman, Times, serif" size="3"><i>R</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font>23</sub>))*(&theta;&ndash;&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)</p>
+<p><b>StrBnd </b>Atom-type1 Atom-type2 Atom-type3 ForceC1 ForceC2 R</i></font></font><sub></b>eq</i></font></font>12</sub> </b>R</i></font></font><sub></b>eq</i></font></font>23</sub> &theta;<sub>eq</sub></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC1, ForceC2</i></font>
+</td><td>Force constants</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>R<sub>eq12</sub>, R<sub>eq23</sub></i></font>
+</td><td>Equilibrium bond lengths (if &lt;0, retrieved from the appropriate stretch terms)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>&theta;<sub>eq</sub></i></font>
+</td><td>Equilibrium angle</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">CubStr1</font></b>: Cubic Stretch 1 (MM2): (<font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>/2)*(1&ndash;<font face="Times New Roman, Times, serif" size="3"><i>CStr</i></font>*(R&ndash;<font face="Times New Roman, Times, serif" size="3"><i>R</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>))*(R&ndash;<font face="Times New Roman, Times, serif" size="3"><i>R</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)<sup>2</sup></p>
+<p><b>CubStr1 </b>Atom-type1 Atom-type2 ForceC R</i></font></font><sub></b>eq</i></font></font></sub> </b>CStr</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>R<sub>eq</sub></i></font>
+</td><td>Equilibrium bond length</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>CStr</i></font>
+</td><td>Cubic stretch constant (Angstrom <sup>-1</sup>)</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">SixBnd1</font></b>: Sixth order bend (MM2): (<font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>/2)*(&theta;&ndash;&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)<sup>2</sup>(1+<font face="Times New Roman, Times, serif" size="3"><i>6Bend</i></font>*(&theta;&ndash;&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)<sup>4</sup>)</p>
+<p><b>SixBnd1 </b>Atom-type1 Atom-type2 Atom-type3 ForceC</i></font></font> &theta;<sub>eq</sub> </b>6Bend</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>&theta;<sub>eq</sub></i></font>
+</td><td>Equilibrium angle</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>6Bend</i></font>
+</td><td>Sixth order bend constant (in deg<sup>-4</sup>)</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">MM2Tors</font></b>: MM2 Torsional (MM2): <font face="Times New Roman, Times, serif" size="3"><i>En1</i></font>/2(1+cos&theta;)+<font face="Times New Roman, Times, serif" size="3"><i>En2</i></font>/2(1&ndash;cos2&theta;)+<font face="Times New Roman, Times, serif" size="3"><i>En3</i></font>/2(1+cos3&theta;)</p>
+<p><b>MM2Tors </b>Atom-type1 Atom-type2 Atom-type3 Atom-type4 En1 En2 En3</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>En1&ndash;En3</i></font>
+</td><td>Energies</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">MM2VDW</font></b>: Parameters for the MM2 van der Waals function (MM2)</p>
+<p><b>MM2VDW </b>Par1 Par1 Par3 Par4 Par5</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Par1&ndash;Par5</i></font>
+</td><td>Parameters</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">VDWX</font></b>: Matrix with van der Waals parameters (MM2). These values do not depend on atom types, and can be used as alternatives for the atomic parameters, as needed in the MM2 force field (see discussion above).</p>
+<p><b>VDWX </b>Index1 Index2 Radius Well-depth IsDef</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>IsDef</i></font>
+</td><td>Indicates whether the pair (1.0) has or (0.0) has not been defined.</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">VDWI</font></b>: Atomic indices, used to refer to the matrix in <font color="#009933">VDWXM</font> (MM2)</p>
+<p><b>VDWI </b> Atom-type Index</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">VDWShf2</font></b>: Matrix with parameters for atom shifting in the van der Waals calculation (MM2)</p>
+<p><b>VDWShf2 </b>Index1 Index2 Shift</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">VDWShf1</font></b>: Atomic indices into the matrix in <font color="#009933">VDWShf2</font> (MM2)</p>
+<p><b>VDWShf1 </b>Atom-type Index BondTo</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>BondTo</i></font>
+</td><td>Center bonded to (if &ndash;1.0, determined by program).</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">SixBndI</font></b>: Sixth order bend (MM2): (<font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>/2)*(&theta;&ndash;&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)<sup>2</sup>(1+<font face="Times New Roman, Times, serif" size="3"><i>6Bend</i></font>*(&theta;&ndash;&theta;<sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)<sup>4</sup>)</p>
+<p><b>SixBndI </b>Atom-type1 Atom-type2 Atom-type3 ForceC</i></font></font> &theta;<sub>eq</sub> </b>6Bend S</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>&theta;<sub>eq</sub></i></font>
+</td><td>Equilibrium angle</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>6Bend</i></font>
+</td><td>Sixth order bend constant (in deg<sup>-4</sup>)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Flag</i></font>
+</td><td>If &ge; 0.0, suppress projection onto plane even when the central atom is trigonal.</td></tr>
+</table>
+<p>This bend is projected onto the plane in case of a trigonal center. If the center is not trigonal, the regular bend is calculated.</p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">Dipole</font></b>: Bond dipole</p>
+<p><b>Dipole </b>Atom-type1 Atom-type2 DMom DPos</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>DMom</i></font>
+</td><td>Dipole moment (in Debye)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>DPos</i></font>
+</td><td>Position along the Atom1-Atom2 bond of the dipole</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">DielC</font></b>: Dielectric constant. This allows the dielectric constant to be specified via the parameter file; the default is 1.</p>
+<p><b>DielC </b>DielConst</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>DielConst</i></font>
+</td><td>Dielectric constant</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">QStr2</font></b>: Quartic stretch 2 (MM2/Tinker): (<font face="Times New Roman, Times, serif" size="3"><i>ForceC&gt;</i></font>/2)*(1+<font face="Times New Roman, Times, serif" size="3"><i>CStr</i></font>*(R&ndash;<font face="Times New Roman, Times, serif" size="3"><i>R</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)+<font face="Times New Roman, Times, serif" size="3"><i>QStr</i></font>*(R&ndash;<font face="Times New Roman, Times, serif" size="3"><i>R</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)<sup>2</sup>)(R&ndash;<font face="Times New Roman, Times, serif" size="3"><i>R</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)<sup>2</sup>)</p>
+<p><b>QStr2 </b>Atom-type1 Atom-type2 ForceC R</i></font></font><sub></b>eq</i></font></font></sub> </b>CStr QStr</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>R<sub>eq</sub></i></font>
+</td><td>Equilibrium bond length</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>CStr</i></font>
+</td><td>Cubic stretch constant (Angstrom<sup>-1</sup>)</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>QStr</i></font>
+</td><td>Quartic stretch constant (Angstrom<sup>-2</sup>)</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">CubStr2</font></b>: Cubic stretch 2 (for compatibility with old MMVB): (<font face="Times New Roman, Times, serif" size="3"><i>ForceC&gt;</i></font>/2)*(1&ndash;<font face="Times New Roman, Times, serif" size="3"><i>CStr</i></font>*(R&ndash;<font face="Times New Roman, Times, serif" size="3"><i>R</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>))*(R&ndash;<font face="Times New Roman, Times, serif" size="3"><i>R</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>eq</i></font></sub>)<sup>2</sup>)</p>
+<p><b>CubStr2 </b>Atom-type1 Atom-type2 ForceC R</i></font></font><sub></b>eq</i></font></font></sub> </b>CStr</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>ForceC</i></font>
+</td><td>Force constant</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>R<sub>eq</sub></i></font>
+</td><td>Equilibrium bond length</td></tr>
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>CStr</i></font>
+</td><td>Cubic stretch constant (Angstrom<sup>-1</sup>; set to 0 when R &gt; 15 &Aring;)</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">NBonds</font></b>: Formal number of bonds, based on atom type for this center</p>
+<p><b>NBonds </b>Atom-type NumBnd</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>NumBnd</i></font>
+</td><td>Formal number of bonds</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">StrUnit</font></b>: Units for the force constant in stretching functions</p>
+<p><b>StrUnit </b>Flag</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Flag</i></font>
+</td><td>0 means units of kcal/(mol*Angstrom<sup>2</sup>); 1 means units of md/Angstrom</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">BndUnit</font></b>: Units for the force constant in bending functions</p>
+<p><b>BndUnit </b>Flag</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Flag</i></font>
+</td><td>0 means units of kcal/(mol*rad<sup>2</sup>); 1 means units of md*Angstrom/rad<sup>2</sup></td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">TorUnit</font></b>: Units for the barrier in torsion functions</p>
+<p><b>TorUnit </b>Flag</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Flag</i></font>
+</td><td>0 means units of kcal/mol; 1 means units of md*Angstrom</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">OOPUnit</font></b>: Units for the force constant in out-of-plane bending functions</p>
+<p><b>OOPUnit </b>Flag</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Flag</i></font>
+</td><td>0 means units of kcal/(mol*rad<sup>2</sup>); 1 means units of md*Angstrom/rad<sup>2</sup></td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">SBUnit</font></b>: Units for the force constant in stretch-bend functions</p>
+<p><b>SBUnit </b>Flag</i></font></font></b></p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td width="100"><font face="Times New Roman, Times, serif" size="3"><i>Flag</i></font>
+</td><td>0 means units of kcal/(mol*Angstrom*rad); 1 means units of md/rad</td></tr>
+</table>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">StrFact</font></b>: Factor for the stretching functions</p>
+<p><b>StrFact </b>Value</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">BndFact</font></b>: Factor for the bending functions</p>
+<p><b>BndFact </b>Value</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">TorFact</font></b>: Factor for the torsion functions</p>
+<p><b> TorFact </b>Value</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">OOPFact</font></b>: Factor for the out-of-plane functions</p>
+<p><b> OOPFact </b>Value</i></font></font></b></p>
+<hr><p><b><font face="Arial, Helvetica, sans-serif" color="#009933">SBFact</font></b>: Factor for the stretch-bend functions</p>
+<p><b> SBFact </b>Value</i></font></font></b></p>
+<hr><p><font face="Times New Roman, Times, serif" size="-1"><i>Last updated on: 9 Jun 2009</i></font></p>
+</body></html>

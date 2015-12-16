@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html>
+<head>
+<title>Node description for Ligfilter</title>
+<style type="text/css">
+			body {
+	background-color: #fff;
+	font-family: Tahoma, Arial, Helvetica; 
+	font-size: 10pt;
+	padding: 0.1em 0.1em 1.5em 0.1em;
+}
+
+tt, pre {
+	font-family: Courier New, Courier, Arial, Helvetica; 
+	font-size: 14px;
+}
+
+p {
+	text-align: justify;
+	/*padding: 0 10px;*/
+}
+
+
+
+h1{
+	font-size: 28px;
+	text-align: center;
+	border-bottom: thick solid #ffd600;
+}
+
+h2{
+	font-size: 18px;
+	/*padding-left: 5px;*/
+	border-bottom: thin dotted #ffd600;
+}
+
+.deprecated {
+	color: red; font-style: italic;
+}
+
+dl{
+	margin-left: 1px;
+	padding: 0;
+}
+
+dt {
+	font-weight: bold;
+	margin-bottom: 10px;
+}
+
+dd{
+	margin-bottom: 20px; 
+}
+
+table{
+	font-size:100%;
+}
+
+td{
+	padding: 0.5em 0.5em;
+	vertical-align:top;
+}
+
+
+.dt {
+	font-weight: bold;
+}
+
+a{
+	color: #000;
+}
+	
+a:visited{
+	color: #666;
+}
+
+.warn{
+	color: #cf0000;
+}
+		</style>
+</head>
+<body>
+<h1>Ligfilter</h1>
+<p>Ligand Filter Script
+	<h3>Backend implementation</h3>
+
+	<b>utilities/ligfilter</b>
+<br/>
+	The command line tool ligfilter is used to implement this node.<br/>
+
+</p>
+<h2>Dialog Options</h2>
+<dl>
+<dt>Column containing input</dt>
+<dd>Column in the input data table containing molecules in either SD or Maestro format</dd>
+<dt>Filter Conditions</dt>
+<dd>Filter conditions to use. Multiple such conditions may be specified. (see below)</dd>
+<dt>Filter File</dt>
+<dd>File containing list of filter consditions to use.
+                     Each condition should be listed on one line, and can be used with the Filter Conditions entered in the text field (for a description of filter conditions, see below).</dd>
+<dt>ASL expression</dt>
+<dd>Specify an ASL condition. Only structures which have any atoms matching this ASL will be retained.</dd>
+<dt>Invert Output</dt>
+<dd/>
+<dt>Require match to at least one criterion instead of all criteria</dt>
+<dd>Require match to at least one criterion instead of all
+                        criteria.</dd>
+<dt>Description of filter conditions:</dt>
+<dd>
+
+<pre>
+  A condition is a one-line expression which descibes criteria that a
+  particular descriptor must meet for the for a structure to be retained.
+  Each filter condition describes one or more criteria that a particular
+  
+  To be accepted, a molecule needs to satisfy all specified filter conditions.
+
+
+  The syntax for a filter condition expression is
+
+     &lt;descriptor&gt; &lt;op&gt; &lt;value&gt; [ ['AND'|'OR'] &lt;op&gt; &lt;value&gt; ] ...
+
+  In case that's hard to decipher, the following are all valid:
+     &lt;descriptor&gt; &lt;op&gt; &lt;value&gt;
+     &lt;descriptor&gt; &lt;op&gt; &lt;value&gt; AND &lt;op2&gt; &lt;value2&gt; 
+     &lt;descriptor&gt; &lt;op&gt; &lt;value&gt; OR &lt;op2&gt; &lt;value2&gt; 
+     &lt;descriptor&gt; &lt;op&gt; &lt;value&gt; OR &lt;value2&gt; OR &lt;value3&gt;
+     &lt;descriptor&gt; &lt;op&gt; &lt;value&gt; AND &lt;value2&gt;
+
+  &lt;descriptor&gt; is the name of the descriptor (property name for properties)
+  
+  &lt;op&gt; (conditional operator) must be one of the following: 
+       &gt;  &gt;=  &lt;  &lt;=  ==  !=
+  
+  NOTE: If a property condition (see below) consists of nothing but the 
+        '&lt;descriptor&gt;', then the named property is required to exist, 
+        but it may have any value.
+  
+
+  Multiple conditions a descriptor may be specified in a single
+  expression.  The individual conditions may be separated by operators
+  'AND' or 'OR'.
+  
+  When 'AND' and 'OR' are both used in an expression, the 'AND' operator
+  has higher precedence.  For instance, the expression:
+      Num_atoms &gt; 1 AND &lt; 4 OR == 1000
+  requires that either #atoms be between 1 and 4, or else equal to 1000.
+  
+  Single or double quotes may be used to delimit values containing
+  spaces.
+    
+     
+  There are 2 types of conditions: 
+    * PROPERTY CONDITIONS:
+        A property condition allows to retain a ligand only if the specified
+        property exists or is within a specified range.
+    
+    * DEFINITION CONDITIONS:
+        A definition condition is one that allows filtering a ligand by some
+        calculated parameter; like number of atoms, number or aromatic rings, 
+        or number of occurances of a specific SMARTS pattern or a set of 
+        patterns (descriptors).
+
+    
+
+Criteria file:
+
+  If filter conditions are supplied in a separate criteria file, there must
+  be one condition per line.  Lines that start with '# ' are treated
+  as comments and blank lines are ignored.  
+    
+  Example criteria file:
+    Num_rings == 1
+    Peroxides &gt; 1
+    Num_atoms &gt; 100 AND &lt; 1000
+    r_epik_State_Penalty &gt; 2.5'
+</pre>
+</dd>
+<dt>Available Descriptors</dt>
+<dd>
+<pre>
+H                             Nitriles                          Charged_alkylthiols
+B                             Sulfonyl_halides                  Charged_2-nitrophenols
+C                             Sulfinyl_halides                  Charged_4-nitrophenols
+N                             Sulfenyl_halides                  Charged_3,5-nitrophenols
+O                             Acyl_halides                      Acidic_hydrogens
+F                             Alkyl_halides                     Charged_amidines
+Si                            Alkyl_halides_wo_fluorine         Charged_guanidines
+P                             Alkyl_sulfonates                  Charged_enamines
+S                             Halopyrimidines                   Charged_anilines
+Cl                            Anhydrides                        Charged_dialkyl_anilines
+Fe                            1,2-Dicarbonyls                   Charged_diaminobenzenes
+Br                            Perhalomethylketones              Charged_2-aminopyridines
+I                             Aliphatic_ketones                 Charged_4-aminopyridines
+H-N                           Epoxides                          Charged_4-methoxypyridines
+H-O                           Aziridines                        Neutral_amines
+Charged_amines                Aliphatic_esters                  Tetrazoles
+Charged_imines                Aliphatic_thioesters              Catch_for_R-CN4
+Charged_amidines              Sulphonate_esters                 Trifluoromethyls
+Charged_NH-imidazoles         Phosphonate_esters                Trichloromethyls
+Charged_imidazoles            Imines                            Tribromomethyls
+Charged_pyridines             Aldehydes                         Triiodomethyls
+Aliphatic_carbons             Formates                          t-Butyls
+Aromatic_carbons              Michael_acceptors                 Neutral_imidazoles
+Amide_hydrogens               beta-Heterosubstituted_carbonyls  Neutral_pyridines
+Amine_or_amide_hydrogens      Peroxides                         Isothiocyanates
+N-Pyrrole_H                   R-S-O-R                           Isocyanates
+Imines_hydrogens              Diazos                            Isonitriles
+Heteroaromatic_atoms          R-N-S-R                           Diazoniums
+Divalent_oxygens              Disulfides                        Carbodiimides
+Aromatic_basic_nitrogens      Guanidines                        Azides
+Catch_for_uncharged_guanine_H Amidines                          Phosphonyl_halides
+Neutral_sulfones              Charged_sulfonamides              Phosphinyl_halides
+Neutral_sulfenes              Charged_carboxylic_acids          Alkali_metals
+Neutral_carbonyls             Carboxylic_acids_or_carboxylates  Alkaline-earth_metals
+Neutral_P=O-R3                Charged_phosphoric_acids          Lanthanide_series
+Neutral_P(=O)2-R2             Charged_halophosphoric_acids      Actinide_series
+Imines_N_donors               Charged_O-PO3                     Transition_metals
+Imines_NH                     Charged_C-PO3-                    Other_metals
+Carbonyls                     Charged_phosphorylamides          Toxic_nonmetals
+P=O                           Charged_phosphonic_acids          Noble_gases
+S=O                           Charged_phosphonamides            Silyl_enol_ethers
+Nitros                        Charged_sulfuric_acids            Nitroalkanes
+Ethers                        Charged_sulfenic_acids            Phosphines
+Charged_N-O                   Charged_sulfonic_acids            Neutral_donor_groups
+Neutral_N-O                   Charged_hydroxamic_acids          Charged_donor_groups
+Aromatic_N-oxides             Aromatic_carboxylate_bioisosteres Neutral_acceptor_groups
+Neutral_NR3-O                 Hydroxamates                      Charged_acceptor_groups
+Neutral_halophosphoric_acids  Acetylhydrazides                  Donor_groups
+Alcohols                      Charged_tetrazoles                Acceptor_groups
+Thiols                        Charged_alkylthiols               Metals
+Carbon_Thiols                 Charged_2-nitrophenols            Iron_binding_groups
+Thiones                       Charged_4-nitrophenols            Reactive_groups
+Tertiary_amines_or_amides     Charged_3,5-nitrophenols                    
+</pre>
+</dd>
+</dl>
+<h2>Ports</h2>
+<dl>
+<dt>Input Ports</dt>
+<dd>
+<table>
+<tr>
+<td class="dt">0</td>
+<td>Molecules in either SD or Maestro format</td>
+</tr>
+</table>
+</dd>
+<dt>Output Ports</dt>
+<dd>
+<table>
+<tr>
+<td class="dt">0</td>
+<td>Output Molecules in Maestro format</td>
+</tr>
+<tr>
+<td class="dt">1</td>
+<td>Non-matching ligands in Maestro format</td>
+</tr>
+</table>
+</dd>
+</dl>
+<h2>Views</h2>
+<dl>
+<dt>Log output of Ligfilter</dt>
+<dd>Log output of Ligfilter</dd>
+</dl>
+</body>
+</html>

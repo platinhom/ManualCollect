@@ -1,0 +1,197 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions Read_ProcessStandardOptions, Read_Prompt, Read_Return, Write_Prompt>
+
+<title>Custom Molecule File Formats</title>
+
+</head>
+
+<body  bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Custom Molecule File Formats</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    ['filename','format',options] = <a class="fcnlink" href="#Read_Prompt">Read_Prompt</a> ['filename','format',options]
+    ['filename','format',options] = <a class="fcnlink" href="#Write_Prompt">Write_Prompt</a> ['filename','format',options]
+
+    <a class="fcnlink" href="#Read_ProcessStandardOptions">Read_ProcessStandardOptions</a> [ chainkeys, options ]
+
+    chainkeys = <a class="fcnlink" href="#Read_Return">Read_Return</a> [ chainkeys, 0 ]
+    <a class="fcnlink" href="#Read_Return">Read_Return</a> [ chainkeys, 1 ]
+</pre>
+
+
+<h2>Description</h2>
+
+<p>To read and write a custom file format, a new pair of 
+<a class="svl" href="molrw.html">ReadXXX</a> and 
+<a class="svl" href="molrw.html">WriteXXX</a> functions
+must be written, and the file format identifier
+added to the <tt>FILE_FORMATS</tt> table in the file <tt>fileio.svl</tt>. 
+This table is organized as follows: </p>
+
+<pre>
+    const FILE_FORMATS = tr [ 
+        [ 'format_name', [ 'ext' {, 'other_ext'} ] ],
+            ...
+    ];
+</pre>
+
+<p>The curly braces {} indicate that more than one file extension
+(<tt>ext</tt>) may be associated with a given file format. All should be
+listed in the table in lowercase, however, the actual files 
+may have extensions in either upper or lower case, as both will match.
+
+<p>For example, the entries for <tt>'PDB'</tt> and <tt>'MOE'</tt> are:</p>
+
+<pre>
+    [  'PDB',   ['pdb','ent'] ],
+    [  'MOE',   ['moe']       ]
+</pre>
+
+<p><a name="Read_Prompt"></a></p>
+<p><a name="Read_Return"></a></p>
+<p><a name="Read_ProcessStandardOptions"></a></p>
+
+<h4>Custom File Format Reader</h4>
+
+<p>Every <tt>ReadXXX</tt> function should be structured as follows: 
+<pre>
+    function: ReadXXX [ filename, options ] // 'XXX' is the format identifier
+	local newchains;
+	    
+	[filename,[],options] = <span class="fcndef">Read_Prompt</span> [ filename, 'XXX', options ]; 
+
+	    ... read data from 'filename' ...
+            ... set variable newchains to new chain keys ... 
+
+	<span class="fcndef">Read_ProcessStandardOptions</span> [ newchains, options ];
+
+	    ... process format-specific options ...
+
+	return <span class="fcndef">Read_Return</span> [ newchains, call[] ]; 
+    endfunction
+</pre>
+
+<p><tt>Read_Prompt</tt>
+prompts for filenames with a file selection box 
+if <tt>filename</tt> (a token) is null.  It returns the filename, 
+format identifier (a token), and the <tt>options</tt> argument.
+<tt>'XXX'</tt> should be replaced by a format identifier in the calling sequence.</p>
+
+<p>After the filename is obtained from <tt>Read_Prompt</tt>, <tt>ReadXXX</tt>
+reads from the file (using the SVL file I/O functions <tt>fread</tt> or
+<tt>freadb</tt>), interprets the data, and creates molecular objects (see
+<tt>oCreate</tt>).
+
+<p><tt>Read_ProcessStandardOptions</tt>
+is then passed the keys of the newly created
+chains along with the <tt>options</tt> parameter.  This function will process
+the <tt>center</tt> and <tt>select</tt> options, if present.  
+Any other format-specific or custom options must be handled by 
+the <tt>ReadXXX</tt> function itself.</p>
+
+<p>The return value of <tt>Read_Return</tt>
+depends on its second argument.
+If zero, <tt>Read_Return</tt> returns its chain keys
+argument, otherwise, if it is non-zero then null is returned.
+<tt>ReadXXX</tt> returns whatever <tt>Read_Return</tt> returns.</p>
+
+<p>Note that <a class="svl" href="../../svl/fcnref/calletc.html">call</a> 
+returns 1 if <tt>ReadXXX</tt> was called as a <i>procedure</i>.
+So if the results of <tt>ReadXXX</tt> are required then the calling
+routine will use <tt>ReadXXX</tt> in an assignment. For example:
+
+<pre>
+    chains = ReadPDB 'filename';
+    ReadPDB 'filename';
+</pre>
+
+<p>In the first statement the return value of <tt>ReadPDB</tt> is stored
+in variable <tt>chains</tt>. The second statement requires no
+return value so none is returned.
+
+<p>Please see <a class="svl" href="../../svl/fcnref/calletc.html">call</a> for
+more information on routines invoked as <i>procedures</i> and routines
+invoked as <i>functions</i>.
+
+
+<p><a name="Write_Prompt"></a></p>
+
+<h4>Custom File Format Writer</h4>
+
+<p>Every <tt>WriteXXX</tt> should be structured as follows: 
+<pre>
+    function: WriteXXX [ filename, options ] // 'XXX' is the format identifier
+	[filename,[],options] = <span class="fcndef">Write_Prompt</span>[ filename, 'XXX', options ]; 
+
+	    ... write data to 'filename' ... 
+
+    endfunction
+</pre>
+
+<p><tt>Write_Prompt</tt>
+prompts for a filename with a file selection box if
+<tt>filename</tt> (a token) is null.  
+It returns the filename, format identifier (a token), and
+<tt>options</tt> argument.  <tt>'XXX'</tt> in the calling sequence should
+be replaced by a format identifier.  <tt>options</tt> is
+the same as in the read case.  Once the filename is obtained from
+<tt>Write_Prompt</tt>, <tt>WriteXXX</tt> encodes the currently loaded molecular
+system in the custom format and writes it out to the file
+using SVL file write functions (<tt>fwrite</tt>, <tt>fwriteb</tt>). </p>
+
+<h2>See Also</h2>
+
+<table>
+<tr>
+<td><a class="svl" href="openclo.html">Close</a></td>
+<td><a class="svl" href="openclo.html">Open</a></td>
+</tr>
+<tr>
+<td><a class="svl" href="save.html">DataFilename</a></td>
+<td><a class="svl" href="save.html">DataModified</a></td>
+</tr>
+<tr>
+<td><a class="svl" href="save.html">Save</a></td>
+<td><a class="svl" href="save.html">SaveAs</a></td>
+</tr>
+</table>
+
+<p>
+<a href="molrw.html">Read/Write Molecular Data Functions</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

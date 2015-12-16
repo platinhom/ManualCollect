@@ -1,0 +1,1120 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<title>Grids And Isosurfaces</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Grids And Isosurfaces</h2>
+<hr noshade="noshade" />
+
+<p>
+[<a href="matrices.html">Previous Chapter</a>]
+[<a href="adv.html">Next Chapter</a>]
+[<a href="index.html">Table of Contents</a>]</p>
+
+
+
+<ul>
+    <li><a href="#Introduction">Introduction</a>
+    <li><a href="#GridGeneration">Creating Grids</a>
+	<ul>
+	<li><a href="#ShapeVector">Shape Vector</a>
+	<li><a href="#DataVector">Data Vector</a>
+	</ul>
+    <li><a href="#AccessingGridDataCoords">Accessing Grid Data and
+Coordinates</a>
+	<ul>
+	<li><a href="#ExtractingPartsOfGrid">Extracting Data from Parts
+of a Grid</a>
+	<li><a href="#SingleIndexMultipleIndexRepresentations">Single
+Index and Multiple Index Representations</a>
+	</ul>
+    <li><a href="#GridDataInterpolation">Grid Data Interpolation</a>
+    <ul>
+	<li><a href="#GridExamplePoissonsEquations">Grid Example: Poisson's
+	Equation</a>
+    </ul>
+    <li><a href="#GaussianUpdate">Gaussian Update</a>
+    <ul>
+	<li><a href="#GaussianUpdateExample">Gaussian Update Example</a>
+    </ul>
+    <li><a href="#Isosurfaces">Iso-surfaces</a>
+	<ul>
+	<li><a href="#RepresentingIsosurfaces">Representing Iso-surfaces</a>
+	<li><a href="#IsosurfaceDrawingModes">Iso-surface Drawing Modes</a>
+	    <ul>
+	    <li><a href="#IsosurfaceNormals">Iso-surface Normals</a>
+	    <li><a href="#IsoverticesIsoindices">Iso-vertices and
+Iso-indices</a>
+	    <li><a href="#IsosurfacesAtGridBoundaries">Iso-surfaces
+at Grid Boundaries</a>
+	    </ul>
+	<li><a href="#IsosurfaceExample">Iso-surface Example</a>
+	</ul>
+</ul>
+
+<a name="Introduction">
+<h2>Introduction</h2></a>
+
+<p>
+An SVL grid is a multi-dimensional rectangular lattice of field values,
+together with their associated lattice coordinates.  Grids can be used,
+for instance, to perform calculations on potential fields or to draw
+surfaces.  MOE provides a set of SVL functions that simplify the SVL grid
+manipulations.  Their functionality provides for:
+
+<ul>
+<li>Multi-dimensional grid creation and manipulation
+<li>Gaussian density sampling
+<li>Off-grid interpolation
+<li>Color interpolation
+<li>On- and off-grid derivative calculation
+<li>Iso-surface point, line, and triangle generation
+<li>Wireframe and solid surface rendering
+</ul>
+
+
+<p>An SVL grid is stored as a pair of vectors: a <i>data vector</i> and a
+<i>shape vector</i>.  The data vector is a flat numeric vector that
+contains values of the field at each gridpoint. The shape vector
+specifies the gridpoint coordinates.  The lattice defined by the
+gridpoints is rectangular, with either uniform or non-uniform spacing.
+
+<a name="GridGeneration">
+<h2>Creating Grids</h2>
+
+<p>Creating a grid consists of creating both a shape vector
+and a data vector.
+
+<p>The shape vector stores gridpoint positions along each dimension. 
+The number of dimensions must be between 2 and 24 with each dimension
+containing at least 2 points.
+Each
+element of the shape vector is a flat vector of strictly increasing grid
+positions along the corresponding dimension.  The values of the field at
+the gridpoints are stored in row-major order, i.e. with the index
+of the last dimension changing most rapidly.
+
+<p><b>1D Example.</b>
+For example, consider a 1D field <i>F</i> sampled at three points
+<i>x</i>=1.2, 2.2, 3.7:
+
+<p><center>
+<table border=1 cellpadding=2>
+<tr> <th bgcolor="#cccccc">Coordinate <i>x</i>
+    <th bgcolor="#cccccc">Value <i>F</i>(<i>x</i>)
+<tr> <td>1.2 		<td>7
+<tr> <td>2.2 		<td>9
+<tr> <td>3.7		<td>11
+</table>
+</center>
+
+<p>The grid of the above field is stored as:
+
+<pre>
+    shape = [ [1.2,2.2,3.7] ];	// x
+    data = [7,9,11];		// F(x)
+</pre>
+
+<p><b>2D Example.</b>
+As a second example, consider a 2D field <i>F</i>(<i>x</i>,<i>y</i>)
+sampled at six points arranged in a 2&times;3 matrix:
+
+<p>
+<blockquote>
+<i>F</i>(<i>x<sub>i</sub></i>,<i>y<sub>j</sub></i>) =
+<i>f</i><sub><i>ij</i></sub>,
+where <i>i</i>=1..2, <i>j</i>=1..3.
+</blockquote>
+
+<p><center>
+<table border=1 cellpadding=5>
+<tr bgcolor="#e0e0e0">
+    <td>  </td>
+    <td><b>y<sub>1</sub></b></td>
+    <td><b>y<sub>2</sub></b></td>
+    <td><b>y<sub>3</sub></b></td>
+</tr>
+<tr>
+    <th bgcolor="#e0e0e0">x<sub>1</sub></td>
+    <td>f<sub>11</sub></td>
+    <td>f<sub>12</sub></td>
+    <td>f<sub>13</sub></td>
+</tr>
+<tr>
+    <th bgcolor="#e0e0e0">x<sub>2</sub></td>
+    <td>f<sub>21</sub></td>
+    <td>f<sub>22</sub></td>
+    <td>f<sub>23</sub></td>
+</tr>
+</table>
+</center>
+
+<p>The grid of the above field is stored as:
+
+<pre>
+    shape = [ [x<sub>1</sub>,x<sub>2</sub>], [y<sub>1</sub>,y<sub>2</sub>,y<sub>3</sub>] ];
+    data = [f<sub>11</sub>,f<sub>12</sub>,f<sub>13</sub>,f<sub>21</sub>,f<sub>22</sub>,f<sub>23</sub>];   
+		// y dimension changes most rapidly
+</pre>
+
+<a name="ShapeVector">
+<h3>Shape Vector</h3>
+
+<p>An SVL grid does not have its gridpoint coordinates exhaustively
+specified.  For example, a lattice whose gridpoint coordinates are:
+
+<p><center>
+<table border=1 cellpadding=2>
+  <tr>
+    <td>(0,1)</td>
+    <td>(0,2)</td>
+    <td>(0,3)</td>
+  </tr>
+  <tr>
+    <td>(1,1)</td>
+    <td>(1,2)</td>
+    <td>(1,3)</td>
+  </tr>
+</table>
+</center>
+
+<p>
+would not be given as six pairs of numbers, but rather as an <i>x</i>
+and a <i>y</i> vector:
+
+<pre>
+    x = [0,1];
+    y = [1,2,3];
+    shape = [x,y];	// gridpoint coordinate specification
+</pre>
+
+<p>
+The SVL function <tt>grid_coord</tt> can be used to return the exhaustive
+list of coordinates (for more about grid coordinate transformations,
+please see the section on <a href="#AccessingGridDataCoords">Accessing
+grid data and coordinates</a>).
+
+<p>For example, given a grid shape:
+
+<pre>
+    x = [0,1];
+    y = [1,2,3];
+</pre>
+
+<p>the following code will set <tt>coords</tt> to contain all six coordinates,
+specified by the 'igen 6' argument, as <nobr>[x_values, y_values]</nobr>:
+
+<pre>
+    coords = grid_coord [ [x,y], igen 6 ];
+</pre>
+
+The resulting value of <tt>coords</tt> is:
+<pre>
+    [ [0,0,0,1,1,1], [1,2,3,1,2,3] ]
+</pre>
+
+<p>Generating a shape vector consists of creating coordinate vectors along
+each of the <i>n</i> dimensions of an <i>n</i>-dimensional lattice. The
+intervals between the coordinates need not be regular.  To generate the
+shape vector, you need the origin of the lattice and the length of
+each side of the lattice, along with the coordinate spacings in each
+dimension.
+
+<p>Consider, for example, a uniform 2D lattice in a rectangular region
+whose lower left corner is
+<tt>c1</tt>=(<i>x</i><sub>1</sub>,<i>y</i><sub>1</sub>) and whose upper
+right corner is <tt>c2</tt>=(<i>x</i><sub>2</sub>,<i>y</i><sub>2</sub>).
+The following function generates uniform (square) gridpoint
+positions on such a lattice.  In it, the distance in either dimension
+between adjacent gridpoints is given by the integer function argument
+<tt>spacing</tt>.  The <tt>size</tt> variable stores the number
+of gridpoints in each dimension.  Variable <tt>shape</tt> stores the
+resulting gridpoint coordinates in each dimension:
+
+<a name="generate_shape">
+<pre>
+    function generate_shape [c1, c2, spacing]
+
+	    // calculate number of intervals 
+	    // between gridpoints in
+	    // each dimension; round upwards using ceil
+
+	local num_intervals = ceil ((c2 - c1) / spacing);
+
+	    // number of gridpoints = number of intervals + 1
+	    // num_gridpoints = [num_x, num_y]
+
+	local num_gridpoints = inc num_intervals;
+
+	    // size = [size_x, size_y]
+	    // enforce a minimum of 2 gridpoints 
+	    // in each dimension
+
+	local size = maxE [2, num_gridpoints];
+
+	    // app igen size: generates consecutive
+	    // integer indices
+	    //    [ [1..size_x], [1..size_y] ]
+	    // dec app igen size: generates 
+	    // consecutive integer indices
+	    //    [ [0..size_x-1], [0..size_y-1] ]
+	    // c1 is origin of lattice
+ 
+	local shape = c1 + dec app igen size * spacing;
+	return shape;
+    endfunction
+</pre>
+
+<p>If <tt>c1=[2,4]</tt>, <tt>c2=[10,6]</tt>, and the desired spacing
+is 2, then the <tt>shape</tt> generated is:
+
+<pre>
+    svl> generate_shape [ [2,4], [10,6], 2 ]
+	[[2,4,6,8,10], [4,6]]
+</pre>
+
+<p>The above code is not restricted to two dimensions; it works for any
+arbitrary number of dimensions.  For instance:
+
+<pre>
+    svl> generate_shape [ [2,4,6], [10,6,12], 2 ]
+	[[2,4,6,8,10], [4,6], [6,8,10,12]]
+</pre>
+
+<a name="DataVector">
+<h3>Data Vector</h3>
+
+<p>The values of the field at the gridpoints are stored in a data vector.
+There must be one data value for every gridpoint.  The length of the data
+vector must therefore equal the product of the number of gridpoints
+along each dimension.  In other words,
+
+<pre>
+    length data === mul app length shape
+</pre>
+
+<p>
+Suppose you have an SVL function called <tt>calc_field</tt> that
+calculates field values at specified coordinates (passed as the function
+argument).  The following code fragment generates field samples at all
+gridpoints of a lattice and stores them into the data vector
+<tt>data</tt>.  Variable <tt>ndata</tt> stores the total number of
+gridpoints in the grid.  Variable <tt>coord</tt> stores the coordinates of
+all gridpoints.  The <tt>size</tt> variable gives the number of
+gridpoints in each of the <i>n</i> dimensions of the <i>n</i>-dimensional
+lattice.  The SVL function <tt>grid_coord</tt> returns the gridpoint
+coordinates associated with the data.
+
+<pre>
+    local ndata = mul size;
+    local coord = grid_coord [shape, igen ndata];
+    local data = calc_field coord;
+</pre>
+
+<p>Grid values can be accessed and modified directly with SVL operators.
+For example, to increase all grid values by 0.3:
+
+<pre>
+    data = data + 0.3;
+</pre>
+
+<p>
+Grid values can also be manipulated using the built-in SVL grid
+functions, which are described below.
+
+<a name="AccessingGridDataCoords">
+<h2>Accessing Grid Data and Coordinates</h2>
+
+<p>
+It is often necessary to access a subset of all values on a grid.  For
+instance, you may need to set values at the boundaries of a lattice
+separately from those in the interior of the lattice.  To access a
+particular grid value requires being able to determine, given a gridpoint
+coordinate, the <i>index</i> of the associated field value in the grid
+data vector.  The gridpoint coordinate is specified by indices into the
+grid shape vector.
+
+<p>
+You may also need to do the reverse operation: for a given set of grid
+data values, find the grid coordinates.  In other words, given a grid
+value, specified by an index into the grid data vector, calculate the
+indices into the grid shape vector of the corresponding gridpoint
+coordinate.
+
+<a name="SingleIndexMultipleIndexRepresentations">
+<h4>Single Index and Multiple Index Representations</h4>
+
+<p>
+A grid data vector is indexed by a <i>single index</i>.  By single
+we mean that a scalar index is sufficient for extracting one value
+from the data vector.  This is the result of the data vector being flat.
+In contrast, a grid shape vector is indexed by a <i>multiple index</i>.
+By multiple index we mean that a set of indices is needed to specify a
+single gridpoint coordinate.  This is the result of the shape vector being
+composed of a set of vectors, one per lattice dimension.
+
+<p>
+Consider, for example, the following grid:
+
+<pre>
+    data = [10,20,30,40,50,60];
+    x = [2,3];
+    y = [0,3,5];
+    shape = [x,y];
+</pre>
+
+<p>
+The single index vector for extracting data value <tt>30</tt> is simply:
+
+<pre>
+    sidx = 3;
+</pre>
+
+<p>
+whereas the multiple index vector for specifying the corresponding
+coordinate <tt>[2,5]</tt> is:
+
+<pre>
+    midx = [1,3];
+</pre>
+
+<p>
+Extracting the field value using the single index is accomplished with:
+
+<pre>
+    svl> peek [data, sidx]
+      30
+</pre>
+
+<p>
+The coordinate of the associated gridpoint is obtained using the
+multiple index:
+
+<pre>
+    svl> apt peek [shape, midx]
+      [2,5]
+</pre>
+
+<p>
+To make correspondences between gridpoint coordinates and their associated
+field values, you need to convert between single index and multiple index
+representations.  This conversion can be done using the SVL functions
+<tt>grid_m2s</tt> and <tt>grid_s2m</tt>.  <tt>grid_s2m</tt> converts
+single indices into the multiple indices needed to extract the associated
+gridpoint coordinates.  <tt>grid_m2s</tt> converts multiple indices into
+the corresponding single indices.  Both of these functions take the size
+of the lattice as their first argument.  The "size" is the number of
+gridpoints in each of the <i>n</i> dimensions of an <i>n</i>-dimensional
+lattice.
+
+<pre>
+    size === app length shape
+</pre>
+
+<p>
+Consider, for example, a vector of single indices:
+
+<pre>
+    sindices = [3,5];
+</pre>
+
+<p>
+The corresponding data values are extracted using
+
+<pre>
+    svl> get [data, sindices]
+      [30,50]
+</pre>
+
+<p>
+The multiple indices of the associated gridpoints can be obtained using
+<tt>grid_s2m</tt>:
+
+<pre>
+    mindices = grid_s2m [ app length shape, sindices ];
+</pre>
+
+<p>
+In this case, <tt>mindices</tt> is <tt>[ [1,2], [3,2] ]</tt>.
+The coordinates of the gridpoints are:
+
+<pre>
+    svl> apt get [shape, mindices]
+      [ [2,3], [5,3] ]
+</pre>
+
+<p>
+Equivalently, the function <tt>grid_coord</tt> returns the coordinates
+associated with the set of single indices:
+
+<pre>
+    svl> grid_coord [shape, sindices]
+      [ [2,3], [5,3] ]
+</pre>
+
+<a name="ExtractingPartsOfGrid">
+<h4>Extracting Data from Parts of a Grid</h4>
+
+<p>
+Two common cases of partial grid data extraction are:
+
+  <ol>
+  <li>Extracting values on a rectangular sub-grid
+  <li>Extracting values on the boundary points of a grid
+  </ol>
+
+<p>
+The SVL function <tt>grid_xbox</tt> can be used to get the data at all
+gridpoints that lie within an <nobr><i>n</i>-dimensional</nobr> box.  
+The coordinates
+of two diametrically opposed corners of the box are required to define the
+box.  Given these two points, <tt>grid_xbox</tt> returns the data vector
+indices (single index representation) of the gridpoints that fall within
+the box.
+
+<p>
+Extracting the values at the boundary points of a grid requires
+calculating either data vector indices of the boundary gridpoints or a
+mask which yields the values at the boundaries when applied to the data
+vector.  The following function illustrates how to calculate a mask for
+extracting the boundary values; it then uses the mask to set the boundary
+data values to zero.
+
+<p>
+In the code, the variable <tt>midx</tt> stores the multiple indices of all
+gridpoints.  Each gridpoint multiple index is a list of grid indices, one
+per dimension.  A gridpoint is detected as being on the boundary if any
+one of the indices in its multiple index points to either the first or the
+last gridpoint coordinate in the associated dimension:
+
+<pre>
+    index == 1 or index == size_in_this_dimension
+</pre>
+
+<p>
+The variable <tt>bmask</tt> stores a mask of 1's and 0's, and is applied
+to the data vector.  A 1 indicates that the corresponding value lies on
+the grid boundary; a 0 indicates that the value is at a point in the grid
+interior.  <tt>size</tt> is a vector of the number of gridpoints in each
+dimension.  <tt>data</tt> is the grid data vector.
+
+<pre>
+    function zero_out_boundary_values [size, data]
+
+	    // Get multiple indices for every 
+	    // gridpoint in the grid.
+	    // (igen ndata generates single indices 
+	    // for every grid value)
+
+	local ndata = length data;
+	local midx = grid_s2m [size, igen ndata];
+
+	    // length midx === length size
+	    // Each element of midx is of 
+	    // length ndata.
+
+	    // Generate data vector mask.
+
+	local bmask = orE (midx == 1 or midx == size);
+
+	    // Wherever bmask has a 1, replace 
+	    // corresponding element in data by a 0.
+
+	data | bmask = 0;
+	return data;
+    endfunction
+</pre>
+
+<p>
+Suppose we have a 3&times;4 grid of values
+<tt>[10,20,30,40,50,60,70,80,90,100,110,120]</tt>.  The function returns
+the following:
+
+<pre>
+    svl> data = 10 * igen 12
+    svl> zero_out_boundary_values [ [3,4], data ]
+      [0,0,0,0,0,60,70,0,0,0,0,0]
+</pre>
+
+<p>
+The data indices of the grid boundary and the grid interior are given by
+simple expressions (<tt>x_pack</tt> returns the index of each non-zero
+value in its argument):
+
+<pre>
+    local idx_boundary = x_pack bmask;
+    local idx_interior = x_pack not bmask;
+</pre>
+
+<a name="GridDataInterpolation">
+<h2>Grid Data Interpolation</h2>
+
+<p>
+Field values and derivatives are often needed both at exact gridpoints
+("on-grid") and at locations between gridpoints ("off-grid").  For
+example, you may wish to calculate the color associated with an arbitrary
+point in space given a grid of color values (<tt>grid_color_at</tt>), or
+to create a finer or coarser sub-grid from a grid that was previously
+calculated (<tt>grid_reshape</tt>), or to calculate gradients at a set of
+points in space not necessarily coincident with gridpoints
+(<tt>grid_grad_at</tt>).
+
+<p>
+Built-in SVL grid functions perform interpolation on grid
+values, given grid shape and data (field value at exact gridpoints)
+vectors.  Functions are available to calculate off-grid field values as
+well as on- and off-grid derivatives.  On-grid derivatives are
+calculated as the derivatives of an interpolating quadratic polynomial
+evaluated at the gridpoints.  Field and derivative values at off-grid
+points are interpolated from on-grid values using multi-cubic
+interpolation.
+
+<p>
+On a K-dimensional grid, the interpolating formula is a K-multi-cubic
+interpolator.  The term multi-cubic means that the formula is
+cubic in the variable associated with a particular dimension if the
+variables associated with all other dimensions are held constant.
+
+<p>
+For a given sample point, the multi-cubic interpolator uses the field
+values and derivatives at the sample point's 2<sup>K</sup> neighbors to
+calculate the interpolated field value and/or derivatives at the sample
+point.  The values of the field derivatives at the exact gridpoints are
+calculated as derivatives of an interpolating quadratic function
+evaluated at the gridpoints.  The quadratic interpolator is a polynomial
+of K variables of maximum combined degree 2.  For example, for a 2D grid,
+the interpolating polynomial is of the general form:
+
+<p><center>
+<i>f</i>(<i>x</i>,<i>y</i>) =
+<i>C<sub>xx</sub></i> <i>x</i><sup>2</sup> +
+<i>C<sub>yy</sub></i> <i>y</i><sup>2</sup> +
+<i>C<sub>xy</sub></i> <i>x</i> <i>y</i> +
+<i>C<sub>x</sub></i> <i>x</i> +
+<i>C<sub>y</sub></i> <i>y</i> +
+<i>C</i><sub>0</sub>
+</center>
+
+<p>Both the multi-cubic and the quadratic interpolating formulae assume
+that the respective interpolating polynomials coincide with the field
+values every gridpoint and at each gridpoint's <nobr>2<sup>K</sup></nobr>
+neighbors (two on each axis). The off-grid derivatives are obtained by taking derivatives of the
+multi-cubic interpolation. 
+
+<p>
+The built-in SVL grid functions for interpolating data values divide into
+two groups: those that end in <tt>_at</tt> and those that do not.  The
+<tt>_at</tt> ending is a mnemonic and an abbreviation for "at
+arbitrary point," i.e. functions that calculate off-grid values.
+For example, <tt>grid_laplace</tt> calculates the values of the field
+Laplacian at exact gridpoints of a grid, and <tt>grid_laplace_at</tt>
+calculates the values of the field Laplacian at selected points in space,
+inside or outside the grid boundaries.
+
+<p>
+Three kinds of computations involving differentiation are supported:
+
+  <ul>
+  <li>Gradient:
+
+<center><img src="gridman/image123.gif"></center>
+
+
+  <p><li>Laplacian:
+
+<center><img src="gridman/image124.gif"></center>
+
+  <p><li>Partial derivative:
+
+<center><img src="gridman/image125.gif"></center>
+
+
+  </ul>
+
+<a name="GridExamplePoissonsEquations">
+<h4>Grid Example: Poisson's Equation</h4>
+
+<p>
+Poisson's equation of a field <i>U</i> can be expressed as:
+
+<p><center><img src="gridman/image126.gif"></center>
+
+
+<p>where <i>f</i> is the charge density.
+
+<p>There is an implicit summation over all <i>i</i>'s.  The Jacobi diffusion
+method solves the Poisson equation by time-propagating an initial field
+value:
+
+<p><center><img src="gridman/image127.gif"></center>
+
+
+<p>where <i>h</i> is the time step and <i>t</i> is the time at the current
+iteration.
+
+<p>To implement the Jacobi diffusion method, we can use the SVL grid
+function <tt>grid_laplace</tt> to calculate the residual
+d<sup>2</sup><i>U</i>/d<i>x</i><sub><i>i</i></sub><sup>2</sup>. Once this
+residual is calculated, standard SVL operators ("<tt>*</tt>" and
+"<tt>+</tt>") can be used to combine it with time step <i>h</i> to
+calculate the new value of <i>U</i>.
+
+<p>
+The following SVL code fragment implements the Jacobi iterations.  It
+assumes a grid with shape vector <tt>shape</tt>:
+
+<pre>
+    local U = ...               // initial vector
+    local h = ...               // some time increment
+    local f = ...               // density
+
+    for i = 1, MAX_ITERATIONS loop
+        residual = grid_laplace [U, shape] + f;
+
+	    // terminate diffusion if 
+	    // magnitude of residual small enough
+
+        if max abs residual < 0.001 then break; endif
+        U = U + h * residual;
+    endloop
+</pre>
+
+<a name="GaussianUpdate">
+<h2>Gaussian Update</h2>
+
+<p>
+Usually, when preparing grid data values, you set and modify values
+in the grid data vector directly.  When a field is Gaussian, however, you
+call <tt>grid_addgauss</tt> to perform the update of grid data for
+you. Gaussian forms are separable (can
+be calculated from independent computations along each dimension), and can
+therefore be computed with high efficiency.
+
+<p>An <i>N</i>-dimensional Gaussian density is a generalization of a 1D
+Gaussian of the form:
+
+<p>
+<blockquote>
+<i>f</i>(<i>x</i>) = (2 PI s)<sup>-<i>N</i>/2</sup>
+exp { - 0.5 (<i>x</i> - <i>u</i>)<sup>T</sup> (<i>x</i> - <i>u</i>)
+/ s<sup>2</sup> }
+</blockquote>
+
+<p>
+where <i>u</i> is the mean, <i>s<sup>2</sup></i> is the variance
+(<i>s</i> is the standard deviation), and <sup>T</sup> is the transpose
+operation.
+
+<p>
+<tt>grid_addgauss</tt> adds samples of a weighted Gaussian density
+function of standard deviation <tt>sigma</tt> (calculated inside a sphere
+of radius <tt>radius</tt> centered at <tt>center</tt>) to a grid defined by
+<tt>shape</tt> and <tt>data</tt> vectors; <tt>weight</tt> is a
+multiplicative constant:
+
+<pre>
+    grid_addgauss [data, shape, weight, sigma, center, radius]
+</pre>
+
+<p>
+This function is vectorized, i.e. <tt>weight</tt>, <tt>sigma</tt>,
+<tt>center</tt>, and <tt>radius</tt> are vectors defining <i>n</i>
+Gaussian densities.  At each gridpoint within <tt>radius</tt> of
+<tt>center</tt>, samples from all <i>n</i> densities are added to the grid
+data value.
+
+<a name="GaussianUpdateExample">
+<h4>Gaussian Update Example</h4>
+
+<p>
+The following function illustrates how to use <tt>grid_addgauss</tt>.  It
+creates a Gaussian density field around a set of balls whose positions
+<tt>pos</tt> and radii <tt>rad</tt> are passed as function arguments.  The
+parameters <tt>weight</tt> and <tt>sigma</tt> are chosen such that the
+level 1.0 <a href="#Isosurfaces">iso-surface</a> of the field forms a
+smooth surface around the set of balls.  The constant <tt>K</tt>
+determines how closely the iso-surface will hug the surface of individual
+balls (when <tt>K</tt> becomes too large, numerical errors affect the
+quality of the surface). <tt>shape</tt> is the grid shape vector:
+
+<a name="generate_gaussian">
+<pre>
+	// ball_pos is a vector of x, y, z vectors: [x,y,z]
+	// ball_rad is a vector of ball radii
+
+    function generate_gaussian [ shape, ball_pos, ball_rad ]
+	const K = 1.6;	// larger K makes deeper 
+                        // ridges between atoms
+
+	local data = 0;                   // initialize grid data
+	local gauss_rad = 4 * ball_rad;   // extent of Gaussian 
+                                        // over the grid
+
+	local sigma = ball_rad / K;	// sigma controls 
+                                    // width of Gaussian
+	local weight = cube (sqrt(2*PI)*sigma) * exp (0.5 * sqr K); 
+                                    // scale factor
+
+	data = grid_addgauss [data, shape, weight, sigma, ball_pos, gauss_rad];
+	return data;
+    endfunction
+</pre>
+
+<p>
+Here is an example of the usage of this function, assuming three 2D balls
+at positions [-2,0], [0,1], [2,3], and using the function
+<a href="#generate_shape"><tt>generate_shape</tt></a> from above to
+generate the grid shape vector:
+
+<pre>
+    generate_gaussian [
+        generate_shape [ [-5,-5], [5,5], 1 ],
+        [ [-2,0,2], [0,1,3] ],
+        [1.5, 2.5, 0.5]
+    ];
+</pre>
+
+<p>
+<tt>grid_maxgauss</tt> is another function which updates the
+values of the data vector with a Gaussian of given parameters and weight.
+Now, however, the value of the data is set to the maximum of the Gaussian
+samples and the original data rather than the sum.  To illustrate how to
+use <tt>grid_maxgauss</tt>, replace the lines of code in
+<tt>generate_gaussian</tt> that assign values to <tt>K</tt> and
+<tt>data</tt> with the following two lines of code:
+
+<pre>
+    const K = 1.0;
+	...
+    data = grid_maxgauss [data, shape, weight, sigma, ball_pos, gauss_rad];
+</pre>
+
+<p>
+The result is a Gaussian field whose level 1.0 iso-surface sits exactly on
+the surface of each individual ball.
+
+<a name="Isosurfaces">
+<h2>Iso-surfaces</h2>
+
+<p>
+One of the primary uses of grids is the generation of iso-surfaces.  An
+iso-surface is an <i>N</i>-dimensional (usually 3D) surface joining
+points of identical field value on an <i>N</i>-dimensional (usually 3D)
+grid.  SVL's grid functionality provides functions for generating and
+manipulating grid iso-contours and iso-surfaces of different kinds.
+
+<a name="RepresentingIsosurfaces">
+<h3>Representing Iso-surfaces</h3>
+
+<p>
+The function <tt>grid_iso</tt> generates a representation of an
+iso-surface at a specified level (field value).  An SVL iso-surface is
+represented as two vectors, a list of <i>iso-vertices</i> and a list
+<i>iso-indices</i>.  Both lists are flat vectors of integers with special
+markers that allow them to be processed into the 3D coordinates of the
+line segments and the triangles needed for the different graphical
+representations of the iso-surface.  When dealing with iso-surfaces, you
+need not be concerned with the exact storage details of iso-vertices and
+iso-indices as long as you manipulate them using the SVL iso-surface
+functions (see <a href="#IsoverticesIsoindices">iso-vertices and
+iso-indices</a> below).
+
+<p>
+An iso-surface is generated over a grid using a 2D or 3D
+<i>marching-cube</i> algorithm.  Marching-cube refers to the way in which
+the grid is processed.  If a grid is thought of as an array of
+rectangles (2D) or cubical volumes (3D), each rectangle or "cube" is
+processed independently of any other rectangle or cube in the grid.  The
+rectangles/cubes of the grid are traversed in sequence, hence
+the notion of marching along the grid from cube to cube.  The order
+in which the points of the iso-surface are then emitted follows the grid
+traversal order.
+
+<p>
+An iso-surface comprises a set of iso-vertices -- points of equal field
+value. Each iso-vertex of an iso-surface lies on a grid line between two
+neighboring gridpoints.  Iso-vertices are independently calculated in each
+cubical volume of the grid.  The field values at the corners of each grid
+cube are used to calculate the coordinates of the iso-vertices in that
+cube.  The iso-vertices form a polygon.  By processing all cubes of a
+grid, the marching-cube iso-surface generation algorithm produces a
+complete list of the polygons connecting points of the same field value over
+the entire grid.  The cubes in the grid are alternately labeled "even" and
+"odd" so that polygons from alternate cubes can be eliminated, allowing
+for checkered surfaces to be drawn.
+
+<a name="IsosurfaceDrawingModes">
+<h3>Iso-surface Drawing Modes</h3>
+
+<p>
+There are several different graphical representations of an iso-surface:
+dot, line (iso-contours), mesh (two sets of perpendicularly oriented
+iso-contours), and solid (iso-triangles).  Common to all are the
+coordinates of the iso-vertices of the iso-surface.  The SVL function
+<tt>grid_isovtx_coord</tt> converts iso-vertex values to 3D coordinates:
+
+<pre>
+    points = grid_isovtx_coord [data, shape, isovtx, level, dims];
+</pre>
+
+<p>
+The various surface drawing modes are merely different ways in which to
+display the iso-vertices of the iso-surface.  If just the vertices are
+drawn, a dot surface results.  Connecting the vertices by line segments
+results in line and mesh drawings.  Connecting each set of the three nearest
+vertices by a shaded triangle produces a solid surface rendering.  For
+each drawing mode ("<tt>gtype</tt>"), a list of which vertices to connect
+together (pairs if line segments, triplets if triangles) is generated
+by the function <tt>grid_isoidx_emit</tt>.
+
+<p>
+For a mesh surface, the coordinates of the <i>i</i>-th line segment are:
+
+<pre>
+    apt get [ points, [[ 2*i-1, 2*i ]] ]
+</pre>
+
+<p>
+For a solid surface, the coordinates of the <i>i</i>-th triangle are:
+
+<pre>
+    apt get [ points, [[ 3*i-2, 3*i-1, 3*i ]] ]
+</pre>
+
+<p>
+Special effects can be produced on solid surface renderings by
+deleting shaded polygons from the surface.  This can be done using
+the function <tt>grid_isoidx_drop</tt>.
+
+<a name="IsosurfaceNormals">
+<h4>Iso-surface Normals</h4>
+
+<p>
+Normals to an iso-surface can be calculated when the iso-surface type
+is a 3D solid surface.  The function <tt>grid_isovtx_grad</tt> calculates
+the field gradients at the points of an iso-surface.  By default the
+triangles are generated in the positive (counter-clockwise) direction
+about the gradient of the field.  If the triangles of the surface are
+generated in reverse order (accomplished by setting the <tt>opt</tt>
+argument to the function <tt>grid_isoidx_emit</tt>), the negative field
+gradient will be used for the surface normal calculation.
+
+<a name="IsoverticesIsoindices">
+<h4>Iso-vertices and Iso-indices</h4>
+
+<p>
+Each iso-vertex and each iso-index contains an index value in its low-order 
+bits and a set of markers in its high-order bits. The mask
+<tt>GRID_ISO_VALUE</tt> can be used to strip out the high-order bits.
+
+<p>
+The iso-vertex markers, <tt>GRID_ISO_X</tt>, <tt>GRID_ISO_Y</tt>, and
+<tt>GRID_ISO_Z</tt>, specify on which axis an iso-vertex lies.  The
+low-order bits of an iso-vertex contain the higher of the indices of its
+two neighboring gridpoints.
+
+<p>
+Each iso-index points to one iso-vertex.  A given iso-vertex may be
+pointed to by more than one iso-index.  The low-order bits of each
+iso-index contain an index into the list of iso-vertices.  The
+higher-order bits of an iso-index store the iso-index type.  These bits
+can be used to identify and process the polygons generated by the
+marching-cube algorithm (grid
+<a href="#IsosurfacesAtGridBoundaries">boundaries</a> are discussed
+below):
+
+<p><table align="center" border="1" cellpadding="5">
+<tr><td valign=top><tt>GRID_ISO_POLY</tt>
+    <td valign=top>Marks the beginning of each new polygon.
+
+<tr><td valign=top><tt>GRID_ISO_EVEN</tt>
+    <td valign=top>Marks the beginning of a new polygon of an even cube.
+
+<tr><td valign=top><tt>GRID_ISO_X</tt><br>
+    <tt>GRID_ISO_Y</tt><br>
+    <tt>GRID_ISO_Z</tt> 
+    <td valign=top>Mark vertices on grid boundaries (both front and rear
+    boundaries). 
+
+<tr><td valign=top><tt>GRID_ISO_FX</tt><br>
+    <tt>GRID_ISO_FY</tt><br> <tt>GRID_ISO_FZ</tt> 
+    <td valign=top>Mark vertices on front grid boundaries.  
+</table></center>
+
+<a name="IsosurfacesAtGridBoundaries">
+<h4>Iso-surfaces at Grid Boundaries</h4>
+
+<p>
+A 3D grid is bounded by six faces or <i>boundaries</i>.  Each of the six
+boundaries of a 3D grid is perpendicular to one axis. Of the two
+boundaries perpendicular to the same axis, the boundary of the smaller
+grid coordinate along that axis is called the "front" boundary. The other
+one is called the "rear" boundary.
+
+<p>
+By default all boundaries of a grid are included in the iso-surface
+calculation.  When generating a 3D mesh iso-surface, line segments on the
+grid boundaries can be excluded by setting the <tt>opt</tt> argument to
+the function <tt>grid_isoidx_emit</tt>.  <tt>opt</tt> is a vector of
+integers.  The numbers 1, 2, and 3 correspond to front grid boundaries
+perpendicular to the X, Y, and Z axes, respectively.  Numbers 4, 5, and 6
+correspond to both front and rear boundaries perpendicular to X, Y, and Z,
+respectively.
+
+<p>
+Boundary omission is used when plotting surfaces over multiple adjacent
+grids.
+
+<a name="IsosurfaceExample">
+<h3>Iso-surface Example</h3>
+
+<p> The function <tt>draw_surf</tt> below illustrates the use of SVL
+iso-surface functions. <tt>draw_surf</tt> generates an iso-surface of a
+field at a given level.  The field is represented as the grid
+<tt>[data,shape]</tt>, which is passed as a function argument.
+
+<p>
+<tt>draw_surf</tt> uses the following call to <tt>grid_iso</tt> to
+calculate the iso-vertices of the iso-surface and the iso-indices that
+point to those iso-vertices:
+
+<pre>
+    local dims = [1,2,3];
+    local [isovtx, isoidx] = grid_iso [data, shape, level, dims];
+</pre>
+
+<p>
+For displaying the surface, both the coordinates of the iso-vertices and
+the normals to the iso-surface at those points are needed.  Assuming a
+Gaussian field, the normals are inverse gradients of the field.  The
+coordinates are calculated with <tt>grid_isovtx_coord</tt>, and the field
+gradients with <tt>grid_isovtx_grad</tt>:
+
+<pre>
+    local points = grid_isovtx_coord [data, shape, isovtx, level, dims];
+    local normals = - grid_isovtx_grad [data, shape, isovtx, level, dims];
+</pre>
+
+<p>
+The function <tt>grid_isoidx_emit</tt> can be used to create either a list
+of line segments of a mesh surface (<tt>gtype</tt>=2) or a list of
+triangles of a solid surface (<tt>gtype</tt>=3).  In <tt>draw_surf</tt>, a
+solid surface is drawn.  The <tt>opt</tt> parameter, when set to -1,
+indicates that the surface normals are opposite to the field gradients:
+
+<pre>
+    const gtype = 3;
+    local opt = -1;
+    local idx = grid_isoidx_emit [isoidx, gtype, opt];
+</pre>
+
+<p>
+Variable <tt>idx</tt> is a list of indices into both the <tt>points</tt>
+and <tt>normals</tt> vectors.
+
+<p>
+To achieve a checkered pattern appearance of the solid surface, we can
+remove surface data from every second cube of the grid with the call
+<tt>grid_isoidx_drop</tt>:
+
+<pre>
+    isoidx = grid_isoidx_drop [isoidx,0];
+    idx = grid_isoidx_emit [isoidx, gtype, -1];
+</pre>
+
+<p>
+The actual rendering of the graphical surface is done with a call to
+<tt>GVertex</tt>.
+
+<pre>
+    function draw_surf [ [data,shape], level] // pass in grid, level
+
+	const SURF_NAME = 'Checkered Surface';
+	const SURF_COLOR = 0xffcc22;	// goldenrod
+
+	local dims = [1,2,3];		// full 3D iso-surface
+	local gtype = 3;		// solid surface
+	local opt = -1;			// normals opposite to field gradients
+
+	    // generate iso-vertices and iso-indices
+
+	local [isovtx, isoidx] = grid_iso [data, shape, level, dims];
+
+	    // convert iso-vertices into 3D coordinates; calculate normals
+
+	local points = grid_isovtx_coord [data, shape, isovtx, level, dims];
+	local normals = - grid_isovtx_grad [data, shape, isovtx, level, dims];
+
+	    // generate indices idx into 'points' and 'normals' vectors;
+	    // idx will be used for graphical rendering of the surface
+
+	local idx = grid_isoidx_emit [isoidx, gtype, opt];
+
+	    // make the surface checkered
+
+	isoidx = grid_isoidx_drop [isoidx,0];
+	idx = grid_isoidx_emit [isoidx, gtype, -1];
+
+	GVertex  [GCreate SURF_NAME, gtype, idx, SURF_COLOR, points, normals];
+
+    endfunction
+</pre>
+
+<p>
+To run function <tt>draw_surf</tt>, we can make use of the functions
+<tt>generate_shape</tt> and
+<tt>generate_gaussian</tt> described
+above.  We generate a grid of 1331 points whose two opposite corners are
+[-5,-5,-5] and [5,5,5], and create a field comprising a Gaussian density
+centered at [0,0,0].  We then use <tt>draw_surf</tt> to draw an
+iso-surface of this field at level 0.05.
+
+<pre>
+    svl> shape = generate_shape [ [-5,-5,-5], [5,5,5], 1 ]
+    svl> data = generate_gaussian [ shape, [0,0,0], 1 ]
+    svl> draw_surf [ [data, shape], 0.05 ]
+</pre>
+
+<h2>See Also</h2>
+
+<a href="../fcnref/introgrid.htm">Grid Functions</a><br>
+<a href="../../appendix/samples.htm">Grid Surface Demo</a>
+(<tt>$MOE/sample/gridex.svl</tt>)
+
+
+<p>Next: <a href="adv.html">Advanced SVL Topics</a>
+
+<p><a href="../../fcnindex.html">Function Index</a></p>
+
+<p><a href="../../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

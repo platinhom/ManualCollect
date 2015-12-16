@@ -1,0 +1,446 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Using the atomselect command</TITLE>
+<META NAME="description" CONTENT="Using the atomselect command">
+<META NAME="keywords" CONTENT="ug">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ug.css">
+
+<LINK REL="next" HREF="node200.html">
+<LINK REL="previous" HREF="node198.html">
+<LINK REL="up" HREF="node197.html">
+<LINK REL="next" HREF="node200.html">
+</HEAD>
+
+<BODY BGCOLOR="WHITE">
+<!--Navigation Panel-->
+<A NAME="tex2html3863"
+  HREF="node200.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html3857"
+  HREF="node197.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html3851"
+  HREF="node198.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html3859"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html3861"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html3864"
+  HREF="node200.html">Analysis scripts</A>
+<B> Up:</B> <A NAME="tex2html3858"
+  HREF="node197.html">Molecular Analysis</A>
+<B> Previous:</B> <A NAME="tex2html3852"
+  HREF="node198.html">Using the molinfo command</A>
+ &nbsp; <B>  <A NAME="tex2html3860"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html3862"
+  HREF="node251.html">Index</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION001520000000000000000"></A>
+<A NAME="ug:topic:atomselect"></A><A NAME="15794"></A>
+<A NAME="15795"></A>
+<A NAME="15796"></A>
+<A NAME="15797"></A>
+<BR>
+Using the <TT>atomselect</TT> command
+</H1>
+
+<P>
+Atom selection is the primary method to access information about
+the atoms in a molecule.  It works in two steps. The first step is to create a 
+selection given the selection text, molecule id, and optional frame 
+number. This is done by a function called <TT>atomselect</TT>, which returns the
+name of the new atom selection. the second step is to use the created 
+selection to access the information about the atoms in the selections.
+
+<P>
+Atom selection is implemented as a Tcl function.  The data
+returned from <TT>atomselect</TT> is the name of the function to use.
+The name is of the form <TT>atomselect%d</TT> where '%d' is a non-negative
+number (such as 'atomselect0', atomselect26', ...).
+
+<P>
+The way to use the function created by the <TT>atomselect</TT> command
+is to store the name into a variable, then use the variable to get the
+name when needed.
+<A NAME="15802"></A>
+<A NAME="15803"></A>
+<PRE>
+vmd&gt; set sel [atomselect top "water"]
+atomselect3
+vmd&gt; $sel text
+water
+</PRE>
+This is equivalent to saying
+<PRE>
+vmd&gt; atomselect3 text
+</PRE>
+
+<P>
+The easiest way of thinking about this is that the <TT>atomselect</TT>
+command creates an object.  To get information from the object you
+have to send it a command.  Thus, in the example above (<TT>atomselect1 num</TT>) the object "atomselect1" was sent the command "num",
+which asks the object to return the number of atoms in the selection.
+These derived object functions (the ones with names like atomselect3)
+take many options, as described in 
+section <A HREF="node122.html#ug:ui:text:atomselect">9.3.2</A>,
+
+<P>
+For instance, given the selection
+<PRE>
+vmd&gt; set sel [atomselect top "resid 4"]
+atomselect4
+</PRE>
+you can get the atom names for each of the atoms in the selection with
+<PRE>
+vmd&gt; $sel get name
+N H CA CB C O
+</PRE>
+  (which, remember, is the same as
+<PRE>
+vmd&gt; atomselect4 get name
+</PRE>
+)
+
+<P>
+Multiple attributes can be requested by submitting a list, so if you
+want to see which atoms are on the backbone,
+<PRE>
+vmd&gt; $sel get {name backbone}
+{N 1} {H 0} {CA 1} {CB 0} {C 1} {O 1}
+</PRE>
+
+<P>
+and the atom coordinates with
+<PRE>
+vmd&gt;  $sel get {x y z}
+{0.710000 4.211000 1.093000} {-0.026000 3.700000 0.697000} {0.541000
+4.841000 2.388000} {-0.809000 4.462000 2.976000} {1.591000 4.371000
+3.381000} {2.212000 5.167000 4.085000}
+</PRE>
+
+<P>
+<A NAME="15821"></A>
+Note that the format of the data you get back from the <TT>get</TT> command
+depends on how many attributes you requested.  If you request only one
+attribute, as in the <TT>get name</TT> example above, you will get back
+a simple list of elements.  On the other hand, if you request two or
+more attributes, you will get back a list of sublists.  Specifically,
+it is a list of size <IMG
+ WIDTH="15" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img35.png"
+ ALT="$ n$">
+ where each element is itself a list of size <IMG
+ WIDTH="10" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img42.png"
+ ALT="$ i$">
+,
+where <IMG
+ WIDTH="15" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img35.png"
+ ALT="$ n$">
+ is the number of atoms in the selection and <IMG
+ WIDTH="10" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img42.png"
+ ALT="$ i$">
+ is the number
+of attributes requested.
+
+<P>
+<A NAME="15824"></A>
+Your scripts will run faster if you retrieve only one attribute at a time,
+because then VMD does not have to construct the sublists for each 
+attribute.  Remember that in Tcl you can loop over several lists at once
+using the <TT>foreach</TT> command:
+<PRE>
+foreach resid [$sel get resid] resname [$sel get resname] {
+  # process each resid and resname here
+}
+</PRE>
+
+<P>
+One quick function you can build with the coordinates is a method to
+calculate the geometrical center (not quite the center of mass; that's a
+bit harder). This also uses some of the vector commands discussed in
+the section about <A HREF="node192.html#ug:topic:vectors">vectors and matrices</A>, but you should be
+able to figure them out from context.
+<A NAME="15832"></A>
+<A NAME="15833"></A>
+<PRE>
+proc geom_center {selection} {
+        # set the geometrical center to 0
+        set gc [veczero]
+        # [$selection get {x y z}] returns a list of {x y z} 
+        #    values (one per atoms) so get each term one by one
+        foreach coord [$selection get {x y z}] {
+           # sum up the coordinates
+           set gc [vecadd $gc $coord]
+        }
+        # and scale by the inverse of the number of atoms
+        return [vecscale [expr 1.0 /[$selection num]] $gc]
+}
+</PRE>
+
+<P>
+With that defined you can say (assuming $sel was created with the
+previous atomselection example)
+<PRE>
+vmd&gt; geom_center $sel
+0.703168 4.45868 2.43667
+</PRE>
+I'll go through the example line by line.  The function is named 
+<TT>geom_center</TT> and takes one parameter, the name of the selection.
+The first line sets the variable ``gc'' to the zero vector, which is 0
+0 0.  On the second line of code, two things occur.  First, the command
+<PRE>
+   $selection get {x y z}
+</PRE>
+is executed, and the string is replaced with the result, which is
+<PRE>
+{0.710000 4.211000 1.093000} {-0.026000 3.700000 0.697000} {0.541000
+4.841000 2.388000} {-0.809000 4.462000 2.976000} {1.591000 4.371000
+3.381000} {2.212000 5.167000 4.085000}
+</PRE>
+This is a list of 6 terms (one for each atom in the selection), and
+each term is a list of three elements, the x, y, and z coordinate, in
+that order.
+
+<P>
+The "foreach" command splits the list into its six terms and goes down
+the list term by term, setting the variable "coord" to each successive
+term.  Inside the loop, the value of $coord is added to total sum.
+
+<P>
+The last line returns the geometrical center of the atoms in the selection.  
+Since the geometrical
+center is defined as the sum of the coordinate vectors divided by the
+number of elements, and so far I have only calculated the sum of
+vectors, I need the inverse of the number of elements, which is
+done with the expression
+<PRE>
+    expr 1.0 / [$selection num]
+</PRE>
+The decimal in "1.0" is important since otherwise Tcl does integer
+division.  Finally, this value is used to scale the sum of the
+coordinate vectors (with vecscale), which returns the new value, which
+is itself returned as the result of the procedure.
+
+<P>
+The center of mass function is slightly harder because you have to
+get the mass as well as the x, y, z values, then break that up into
+to components.  
+The formula for the center of mass is 
+<!-- MATH
+ $\sum m_i x_i/\sum mass_i$
+ -->
+<IMG
+ WIDTH="141" HEIGHT="34" ALIGN="MIDDLE" BORDER="0"
+ SRC="img112.png"
+ ALT="$ \sum m_i x_i/\sum mass_i$">
+
+
+<P>
+<A NAME="15846"></A>
+<A NAME="15847"></A>
+<A NAME="15848"></A>
+<PRE>
+proc center_of_mass {selection} {
+        # some error checking
+        if {[$selection num] &lt;= 0} {
+                error "center_of_mass: needs a selection with atoms"
+        }
+        # set the center of mass to 0
+        set com [veczero]
+        # set the total mass to 0
+        set mass 0
+        # [$selection get {x y z}] returns the coordinates {x y z} 
+        # [$selection get {mass}] returns the masses
+        # so the following says "for each pair of {coordinates} and masses,
+	#  do the computation ..."
+        foreach coord [$selection get {x y z}] m [$selection get mass] {
+           # sum of the masses
+           set mass [expr $mass + $m]
+           # sum up the product of mass and coordinate
+           set com [vecadd $com [vecscale $m $coord]]
+        }
+        # and scale by the inverse of the number of atoms
+        if {$mass == 0} {
+                error "center_of_mass: total mass is zero"
+        }
+        # The "1.0" can't be "1", since otherwise integer division is done
+        return [vecscale [expr 1.0/$mass] $com]
+}
+
+vmd&gt; center_of_mass $sel
+Info) 0.912778 4.61792 2.78021
+</PRE>
+
+<P>
+The opposite of "get" is "set".  Many keywords (most notably,
+"x", "y", and "z") can be set to new values.  This allows, for
+instance, atom coordinates to be changed, the occupancy values to be
+updated, or user forces to be added.  You can also change the resname,
+segid, and so forth, which may be easier to do within VMD than, for
+example, editing a PDB file by hand.
+<PRE>
+  set sel [atomselect top "index 5"]
+  $sel get {x y z}
+{1.450000 0.000000 0.000000}
+  $set set {x y z} {{1.6 0 0}}
+</PRE>
+<A NAME="15853"></A>
+<A NAME="15854"></A>
+
+<P>
+Note that just as the get option returned a list of lists, the set
+option needs a list of lists, which is why the extra set of curly
+braces were need.  Again, this must be a list of size <IMG
+ WIDTH="15" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img35.png"
+ ALT="$ n$">
+
+containing elements which are a list of size <IMG
+ WIDTH="10" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img42.png"
+ ALT="$ i$">
+.  The exeception is
+if <IMG
+ WIDTH="15" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img35.png"
+ ALT="$ n$">
+ is 1, the list is duplicated enough times so there is one
+element for each atom.
+<PRE>
+  # get two atoms and set their coordinates
+  set sel [atomselect top "index 6 7"]
+  $sel set {x y z} { {5 0 0} {7.6 5.4 3.2} }
+</PRE>
+
+<P>
+In this case, the atom with index 6 gets its (x, y, z) values set to
+5 0 0 and the atom with index 7 has its coordinates changed to 7.6
+5.4 3.2.
+
+<P>
+It is possible to move atoms this way by getting the coordinates,
+changing them (say by adding some offset) and replacing it.  Following is a function which will do just that:
+
+<P>
+<A NAME="15859"></A>
+<PRE>
+proc moveby {sel offset} {
+  foreach coord [$sel get {x y z}] {
+    lappend newcoords [vecadd $coord $offset]
+  }
+  $sel set {x y z} $newcoords
+}
+</PRE>
+And to use this function (in this case, to apply an offset of (x y z)
+<IMG
+ WIDTH="18" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img49.png"
+ ALT="$ =$">
+ (0.1 -2.8 9) to the selection "$movesel"):
+<PRE>
+moveby $movesel {0.1 -2.8 9}
+</PRE>
+However, to simplify matters some options have been added to the
+selection to deal with movements (these commands are also implemented
+in C++ and are much faster than the Tcl versions).  These functions
+are <TT>moveby</TT>, <TT>moveto</TT>, and <TT>move</TT>.  The first two take a
+position vector and the last takes a transformation matrix.
+
+<P>
+<A NAME="15867"></A>
+The first command, <TT>moveby</TT>, moves each of the atoms in the
+selection over by the given vector offset.
+<PRE>
+   $sel moveby {1 -1 3.4}
+</PRE>
+The second, <TT>moveto</TT>, moves all the atoms in a selection to a
+given coordinate (it would be strange to use this for a selection of
+more than one atom, but that's allowed).  Example:
+<PRE>
+   $sel moveto {-1 1 4.3}
+</PRE>
+  The last of those, <TT>move</TT>, applies the given transformation
+matrix to each of the atom coordinates.  This is best used for
+rotating a set of atoms around a given axis, as in
+<PRE>
+   $sel move [trans x 90]
+</PRE>
+which rotates the selection 90 degrees about the x axis.  Of course,
+any transformation matrix may be used.
+
+<P>
+A more useful
+example is the following, which rotates the side chain atoms around
+the CA-CB bond by 10 degrees. <A NAME="15877"></A>
+<PRE>
+# get the sidechain atoms (CB and onwards)
+set sidechain [atomselect top "sidechain residue 22"]
+# get the CA coordinates -- could do next two on one line ...
+set CA [atomselect top "name CA and residue 22"]
+set CAcoord [lindex [$CA get {x y z}] 0]
+# and get the CB coordinates
+set CB [atomselect top "name CB and residue 22"]
+set CBcoord [lindex [$CB get {x y z}] 0]
+# apply a transform of 10 degrees about the given bond axis
+$sidechain move [trans bond $CAcoord $CBcoord 10 deg]
+</PRE>
+
+<P>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html3863"
+  HREF="node200.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html3857"
+  HREF="node197.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html3851"
+  HREF="node198.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html3859"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html3861"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html3864"
+  HREF="node200.html">Analysis scripts</A>
+<B> Up:</B> <A NAME="tex2html3858"
+  HREF="node197.html">Molecular Analysis</A>
+<B> Previous:</B> <A NAME="tex2html3852"
+  HREF="node198.html">Using the molinfo command</A>
+ &nbsp; <B>  <A NAME="tex2html3860"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html3862"
+  HREF="node251.html">Index</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+vmd@ks.uiuc.edu
+</ADDRESS>
+</BODY>
+</HTML>

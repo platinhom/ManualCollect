@@ -1,0 +1,2289 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	index.htm
+!!
+!!	29-oct-2010 (cc) Added Citing MOE
+!!	29-oct-2010 (cc) Added Data Preparation Chapter
+!!	27-oct-2010 (al) added Stem checkbox for search
+!!	21-oct-2010 (al) added dropdown Menus
+!!	09-oct-2010 (pl) rewrote
+!!	23-sep-2010 (al) change colour of links
+!!	22-sep-2010 (al) change icons
+!!	14-sep-2010 (al) added titles to tutorial icons
+!!	10-sep-2010 (al) added Visualization
+!!	13-nov-2009 (al) on IE, recalculate when resize
+!!	12-nov-2009 (al) add header, move buttons to header
+!!	09-nov-2009 (al) new layout
+!!-->
+
+<head>
+
+<title>Molecular Operating Environment</title>
+
+<meta http-equiv="Content-Script-Type" content="text/javascript"
+charset="UTF-8" />
+
+<link rel="stylesheet" type="text/css"
+href="manstyle.css" />
+
+
+<script type="text/javascript">
+<!--
+function verify() {
+    var proceed = true;
+    var is_nets = navigator.appName.match(/netscape/i)? true: false;
+    var ins_ver = 5.0 > navigator.appVersion.match(/\d\.\d/);
+    if (is_nets && ins_ver)  {
+	proceed = false;
+	alert ('Netscape browser version 5 or better required for MOE search.');
+	location.reload();
+    }
+    return proceed;
+}
+
+// bakeCookie; Create cookie
+// Parameters: (name, value, expiryLength, path, domain, security)
+// To tossCookie (remove from tray), enter neg expiryLength.
+// Store many cookies by calling bakeCookie with diff vble names.
+
+function bakeCookie(name,value){
+  args=arguments;argc=args.length;
+  expires=(argc>2) ? args[2] : null;
+  path=(argc>3) ? args[3] : null;
+  domain=(argc>4) ? args[4] : null;
+  secure=(argc>5) ? args[5] : false;
+  expDate=new Date();day=24*60*60*1000;
+  if(expires){expDate.setTime(expDate.getTime()+expires*day);}
+  document.cookie=name+"="+escape(value)+
+    ((expires===null) ? "" : ("; expires="+expDate.toUTCString()))+
+    ((path===null) ? "" : ("; path="+path))+
+    ((domain===null) ? "" : ("; domain="+domain))+
+    ((secure===true) ? "; secure" : "");
+}
+
+// eatCookie: Recover stored cookie information
+// Parameter: variable name
+// Returns: string value or null if nothing stored at that vble
+
+function eatCookieVal(name) {
+  endstr=document.cookie.indexOf(";",name);
+  if(endstr===-1) {endstr=document.cookie.length;}
+  return unescape(document.cookie.substring(name,endstr));
+}
+
+function eatCookie(name) {
+  arg=name+"=";alen=arg.length;
+  clen=document.cookie.length;k=0;
+  while(k<clen){
+    j=k+alen;
+    if(document.cookie.substring(k,j)===arg){
+      return eatCookieVal(j);
+      }
+    k=document.cookie.indexOf(" ",k)+1;
+    if(k===0){break;}
+  }
+}
+
+// end cookies
+
+// Rollover on Tutorial icon
+
+function act(imgName) {
+    if (document.images)
+	document.images[imgName].src = "images/tut_icon_small_orangefg.png";
+}
+
+function inact(imgName) {
+    if (document.images)
+	document.images[imgName].src = "images/tut_icon_small_bluefg.png";
+}
+
+// end Rollover
+
+var section = new Array(
+    "intro", "mkpic", "build", "prep", "conf", "dock", "struct",
+    "denovo", "ph4", "palign", "pmodel", "md", "qsar",
+    "cheminf", "simdiv", "combi", "cryst", "svl", "tut", "cite",
+    "install", "extern"
+);
+
+function menuToggle(sect)
+{
+    var cap = 'c_' + sect;
+    var sub = 's_' + sect;
+
+    if (document.getElementById(sub).style.display=="block") {
+        document.getElementById(sub).style.display = "none";
+        document.getElementById(cap).style.display = "block";
+	bakeCookie(sub, 'false');
+    } else {
+        document.getElementById(sub).style.display = "block";
+        document.getElementById(cap).style.display = "none";
+	bakeCookie(sub, 'true');
+    }
+}
+
+function menuView(type)
+{
+    var my_sub;
+
+    if (type == 'short') {
+	for (i=0; i<section.length; i++) {
+	    my_sub = document.getElementById('s_'+section[i]);
+	    my_sub.style.display = "none";
+	    my_sub = document.getElementById('c_'+section[i]);
+	    my_sub.style.display = "block";
+	    bakeCookie('s_'+section[i], 'false');
+	}
+    } else if (type == 'long') {
+	for (i=0; i<section.length; i++) {
+	    my_sub = document.getElementById('s_'+section[i]);
+	    my_sub.style.display = "block";
+	    my_sub = document.getElementById('c_'+section[i]);
+	    my_sub.style.display = "none";
+	    bakeCookie('s_'+section[i], 'true');
+	}
+    }
+}
+
+function loadOptions()
+{
+    var my_sub;
+
+    for (i=0; i<section.length; i++) {
+	my_sub = document.getElementById('s_'+section[i]);
+
+	if (eatCookie('s_'+section[i]) == 'true') {
+	    my_sub.style.display = 'block';
+	    my_sub = document.getElementById('c_'+section[i]);
+	    my_sub.style.display = "none";
+	} else {
+	    my_sub.style.display = "none";
+	    my_sub = document.getElementById('c_'+section[i]);
+	    my_sub.style.display = "block";
+	}
+    }
+    document.getElementById('stem').checked = eatCookie('stem') == 'true';
+}
+
+// ======================= Dropdown menu =========================
+
+var timeout	= 200;	// delay before dropdown closes
+var closetimer	= 0;	// flag indicating timer is running
+var ddmenuitem	= 0;	// which dropdown menu (only needed if multiple)
+
+// Display dropdown (hidden layer).
+
+function mopen(id)
+{	
+	// Open the dropdown menu; cancel close timer if any.
+
+    mcancelclosetime();
+
+	// Close old layer (only needed for multiple dropdowns).
+
+    if(ddmenuitem) ddmenuitem.style.visibility = 'hidden';
+
+	// Get new layer (dropdown) and show it.
+
+    ddmenuitem = document.getElementById(id);
+    ddmenuitem.style.visibility = 'visible';
+}
+
+// Close showed layer (dropdown).
+
+function mclose()
+{
+    if(ddmenuitem) ddmenuitem.style.visibility = 'hidden';
+}
+
+// When mouseout of dropdown menu, start close timer.
+
+function mclosetime()
+{
+    closetimer = window.setTimeout(mclose, timeout);
+}
+
+// When mouseover dropdown menu, cancel close timer.
+
+function mcancelclosetime()
+{
+    if(closetimer)
+    {
+	window.clearTimeout(closetimer);
+	closetimer = null;
+    }
+}
+
+// Close layer (dropdown) when click-out.
+
+document.onclick = mclose; 
+
+-->
+</script>
+
+<style type="text/css">
+
+html {
+    font-size: 100%;
+}
+
+.none {
+    list-style-type: none;
+    font-weight: normal;
+    margin: 0px 0px 0 0;
+    padding: 0px 0px 0 2em;
+    white-space: nowrap;
+}
+
+.nobullet {
+    list-style-type: none;
+    font-weight: normal;
+    margin: 0px 0px 0 0;
+    padding: 0px 0px 0 2em;
+}
+.bluedot {
+    list-style-type: none;
+    color: #000000;
+    font-weight: normal;
+    margin: 0px 0px 0 0;
+    padding: 0px 0px 0 0;
+}
+
+.topic {
+    list-style-type: none;
+    color: #007777;
+    font-weight: bold;
+}
+
+.topic td {
+    padding: 5px 0 0 10px;
+}
+
+.subtopic {
+    list-style-type: none;
+    color: #007777;
+    font-weight: bold;
+}
+
+a.index:link {
+    color: #0000aa;
+    font-weight: normal;
+    font-size: 100%;
+    text-decoration: none;
+}
+a.index:active {
+    color: #0000aa;
+    font-weight: normal;
+    font-size: 100%;
+    text-decoration: none;
+}
+a.index:visited {
+    color: #550088;
+    font-weight: normal;
+    font-size: 100%;
+    text-decoration: none;
+}
+a.index:hover {
+    color: #ff9933;
+    font-weight: normal;
+    font-size: 100%;
+    text-decoration: none;
+}
+a:hover .tutindex {
+    text-decoration: underline;
+}
+
+.menulist {
+    font-size: 85%;
+    font-family: sans-serif;
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.menutext {
+    font-size: 85%;
+    font-family: sans-serif;
+}
+
+.cite {
+    font-size: 85%;
+    font-family: sans-serif;
+}
+
+.blurb {
+    font-weight: normal;
+    font-family: sans-serif;
+    font-size: 85%;
+    color: #222222;
+}
+
+a.headings         { font-weight: bold; font-family: sans-serif;}
+a.headings:link    {color: #0000cc; text-decoration:underline; width:100%;}
+a.headings:visited {color: #5500cc; text-decoration:underline; width:100%;}
+a.headings:hover   {color: #ff9933; text-decoration:underline; width:100%;}
+a.headings:active  {color: #0000cc; text-decoration:underline; width:100%;}
+}
+
+.checkboxes label
+{
+    display: block;
+    float: left;
+    padding-right: 10px;
+    white-space: nowrap;
+}
+
+.checkboxes input
+{
+    vertical-align: middle;
+}
+
+.checkboxes label span
+{
+    vertical-align: middle;
+}
+
+/* ======================= Dropdown menu ========================= */
+
+#ddmenu {
+    margin: 0;
+    padding: 0;
+    z-index: 30;
+}
+
+#ddmenu li {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    float: left;
+}
+
+#ddmenu li a {
+    display: block;
+    margin: 0 0 0 0;
+    padding: 0 10px 0 0;
+}
+
+#ddmenu li a:hover {
+    color: #ff9933;
+}
+
+#ddmenu div {
+    position: absolute;
+    visibility: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+    #ddmenu div a {
+    	position: relative;
+	display: block;
+	margin: 0;
+	padding: 3px 5px;
+	width: auto;
+	white-space: nowrap;
+	text-align: left;
+	text-decoration: underline;
+	background: #EAEBD8;
+	color: #2875DE;
+	font: 11px arial;
+    }
+
+    #ddmenu div a:hover {
+	color: #ff9933;
+    }
+
+</style>
+</head>
+
+<body onload="loadOptions();" bgcolor="#ffffff">
+<noscript>
+    <span class="tip"><b>Warning: Your browser does not support JavaScript
+	or support has been turned off.  Search has been disabled.
+    </b></span>
+</noscript>
+<table border="0" padding="0" margin="0" width="100%">
+<tr>
+
+<td width="265" valign="bottom">
+    <a href="index.htm"><img
+	src="images/MOE_2010.png" width="265" height="37" border="0"
+	align="left"
+    /></a>
+</td>
+
+<td align="center" valign="bottom">
+    <input type="button" onclick="menuView('short');" value="Short View" />
+    &nbsp;&nbsp;
+    <input type="button" onclick="menuView('long');" value="Long View" />
+    &nbsp;&nbsp;&nbsp;&nbsp;
+</td>
+
+<td width="1" valign="bottom">
+    <img
+	src="images/ccglogo.png" border="0"
+	alt="www.chemcomp.com"
+	width="141" height="50"
+    />
+</td>
+
+<!--
+<td width="1" valign="bottom">
+    <a href="http://www.chemcomp.com"><img
+	src="images/logo.gif" border="0"
+	alt="www.chemcomp.com"
+	width="116" height="37"
+    /></a>
+</td>
+-->
+
+</tr>
+</table>
+<hr noshade="noshade" />
+
+<!-- ================================ CONTENTS ============================
+     The table of contents is a two-column layout of individual chapters
+     each of which is collapsible.
+-->
+
+<p><table cellpadding="0" border="0" margin="0" padding="0" width=100%>
+
+    <!-- =========================== COLUMN ONE ====================== -->
+
+<tr><td valign="top" width="50%">
+<table border="0" margin="0" padding="0">
+
+<tr> <!-- =========== INTRODUCTION =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('intro');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/pill_shadow_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('intro');"
+    onFocus="if(this.blur)this.blur();"
+>1. Introduction</a>
+
+<div class="blurb" id="c_intro">
+Overview
+&ndash; Quick Start
+&ndash; Mouse
+&ndash; Main&nbsp;Windows
+&ndash; Selecting Objects
+&ndash; MOE/web
+</div>
+
+<div class="menulist" id="s_intro">
+    <ul class="none">
+    <li>
+	<a href="moe/hellomoe.htm" class="index"
+	    >Overview of MOE | Manual Conventions | GUI Basics</a>
+	</li>
+    <li><a href="tutorials/moetour.html" class="index"
+	>Quick Start</a>
+	</li>
+    <li><a href="moe/gui/mouse.html" class="index"
+	>Using the Mouse</a>
+        | <a href="moe/gui/mainwin.htm#Selecting" class="index"
+	    >Operating on Selected Objects</a>
+	</li>
+    <li><a href="moe/gui/mainwin.htm" class="index"
+	>MOE Window</a>
+	</li>
+    <li><a href="apps/ligx.htm" class="index"
+	>LigX: The MOE Button Bar</a>
+	<a onmouseover="act('tutligxa')" onmouseout="inact('tutligxa')"
+	    onfocus="act('tutligxa')" onblur="inact('tutligxa')"
+	    onclick="inact('tutligxa')"
+	    href="tutorials/ligx_tut.htm"
+	    title=" Active Site Analysis Tutorial"
+	><img src="images/tut_icon_small_bluefg.png" name="tutligxa"
+		border="0" alt="Tutorial" width="13" height="12" /></a>
+	</li>
+    <li><a href="moe/gui/se.html" class="index"
+	>Sequence Editor</a>
+	</li>
+    <li><a href="mdb/db.htm" class="index"
+	>Molecular Database Viewer</a>
+	</li>
+    <li><a href="moe/gui/gobjman.htm" class="index"
+	>Graphics Object Manager</a>
+	</li>
+    <li><a href="moe/gui/svlcommands.html" class="index"
+	>SVL Commands Window</a>
+	</li>
+    <li><a href="moe/moeweb_intro.htm" class="index"
+	>MOE/web Applications</a>
+    </ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== PICTURES AND MOVIES =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('mkpic');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/MOEnalisa.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('mkpic');"
+    onFocus="if(this.blur)this.blur();"
+>2. Create Pictures and Movies</a>
+
+<div class="blurb" id="c_mkpic">
+Rendering
+&ndash; Special Effects
+&ndash; Copy to Clipboard
+&ndash; Save to File
+&ndash; Printing
+&ndash; 2D&nbsp;Sketches
+&ndash; Movies
+</div>
+
+<div class="menulist" id="s_mkpic">
+    <ul class="none">
+	<li><a href="moe/gui/fileopen.htm" class="index"
+	    >Open Files</a>
+	    </li>
+	<li><a href="moe/gui/mainwin.htm#Rendering" class="index"
+	    >Rendering Molecular Objects</a>
+	    </li>
+	<li><a href="apps/surfmap.htm" class="index"
+	    >Surfaces and Maps</a>
+	    </li>
+	<li><a href="appendix/viewsetup.htm" class="index"
+	    >Special Effects: 3D Visualization Setup</a>
+	    <a onmouseover="act('tutvsetup')" onmouseout="inact('tutvsetup')"
+		onfocus="act('tutvsetup')" onblur="inact('tutvsetup')"
+		href="tutorials/graphics_tut.htm"
+		title="3D Visualization and Making Pictures Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutvsetup"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="moe/gui/mainwin.htm#Copy" class="index"
+	    >Copy Image to Clipboard</a>
+	    </li>
+	<li><a href="apps/filesave.htm#Picture" class="index"
+	    >Save an Image File</a>
+	    </li>
+	<li><a href="apps/print.htm" class="index"
+	    >Printing from MOE</a>
+	    </li>
+	<li><a href="apps/view2d.htm" class="index"
+	    >2D Depictions of Molecules</a>
+	    </li>
+	<li><a href="apps/prolig2d.htm" class="index"
+	    >Ligand Interaction Diagrams</a>
+	    </li>
+	<li><a href="apps/filesave.htm#POVRayScene" class="index"
+	    >Export to POV-Ray</a>
+	    </li>
+	<li><a href="apps/moevie.htm" class="index"
+	    >Making MOEvies</a>
+	    </li>
+    </ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr>
+<td>
+<table border="0"> <!-- =========== BUILDING =========== -->
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('build');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/builder_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('build');"
+    onFocus="if(this.blur)this.blur();"
+>3. Building and Editing Molecules</a>
+
+<div class="blurb" id="c_build">
+Chemical Representation
+&ndash; Molecule Builders
+&ndash; (Bio)polymer Builders
+&ndash; Sketchers
+&ndash; SMILES
+&ndash; Crystals
+</div>
+
+<div class="menulist" id="s_build">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="moe/molsystems/molrep.html#Chemical_Representation"
+	    class="index"
+	    >Chemical Representation in MOE</a>
+	    </li>
+	<li><a href="moe/gui/mainwin.htm#Copy" class="index"
+	    >Copy and Paste using Sketchers</a>
+	    </li>
+	<li><a href="moe/molsystems/build.html" class="index"
+	    >Molecule Builder</a>
+	    <a onmouseover="act('tutbuilder')" onmouseout="inact('tutbuilder')"
+		onfocus="act('tutbuilder')" onblur="inact('tutbuilder')"
+		href="tutorials/builder_tut.htm"
+		title=" Small Molecule Builder Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutbuilder"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="moe/gui/mainwin.htm#FooterEditing" class="index"
+	    >Set Bond Lengths, Angles and Dihedrals</a>
+	    </li>
+	<li><a href="moe/molsystems/smiles.html" class="index"
+	    >SMILES Strings</a>
+	    </li>
+	<li><a href="apps/carbo.htm" class="index"
+	    >Carbohydrate Builder</a>
+	    <a onmouseover="act('tutcarbo')" onmouseout="inact('tutcarbo')"
+		onfocus="act('tutcarbo')" onblur="inact('tutcarbo')"
+		href="tutorials/carbo_tut.htm"
+		title=" Carbohydrate Builder Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutcarbo"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="proteins/protool.htm" class="index"
+	    >Protein and DNA Builders</a>
+	    </li>
+	<li><a href="apps/polybld.htm" class="index"
+	    >Polymer Builder</a>
+	    </li>
+	<li><a href="apps/crystal.html" class="index"
+	    >Crystal Parameters</a>
+	    </li>
+	<li><a href="moe/mol_prep.htm" class="index"
+	    >Prepare a Small Molecule</a>
+	    </li>
+    </ul>
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr>
+<td>
+<table border="0"> <!-- =========== DATA PREPARATION =========== -->
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('prep');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/builder_shadow_icon.png" border="0" width="68" height="61"
+/></a></td>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('prep');"
+    onFocus="if(this.blur)this.blur();"
+>4. Data Preparation</a>
+
+<div class="blurb" id="c_prep">
+Protein Preparation
+&ndash; Database Preparation
+&ndash; Protein Geometry 
+&ndash; LigX
+&ndash; Protonate3D
+&ndash; pKa&nbsp;Prediction
+</div>
+
+<div class="menulist" id="s_prep">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="proteins/proprep.htm" class="index"
+	    >Prepare a Protein or Protein-Ligand Complex</a>
+	    </li>
+	<li><a href="moe/mol_prep.htm" class="index"
+	    >Prepare a Small Molecule</a>
+	    </li>
+	<li><a href="moe/moldb_prep.htm" class="index"
+	    >Prepare a Small Molecule Dataset</a>
+	    </li>
+	<li><a href="moe/prep3ddb.htm" class="index"
+	    >Prepare a Conformation Database</a>
+	    </li>
+	<li><a href="apps/progeom.htm" class="index"
+	    >Protein Geometry: Assess Protein Crystal Structures</a>
+	    </li>
+    	<li><a href="apps/ligx.htm" class="index"
+	    >LigX: The MOE Button Bar</a>
+	    <a onmouseover="act('tutligxb')" onmouseout="inact('tutligxb')"
+		onfocus="act('tutligxb')" onblur="inact('tutligxb')"
+		href="tutorials/ligx_tut.htm"
+		title=" Active Site Analysis Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutligxb"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="apps/protonate3d.htm" class="index"
+	    >Protonate3D: Protonation State Assignment</a>
+	    </li>
+	<li><a href="apps/residuepka.htm" class="index"
+	    >Residue pKa Prediction</a>
+	    </li>
+	<li><a href="apps/sdtools.htm" class="index"
+	    >SD Tools: Process SD Files</a>
+	    <a onmouseover="act('tutsda')" onmouseout="inact(tutsda')"
+		onfocus="act(tutsda')" onblur="inact(tutsda')"
+		href="tutorials/sdfrag_tut.html"
+		title=" SD Pipelining Tools Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutsda"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="mdb/wash.htm" class="index"
+	    >Wash: Database Wash</a>
+	    </li>
+    </ul>
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== CONFORMATION ANALYSIS =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('conf');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/confsearch_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('conf');"
+    onFocus="if(this.blur)this.blur();"
+>5. Conformational Analysis</a>
+
+<div class="blurb" id="c_conf">
+Preparation
+&ndash; Select Forcefield
+&ndash; Energy Minimize
+&ndash; Conformations
+&ndash; Polypeptides
+&ndash; Analysis
+&ndash; QM&nbsp;Refinement
+</div>
+
+<div class="menulist" id="s_conf">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="moe/mol_prep.htm" class="index"
+	    >Prepare a Small Molecule</a>
+	    </li>
+	<li><a href="moe/moldb_prep.htm" class="index"
+	    >Prepare a Small Molecule Dataset</a>
+	    </li>
+	<li><a href="moe/pot.htm" class="index"
+	    >Potential Energy Selection and Configuration</a>
+	    </li>
+	<li><a href="apps/emin.htm" class="index"
+	    >Energy Minimize [MOE or MDB]</a>
+	    </li>
+	<li><a href="apps/confsrch.htm" class="index"
+	    >Conformation Generation | LowModeMD</a>
+	    <a onmouseover="act('tutconf')" onmouseout="inact('tutconf')"
+		onfocus="act('tutconf')" onblur="inact('tutconf')"
+		href="tutorials/lmmd_tut.htm"
+		title=" LowModeMD Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutconf"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="apps/confsrch.htm#ConfGeometries" class="index"
+	    >Conformation Geometries</a>
+	    </li>
+        <li><a href="mdb/diverse.htm" class="index"
+	    >Diverse Subset</a>
+	    </li>
+	<li><a href="apps/scf.htm" class="index"
+	    >Self Consistent Field (SCF) Calculations</a>
+	    </li>
+	<li><a href="apps/flex.htm" class="index"
+	    >Flexible Alignment of Small Molecules</a>
+	    <a onmouseover="act('tutflex')" onmouseout="inact('tutflex')"
+		onfocus="act('tutflex')" onblur="inact('tutflex')"
+		href="tutorials/flex_tut.htm"
+		title="Flexible Alignment Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutflex"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+    </ul>
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- ============= STRUCTURE BASED ============= -->
+<td>
+<table border="0">
+
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('struct');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/sbdd_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('struct');"
+    onFocus="if(this.blur)this.blur();"
+>6. Interactive Structure-Based Design</a>
+
+<div class="blurb" id="c_struct">
+Preparation
+&ndash; Surfaces and Maps
+&ndash; Ligand Properties
+&ndash; Depictions
+&ndash; Interactions
+&ndash; Builder
+</div>
+
+<div class="menulist" id="s_struct">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="proteins/proprep.htm" class="index"
+	    >Prepare a Protein or Protein-Ligand Complex</a>
+	    </li>
+	<li><a href="moe/mol_prep.htm" class="index"
+	    >Prepare a Small Molecule</a>
+	    </li>
+	<li><a href="apps/ligx.htm" class="index"
+	    >LigX: The MOE Button Bar</a>
+	    </li>
+	<li><a href="apps/ligx.htm#Properties" class="index"
+	    >Ligand Properties</a>
+	    </li>
+	<li><a href="apps/ligx.htm#RVectors" class="index"
+	    >Ligand R-Vectors: Identify Substitution Sites</a>
+	    </li>
+	<li><a href="apps/prolig2d.htm" class="index"
+	    >Ligand Interaction Diagrams</a>
+	    </li>
+	<li><a href="apps/view2d.htm" class="index"
+	    >2D Depictions of Molecules</a>
+	    </li>
+	<li><a href="apps/surfmap.htm" class="index"
+	    >Surfaces and Maps</a>
+	    </li>
+	<li><a href="moe/molsystems/build.html" class="index"
+	    >Molecule Builder</a>
+	    </li>
+	<li><a href="moe/pot.htm" class="index"
+	    >Potential Energy Selection and Configuration</a>
+	    </li>
+    </ul>
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =============== DE NOVO ============= -->
+<td>
+<table border="0">
+
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('denovo');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/sbd_shadow_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('denovo');"
+    onFocus="if(this.blur)this.blur();"
+>7. Fragment Based <i>de Novo</i> Discovery</a>
+
+<div class="blurb" id="c_denovo">
+Preparation
+&ndash; MedChem Transforms
+&ndash; BREED
+&ndash; Scaffold Replacement
+&ndash; MultiFragment Search
+</div>
+
+<div class="menulist" id="s_denovo">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="proteins/proprep.htm" class="index"
+	    >Prepare a Protein or Protein-Ligand Complex</a>
+	    </li>
+	<li><a href="moe/mol_prep.htm" class="index"
+	    >Prepare a Small Molecule</a>
+	    </li>
+	<li><a href="moe/pot.htm" class="index"
+	    >Potential Energy Selection and Configuration</a>
+	    </li>
+	<li> <a href="apps/shaman.htm" class="index"
+	    >MedChem Transformations</a>
+	    <a onmouseover="act('tutmedchem')" onmouseout="inact(tutmed')"
+		onfocus="act('tutmedchem')" onblur="inact('tutmedchem')"
+		href="tutorials/medchemtrns_tut.htm"
+		title="MedChem Transformations Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutmedchem"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="apps/breed.htm" class="index"
+	    >Hybridize Ligands with BREED</a>
+	    </li>
+	<li><a href="moe/prep3ddb.htm" class="index"
+	    >Prepare a Conformation Database</a>
+	    </li>
+	<li><a href="apps/scaffold.htm" class="index"
+	    >Scaffold and Fragment Replacement</a>
+	    </li>
+	<li><a href="apps/mfss.htm" class="index"
+	    >MultiFragment Search</a>
+	    </li>
+    </ul>
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== DOCKING =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('dock');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/docking_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('dock');"
+    onFocus="if(this.blur)this.blur();"
+>8. Docking</a>
+
+<div class="blurb" id="c_dock">
+Preparation
+&ndash; Site Finder
+&ndash; Select Forcefield
+&ndash; Docking
+&ndash; Rescoring
+&ndash; Filtering
+&ndash; PLIF
+</div>
+
+<div class="menulist" id="s_dock">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="proteins/proprep.htm" class="index"
+	    >Prepare a Protein or Protein-Ligand Complex</a>
+	    </li>
+	<li><a href="apps/sitefind.htm" class="index"
+	    >Site Finder: Locate Active Sites in a Receptor</a>
+	    </li>
+	<li><a href="moe/moldb_prep.htm" class="index"
+	    >Prepare a Small Molecule Dataset</a>
+	    </li>
+	<li><a href="moe/pot.htm" class="index"
+	    >Potential Energy Selection and Configuration</a>
+	    </li>
+	<li><a href="apps/docking.htm" class="index"
+	    >Docking with MOE, GOLD or FlexX</a>
+		<a onmouseover="act('tutdock')" onmouseout="inact('tutdock')"
+		    onfocus="act('tutdock')" onblur="inact('tutdock')"
+		    href="tutorials/dock_tut.htm" title="Dock Tutorial"
+		><img src="images/tut_icon_small_bluefg.png" name="tutdock"
+			border="0" alt="Tutorial" width="13" height="12"
+		/></a>
+	    </li>
+	<li><a href="apps/ph4_query.htm" class="index"
+	    >Create a Pharmacophore Constraint for Docking</a>
+		<a onmouseover="act('tutdockb')" onmouseout="inact('tutdockb')"
+		    onfocus="act('tutdockb')" onblur="inact('tutdockb')"
+		    href="tutorials/dock_tut.htm#PH4Query" title="Dock Tutorial"
+		><img src="images/tut_icon_small_bluefg.png" name="tutdockb"
+			border="0" alt="Tutorial" width="13" height="12"
+		/></a>
+	    </li>
+	<li><a href="apps/docking.htm#Example_PostDocking" class="index"
+	    >Post-Docking Refinement: Rescoring and Filtering</a>
+	    </li>
+	<li><a href="apps/plif.htm" class="index"
+	    >PLIF: Protein Ligand Interaction Fingerprints</a>
+		<a onmouseover="act('tutplifb')" onmouseout="inact('tutplifb')"
+		    onfocus="act('tutplifb')" onblur="inact('tutplifb')"
+		    href="tutorials/plif_tut.htm" title="PLIF Tutorial"
+		><img src="images/tut_icon_small_bluefg.png" name="tutplifb"
+			border="0" alt="Tutorial" width="13" height="12"
+		/></a>
+	    </li>
+    </ul>
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== PHARMACOPHORE =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('ph4');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/ph4_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('ph4');"
+    onFocus="if(this.blur)this.blur();"
+>9. Pharmacophore Discovery</a>
+
+<div class="blurb" id="c_ph4">
+Annotations
+&ndash; Query Editor
+&ndash; Elucidator
+&ndash; Flexible Alignment
+&ndash; PLIF
+&ndash; 3D Search
+&ndash; Databases
+</div>
+
+<div class="menulist" id="s_ph4">
+<ul class="bluedot">
+    <ul class="none">
+        <li><a href="apps/ph4_guide.htm" class="index"
+	    >Introduction to Pharmacophores</a>
+	    <a onmouseover="act('tut11')" onmouseout="inact('tut11')"
+	    onfocus="act('tut11')" onblur="inact('tut11')"
+	    href="tutorials/ph4_tut.htm"
+	    title="Pharmacophore Searching Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tut11"
+		border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+        <li><a href="apps/ph4_annot.htm" class="index"
+	    >Annotation Schemes</a>
+	    </li>
+	<li><a href="apps/ph4_query.htm" class="index"
+	    >Pharmacophore Query Editor</a>
+	    </li>
+	<li><a href="apps/ph4_elu.htm" class="index"
+	    >Pharmacophore Elucidator</a>
+	    </li>
+	<li><a href="apps/ph4_query.htm#RunningConsensus" class="index"
+	    >Generate Query Using Pharmacophore Consensus</a>
+	    </li>
+	<li><a href="apps/flex.htm" class="index"
+	    >Flexible Alignment Using Pharmacophores</a>
+	    <a onmouseover="act('tutflexb')" onmouseout="inact('tutflexb')"
+		onfocus="act('tutflexb')" onblur="inact('tutflexb')"
+		href="tutorials/flex_tut.htm"
+		title="Flexible Alignment Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutflexb"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="apps/plif.htm#ToolsQuery" class="index"
+	    >PLIF: Create a Pharmacophore Using Fingerprints</a>
+		<a onmouseover="act('tutplifc')" onmouseout="inact('tutplifc')"
+		    onfocus="act('tutplifc')" onblur="inact('tutplifc')"
+		    href="tutorials/plif_tut.htm" title="PLIF Tutorial"
+		><img src="images/tut_icon_small_bluefg.png" name="tutplifc"
+			border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="moe/prep3ddb.htm" class="index"
+	    >Prepare a Conformation Database</a>
+	    </li>
+	<li><a href="apps/ph4_search.htm" class="index"
+	    >Pharmacophore Search (MDB or OEB)</a>
+	    </li>
+	<li><a href="apps/docking.htm#Pharmacophore_Constraint" class="index"
+	    >Docking with Pharmacophores</a>
+	    </li>
+	<li><a href="quasar/modcomp.htm" class="index"
+	    >Create a Composite Model</a>
+	    </li>
+    </ul>
+    <br />
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== PROTEIN ALIGNMENT =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('palign');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/protein_shadow_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('palign');"
+    onFocus="if(this.blur)this.blur();"
+>10. Protein Alignment and Superposition</a>
+
+<div class="blurb" id="c_palign">
+Sequence Editor
+&ndash; Protein Files
+&ndash; Homology Search
+&ndash; Kinase Search
+&ndash; Alignment
+&ndash; Superposition
+&ndash; Consensus
+&ndash; Contacts
+</div>
+
+<div class="menulist" id="s_palign">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="moe/gui/fileopen.htm" class="index"
+	    >Open Files</a>
+	    </li>
+	<li><a href="proteins/pdb_mdb.htm#RCSBDownload" class="index"
+	    >Download Files from PSILO or RCSB</a>
+	    </li>
+	<li><a href="moe/gui/se.html" class="index"
+	    >Sequence Editor</a>
+	    </li>
+	<li><a href="proteins/pdb_mdb.htm" class="index"
+	    >Protein Sequence and Structure Data</a>
+	    </li>
+	<li><a href="proteins/prosearch.htm" class="index"
+	    >Homology Search</a>
+	    </li>
+	<li><a href="proteins/kinase.htm" class="index"
+	    >Kinase Structure Database</a>
+	    </li>
+	<li><a href="proteins/kinase.htm#kinSearch" class="index"
+	    >Kinase Search</a>
+	    </li>
+	<li><a href="proteins/align.htm" class="index"
+	    >Sequence and Structure Alignment</a>
+	    <a onmouseover="act('tutaligna')" onmouseout="inact('tutaligna')"
+		onfocus="act('tutaligna')" onblur="inact('tutaligna')"
+		href="tutorials/protalign_tut.htm"
+		title=" Protein Alignment Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutaligna"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="proteins/prosup.htm" class="index"
+	    >Protein Superpose</a>
+	    </li>
+	<li><a href="proteins/procore.htm" class="index"
+	    >Analysis of Conserved Core</a>
+	    </li>
+	<li><a href="proteins/procontacts.htm" class="index"
+	    >Stabilizing Contact Analysis</a>
+	    </li>
+    </ul>
+    <br />
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr>
+<td>
+<table border="0"> <!-- =========== PROTEIN MODELING =========== -->
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('pmodel');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/antibody_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('pmodel');"
+    onFocus="if(this.blur)this.blur();"
+>11. Protein and Antibody Modeling</a>
+
+<div class="blurb" id="c_pmodel">
+Protein Files
+&ndash; Sequence Editor
+&ndash; Homology Search
+&ndash; Alignment
+&ndash; Homology/Antibody Model
+&ndash; Rotamers
+&ndash; Loop Conformations
+</div>
+
+<div class="menulist" id="s_pmodel">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="moe/gui/fileopen.htm" class="index"
+	    >Open Files</a>
+	    </li>
+	<li><a href="moe/gui/se.html" class="index"
+	    >Sequence Editor</a>
+	    </li>
+	<li><a href="proteins/prosearch.htm" class="index"
+	    >Homology Search</a>
+	    </li>
+	<li><a href="proteins/kinase.htm" class="index"
+	    >Kinase Search</a>
+	    </li>
+	<li><a href="proteins/align.htm" class="index"
+	    >Sequence and Structure Alignment</a>
+	    <a onmouseover="act('tutalignb')" onmouseout="inact('tutalignb')"
+		onfocus="act('tutalignb')" onblur="inact('tutalignb')"
+		href="tutorials/protalign_tut.htm"
+		title=" Protein Alignment Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tut24"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="proteins/promodel.htm" class="index"
+	    >Homology Modeler</a>
+	    <a onmouseover="act('tutmodela')" onmouseout="inact('tutmodela')"
+		onfocus="act('tutmodela')" onblur="inact('tutmodela')"
+		href="tutorials/hom_tut.htm"
+		title="Protein Homology Modeling Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutmodela"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="proteins/antibody.htm" class="index"
+	    >Antibody Modeler</a> |
+	<a href="moe/moeweb_intro.htm#Antibody_Homology_Modeling"
+	    class="index">Antibody Modeler (MOE/web)</a>
+	    </li>
+	<li><a href="apps/rotamer.htm" class="index"
+	    >Rotamer and Mutation Explorer</a>
+	    </li>
+	<li><a href="apps/progeom.htm" class="index"
+	    >Protein Geometry: Assess Stereochemical Quality</a>
+	    </li>
+	<li><a href="proteins/proprep.htm" class="index"
+	    >Prepare a Protein or Protein-Ligand Complex</a>
+	    </li>
+	<li><a href="apps/residuepka.htm" class="index"
+	    >Residue pKa Prediction</a>
+	    </li>
+	<li><a href="tutorials/lmmd_tut.htm" class="index"
+	    >Loop Searching with LowModeMD</a>
+	    </li>
+    </ul>
+    <br />
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== DYNAMICS =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('md');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/md_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('md');"
+    onFocus="if(this.blur)this.blur();"
+>12. Molecular Dynamics</a>
+
+<div class="blurb" id="c_md">
+Preparation
+&ndash; Solvate
+&ndash; Forcefield
+&ndash; Charges
+&ndash; Energy Minimize
+&ndash; MD&nbsp;Simulation
+&ndash; Trajectory Analysis
+&ndash; Animation
+</div>
+
+<div class="menulist" id="s_md">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="moe/mol_prep.htm" class="index"
+	    >Prepare a Small Molecule</a>
+	    </li>
+	<li><a href="proteins/proprep.htm" class="index"
+	    >Prepare a Protein or Protein-Ligand Complex</a>
+	    </li>
+	<li><a href="apps/solvate.htm" class="index"
+	    >Solvate (Periodic or Droplet)</a>
+	    </li>
+	<li><a href="moe/pot.htm" class="index"
+	    >Potential Energy Selection and Configuration</a>
+	    </li>
+	<li><a href="moe/pot.htm#Charge" class="index"
+	    >Calculate Partial Charges</a>
+	    </li>
+	<li><a href="apps/emin.htm" class="index"
+	    >Energy Minimize</a>
+	    </li>
+	<li><a href="apps/md.htm" class="index"
+	    >Molecular Dynamics with MOE or NAMD</a>
+	    </li>
+	<li><a href="apps/md.htm#Importing" class="index"
+	    >Import Trajectory</a>
+	    </li>
+	<li><a href="mdb/dbbrowse.htm#Animating_Molecular_Dynamics"
+	    class="index">Trajectory Animation</a>
+	    </li>
+	<li><a href="apps/confsrch.htm#ConfGeometries" class="index"
+	    >Conformation Geometries</a>
+	    </li>
+    </ul>
+    <br />
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== QSAR =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('qsar');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/qsar_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('qsar');"
+    onFocus="if(this.blur)this.blur();"
+>13. Quantitative Structure-Activity Relationships</a>
+
+<div class="blurb" id="c_qsar">
+Dataset
+&ndash; Cluster
+&ndash; Contingency
+&ndash; PLS
+&ndash; Binary QSAR
+&ndash; Decision Trees
+&ndash; Model Composer
+&ndash; Evaluate Models
+</div>
+
+<div class="menulist" id="s_qsar">
+<ul class="bluedot">
+    <ul class="none">
+        <li><a href="quasar/qsar.htm" class="index"
+	    >Overview of QSAR Applications</a>
+	    <a onmouseover="act('tutqsar')" onmouseout="inact('tutqsar')"
+		onfocus="act('tutqsar')" onblur="inact('tutqsar')"
+		href="tutorials/quasar_tut.htm" title="QSAR Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutqsar"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="moe/moldb_prep.htm" class="index"
+	    >Prepare a Small Molecule Dataset</a>
+	    </li>
+	<li><a href="quasar/descr.htm" class="index"
+	    >Calculate Descriptors</a>
+	    </li>
+	<li><a href="quasar/cluster.htm" class="index"
+	    >Cluster a Database</a>
+	    </li>
+	<li><a href="quasar/qcont.htm" class="index"
+	    >Contingency Analysis: Identify Important Descriptors</a>
+	    </li>
+	<li><a href="quasar/model.htm" class="index"
+	    >Create a PLS or Bayesian Model</a>
+	    </li>
+	<li><a href="quasar/qbct.htm" class="index"
+	    >Decision Tree Classification</a>
+	    </li>
+	<li><a href="quasar/modcomp.htm" class="index"
+	    >Create a Composite Model</a>
+	    </li>
+	<li><a href="quasar/modcomp.htm#Eval" class="index"
+	    >Evaluate a Model on New Compounds</a>
+	    </li>
+	<li><a href="apps/polymer.htm" class="index"
+	    >Polymer Properties</a>
+	    </li>
+    </ul>
+    <br />
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== CHEMINFORMATICS =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('cheminf');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/cheminfo_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('cheminf');"
+    onFocus="if(this.blur)this.blur();"
+>14. Cheminformatics</a>
+
+<div class="blurb" id="c_cheminf">
+SD&nbsp;Tools
+&ndash; Database Viewer
+&ndash; Import/Export/Merge
+&ndash; Wash
+&ndash; Descriptors
+&ndash; Calculator
+&ndash; Plot
+&ndash; PCA
+&ndash; Cluster
+&ndash; RECAP
+&ndash; SAReport
+</div>
+
+<div class="menulist" id="s_cheminf">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="apps/sdtools.htm" class="index"
+	    >SD Tools: Process SD Files</a>
+	    <a onmouseover="act('tutsdb')" onmouseout="inact('tutsdb')"
+		onfocus="act('tutsdb')" onblur="inact('tutsdb')"
+		href="tutorials/sdfrag_tut.html"
+		title=" SD Pipelining Tools Tutorial"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutsdb"
+		    border="0" alt="Tutorial" width="13" height="12" /></a>
+	    </li>
+	<li><a href="mdb/db.htm" class="index"
+	    >Molecular Database Viewer</a>
+	    </li>
+	<li><a href="mdb/dbio.html" class="index"
+	    >Import, Export, and Merge Data</a>
+	    </li>
+	<li><a href="mdb/wash.htm" class="index"
+	    >Wash Molecules</a>
+	    </li>
+	<li><a href="quasar/descr.htm" class="index"
+	    >Calculate Descriptors</a>
+	    </li>
+	<li><a href="mdb/dbcalc.htm" class="index"
+	    >Database Calculator</a>
+	    </li>
+	<li><a href="mdb/dbplot.htm" class="index"
+	    >Plot Values</a>
+	    </li>
+	<li><a href="mdb/dbpca.htm" class="index"
+	    >Principal Components: Determine Key Descriptors</a>
+	    </li>
+	<li><a href="quasar/cluster.htm" class="index"
+	    >Cluster a Database</a>
+	    </li>
+	<li><a href="apps/recap.htm" class="index"
+	    >RECAP Analysis and Synthesis</a>
+	    </li>
+	<li><a href="apps/sar.htm" class="index"
+	    >SAReport</a> |
+	<a href="moe/moeweb_intro.htm#SAReport"
+	    class="index">SAReport (MOE/web)</a>
+	    </li>
+    </ul>
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== SIMILARITY =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('simdiv');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/sim_div_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('simdiv');"
+    onFocus="if(this.blur)this.blur();"
+>15. Similarity and Diversity</a>
+
+<div class="blurb" id="c_simdiv">
+Import/Export/Merge
+&ndash; Fingerprints
+&ndash; Similarity
+&ndash; Cluster
+&ndash; Diverse Subset
+&ndash; Fingerprint Models
+&ndash; Custom Fingerprints
+</div>
+
+<div class="menulist" id="s_simdiv">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="mdb/ph4intro.htm" class="index"
+	    >Fingerprint Overview</a>
+	    </li>
+	<li><a href="mdb/dbio.html" class="index"
+	    >Import, Export, and Merge Data</a>
+	    </li>
+	<li><a href="mdb/ph4calc.htm" class="index"
+	    >Calculate Fingerprints</a>
+	    </li>
+	<li><a href="mdb/ph4sim.htm" class="index"
+	    >Similarity Search</a>
+	    </li>
+	<li><a href="mdb/ph4clust.htm" class="index"
+	    >Fingerprint Cluster</a>
+	    </li>
+	<li><a href="mdb/diverse.htm" class="index"
+	    >Diverse Subset</a>
+	    </li>
+	<li><a href="quasar/hole.htm" class="index"
+	    >QuaSAR-HoleFiller: Fill Diversity Holes</a>
+	    </li>
+	<li><a href="mdb/fpmodel.htm" class="index"
+	    >Fingerprint Models</a>
+	    </li>
+	<li><a href="quasar/modcomp.htm" class="index"
+	    >Composite Models</a>
+	    </li>
+	<li><a href="mdb/fphowto.htm" class="index"
+	    >Create a Fingerprint with SVL</a>
+	    </li>
+    </ul>
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== COMBICHEM =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('combi');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/combi_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('combi');"
+    onFocus="if(this.blur)this.blur();"
+>16. Combinatorial Cheminformatics</a>
+
+<div class="blurb" id="c_combi">
+Representation
+&ndash; Create Dataset
+&ndash; Clip R-Groups
+&ndash; Reagent Selection
+&ndash; Enumerate
+&ndash; Diverse Selection
+&ndash; SAReport
+</div>
+
+<div class="menulist" id="s_combi">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="combi/cdgen.htm#Methodology" class="index"
+	    >Representation of Combinatorial Libraries</a>
+	    </li>
+	<li><a href="moe/moldb_prep.htm" class="index"
+	    >Prepare a Small Molecule Dataset</a>
+	    </li>
+	<li><a href="combi/cliprg.htm" class="index"
+	    >Clip R-Groups: Assign Attachment Points</a>
+	    </li>
+        <li><a href="quasar/qcrsel.htm" class="index"
+	    >Combinatorial Reagent Selection</a>
+	    </li>
+        <li><a href="combi/cdgen.htm" class="index"
+	    >Enumerate a Combinatorial Library</a>
+	    </li>
+        <li><a href="quasar/qcombi.htm" class="index"
+	    >Design Diverse Combinatorial Libraries</a>
+	    </li>
+	<li> <a href="apps/sar.htm" class="index"
+	    >SAReport</a> |
+	<a href="moe/moeweb_intro.htm#SAReport"
+	    class="index">SAReport (MOE/web)</a>
+	    </li>
+    </ul>
+    <br />
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== CRYSTALLOGRAPHY =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('cryst');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/xray_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('cryst');"
+    onFocus="if(this.blur)this.blur();"
+>17. Crystallography</a>
+
+<div class="blurb" id="c_cryst">
+Crystals
+&ndash; Rotamers
+&ndash; Surfaces and Maps
+&ndash; Electron Density
+&ndash; Diffraction Simulation
+&ndash; SFCHECK
+</div>
+
+<div class="menulist" id="s_cryst">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="apps/crystal.html" class="index"
+	    >Building Crystals</a>
+	    </li>	
+	<li><a href="apps/rotamer.htm" class="index"
+	    >Rotamer and Mutation Explorer</a>
+	    </li>
+	<li><a href="apps/surfmap.htm" class="index"
+	    >Surfaces and Maps (Active Site)</a>
+	    </li>
+	<li><a href="apps/edsurf.htm" class="index"
+	    >Electron Density (Unit Cell)</a>
+	    </li>
+	<li><a href="apps/diffract.htm" class="index"
+	    >Crystal Diffraction Simulation</a>
+	    </li>
+	<li><a href="moe/moeweb_intro.htm#SFCHECK" class="index"
+	    >SFCHECK: Structure Factor Check (MOE/web)</a>
+	    </li>	
+    </ul>
+    <br />
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+    <!-- ============================= COLUMN TWO ====================== -->
+
+</table></td>
+<td valign="top" width="50%">
+<table border="0" margin="0" padding="0">
+
+<tr><td> <!-- ====== SEARCH ===== -->
+<form name="i_srch" onsubmit="verify();" action="search_moe.htm">
+<table border="0" style="margin:0; padding:1ex 0 0 0;">
+<tr>
+<td valign="middle" style="margin:0; padding:0 0.5em 0 0;">
+<img src="images/question_icon.png" border="0" alt="Search"
+width="20" height="17" />
+</td>
+<td valign="top">
+    <div class="checkboxes">
+    <label for="q">	<!-- to line up checkbox -->
+    <span class="nobr">
+	<input type="text" name="q" onchange="verify();"
+	title="Search for pages containing any of the query terms."
+	/>
+	<input type="submit" value="Search" onclick="verify();"
+	title="Search for pages containing any of the query terms."
+	/>
+    </label>
+
+<!--
+    <label for="stem">
+    <input type="checkbox" name="stem" id="stem"
+	value="false" onclick="verify();"
+	checked="eatCookie('stem');"
+	title="Remove word stems, e.g. -s, -ed, -ing, etc."
+    />
+    <span style="font-weight:normal; color:#000000;">Remove -s, -ed, -ing</span>
+    </label>
+-->
+    </span>
+    </div>
+</td>
+</td></tr>
+</table>
+</form>
+</td></tr>
+
+<tr><td> <!-- ========== INDEX =========== -->
+<table border="0" style="margin:0; padding:1ex 0 0 0;">
+<tr>
+<td valign="top" style="margin:0; padding:0 0.5em 0 0;">
+<img src="images/teacher_small_blue.png" border=0 width="20" height="17" />
+</td>
+<td valign="top" style="margin:0; padding:0;">
+
+    <!-- =============== Menus dropdown menu ==================== -->
+
+    <ul id="ddmenu" style="margin: 0; padding:0;">
+	<li style="margin: 0; padding: 0;"><a href="fcnindex.html"
+	    class="headings"
+	    title="List of SVL function references."><b>Functions</b></a>
+	</li>
+	<li>
+	<a href="panelindex.html" class="headings"
+	    title="List of application panels in MOE."><b>Applications</b></a>
+	</li>
+	<li><a href="#" 
+	    onmouseover="mopen('m2')" 
+	    onmouseout="mclosetime()" class="headings"
+	    style="text-decoration: none;">Menus</a>
+	    <div id="m2" 
+		onmouseover="mcancelclosetime()" 
+		onmouseout="mclosetime()">
+	    <a href="moe/gui/mainwin.htm#MenuBar">MOE Menu Bar</a>
+	    <a href="apps/ligx.htm#ButtonBar">LigX: MOE Button Bar</a>
+	    <a href="moe/gui/se.html#MenuBar">SE Menu Bar</a>
+	    <a href="moe/gui/se.html#SequenceEditorPopupMenus">SE
+		Popup Menus</a>
+	    <a href="mdb/db.htm#QuickReference">DBV Menu Bar</a>
+	    <a href="mdb/db.htm#Popups">DBV Popup Menus</a>
+	    </div>
+	</li>
+	<li><a href="moe/gui/mouse.html" class="headings"
+	    title="Mouse reference."><b>Mouse</b></a>
+	</li>
+    </ul>
+    <div style="clear:both;"></div>
+
+</td>
+</tr>
+</table>
+</tr></td>
+
+
+<tr><td> <!-- ========== RELEASE NOTES =========== -->
+<table border="0" style="margin:0; padding:1ex 0 0 0;">
+<tr>
+<td valign="top" style="margin:0; padding:0 0.5em 0 0;">
+<a href="rnotes.htm" class="headings">
+<img src="images/star_whitebg.png" border="0" alt="New"
+width="20" height="17" />
+</a>
+</td>
+<td valign="top" style="margin:0; padding:0;">
+    <a href="rnotes.htm" class="headings"
+    ><b>What's New in 2010.10</b></a>
+</td>
+</tr>
+</table>
+</tr></td>
+
+<tr><td> <!-- ========== SVL EXCHANGE ============= -->
+<table border="0" style="margin:0; padding:1ex 0 0 0;">
+<tr>
+<td valign="top" style="margin:0; padding:0 0.5em 0 0;">
+<a href="http://svl.chemcomp.com/" class="headings">
+<img src="images/exchange_icon.png" alt="SVL Exchange" border="0"
+    width="17" height="17" />
+</a>
+</td>
+<td valign="middle">
+<a href="http://svl.chemcomp.com/" class="headings">
+SVL Exchange
+</a>
+</td>
+</tr>
+</table>
+</td></tr>
+
+<tr> <!-- =========== TUTORIALS =========== -->
+<td>
+<br />
+<table border="0">
+<tr>
+<td valign="top" align=center width=68 height=48>
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('tut');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/school_kids.png" border="0" alt="Tutorials"
+    width="34" height="40"
+/></a></td>
+<!--
+    src="images/tut_icon_whitebg.png" border="0" alt="Tutorials"
+    width="34" height="34"
+-->
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('tut');"
+    onFocus="if(this.blur)this.blur();"
+>Tutorials</a>
+
+<div class="blurb" id="c_tut">
+Detailed examples of using MOE
+</div>
+
+<div class="menulist" id="s_tut">
+<ul class="bluedot">
+    <ul class="none">
+    <li><a href="tutorials/moetour.html" class="index">MOE Tour</a>
+    </li><li><a href="tutorials/graphics_tut.htm"
+	    class="index">3D Visualization and Making Pictures</a>
+    </li><li><a href="tutorials/builder_tut.htm"
+	    class="index">Building Molecules</a>
+    </li><li><a href="tutorials/carbo_tut.htm"
+	    class="index">Building Carbohydrates</a>
+    </li><li><a href="tutorials/dock_tut.htm" class="index">Docking
+	with Pharmacophore Constraints</a>
+    </li><li><a href="tutorials/flex_tut.htm"
+	    class="index">Flexible Alignment</a>
+    </li><li><a href="tutorials/lmmd_tut.htm"
+	    class="index">LowModeMD: Loop Sampling</a>
+    </li><li><a href="tutorials/medchemtrns_tut.htm"
+	    class="index">MedChem Transformations In-Cleft</a>
+    </li><li><a href="tutorials/hom_tut.htm"
+	    class="index">Protein Homology Modeling</a>
+    </li><li><a href="tutorials/protalign_tut.htm"
+	    class="index">Protein Alignment</a>
+    </li><li><a href="tutorials/ligx_tut.htm" class="index">LigX:
+	Exploring Protein-Ligand Interactions</a>
+    </li><li><a href="tutorials/ph4_tut.htm"
+	class="index">Pharmacophore Searching</a>
+    </li><li><a href="tutorials/plif_tut.htm" class="index">PLIF:
+	Fingerprint and Pharmacophore Query Generation</a>
+    </li><li><a href="tutorials/quasar_tut.htm" class="index">QSAR:
+	Modeling Experimental Data</a>
+    </li><li><a href="tutorials/scaff_tut.htm"
+	class="index">Scaffold Replacement</a>
+    </li><li><a href="tutorials/sdfrag_tut.html"
+	class="index">SD Pipelining Tools: Create a Fragment Database</a>
+    <li><a href="moe/mol_prep.htm" class="index"
+	>Prepare a Small Molecule</a>
+	</li>
+    <li><a href="proteins/proprep.htm" class="index"
+	>Prepare a Protein or Protein-Ligand Complex</a>
+	</li>
+    <li><a href="moe/moldb_prep.htm" class="index"
+	>Prepare a Small Molecule Dataset</a>
+	</li>
+    <li><a href="moe/prep3ddb.htm" class="index"
+        >Prepare a Conformation Database</a>
+	</li>
+    </ul>
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== INSTALL =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('install');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/install_shadow_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('install');"
+    onFocus="if(this.blur)this.blur();"
+>Installation, Integration and Deployment</a>
+
+<div class="blurb" id="c_install">
+Installation
+&ndash; Configuration
+&ndash; FlexLM
+&ndash; Java
+&ndash; SOAP
+&ndash; HTTP
+&ndash; JDBC
+&ndash; PSILO
+&ndash; Parallelization
+&ndash; Databases
+</div>
+
+<div class="menulist" id="s_install">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="install/install.htm" class="index"
+	    >Install MOE and MOE/batch</a>
+	    </li>
+	<li><a href="install/install.htm#JDBC" class="index"
+	    >Java</a>
+	    </li>
+	<li><a href="moe/databases.htm" class="index"
+	    >Databases Distributed with MOE</a>
+	    </li>
+	<li><a href="install/web_inst.htm" class="index"
+	    >MOE/web SOAP and HTTP Server</a>
+	    </li>
+	<li><a href="install/web_inst.htm#Publish" class="index"
+	    >Create a MOE/web Application</a>
+	    </li>
+	<li><a href="flexuser/TOC.htm" class="index"
+	    >FlexLM License Manager</a>
+	    </li>
+	<li><a href="install/smp_inst.htm" class="index"
+	    >MOE/smp: Multiprocessor MOE</a>
+	    </li>
+	<li><a href="appendix/viewsetup.htm" class="index"
+	    >3D Visualization Setup</a>
+	    </li>
+	<li><a href="appendix/moeconfig.htm" class="index"
+	    >Menus and Configuration Options</a>
+	    </li>
+	<li><a href="appendix/samples.htm#JDBCViewer" class="index"
+	    >JDBC Database Connections</a>
+	    </li>
+	<li><a href="appendix/moeconfig.htm#PSILO" class="index"
+	    >PSILO and RCSB Connections</a>
+	    </li>
+    </ul>
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== INTERFACE =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('extern');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/creation.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('extern');"
+    onFocus="if(this.blur)this.blur();"
+>Interfaces to External Programs</a>
+
+<div class="blurb" id="c_extern">
+Omega
+&ndash; Corina
+&ndash; Pipelining
+&ndash; Gold
+&ndash; FlexX
+&ndash; MOPAC
+&ndash; Gaussian
+&ndash; GAMESS
+&ndash; ADF
+&ndash; NAMD
+&ndash; POV-Ray
+&ndash; 2D&nbsp;Sketchers
+</div>
+
+<div class="menulist" id="s_extern">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="moe/extprog.htm" class="index"
+	    >Overview</a>
+	    </li>
+	<li><a href="moe/extprog.htm#Omega" class="index"
+	    >Omega Conformations</a>
+	    </li>
+	<li><a href="moe/extprog.htm#Corina" class="index"
+	    >Corina Conformations</a>
+	    </li>
+	<li><a href="moe/extprog.htm#PPilot" class="index"
+	    >PipelinePilot Integration</a>
+	    </li>
+	<li><a href="moe/extprog.htm#KNIME" class="index"
+	    >KNIME Integration</a>
+	    </li>
+	<li><a href="moe/extprog.htm#GOLD" class="index"
+	    >GOLD Docking</a>
+	    </li>
+	<li><a href="moe/extprog.htm#FlexX" class="index"
+	    >FlexX Docking</a>
+	    </li>
+	<li><a href="moe/extprog.htm#NAMD" class="index"
+	    >NAMD Molecular Dynamics Engine</a>
+	    </li>
+	<li><a href="moe/extprog.htm#MOPAC" class="index"
+	    >MOPAC Semi-Empirical QM</a>
+	    </li>
+	<li><a href="moe/extprog.htm#Gaussian" class="index"
+	    >Gaussian ab Inito QM</a>
+	    </li>
+	<li><a href="moe/extprog.htm#GAMESS" class="index"
+	    >GAMESS ab Initio QM</a>
+	    </li>
+	<li><a href="moe/extprog.htm#ADF" class="index"
+	    >Amsterdam Density Functional (ADF)</a>
+	    </li>
+	<li><a href="moe/extprog.htm#PovRay" class="index"
+	    >POV-Ray Ray Tracer</a>
+	    </li>
+	<li><a href="moe/extprog.htm#2DSketchers" class="index"
+	    >2D Sketchers: ChemDraw, IsisDraw, SymyxDraw</a>
+	    </li>
+	</ul>
+    </ul>
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== SVL PROGRAMMING =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('svl');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/svl_shadow_icon.png" border="0" width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('svl');"
+    onFocus="if(this.blur)this.blur();"
+>SVL Programming</a>
+
+<div class="blurb" id="c_svl">
+SVL
+&ndash; Language Reference
+&ndash; Functions
+</div>
+
+<div class="menulist" id="s_svl">
+<ul class="bluedot">
+    <ul class="none">
+	<li><a href="moe/gui/svlcommands.html" class="index"
+	    >Commands Window</a>
+	    </li>
+	<li><a href="moe/gui/modtasks.html" class="index"
+	    >Modules and Tasks, Crash History</a>
+	    </li>
+	<li><a href="moe/gui/ted.html" class="index"
+	    >Text Editor</a>
+	    </li>
+	<li><a href="svl/manual/index.html" class="index"
+	    >SVL Manual</a>
+	    </li>
+	<li>
+	    <a href="svl/fcnref/s_lex.htm" class="index">Lexemes</a>
+	    | <a href="svl/fcnref/s_expr.htm" class="index">Expressions</a>
+	    | <a href="svl/fcnref/s_stmt.htm" class="index">Statements</a>
+	    | <a href="svl/fcnref/s_decl.htm" class="index">Declarations</a>
+	    </li>
+	<li><a href="fcnindex.html" class="index"
+	    >Function Index</a>
+	    </li>
+	<li><a href="introindex.html" class="index"
+	    >Function Overviews</a>
+	    </li>
+        <li><a href="svl/svlgui/wt_intro.htm" class="index"
+	    >Window Toolkit</a>
+	    </li>
+        <li><a href="svl/manual/jdbc_man.htm" class="index"
+	    >Relational Database (JDBC) Access</a>
+	    </li>
+        <li><a href="api/manual/api.html" class="index"
+	    >SVL C API Manual</a>
+	    </li>
+        <li><a href="apifcnindex.html" class="index"
+	    >SVL C API Function Index</a>
+	    </li>
+	<li><a href="tutorials/mpgtut.html"
+	    onmouseover="act('tutprog')" onmouseout="inact('tutprog')"
+	    onfocus="inact('tutprog')" onblur="inact('tutprog')"
+	    class="index"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutprog"
+		border="0" alt="Tutorial" width="13" height="12"
+	    /><span class="tutindex">MOE Programming Tutorial</span></a>
+	    </li>
+	<li><a href="tutorials/svltour.html"
+	    onmouseover="act('tutsvl')" onmouseout="inact('tutsvl')"
+	    onfocus="inact('tutsvl')" onblur="inact('tutsvl')"
+	    class="index"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutsvl"
+		border="0" alt="Tutorial" width="13" height="12"
+	    /><span class="tutindex">SVL Tutorial</span></a>
+	    </li>
+	<li><a href="tutorials/gridtour.htm"
+	    onmouseover="act('tutgrid')" onmouseout="inact('tutgrid')"
+	    onfocus="inact('tutgrid')" onblur="inact('tutgrid')"
+	    class="index"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutgrid"
+		border="0" alt="Tutorial" width="13" height="12"
+	    /><span class="tutindex">Programming with Grids</span></a>
+	    </li>
+	<li><a href="tutorials/wintour.html"
+	    onmouseover="act('tutwin')" onmouseout="inact('tutwin')"
+	    onfocus="inact('tutwin')" onblur="inact('tutwin')"
+	    class="index"
+	    ><img src="images/tut_icon_small_bluefg.png" name="tutwin"
+		border="0" alt="Tutorial" width="13" height="12"
+	    /><span class="tutindex">Window Toolkit Tutorial</span></a>
+	    </li>
+	<li><a href="appendix/samples.htm"
+	    onmouseover="act('samples')" onmouseout="inact('samples')"
+	    onfocus="inact('samples')" onblur="inact('samples')"
+	    class="index"
+	    ><img src="images/tut_icon_small_bluefg.png" name="samples"
+		border="0" alt="Tutorial" width="13" height="12"
+	    /><span class="tutindex">Sample Programs</span></a>
+	    </li>
+    </ul>
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+<tr> <!-- =========== CITING MOE =========== -->
+<td>
+<table border="0">
+<tr>
+<td valign="top" align=center width=68 height=48>
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('cite');"
+    onFocus="if(this.blur)this.blur();"
+><img
+    src="images/citation.png" border="0" alt="Tutorials"
+    width="68" height="68"
+/></a></td>
+
+<td valign="top">
+<a href="javascript:void(0)" class="headings"
+    onClick="menuToggle('cite');"
+    onFocus="if(this.blur)this.blur();"
+>Citing MOE</a>
+
+<div class="blurb" id="c_cite">
+	<i>Molecular Operating Environment (MOE)</i>, 2010.10; Chemical
+	Computing Group Inc., 1010 Sherbooke St. West, Suite #910,
+	Montreal, QC, Canada, H3A 2R7, <b>2010</b>.
+<!--
+Molecular Operating Environment (MOE) version 2010.10; Chemical
+Computing Group Inc.; Montreal, QC, Canada.
+-->
+</div>
+
+<div class="menutext" id="s_cite">
+MOE should be referenced as follows:
+
+    <blockquote>
+	<i>Molecular Operating Environment (MOE)</i>, 2010.10; Chemical
+	Computing Group Inc., 1010 Sherbooke St. West, Suite #910,
+	Montreal, QC, Canada, H3A 2R7, <b>2010</b>.
+    </blockquote>
+
+SVL code obtained from Chemical Computing Group Inc. either directly
+(e.g. from the Scientific Support department) or indirectly (e.g.
+from the SVL Exchange) should be referenced as follows:
+
+    <blockquote>
+    Application_Name, Scientific Vector Language (SVL) source code
+    provided by Chemical Computing Group Inc.,
+    1010 Sherbooke St. West, Suite #910,
+    Montreal, QC, Canada, H3A 2R7, <b>2010</b>.
+    </blockquote>
+
+SVL code obtained from the SVL Exchange that is not written by someone
+from Chemical Computing Group Inc. must not be attributed to either MOE
+or Chemical Computing Group Inc., and should be credited to the author
+whose name is displayed on the SVL Exchange page. 
+</ul>
+</div>
+</table>
+</td>
+</tr>
+
+
+</table>
+</td></tr>
+</table></p> <!-- TWO COLUMN TABLE -->
+
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

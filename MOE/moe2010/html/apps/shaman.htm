@@ -1,0 +1,980 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	shaman.htm	New molecules via medchem transformations
+!!
+!!      12-jul-2010 (jl) created
+!!
+!!-->
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+
+<title>MedChem Transformations</title>
+<meta panel MedChem Transformations>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>MedChem Transformations</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Method">Methodology</a>
+<li><a href="#CreateTrans">Creating Transformations</a>
+<li><a href="#RunShaman">Running MedChem Transformations</a>
+<li><a href="#Example" class="example">Examples</a>
+<li><a href="#Ref">References</a>
+</ul>
+
+<p>
+MedChem Transformations is an approach used to discover novel chemical
+structures by applying a set of transformation rules to existing ligands.
+Typical transformations might exchange functional groups, or alter all or
+part of individual rings while preserving the rest of ligand.
+These can be applied iteratively, resulting in cumulative changes to the
+starting structures.  If a receptor is available, Forcefield Refinement
+can be used to generate bound poses along with various docking scores.
+<p>
+Individual transformations make small-scale modifications, allowing
+local exploration of chemical space surrounding the input structure(s):
+
+<p align="center">
+<img src="shaman/transpix1.png" alt="MedChem Transformations Sample" /></p>
+
+In this example, the central piperidine ring is changed into a pyrrolidine
+ring, preserving the N-X exit vector and the spiro center.  As you can 
+see, the geometries of the two structures are similar.
+The user can restrict transformations to specific regions of the ligand,
+and can specify QuaSAR Descriptor, Model file and/or pharmacophore query
+filters to limit the results.  MedChem Transformations can be used as part
+of a ligand-based or structure-based discovery methodology.
+
+<!-- ============================= METHODOLOGY -=========================== -->
+
+<p>
+<a name="Method"></a>
+<h2>Methodology</h2>
+
+<p> This application applies a set of transformations to input
+structures, and evaluates the results against a number of criteria.
+This flowchart describes the process, and each step is described below:
+
+<p align="center">
+<img src="shaman/shflow.png"
+alt="MedChem Transformations Flowchart" /></p>
+
+This can be done iteratively, increasing the number and diversity of
+the output structures.  The starting point for MedChem Transformations is
+one or more superimposed ligands.  If a receptor is present, the ligands
+are assumed to be in the cleft and the pocket atoms are used to constrain
+the transformations.  In such cases, Forcefield Refinement and Scoring can
+be used to evaluate protein/ligand poses.  Transformations can be localized
+by selecting a subset of the ligand's atoms, and the scope of the
+transformations can be controlled by setting the number of iterations to use.
+
+<h3>Apply Transformations</h3>
+<p>
+Following Stewart's work with Drug Guru [Stewart&nbsp;2006],
+the set of transformations attempts to encode the medicinal chemistry
+expertise of a project team to assist them in developing SAR.  Two kinds
+of transformations are present: those that preserve properties (such as
+switching bioisosteres) and those that modify properties (such as ring
+substitution or homologation).  Care is taken to preserve substituent
+geometry wherever possible, and distinctions are made between chain and
+ring transformations as appropriate.
+<p>
+Transformation rules are applied via a <i>match and replace</i> algorithm:
+<ol start="1">
+<li>
+A substructure search is performed to match the <i>query</i> (left-hand side)
+of each transformation rule to the input ligand(s).  Every match that results
+is processed in turn.
+<p>
+<li>
+The matched atoms are replaced by those of the <i>result</i> (right-hand side).
+The details of individual transformation rules indicate whether query atoms
+or bonds are copied rather than replaced.
+<p>
+<li>
+The remaining ligand atoms (unspecified in the transformation) are
+reconnected appropriately.  Transformations that result in disconnected
+heavy-atoms are discarded.  Duplicates are removed once 3D coordinates
+have been generated (below).
+</ol>
+The following example demonstrates this process:
+
+<p align="center">
+<img src="shaman/transsample1.png"
+alt="MedChem Transformations Sample Transformation" /></p>
+
+The reaction numbers, 1-8, indicate which atoms of the query correspond to
+those of the result.  As all atoms on the left-hand side are numbered, no
+atoms will be deleted.  The query contains a wildcard (<b>A</b>, meaning any
+heavy atom), and one of the carbons (<b>C(s2)</b>) must be connected to only
+two heavy-atom neighbors.  When the substructure search is performed, the
+methyl substituent on the central ring blocks one of the four possible
+mappings.  The valid matches for this carbon are indicated by <b>A</b>,
+<b>B</b> and <b>C</b>, and the resulting structures are given below:
+
+<p align="center">
+<img src="shaman/rxnprod1.png"
+alt="MedChem Transformations Sample Results" /></p>
+
+As you can see, the atoms and bonds that are not specified in the
+transformation are copied to the resulting structure.  If multiple
+iterations were being performed, the new structures would be part of
+the input for the next iteration.
+
+<h3>Generate Coordinates</h3>
+<p>
+Applying a transformation rule to a ligand updates the connectivity but
+generally results in poor geometries.  This is particularly true
+if larger numbers of atoms are involved or atom insertion/deletion occurs.
+MedChem Transformations
+generates 3D coordinates for output molecules in two ways, <i>minimization or
+3D embedding</i>, based on the number of atoms involved.  Partial charges
+are ignored for these calculations, as MedChem Transformations assumes
+that final geometries will be created during the <b>Refine + Score</b> step.
+Ligand atoms not involved in the transformation, and the receptor (if
+present) are considered <i>invariant atoms</i>.
+<p>
+The first method is used when the heavy atom count changed by at most
+one atom:
+<ol start="1">
+<li>
+If a heavy-atom was added or deleted, a short minimization using an elevated
+gradient cutoff is performed.  The receptor is ignored and the
+invariant atoms are fixed for this calculation.  Structures containing stereo
+centers with incorrect geometry are discarded.
+<p>
+<li>
+A second minimization is performed, with the receptor (if present) fixed
+and the invariant atoms tethered.  If the heavy-atom count is unchanged,
+the stereo center check is performed and improper structures discarded.
+<p>
+<li>
+Structures with bond lengths or angles that fall outside the normal range
+are discarded.
+</ol>
+
+<p>
+For more complex transformations, a multi-step 3D embedding process similar
+to <a href="../apps/confgui.htm#Methodology">Conformation Import</a> is used:
+<ol start="1">
+<li>
+Construct the upper and lower distance bounds matrices (<b>U</b>, <b>L</b>),
+where the interatomic distance, <b>D<sub>ij</sub></b>, must satisfy
+<span class="nobr">
+<b>L<sub>ij</sub></b> &le; <b>D<sub>ij</sub></b> &le; <b>U<sub>ij</sub></b>.
+</span>
+The upper and lower distance bounds for invariant atom pairs are set to their
+interatomic distance, and the following table provides the distance bounds
+(in Angstroms) used for transformed ligand atoms:
+
+<p>
+<center>
+<table class="titlebar" style="font-size: 85%">
+<tr>
+<th>Pair Relationship</th>
+<th>Lower Bound</th>
+<th>Upper Bound</th>
+<tr>
+<td style="text-align: center; vertical-align: middle">
+Bond (<b>d<sub>12</sub></b>)
+<td style="text-align: center; vertical-align: middle">1.5
+<td style="text-align: center; vertical-align: middle">1.5
+<tr>
+<td style="text-align: center; vertical-align: middle">
+Angle (<b>d<sub>13</sub></b>)
+<td style="text-align: center; vertical-align: middle">2.5
+<td style="text-align: center; vertical-align: middle">2.5
+<tr>
+<td style="text-align: center; vertical-align: middle">
+Dihedral (<b>d<sub>14</sub></b>)
+<td style="text-align: center; vertical-align: middle">2.8
+<td style="text-align: center; vertical-align: middle">3.9
+<tr>
+<td style="text-align: center; vertical-align: middle">Non-bond
+<td style="text-align: center; vertical-align: middle">2.5
+<td style="text-align: center; vertical-align: middle">20.0
+</table>
+</center>
+
+<br />
+The lower distance bounds for transformed atom/receptor pairs is set to
+3.0 &Aring;, a typical distance for ligand/receptor contact.
+<p>
+<li>
+Calculate a random interatomic distance matrix, <b>D</b>, such that
+<span class="nobr">
+<b>D<sub>ij</sub></b> = <b>D<sub>ji</sub></b> = <b>L<sub>ij</sub></b> +
+<b>X<sub>ij</sub></b>,
+</span>
+where <b>X<sub>ij</sub></b> is a random number chosen uniformly in the
+interval [0,&nbsp;<b>U<sub>ij</sub></b>&nbsp;-&nbsp;<b>L<sub>ij</sub></b>].
+<p>
+<li>
+Generate an initial set of coordinates using least-squares linear embedding,
+yielding two solutions differing by sign.  If a receptor is present, there
+are sufficient invariant atoms to easily discard one of the solutions,
+as it fails to superimpose these atoms.
+<p>
+<li>
+Perform a short minimization using an elevated gradient cutoff.  The
+receptor is ignored and the invariant atoms are fixed for this calculation.
+Structures containing stereo centers with incorrect geometry are discarded.
+<p>
+<li>
+Perform a second minimization, with the receptor (if present) fixed and
+the invariant atoms tethered.  Structures with bond lengths or angles that
+fall outside normal ranges are discarded.
+<p>
+<li>Repeat steps (2-5) to obtain a number of ligand conformations, taking the
+lowest-energy alternative as the 3D structure.
+</ol>
+
+<p>
+As this process is stochastic, multiple distinct poses tend to be created.
+This, coupled with duplicate checking that preserves the lowest-energy
+structure, provides partial coverage of the ligand's conformational space.
+Hydrogen counts and partial charges are set for each generated structure.
+<p>
+If a receptor is present, the protein/ligand soft clash energy is calculated,
+summing the repulsive contribution for each atom pair using an 800R3 potential:
+
+<p align="center">
+<img src="scaffold/math_800R3potential.png" alt="Soft Clash Potential" /></p>
+
+where &Epsilon;<sub><i>i</i></sub> and &Epsilon<sub><i>j</i></sub> are
+the van der Waals well-depths (in kcal/mol), <i>r<sub>ij</sub></i> is the
+interatomic distance and
+R<sub><i>i</i></sub> and R<sub><i>j</i></sub> are the van der Waals radii.
+The parameters are modified OPLS-AA van der Waals parameters tuned to
+reproduce the free energy of solvation of a collection of small molecules.
+If the lowest-energy alternative fails the clash test, it is discarded.
+
+<h3>Filters</h3>
+<p>
+Constructed molecules can be filtered in three ways.  First, a
+<a href="../quasar/fcnref/descrfcn.htm#DescriptorExprSyntax">
+Descriptor Filter</a> can be specified, and the calculated MOE
+<a href="../quasar/descr.htm">Descriptors</a>
+must satisfy the range/boolean values specified.  Second, a
+<a href="../quasar/modcomp.htm#Composer">Model file</a> can be provided,
+and each new molecule must satisfy the specified criterion.  Finally,
+a pharmacophore query can be provided, which the absolute positions of each
+new molecule must satisfy.  Structures failing any of these
+filters are discarded, and all properties calculated during filtering are
+written to the output database.
+
+<h3>Synthetic Score</h3>
+<p>
+A <a href="../moe/fcnref/rsynthfcn.htm">Synthetic Feasibility Score</a> is
+calculated for every new molecule that has passed the specified filters.
+This is a score in the range of 0 to 1 with 1 meaning fully synthesizable
+and 0 meaning not feasible.  MedChem Transformations can optionally
+discard structures resulting from transformations that lower the feasibility
+score.  This can also be used as a term in the
+Descriptor Filter via the <tt>rsynth</tt> descriptor.
+
+<h3>Refine + Score</h3>
+<p>
+If a receptor is present,
+<a href="docking.htm#Refinement">Forcefield Refinement</a> can be used to
+relax each new molecule in the pocket.  Sidechains can be treated flexibly
+(with or without a tether), but backbone atoms are always held fixed.
+This generates an energy score using the
+<a href="../moe/pot.htm#Equation">Generalized Born solvation model (GB/VI)</a>
+[Labute&nbsp;2008].  This value, along with the protein coordinates if the
+sidechains were not fixed, is written to the output database.
+Molecules can be scored using one of the methods in MOE's
+<a href="docking.htm#Scoring">Docking</a> application.
+
+If the
+<tt>London&nbsp;dG</tt> score is calculated, the ligand efficiency (estimated
+pKi divided by the number of heavy atoms) is also written to the output
+database.
+
+<p>
+If no Receptor is present, tethered minimization (using the current forcefield)
+can be used to generate relaxed structures with as little global change
+in ligand alignment or orientation as possible.  All atoms not involved
+with the specific transformation are considered invariant, with a force
+constant applied to each heavy atom to maintain its position.  The transformed
+atoms are unconstrained, allowing the new portion of each molecule to
+relax relatively freely while preserving overall geometry.
+
+<p>
+If a pharmacophore query filter is used, minimization or refinement will
+use forcefield restraints between the features in the query and the
+pharmacophore annotations in the molecule.  Such restraints will only be
+applied if the pharmacophore query uses the
+<a href="ph4_annot.htm">Unified Annotation Scheme</a>.
+
+<!-- =================== Creating Transformations ======================= !-->
+
+<p>
+<a name="CreateTrans"></a>
+<h2>Creating Transformations</h2>
+
+<p>
+Transformations are drawn as reactions using SymyxDraw, IsisDraw, 
+ChemDraw or other sketchers and saved using standard file formats such as
+RXN [Symyx&nbsp;2007].  Using a 2D sketch rather than line notation such
+as SMIRKS
+[Daylight&nbsp;2008] makes it easier to specify and visualize
+transformations.  Users can easily add or modify the rules to reflect
+their specific chemistry.  Transformations must be
+drawn in the style <b>Query&nbsp;&rarr;&nbsp;Result</b> and SymyxDraw
+can be used to encode the piperidine transformation shown above:
+
+<p align="center">
+<img src="shaman/rxnpix1.png"
+alt="MedChem Transformations Reaction Definition" /></p>
+
+The <i>query</i> (left-hand side) defines the specific functionality to be
+transformed and the <i>result</i> (right-hand side) defines its replacement.
+The reaction (atom-pair) numbering explicitly defines the relationship
+between left- and right-hand atoms.  Unnumbered atoms in the
+query are used during substructure search but otherwise discarded, while
+unnumbered atoms in the result are added to the transformed structure.
+Atoms and bonds not referenced in the reaction are preserved.
+<p>
+This reaction provides examples of both left- and right-hand side wildcards.
+For the query, <b>A</b> means any non-hydrogen atom and <b>C(s2)</b>
+means a carbon atom connected to exactly two heavy-atom neighbors.  As this
+carbon is deleted by the reaction, having additional heavy-atom neighbors would
+result in a disconnected structure.  For the result, <b>A</b> means that
+the matching query atom is copied from the left- to the right-hand side.
+Thus, the carbon atoms (reaction numbers 4, 5) and whatever atoms matched
+the query wildcards (reaction numbers 1-3) are copied to the resulting
+structure, preserving any connectivity that might be present.
+<p>
+The individual transformations, represented as individual files, can be
+collected into a single directory, or saved in a MOE database.  The default
+rules used by the MedChem Transformations application are provided in
+<span class="nobr"> <tt>$MOE/lib/medchem_rxn.mdb</tt></span>.
+Browsing this database will reveal each rule in turn, such as the
+transformation used in this example:
+
+<p align="center">
+<img src="shaman/rxnbrowse.png"
+alt="MedChem Transformations Reaction Browser" /></p>
+
+<p>
+There are several considerations when constructing or extending a
+transformation rule set:
+<ul>
+<li>
+The set must be consistent, and an aromatization and formal charge
+policy must be set.  MedChem Transformations' rules assume that 5-membered
+heteroaromatic rings are drawn in Kekule notation while 6-membered rings
+are drawn in either Kekule or aromatic notation.  They also assume that
+any change in atomic formal charge is explicitly defined for the
+transformation.
+<p>
+<li>
+A balance must be maintained between diversity and drug-likeness.  Halogenation
+or unusual functional group transformations must be used sparingly, so as to
+avoid creating non-synthesizable or otherwise undesirable structures.
+MedChem Transformations' rules tend to be conservative, preferring to
+exchange rather than add functionality.
+<p>
+<li>
+The rule set has a critical impact on performance, particularly if multiple
+iterations are used.  A smaller number of generalized rules is preferred
+over a large number of specific transformations, particularly if the latter
+leads to duplicate structures that must be generated and discarded.
+To simplify rule creation, MedChem Transformations includes an option (enabled
+by default) to exchange neutral N-, O- and S-atoms connected by single bonds to
+exactly two heavy-atom neighbors.  This, for example, eliminates the need to
+duplicate rules involving pyrrole, furan, and thiophene.
+</ul>
+
+<p>
+Transformations applied to selected ligand subsets can yield unexpected
+results.  In the example below, the saturated 6-membered ring is selected
+(left side).  As the spiro atom is selected, transformations can be applied
+which can change the 5-membered ring:
+
+<p align="center"><img src="shaman/OddResult.png" alt="Unexpected Result"></p>
+
+As indicated, the 5-membered ring was transformed into a 6-membered via
+insertion of the indicated methylene.  This, and the originally-selected
+6-membered ring are now candidates for additional transformations
+if multiple iterations are desired.  Note that all unselected ligand atoms
+are maintained with this transformation.
+
+<p> 
+<ul class="help">
+<li class="help"> 
+For an example of how to prepare a custom reaction database, please 
+refer to the 
+<a href="../tutorials/medchemtrns_tut.htm">MedChem Transformations Tutorial</a>.
+</li>
+</ul>
+</p>
+
+<h3>Maintaining Reaction Databases</h3>
+
+<p>
+Reaction rules sets can be represented in two ways: a collection of files
+in a directory or as entries in a database.  The latter format is more
+flexible, in that it can be annotated and rules subsets can be used when
+running MedChem Transformations.  Utility functions, described below,
+have been provided to convert between formats.
+
+<h4>Database to Directory</h4>
+
+<p>
+A reaction database can be converted to a directory via the following
+command entered at the <span class="nobr"><b>SVL Commands</b></span>
+prompt:
+
+<p>
+<tt>run ['$MOE/lib/svl/run/medchemtrns.svl',
+[database, directory, opt], '_MedChemTrns_MakeDir']</tt>
+</p>
+
+where <i>database</i> is the name of an existing reaction database and
+<i>directory</i> is the name of the output directory.  If the directory
+does not exist, it will be created.  If the directory exist, reactions with
+unique filenames will be added.  If the user specifies the option
+<span class="nobr"><tt>overwrite:1</tt></span>, all reactions from the
+input database will be written out.  All annotations will be discarded.
+
+<h4>Directory to Database</h4>
+
+<p>
+A directory can be converted to a reaction database via the following
+command entered at the <span class="nobr"><b>SVL Commands</b></span>
+prompt:
+
+<p>
+<tt>run ['$MOE/lib/svl/run/medchemtrns.svl',
+[directory, database, opt], '_MedChemTrns_MakeMDB']</tt>
+</p>
+
+where <i>directory</i> is the name of an existing directory and
+<i>database</i> is the name of the output database.  If the database does
+not exist, it will be created.  If the database exists, reactions with
+unique filenames will be added.  If the user specifies the option
+<span class="nobr"><tt>overwrite:1</tt></span>, all entries and fields in
+the output database will be cleared and all reactions from the input
+directory will be written out.
+
+<!-- ============================ RUNNING ================================ !-->
+
+<p>
+<a name="RunShaman"></a>
+<h2>Running MedChem Transformations</h2>
+<p>
+To start the MedChem Transformations application, load a ligand (and
+associated receptor structure if available) into the main MOE window and
+select
+<span class="menu">Compute | Fragments | MedChem Transformations...</span>
+to start the application:
+
+<p align="center"><img src="shaman/shaman_panel.png" alt="Shaman Panel"></p>
+
+<table cellpadding=5>
+<tr>
+<td valign="top">
+<b>Ligand</b>
+<td valign="top">
+The atoms that define the ligand used by MedChem Transformations.  Press the
+<b>?</b> button to the right to briefly highlight (in the MOE window) the
+specified atoms.
+<tr>
+<td valign="top">
+<b>Receptor</b>
+<td valign="top">
+The atoms that define the protein used by MedChem Transformations.  Press the
+<b>?</b> button to the right to briefly highlight (in the MOE window) the
+specified atoms.  This atom collection can also be manually specified by
+selecting objects in the Sequence Editor and choosing the appropriate atom
+set.
+<tr>
+<td valign="top">
+<b>Operation</b>
+<td valign="top">
+Specifies the method used to generate structures, using Scaffold Replacement,
+MedChem Transformations or BREED.  Choose <b>MedChem Transformations</b> to
+run the MedChem Transformations application.  Selecting a ligand atom subset
+restricts the calculation.  The GUI reports whether it is possible
+to proceed: the number of selected atoms are indicated in green, while
+error messages are provided in red.
+<tr>
+<td valign="top">
+<b>Iterations</b>
+<td valign="top">
+The number of iterations to perform. All transformation rules are applied
+to the (selected) ligand atoms each iteration.  The resulting structures are
+use as input to the next iteration.
+<tr>
+<td valign="top">
+<b>Transformations</b>
+<td valign="top">
+Specifies the name of the database (or directory) containing the transformation
+rules.  These rules (described above) are applied to the starting molecules
+with each iteration.  Transformation databases are specified by clicking
+on <b>Browse...</b> and selecting the appropriate file.  Clicking on
+<b>Open...</b> opens the transformation database in the Database Viewer.
+<tr>
+<td valign="top">
+<b>Selected Transformations Only</b>
+<td valign="top">
+If on, and the transformation database is open in the Database Viewer,
+only the selected entries will be used during the search.
+<tr>
+<td valign="top">
+<b>Configure...</b>
+<td valign="top">
+This button brings up a sub-panel, allowing the user to change some of the
+more technical parameters for MedChem Transformations:
+
+<p align="center"><img src="shaman/shaman_settings.png" alt="Settings Panel">
+</p>
+
+<table cellpadding="5" width="90%">
+<tr>
+<td valign="top">
+<b>R-Group Atom Tether</b>
+<td valign="top">
+If specified, a fixed-value tether is applied to each invariant atom during
+minimization.
+</tr><tr>
+<td valign="top">
+<b>Transformation Limit</b>
+<td valign="top">
+Specifies the maximum number of structures that will be written to the output
+database.
+</tr><tr>
+<td valign="top">
+<b>Embedding Tries</b>
+<td valign="top">
+Specifies the number of 3D embedding calculations to perform when
+generating initial coordinates.
+</tr><tr>
+<td valign="top">
+<b>Protein-Ligand Clash Energy</b>
+<td valign="top">
+Specifies the protein-ligand soft clash energy threshold
+(in <span class="nobr">kcal/mol/ligand</span> atom).
+Increasing this value allows more
+structures to survive coordinate generation, which might be useful when
+side-chain flexibility is selected during protein-ligand refinement.
+</tr><tr>
+<td valign="top">
+<b>Maintain rsynth</b>
+<td valign="top">
+If on, any structure created past the first iteration that results in a
+decrease in the synthetic feasibility score, rsynth, will be dicarded.
+</tr>
+</table>
+
+<tr>
+<td valign="top">
+<b>Descriptor Filter</b>
+<td valign="top">
+If specified, this defines the criteria that generated molecules must
+satisfy.  Molecules whose properties fall outside the specified range(s)
+will be omitted.  Any MOE QuaSAR descriptor can be specified, and the
+condition to be satisfied can be a range of values, a boolean value,
+numeric comparisons, etc. evaluated on descriptors or SMARTS patterns.
+Descriptor Filters can include files, specified as <tt>@<i>filename</i></tt>.
+Files can be nested.  The current Filter can be written to a file by
+clicking on <b>Save...</b> and providing a filename.  Examples include:
+</p>
+<p>
+<table class="titlebar">
+<tr>
+<th>Expression</th>
+<th>Meaning</th>
+</tr><tr>
+<td><tt>Weight[100,500]  SlogP<5</tt></td>
+<td>Molecular weight &ge; 100 and &le; 500 and SlogP &lt; 5</td>
+</tr><tr>
+<td><tt>!reactive  opr_leadlike</tt>
+<td>Not reactive and Oprea lead-like</td>
+</tr><tr>
+<td><tt>"[NX3](=[OX1])[OX1]"<=2  not "[#M]"</td>
+<td>Two or fewer nitro/nitrate groups and not metal atom</td>
+</tr><tr>
+<td><tt>@filter.txt TPSA>80</td>
+<td>Use the contents of <tt>filter.txt</tt> and TPSA &gt 80.</td>
+</tr>
+</table>
+</tr>
+</blockquote>
+<tr>
+<td valign="top">
+<b>Model file</b>
+<td valign="top">
+Output molecules may optionally be filtered with a QSAR <tt>.fit</tt> file,
+a Model Composer <tt>.mom</tt> file, a Fingerprint Model <tt>.fpt</tt> file
+or a Pharmacophore Query <tt>.ph4</tt> file.  Specify the name of an existing
+file, or click on  <b>Browse...</b> to select a file.  Generated molecules
+that fail to satisfy the given threshold condition (specified in the fields
+below) will be omitted.
+<tr>
+<td valign="top">
+<b>Pharmacophore</b>
+<td valign="top">
+If specified, the pharmacophore query to be used as a filter.  Specify the
+name of an existing file or open the
+<a href="../apps/ph4_query.htm">Pharmacophore Query Editor</a> by clicking on
+<b>Editor...</b> to create or edit a query.  Molecules whose absolute
+coordinates fail to satisfy the pharmacophore filter will be omitted.
+<tr>
+<td valign="top">
+<b>Output Database</b>
+<td valign="top">
+The Output Database contains the structures created by MedChem Transformations,
+along with various calculated properties.  If <b>Open Database Viewer</b> is
+on then a molecular Database Viewer will be opened with the output database.
+If <b>Minimize Generated Structures</b> is on and a Receptor is present,
+<b>Forcefield Refinement</b> will be used.  Use the <b>Configure...</b>
+button to modify the parameters, or to enable sidechain flexibility.
+<br /><br />
+If no Receptor is present, tethered minimization (using the current
+forcefield) will be used to generate relaxed structures with as little
+global change in R-group geometry as possible.  If a Pharmacophore Filter
+is present, its features will be used as constraints in both refinement
+and minimization.
+<tr>
+<td valign="top">
+<b>Scoring</b>
+<td valign="top">
+Specifies which <a href="../apps/docking.htm#Scoring">scoring methodology</a>
+to use for ranking the structures created by MedChem Transformations.  Use the
+<b>Configure...</b> button to the right to configure the parameters of the
+selected method (if appropriate).
+<tr>
+<td valign="top">
+<b>Isolate</b>
+<td valign="top">
+Press the <b>Isolate</b> button to render the molecular system near the
+Ligand atom set and hide the remaining atoms of the system.
+<tr>
+<td valign="top">
+<b>Batch File</b>
+<td valign="top">
+Press the <b>Batch File</b> button to bring up the Fragment Replacement
+Batch File panel:
+
+<p align="center"><img src="shaman/batchfile.png" alt="Batchfile Panel"></p>
+
+Pressing the <b>Save</b> button writes the current molecules and settings
+into the specified SVL run file.  Pressing the <b>Load</b> button loads
+the contents of the batch file into MOE and restores the GUI settings.
+Pressing <b>Cancel</b> exits the panel.  Such files can be run later
+via MOE/batch or at the SVL or system command prompt.
+<tr>
+<td valign="top">
+<b>Close</b>
+<td valign="top">
+Press the <b>Close</b> button to exit the MedChem Transformations application.
+This does not terminate the current search.
+</table>
+
+<p>
+After filling in the appropriate fields, press <b>Search</b>
+to start the calculation.  Progress information is provided in the SVL
+Commands window, along with the bottom of the panel (if open).  Pressing
+<b>Stop Search</b> while the calculation is running terminates the search.
+If the MedChem Transformations application has been closed, the current
+search can be terminated via <span class="menu">MOE | Cancel</span>,
+by selecting <b>Fragment Replacement Search</b>.
+
+<p>
+Upon completion, the output database will contain the following fields:
+<blockquote><table class="titlebar" cellpadding="5" border="1">
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="top">
+<b>outmol</b>
+<td valign="top">
+A molecule field containing the structures generated by MedChem
+Transformations.
+<tr>
+<td valign="top">
+<b>rule</b>
+<td valign="top">
+The transformation rule used to create the output structure.  When multiple
+iterations are used, this contains all of the rules that led to that structure.
+<tr>
+<td valign="top">
+<b>inmol</b>
+<td valign="top">
+A molecule field containing the initial structure for the current iteration.
+This is an input structure for the first iteration, otherwise a transformed
+structure from an earlier iteration.
+<tr>
+<td valign="top">
+<b>mseq</b>
+<td valign="top">
+The molecular sequence number, starting at 1 and incrementing with every
+new molecule.
+<tr>
+<td valign="top">
+<b># trans</b>
+<td valign="top">
+The number of transformations required to create the current structure from an
+input molecule.
+<tr>
+<td valign="top">
+<b>RMSD</b>
+<td valign="top">
+The RMS deviation of the invariant heavy atoms after coordinate generation.
+<tr>
+<td valign="top">
+<b>Rrmsd</b>
+<td valign="top">
+The RMS deviation of the invariant heavy atoms before and after minimization
+(if performed).
+<tr>
+<td valign="top">
+<b>rsynth</b>
+<td valign="top">
+The synthetic feasibility score, which is the fraction of the atoms of each
+new structure that ultimately appear in a retrosynthetic fragment found
+in the starting materials database.  A value of one indicates that the
+molecule is very likely synthesizable.
+<tr>
+<td valign="top">
+<b>MM/GBVI</b>
+<td valign="top">
+If <b>Forcefield Refinement</b> is performed, this is a measure of the
+non-bonded interaction between the receptor and ligand.  It is the sum of
+van der Waals, Coulomb and generalized Born implicit solvation interaction
+energies.  If <b>Use GB/VI</b> is unselected, the protein/ligand energy
+using the current forcefield is reported as <b>E_refine</b>.
+<tr>
+<td valign="top">
+<b>Receptor</b>
+<td valign="top">
+If <b>Forcefield Refinement</b> is performed with sidechain flexibility,
+this is a molecule field with the revised coordinates of the receptor.
+<tr>
+<td valign="top">
+<b>Score</b>
+<td valign="top">
+If Scoring is used, this field contains the specific score value
+<b>ASE</b>, <b>Affinity dG</b>, <b>Alpha HB</b> or <b>London dG</b>.
+If <b>London dG</b> scoring is used, the <b>Ligand Efficiency</b> is
+calculated for each output structure as well.
+</tr>
+</table></blockquote>
+
+<p>
+If Descriptor or Model filtering is used, additional columns are created
+in the output database to receive the various calculated properties.  This
+database can be analyzed using any of the other analysis tools in MOE.
+
+
+<!-- =============================== EXAMPLE ============================= -->
+
+<p>
+<a name="Example"></a>
+<h2>Examples</h2>
+<p>
+In this section we will present a number of example calculation using the
+MedChem Transformations application, using the PDB structure 1IOE.
+
+<div class="example">
+
+<h3>Prepare Input</h3>
+<p>
+<ol start="1">
+<li><i>Prepare the protein/ligand pair.</i><br />
+First clear the system:
+<p class="indent_novspace">
+<span class="menu">MOE | File | Close</span></p><br />
+Open the PDB file:
+<p class="indent_novspace">
+<span class="menu">MOE | File | Open</span></p>
+In the Open panel, select
+<span class="nobr"><tt>$MOE/sample/mol/1ioe.pdb</tt></span>.<br /><br />
+Set the optimal protonation state:
+<p class="indent_novspace">
+<span class="menu">MOE | Compute | Protonate 3D</span></p>
+Take the default options and press <b>OK</b>.  This will take a minute or
+so to complete.<br /><br />
+Hide the Receptor and hydrogen atoms:
+<p class="indent_novspace">
+<span class="menu">MOE | Render | Hide | Receptor</span></p>
+<p class="indent_novspace">
+<span class="menu">MOE | Render | Hide Hydrogens</span></p><br />
+Save it to disk:
+<p class="indent_novspace">
+<span class="menu">MOE | File | Save</span></p>
+In the Save panel, enter
+<span class="nobr"><tt>MCTtest.moe</tt></span>.  This can be used
+when rerunning the sample calculations.
+<p>
+<li><i>Start MedChem Transformations.</i>
+<p class="indent_novspace">
+<span class="menu">MOE | Compute | Fragments | MedChem Transformations...
+</span></p>
+Ensure that the Receptor set is set to Receptor Atoms and the Ligand set is
+set to Ligand Atoms.  Toggle on
+<span class="nobr"><b>Open Database Viewer</b></span> and
+<span class="nobr"><b>Minimize Structures</b></span>  to refine each
+output structure in the pocket.
+</ol>
+</div>
+
+<div class="example">
+
+<h3>Single Iteration</h3>
+
+<i>Decrease the filtering.</i><br />
+Change the <b>Descriptor Filter</b> to <tt>Weight<560</tt>
+<tt>Slogp[-4,8]</tt> <tt>TPSA[40,140]</tt>.  This increases the maximum
+molecule weight that will be accepted.
+<p>
+Press <b>Search</b> to start the MedChem Transformations calculation.  This
+takes a few minutes, and the progress is reported at the bottom of the GUI.
+The output molecules have molecular weights less than 560, logP's in the
+range of -4 to 8 and TPSA in the range of 40 to 140.  The
+<span class="nobr"><b>SVL Commands</b></span> window provides information
+about the calculation.
+
+</div>
+
+<div class="example">
+
+<h3>Two Iteration/Subset</h3>
+
+<ol start="1">
+<li>
+<div class="floatright">
+<img src="shaman/shaman_selected.png"
+alt="Two Iteration/Subset Atom Selection" />
+</div>
+
+<i>Decrease the filtering.</i><br />
+Change the <b>Descriptor Filter</b> to <tt>Weight<560</tt>
+<tt>Slogp[-4,8]</tt> <tt>TPSA[40,140]</tt>.  This increases the maximum
+molecule weight that will be accepted.
+<p>
+<li>
+<i>Set up the calculation.</i><br />
+Select the atoms of the pyridine ring (shown at right).  This limits
+transformations to these atoms, their associated hydrogens and all atoms
+added by transformation.  Change <b>Iterations</b> from 1 to 2.
+</ol>
+
+<p>
+Press <b>Search</b> to start the MedChem Transformations calculation.  This
+takes a few minutes, and the progress is reported at the bottom of the GUI.
+The <span class="nobr"><b>SVL Commands</b></span> window provides information
+about the calculation.
+
+<div class="floatright">
+<img src="shaman/shaman_results.png" alt="Two Iteration/Subset Results" />
+</div>
+
+<p>
+You can examine the output, <tt>medchem.mdb</tt> in the Database Viewer.
+There are roughly fifteen structures, four of which reflect a single
+transformation while the rest resulted from two transformations.
+The output molecules have molecular weights less than 560, logP's in the
+range of -4 to 8 and TPSA in the range of 40 to 140.  Because filtering
+was used, entries for <b>Weight</b>, <b>SlogP</b> and <b>TPSA</b> were
+included in the output database.
+
+<p>
+You can expand the <b>rule</b> column to see the rule(s) used to create the
+structures.  As you can see, <b>Rrmsd</b> is quite small for these
+structures and the results superimpose well on the starting ligand.
+This is shown to the right, with the input structure in green.
+
+<p>
+All of the transformations involved the selected atoms or those added in
+the first iteration.  Looking at the <b>mseq</b> column, you can see
+gaps in the sequence numbers.  This results from duplicate structures
+appearing in the second iteration having lower protein/ligand energies
+than those of the first iteration.
+
+</p></div>
+
+<!-- ============================= REFERENCES ============================ -->
+
+<p>
+<h2>See Also</h2>
+<p>
+<a href="../tutorials/medchemtrns_tut.htm">MedChem Transformations Tutorial</a>
+</p>
+
+<p>
+<a href="../quasar/fcnref/descrfcn.htm">QuaSAR-Descriptor Functions</a><br />
+<a href="../quasar/descr.htm">QuaSAR-Descriptor</a><br />
+<a href="ph4_intro.htm">Pharmacophore Applications</a><br />
+</p>
+
+<a name="Ref"></a>
+<h2>References</h2>
+<p>
+<table cellpadding="5" width="100%">
+<tr>
+<td valign="top">[Daylight&nbsp;2008]
+<td valign="top">
+Daylight Theory Manual, Chapter 5; Daylight Version 4.9; Release Date
+02/01/08; Daylight Chemical Information Systems, Inc.
+<tr>
+<td valign="top">[Labute&nbsp;2008]
+<td valign="top">
+Labute, P.;
+The Generalized Born/Volume Integral Implicit Solvent Model: Estimation of
+the Free Energy of Hydration Using London Dispersion Instead of Atomic
+Surface Area;
+<i>J. Comput. Chem. 29</i> (<b>2008</b>) 1693&ndash;1698.
+<tr>
+<td valign="top">[Stewart&nbsp;2006]
+<td valign="top">
+Stewart, K. D., Shiroda, M. and James, C. A.;
+Drug Guru: A Computer Software Program for Drug Design using Medicinal
+Chemistry Rules;
+<i>Bioorganic Med. Chem.</i> (<b>2006</b>) 7011&ndash;7022.
+<tr>
+<td valign="top">[Symyx&nbsp;2007]
+<td valign="top">
+CTFile Formats, Chapter 7: Rxnfiles; Document Date November 2007;
+Symyx Technologies, Inc.
+
+</table>
+
+</font>
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

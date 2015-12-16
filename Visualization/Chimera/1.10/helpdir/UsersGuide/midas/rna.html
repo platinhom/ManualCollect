@@ -1,0 +1,359 @@
+<!--
+--- UCSF Chimera Copyright ---
+Copyright (c) 2013 Regents of the University of California.
+All rights reserved.  This software provided pursuant to a
+license agreement containing restrictions on its disclosure,
+duplication and use.  This notice must be embedded in or
+attached to all copies, including partial copies, of the
+software or any revisions or derivations thereof.
+--- UCSF Chimera Copyright ---
+-->
+
+<html><head>
+<title>rna</title>
+<style type="text/css">
+A.nounder:link {text-decoration: none}
+A.nounder:visited {text-decoration: none}
+A.nounder:hover {text-decoration: underline; color: red;}
+</style>
+</head><body>
+<font size="-1">
+<a href="../framecommand.html" target="_top">Chimera Commands Index</a>
+</font>
+<a name="top"></a>
+<h3><a href="usageconventions.html">Usage</a>:
+<BR><b>rna</b> &nbsp;<i>operation</i> &nbsp;<i>arguments</i></h3>
+<p>
+The <b>rna</b> command builds rough but potentially large-scale
+models of single-stranded RNA, given base-pairing information.
+Nucleotides are laid out schematically to form stems and loops
+in three dimensions.  <b>Rna</b> also builds DNA and RNA/DNA 
+double helices along a specified path.
+This command was used to make 9000-nucleotide RNA and DNA models
+for an <a href="http://youtu.be/i-__ufO9LYg" target="_blank">HIV 
+virus animation</a>, along with the command
+<a href="play.html#wiggle"><b>play wiggle</b></a>.
+</p><p>
+For building DNA, RNA, and hybrid double helices in standard conformations
+(A-form or B-form), see
+<a href="../../ContributedSoftware/editing/editing.html"><b>Build
+Structure</b></a>.
+For more detailed RNA model-building and refinement from secondary structure
+information, see the <a href="http://bioinformatics.org/assemble/index.html"
+target="_blank">Assemble2</a> plugin (available separately from Chimera).
+</p><p>
+The <i>operation</i> can be:
+<ul>
+<li><a href="#duplex"><b>duplex</b></a> 
+- create double-helical DNA or RNA/DNA following a given path
+<li><a href="#minimizeBackbone"><b>minimizeBackbone</b></a> 
+- energy-minimize nucleic acid backbones, leaving bases fixed
+<li><a href="#model"><b>model</b></a> 
+- create single-stranded RNA from secondary structure (base-pairing) information
+<li><a href="#path"><b>path</b></a> 
+- create a path of
+<a href="../../ContributedSoftware/volumepathtracer/framevolpath.html" 
+target="_top">markers</a> representing stems and loops
+<li><a href="#smoothPath"><b>smoothPath</b></a> 
+- create a smoother version of a path
+</ul>
+<p>
+Operation keywords and their sub-keywords described below
+can be truncated to unique strings, and their case does not matter.
+Synonyms for true: True, 1.  Synonyms for false: False, 0.
+A vertical bar &ldquo;|&rdquo; designates mutually exclusive options,
+and default settings are indicated with <b>bold</b>.
+Examples are provided <a href="#examples">below</a>.
+</p>
+
+<a href="#top" class="nounder">&bull;</a>
+  <a name="duplex"><b>rna duplex</b></a> 
+  &nbsp;<i>sequence</i> &nbsp;<i>path</i>
+  [&nbsp;<b>startSequence</b>&nbsp;<i>i</i>&nbsp;]
+  [&nbsp;<b>type</b>&nbsp;<b>DNA</b>&nbsp;|&nbsp;RNADNA&nbsp;]
+<blockquote>
+Create an atomic model of double-helical DNA or hybrid RNA/DNA with
+a specified sequence on one strand and the complementary sequence on
+the other, following a given path. 
+The <i>sequence</i> can be a string of upper-case letters (such as AGCTU) 
+or the pathname of a FASTA file containing the desired sequence. 
+The <b>startSequence</b> option
+(default <b>1</b>) indicates where to start within the supplied sequence.
+The <i>path</i> is <a href="frameatom_spec.html" target="_top">specified</a> 
+as a series of atoms or
+<a href="../../ContributedSoftware/volumepathtracer/framevolpath.html" 
+target="_top">markers</a>
+(such as from <a href="#path"><b>rna path</b></a> or 
+<a href="#smoothPath"><b>rna smoothPath</b></a>), where each
+atom or marker represents the center of one base pair.
+The <b>type</b> of double helix can be <b>DNA</b> 
+(default) or <b>RNADNA</b> (hybrid RNA/DNA).
+<p>
+<b>Algorithm</b>: Basepair atomic templates are placed
+along the path, with a twist of 36&deg; per base pair.
+The templates are based on PDB entry
+<a href="http://www.rcsb.org/pdb/cgi/explore.cgi?pdbId=1BNA"
+target="_blank">1BNA</a>.
+</p>
+</blockquote>
+
+<a href="#top" class="nounder">&bull;</a>
+  <a name="minimizeBackbone"><b>rna minimizeBackbone</b></a> 
+  &nbsp;<i>model</i>&nbsp;
+  [&nbsp;<b>chunkSize</b>&nbsp;<i>c</i>&nbsp;]
+  [&nbsp;<b>steps</b>&nbsp;<i>steps</i>&nbsp;]
+  [&nbsp;<b>conjugateGradientSteps</b>&nbsp;<i>cgsteps</i>&nbsp;]
+  [&nbsp;<b>updateInterval</b>&nbsp;<i>i</i>&nbsp;]
+  [&nbsp;<b>nogui</b>&nbsp;<b>true</b>&nbsp;|&nbsp;false&nbsp;]
+<blockquote>
+Energy-minimize the backbone of RNA and/or DNA in <i>model</i>
+(a molecule model specified by ID number), keeping the bases fixed. 
+<!-- 
+but included in force calcs; "min fragment" can only exclude whole residues
+-->
+For computational expediency, minimization is applied to
+successive nonoverlapping segments of <b>chunkSize</b> (default <b>10</b>)
+consecutive residues. 
+The purpose is to fix long bonds and bad angles generated by joining
+template fragments (as is done by <a href="#model"><b>rna model</b></a>
+and <a href="#duplex"><b>rna duplex</b></a>), 
+rather than to resolve any nonlocal conflicts. The calculation
+uses the <a href="minimize.html"><b>minimize</b></a> command 
+with the specified number of steepest-descent <b>steps</b> 
+(default <b>100</b>), <b>conjugateGradientSteps</b> (default <b>100</b>),
+<b>updateInterval</b> (default <b>10</b>), and 
+<b>nogui</b> setting (default <b>true</b>).
+These correspond to the <a href="minimize.html"><b>minimize</b></a>
+command options
+<b>nsteps</b>, <b>cgsteps</b>, <b>interval</b>, and <b>nogui</b>, respectively.
+</blockquote>
+
+<a href="#top" class="nounder">&bull;</a>
+  <a name="model"><b>rna model</b></a> &nbsp;<i>sequence</i>&nbsp;
+  (&nbsp;<b>path</b>&nbsp;<a href="frameatom_spec.html" target="_top"><i>spec</i></a>&nbsp;|&nbsp;<b>pairs</b>&nbsp;<i>p</i>&nbsp;)
+  [&nbsp;<b>startSequence</b>&nbsp;<i>i</i>&nbsp;]
+  [&nbsp;<b>length</b>&nbsp;<i>l</i>&nbsp;]
+  [&nbsp;<b>circle</b>&nbsp;true&nbsp;|&nbsp;<b>false</b>&nbsp;]
+  [&nbsp;<b>randomBranchTilt</b>&nbsp;<i>angle</i>&nbsp;]
+  [&nbsp;<b>stemColor</b>&nbsp;<i>color</i>&nbsp;]
+  [&nbsp;<b>loopColor</b>&nbsp;<i>color</i>&nbsp;]
+  [&nbsp;<b>name</b>&nbsp;<i>n</i>&nbsp;]
+<blockquote>
+Create an atomic model of single-stranded RNA.
+The <i>sequence</i> can be a string of upper-case letters (such as AGCTU) 
+or the pathname of a FASTA file containing the desired sequence. 
+The <b>startSequence</b> option
+(default <b>1</b>) indicates where to start within the supplied sequence.
+Either a <b>path</b> or <b>pairs</b> must be given.
+The <b>path</b> to be followed by the RNA is
+<a href="frameatom_spec.html" target="_top">specified</a> as a series of
+<a href="../../ContributedSoftware/volumepathtracer/framevolpath.html" 
+target="_top">markers</a> from <a href="#path"><b>rna path</b></a> 
+(which also assigns nucleotide orientations required to create the model).
+The <b>pairs</b> specification and associated options
+<b>length</b>, <b>circle</b>, and <b>randomBranchTilt</b>
+are the same as described for <a href="#path"><b>rna path</b></a>. 
+Base-paired and non-base-paired nucleotides in the 
+resulting structure will be colored according to the
+<b>stemColor</b> and <b>loopColor</b> values, respectively,
+where each <i>color</i> can be 
+any <a href="color.html#colorname">color name</a> that specifies a single color.
+The <b>name</b> option gives the name of the resulting molecule model 
+(default <b>RNA</b>).
+<p>
+<b>Algorithm</b>: The path of the RNA is either precomputed with
+<a href="#path"><b>rna path</b></a>
+or computed implicitly using the same algorithm as that command.
+The algorithm generates a series of markers and assigns an orientation 
+to each marker (<a href="#path-alg">details...</a>).
+Atomic model templates
+are placed in the computed orientations,
+with template coordinates 0,0,0
+(atom N9 in A and G nucleotides, atom N1 in C and U nucleotides)
+on top of the markers.
+In stem regions, orientations are chosen to form base-pairing 
+hydrogen bonds. In loops (which are shaped like lobes), 
+orientations are chosen to stack the bases perpendicular to the plane 
+of the lobe and to extend them toward the center line of the lobe 
+or the center of the semicircle that forms the lobe end.
+The atomic templates are in the file rna-templates.pdb
+within the Chimera RNALayout module.
+</p>
+</blockquote>
+
+<a href="#top" class="nounder">&bull;</a>
+  <a name="path"><b>rna path</b></a>  &nbsp;<i>pairs</i>&nbsp;
+  [&nbsp;<b>length</b>&nbsp;<i>l</i>&nbsp;]
+  [&nbsp;<b>circle</b>&nbsp;true&nbsp;|&nbsp;<b>false</b>&nbsp;]
+  [&nbsp;<b>radius</b>&nbsp;<i>r</i>&nbsp;]
+  [&nbsp;<b>randomBranchTilt</b>&nbsp;<i>angle</i>&nbsp;]
+  [&nbsp;<b>stemColor</b>&nbsp;<i>color</i>&nbsp;]
+  [&nbsp;<b>loopColor</b>&nbsp;<i>color</i>&nbsp;]
+  [&nbsp;<b>name</b>&nbsp;<i>n</i>&nbsp;]
+<blockquote>
+Create a path of 
+<a href="../../ContributedSoftware/volumepathtracer/framevolpath.html" 
+target="_top">markers</a>, one marker per nucleotide,
+to represent an RNA molecule with specified secondary structure
+(base-pairing interactions).
+Consecutive markers and base-paired markers are connected by links.
+Stretches of base-paired nucleotides are <b><i>stems</i></b>, whereas
+nucleotides that are not base-paired are said to belong to <b><i>loops</i></b>.
+Stems are described with triples of integers. For example,
+1,50,10 indicates pairing nucleotide 1 with nucleotide 50 at the start of a 
+10-bp stem, such that 2 and 49, 3 and 48, ... 10 and 41 are also paired.
+Multiple stems can be specified with additional triples (<i>e.g.</i>,
+1,50,10,60,70,2 describes two stems), and any number of stems can be given. 
+A limitation is that residues within a stem range cannot be
+paired with residues beyond that range; for example, if a stem starts
+at 1,50, no other stem can pair residues in the range 1-50 with residues
+outside that range.  
+The required <i>pairs</i> argument can be either a comma-separated list of 
+numbers or the pathname of a text file containing three columns, 
+one line per stem.
+<p>
+Residue numbers in the resulting marker set start at 1.
+The last residue number is the highest number specified for a stem, 
+unless a higher number is given with the <b>length</b> option.
+The <b>circle</b> option (default <b>false</b>) controls whether 
+the overall RNA layout is circular or linear.
+The <b>radius</b> option specifies marker radius (default <b>2.0</b> &Aring;).
+Stem and loop orientations are produced by random rotations, where each angle
+of rotation is obtained by multiplying the <b>randomBranchTilt</b> <i>angle</i>
+(default <b>0</b>&deg;) by a random number uniformly distributed between 
+&ndash;1 and 1.
+Paired and unpaired markers are colored according to the
+<b>stemColor</b> and <b>loopColor</b> values, respectively,
+where each <i>color</i> can be 
+any <a href="color.html#colorname">color name</a> that specifies a single color.
+The <b>name</b> option gives the name
+of the resulting marker model (default <b>RNA path</b>).
+</p><p>
+<a name="path-alg">
+<b>Algorithm</b></a>: 
+Stem regions are generated as twisted double helices rotating
+36&deg; per base pair, with pairs 4 &Aring; apart along the
+helix axis and the markers for paired nucleotides 9 &Aring; apart.
+The line between the paired markers is perpendicular to the
+helix axis and 4 &Aring; from that axis.
+Markers for loop nucleotides are 5 &Aring; apart. Loops are laid
+out as lobes in which two parallel lines of nucleotides are joined by a
+semicircle of nucleotides at one end. The semicircle contains 8 nucleotides,
+and the straight segments may contain up to 10 nucleotides each.
+Loops of more than 28 nucleotides will be laid out as
+two side-by-side lobes. The RNA between the two nucleotides at the end
+of a stem forms a series of loops and stems, or <b><i>cycle</i></b>. 
+A cycle is laid out in a circle, that is, the points at which loops and stems
+connect to the cycle are placed on a planar circle. 
+The loops and stems radiate outward within same plane
+unless a nonzero <b>randomBranchTilt</b> <i>angle</i> is given.
+If <b>circle</b> is <b>false</b>, the top-level cycle is laid out in
+a straight line instead of a circle, and each stem or loop is rotated
+about the previous one by 145&deg; in addition to any random tilt.
+Except for the random tilt, the geometric parameters are currently hard-coded.
+</p>
+</blockquote>
+
+<a href="#top" class="nounder">&bull;</a>
+  <a name="smoothPath"><b>rna smoothPath</b></a> &nbsp;<i>path</i>&nbsp;
+  [&nbsp;<b>radius</b>&nbsp;<i>r</i>&nbsp;]
+  [&nbsp;<b>spacing</b>&nbsp;<i>s</i>&nbsp;]
+  [&nbsp;<b>kinkInterval</b>&nbsp;<i>ki</i>&nbsp;]
+  [&nbsp;<b>kinkRadius</b>&nbsp;<i>kr</i>&nbsp;]
+  [&nbsp;<b>name</b>&nbsp;<i>n</i>&nbsp;]
+<blockquote>
+Create a new path of 
+<a href="../../ContributedSoftware/volumepathtracer/framevolpath.html" 
+target="_top">markers</a>
+that is a smoothed version of an input
+<a href="frameatom_spec.html" target="_top"><i>path</i></a> 
+(such as from <a href="#path"><b>rna path</b></a>).
+The smoothing assures a minimum radius of curvature
+(<b>radius</b> <i>r</i>, default <b>50</b> &Aring;)
+and produces a set of markers with uniform <b>spacing</b> <i>s</i> 
+(default <b>3.33</b> &Aring;).
+The original use was to create a path for duplex DNA approximating
+the path of a single-stranded RNA, but without sharp kinks.
+To allow for some sharper kinks,
+a different minimum radius of curvature given by <b>kinkRadius</b>
+can be applied every <b>kinkInterval</b> markers (default is no kinks).
+The <b>name</b> option gives the name
+of the resulting marker model (default <b>smooth path</b>).
+<p>
+<b>Algorithm</b>: The first new marker is placed at the first marker of the
+input path.  Subsequent markers are placed in the direction from the
+most recent new marker to the next input marker.  If that direction would
+cause a bend with radius of curvature less than required, as judged by
+the angle made by the last segment of the new path and the next segment,
+the angle is expanded to give the minimum allowed radius of curvature
+(a bend of 2*asin(spacing/2*radius)). The next marker is placed in this
+direction, at the specified distance from the previous marker.
+</p>
+</blockquote>
+
+<a name="examples"></a>
+<h4>Examples</h4>
+<p>
+Each of the <b>rna</b> operations is illustrated here for the first
+100 nucleotides of HIV RNA, with secondary structure as described in:
+</p>
+<blockquote>
+<a href="http://www.ncbi.nlm.nih.gov/pubmed/19661910" target="_blank">
+Architecture and secondary structure of an entire HIV-1 RNA genome.</a>
+Watts JM, Dang KK, Gorelick RJ, Leonard CW, Bess JW Jr, Swanstrom R, 
+Burch CL, Weeks KM.
+<i>Nature.</i> 2009 Aug 6;460(7256):711-6.
+</blockquote>
+<p>
+The full-length HIV RNA model can be viewed in this
+<a href="http://youtu.be/i-__ufO9LYg" target="_blank">HIV virus animation</a>.
+</p>
+
+<table>
+<tr>
+<td width=250><img src="images/hiv-path.jpg">
+<td><img src="images/hiv-rna.jpg">
+<td><img src="images/hiv-rna-atoms.jpg">
+<td><img src="images/hiv-rna-min.jpg">
+<tr>
+<td align=center>rna path pairings.txt length 100
+<td align=center>rna model hiv-pNL4-3.fasta #0 start 455
+<td align=center>Without minimization.
+<td align=center>rna min #1
+<tr>
+<td><img src="images/hiv-smooth.jpg">
+<td><img src="images/hiv-dna.jpg">
+<tr>
+<td align=center>rna smooth #0
+<td align=center>rna duplex #2 hiv-pNL4-3.fasta start 455
+</table>
+
+<p>
+with base pairing file pairings.txt containing
+<p>
+<pre>
+1	57	3
+5	54	11
+17	43	5
+25	38	4
+58	104	8
+67	94	3
+70	90	4
+</pre>
+
+<p>
+and sequence file hiv-pNL4-3.fasta containing
+</p>
+<pre>
+>gi|296556482|gb|AF324493.2| HIV-1 vector pNL4-3, 1-9709
+TGGAAGGGCTAATTTGGTCCCAAAAAAGACAAGAGATCCTTGATCTGTGGATCTACCACACACAAGGCTA
+CTTCCCTGATTGGCAGAACTACACACCAGGGCCAGGGATCAGATATCCACTGACCTTTGGATGGTGCTTC
+AAGTTAGTACCAGTTGAACCAGAGCAAGTAGAAGAGGCCAATGAAGGAGAGAACAACAGCTTGTTACACC
+CTATGAGCCAGCATGGGATGGAGGACCCGGAGGGAGAAGTATTAGTGTGGAAGTTTGACAGCCTCCTAGC
+ATTTCGTCACATGGCCCGAGAGCTGCATCCGGAGTACTACAAAGACTGCTGACATCGAGCTTTCTACAAG
+GGACTTTCCGCTGGGGACTTTCCAGGGAGGTGTGGCCTGGGCGGGACTGGGGAGTGGCGAGCCCTCAGAT
+GCTACATATAAGCAGCTGCTTTTTGCCTGTACTGGGTCTCTCTGGTTAGACCAGATCTGAGCCTGGGAGC
+TCTCTGGCTAACTAGGGAACCCACTGCTTAAGCCTCAATAAAGCTTGCCTTGAGTGCTCAAAGTAGTGTG
+</pre>
+
+</body></html>

@@ -1,0 +1,373 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+<meta functions url_open,url_read, url_stat, url_keylist, url_key, url_close>
+<meta keywords http, ftp, internet, file, transfer, download, connect>
+
+<title>Internet URL Functions</title>
+
+</head>
+
+<body>
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Internet URL Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    key = <a class="fcnlink" href="#url_open">url_open</a> 'url'
+    key = <a class="fcnlink" href="#url_open">url_open</a> key
+    key = <a class="fcnlink" href="#url_open">url_open</a> options
+
+	where options is a subset of [
+	    key : key,
+	    url : 'URL',
+	    username : 'name',
+	    password : 'crypt_password'
+	]
+
+    data = <a class="fcnlink" href="#url_read">url_read</a> 'url'
+    data = <a class="fcnlink" href="#url_read">url_read</a> key
+    data = <a class="fcnlink" href="#url_read">url_read</a> ['url', n_bytes]
+    data = <a class="fcnlink" href="#url_read">url_read</a> [key, n_bytes]
+
+    status = <a class="fcnlink" href="#url_stat">url_stat</a> 'url'
+    status = <a class="fcnlink" href="#url_stat">url_stat</a> key
+
+    keys = <a class="fcnlink" href="#url_keylist">url_keylist</a> []
+
+    mask = <a class="fcnlink" href="#url_key">url_key</a> keys
+
+    <a class="fcnlink" href="#url_close">url_close</a> keys
+</pre>
+
+
+<h2>Description</h2>
+
+<p>
+The <tt>url_</tt> functions provide a mechanism to transfer <em>resources</em>
+over a network.  There are a variety of internet protocols that allow
+information to be transferred from computer to computer.  The two most common
+protocols are the Hyper Text Transfer Protocol (HTTP), and the File Transfer
+Protocol (FTP).  Information is requested from a client computer, by way of a
+Uniform Resource Locator, to a web server that will generate and return a
+response.
+
+<p>
+Files and data are referred to through the use of a Uniform Resource Locator
+(<tt>URL</tt>). Web servers receive requests in the form of a <tt>URL</tt> and
+generate appropriate responses which are returned to the client.  The response
+to the client may be an HTML page, a file or some other computed data depending
+on the <tt>URL</tt> given.  Any such response is called a <tt>resource</tt>.
+
+<p>
+<tt>URL</tt> specification is:
+
+<pre>
+    &lt;scheme&gt;://&lt;authority&gt;&lt;path&gt;?&lt;query&gt;
+
+    scheme    = ( ftp | http ) ":"
+    authority = &quot;//&quot; [&lt;userinfo&gt;@] &lt;host&gt; [:port]
+    userinfo  = &lt;username&gt;:&lt;password&gt;
+    host      = IPv4address
+    path      = &quot;/&quot;  path *( &lt;path&gt; )
+    query     = &lt;var&gt;=&lt;value&gt; *( "&"&lt;query&gt; )
+</pre>
+
+In general,
+<pre>
+    [http://]&lt;www.server.name&gt;/d1/d2/.../page[?&lt;var&gt;=&lt;val&gt;]
+</pre>
+
+<dl>
+    <dt><tt>scheme</tt>
+
+    <dd>The leading <tt>&lt;scheme&gt;://</tt> protocol specification is
+    optional, but is added to the <tt>URL</tt> automatically if not provided.
+    Currently supported values are: <tt>scheme = {ftp, http (default)}</tt>.
+
+    <dt>authority
+    
+    <dd>The <tt>authority</tt> segment contains the host address to which the
+    connection is made (i.e. www.chemcomp.com).  Optionally, a
+    <tt>username</tt> and <tt>password</tt> combination followed by the
+    @-sign can be given, or a port number to connect to a server not
+    running on a standard <i>default port</i>.
+
+    <dt>path
+
+    <dd>The <tt>path</tt> segment indicates a path to a resource that the
+    server understands.  This may be the path to a file on the server, or
+    the path to a program that will generate a response.
+
+    <dt>query
+
+    <dd><tt>Variable</tt> and <tt>value</tt> pairs in the optional
+    <tt>&lt;query&gt;</tt> portion following a &quot;?&quot;, specify arguments
+    to be passed through to the server for additional processing.  A webserver
+    that supports the Common Gateway Interface (CGI) may accept arguments in
+    this manner to dynamically generate a response to the query.  This
+    technique is commonly used for online search engines, forms, <i>etc</i>.
+
+</dl>
+
+<p>
+An example of a query submitted to the Protein Data Bank regarding the compound
+with <tt>code=1HZ2</tt> would be:
+
+<pre>
+    http://www.rcsb.org/pdb/cgi/export.cgi/1HZ2.pdb?format=PDB&pdbId=1HZ2
+</pre>
+
+
+<h4>Connecting through a Proxy Server</h4>
+
+Some networks are protected from the internet through the use of an <i>internet
+proxy server</i>.  
+If the Java Virtual Machine is supplied with the
+information regarding the proxy server when it is started then
+the <tt>url_</tt> functions can access internet resources
+behind a proxy server.
+Configuration
+options for the JVM are supplied by setting the <tt>moe-rc</tt> variable
+<tt>'jvm.commandOptions'</tt> to the appropriate value.  The values affecting
+internet proxy settings for the JVM are listed below, the value of
+<tt>&lt;proto&gt;</tt> can be one of <tt>{http, ftp}</tt> for all options:
+
+<dl>
+    <dt><tt>proxySet</tt>
+
+    <dd>When set to <tt>true</tt> the JVM will attempt to use a proxy server
+    for internet connections.  The default is <tt>false</tt>.
+
+    <p><dt><tt>&lt;proto&gt;.proxyHost</tt>
+
+    <dd>The name of the proxy host to use for establishing &LT;proto&GT;
+    connections to the internet.  This host will proxy all connections to URLs
+    using the <tt>&lt;proto&gt;://</tt> protocol.  The default is
+    <tt>&lt;none&gt;</tt>.
+
+    <p><dt><tt>&lt;proto&gt;.proxyPort</tt>
+
+    <dd>The default is <tt>80</tt> if <tt>&lt;proto&gt;.proxyHost</tt> is specified.
+
+    <p><dt><tt>&lt;proto&gt;.proxyUser</tt>
+
+    <dd>If a username is required to access the proxy server.
+
+    <p><dt><tt>&lt;proto&gt;.proxyPassword</tt>
+
+    <dd>If a password is required to access the proxy server.
+
+    <p><dt><tt>&lt;proto&gt;.nonProxyHosts</tt>
+
+    <dd>The default is <tt>&lt;none&gt;</tt>.
+</dl>
+
+
+<p>The string for the JVM command line must be prepared with the -D prefix for
+each desired option.  For example, the following SVL command would prepare
+the JVM for FTP transfers through a proxy server, specified in angle
+brackets:
+
+<pre>
+svl&gt; SetRC [
+        'jvm.commandOptions',
+        '-DproxySet=true -Dftp.proxyHost=&lt;proxy&gt; -Dftp.proxyPort=&lt;port&gt;'
+    ]
+</pre>
+<p>
+The changes will take effect next time you restart MOE.
+<p>
+
+<p><a name="url_open"></a></p><hr noshade="noshade" />
+<!-- OPEN -->
+
+<pre>
+key = <span class="fcndef">url_open</span> 'url'
+key = <span class="fcndef">url_open</span> key
+key = <span class="fcndef">url_open</span> options
+
+    where options is a subset of [
+	key : key,
+	url : 'URL',
+	username : 'name',
+	password : 'crypt_password'
+    ]
+</pre>
+
+<p>
+Open a connection to a resource referenced by a <tt>URL</tt>.
+
+<p>
+<tt>url_open</tt> returns a <tt>key</tt> that is used to refer to this
+<tt>URL</tt> for all subsequent operations.  A given <tt>key</tt> may be opened
+by different processes, and may be opened more than once before being
+closed. Note that <tt>url_close</tt> must be called on each key produced by
+<tt>url_open</tt>.  Attempting to open a <tt>key</tt> of value zero,
+<tt>url_open 0</tt>, will have no effect. It is an error to open an invalid
+key.
+
+<p>
+If <tt>options</tt> are specified then one of <tt>key</tt> or <tt>'URL'</tt>
+must be given. The <tt>'URL'</tt> argument overrides the <tt>key</tt> argument.
+For authenticated login a <tt>username</tt> and <tt>mpu_password[]</tt> encoded
+<tt>password</tt> must both be supplied for use in establishing the connection
+to the server.  Otherwise anonymous authentication is attempted.  The need for
+authenticated login is typically reserved for FTP.
+
+
+<p><a name="url_read"></a></p>
+<hr noshade="noshade" />
+<!-- READ -->
+
+<pre>
+data = <span class="fcndef">url_read</span> 'url'
+data = <span class="fcndef">url_read</span> key
+data = <span class="fcndef">url_read</span> ['url', n_bytes]
+data = <span class="fcndef">url_read</span> [key, n_bytes]
+</pre>
+
+<p>
+Read data from the resource. The resource is specified by either a <tt>URL</tt>
+or by an open <tt>key</tt>.  In the case that the <tt>URL</tt> is given
+explicitly, the connection is opened and closed automatically before the
+acquired data is returned.
+
+<p>
+Either form optionally takes an integer argument, <tt>n_bytes</tt>, that
+specifies the maximum number of bytes to be read.  The call to
+<tt>url_read</tt> has no effect if <tt>n_bytes</tt> is not positive.  A
+subsequent call to <tt>url_read [key, n_bytes]</tt> will begin reading at the
+next byte.
+
+
+<p><a name="url_stat"></a></p>
+<hr noshade="noshade" />
+<!-- STAT -->
+
+<pre>
+status = <span class="fcndef">url_stat</span> 'url'
+status = <span class="fcndef">url_stat</span> key
+</pre>
+
+<p>
+Return the status of a resource referred to by the given <tt>URL</tt> or
+<tt>key</tt>.  The server is queried with respect to attributes related to the
+resource, returned as colon-separated pairs. All time values are reported in
+seconds since the &quot;epoch&quot;, January 1, 1970.  The results are those
+provided by the server and are not guaranteed. The attributes are:
+
+<dl>
+    <dt>url:'URL'
+    <dd>The <tt>URL</tt> after interpretation by the server.  For instance, the
+    <tt>'URL'</tt> will begin with <tt>&lt;scheme&gt;://</tt>.
+
+    <dt>type:'url_connection_type'
+    <dd>The content type of the resource.  A common type for HTML web pages
+    is <tt>'text/html'</tt>.
+
+    <dt>length:bytes
+    <dd>The length in bytes of the resource that will be transferred.
+
+    <dt>date:seconds
+    <dd>The <i>sending date</i> of the resource, or 0 if not known.
+
+    <dt>modified:seconds
+    <dd>Last time of modification.
+
+    <dt><tt>expiration:seconds</tt>
+    <dd>Expiration date.
+</dl>
+
+
+<p><a name="url_keylist"></a></p>
+<hr noshade="noshade" />
+
+<!-- KEYLIST -->
+
+<pre>
+keys = <span class="fcndef">url_keylist</span> []
+</pre>
+
+<p>
+Returns a vector of <tt>keys</tt> of all currently open <tt>url_</tt> keys.
+
+<p><a name="url_key"></a></p>
+<hr noshade="noshade" />
+
+<!-- KEYS -->
+
+<pre>
+mask = <span class="fcndef">url_key</span> keys
+</pre>
+
+<p>
+For each <tt>key</tt> in <tt>keys</tt>, return the <tt>key</tt> if it
+corresponds to a valid <tt>url_</tt> key.  Return 0 otherwise.
+
+<p><a name="url_close"></a></p>
+<hr noshade="noshade" />
+<!-- CLOSE -->
+
+<pre>
+url_close keys
+</pre>
+
+<p>
+Close and free resources associated with a <tt>URL</tt>.  Each <tt>key</tt>
+listed in <tt>keys</tt> is closed if it is currently open.  Invalid
+keys are ignored.
+
+
+<h2>See Also</h2>
+
+<p>
+<a href="time.html">Time Functions</a>
+</p>
+
+<p>
+<a class="svl" href="svlmpu.htm">mpu_password</a>
+</p>
+
+<p>
+The syntax of URL is defined by
+<a href="http://www.ietf.org/rfc/rfc2396.txt">RFC 2396: Uniform Resource
+Identifiers (URI): Generic Syntax</a>,<br />
+amended by
+<a href="http://www.ietf.org/rfc/rfc2732.txt">RFC 2732: Format for Literal IPv6
+Addresses in URLs</a>.
+</p>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

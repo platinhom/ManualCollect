@@ -1,0 +1,2304 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>schrodinger.utils.sea</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="schrodinger-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >Suite 2012 Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="schrodinger-module.html">Package&nbsp;schrodinger</a> ::
+        <a href="schrodinger.utils-module.html">Package&nbsp;utils</a> ::
+        Module&nbsp;sea
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="schrodinger.utils.sea-module.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== MODULE DESCRIPTION ==================== -->
+<h1 class="epydoc">Module sea</h1><p class="nomargin-top"></p>
+<pre class="literalblock">
+
+Functionality for &quot;ark&quot; file format handling.
+
+'sea' stands for Schrodinger Enhanced Ark.
+
+The syntax of the ark format can be found elsewhere (e.g., Desmond
+User Manual).
+
+Below is an example, demonstrating the most basic usage of this module.
+
+Say we have a file called 'config.cfg' with the following content:
+
+------start of the content------
+fep = {
+   lambda   = &quot;default:12&quot;
+   i_window = ?
+   output   = {
+      name     = &quot;$JOBNAME$[_replica$REPLICA$].dE&quot;
+      first    = 0.0
+      interval = 1.2
+   }
+}
+temperature = [300.0 310.0 320.0]
+------end of the content------
+
+We can parse it with a code like this:
+
+import schrodinger.utils.sea as sea
+
+cfg = sea.Map( open( &quot;config.cfg&quot;, &quot;r&quot; ).read() )
+
+In fact, the code does much more than merely parsing the content. But the
+important thing here is that at the end we get an 'Map' object that enables
+us to easily manipulate settings for the file as shown below:
+
+
+assert( cfg.fep.lambda_    .val == &quot;default:12&quot; )
+assert( cfg.fep.i_window   .val == None )
+assert( cfg.output.first   .val == 0.0 )
+assert( cfg.output.interval.val == 1.2 )
+assert( cfg.output.name.raw_val == &quot;$JOBNAME$[_replica$REPLICA$].dE&quot; )
+assert( cfg.temperature[0].val  == 300.0 )
+assert( cfg.temperature[1].val  == 310.0 )
+assert( cfg.temperature[2].val  == 320.0 )
+assert( cfg.temperature   .val  == [300.0, 310.0, 320.0]
+
+# Another way to access the data:
+assert( cfg[&quot;fep&quot;][&quot;lambda&quot;  ].val == &quot;default:12&quot; )
+assert( cfg[&quot;fep&quot;][&quot;i_window&quot;].val == None )
+
+cfg.output.first.val = 1.0
+assert( cfg.output.first.val == 1.0 )
+
+cfg.output.i_window.val = 1
+assert( cfg.output.first.val == 1 )
+
+cfg.fep.lambda_.val = &quot;a different string&quot;
+assert( cfg.fep.lambda_.val == &quot;a different string&quot; )
+
+cfg.temperature[0].val = 20.0
+assert( cfg.temperature[0].val == 20.0 )
+
+# Adds a new key-value pair.
+cfg[&quot;new_key&quot;] = 1
+
+# Deletes an existing key-value pair.
+del cfg.fep[&quot;interval&quot;]
+
+print str( cfg )
+#Result:
+#fep = {
+#   i_window = 1
+#   lambda = &quot;a different string&quot;
+#   new_key = 1
+#   output = {
+#      name = &quot;$JOBNAME$[_replica$REPLICA$].dE&quot;
+#      first = 1.0
+#   }
+#}
+#temperature = [20.0 310.0 320.0]
+
+
+Some explanations of the code:
+- The &quot;.val&quot; is in fact a python 'property' for reading and mutating the value
+  of the parameter.
+- In the file, we have a parameter named &quot;lambda&quot;, but in the code, we access it
+  as &quot;lambda_&quot;. The reason that we have to use &quot;lambda_&quot; is because 'lambda' is
+  a python keyword.
+- The value '?' in the file will correspond to 'None' in python code.
+- The &quot;.raw_val&quot; is similar to the &quot;.val&quot;. The different is that the latter will
+  give a value where the macro's are expanded, whereas the former will give the
+  original string. More information regarding macros is beyond the scope of this
+  docstring, please refere to the document.
+- Notice an expression like: 'temperature[0].val' returns the value of the 0-th
+  element of the list, while 'temperature.val' returns a buildin 'list' object
+  for the entire list.
+  
+Copyright Schrodinger, LLC. All rights reserved.
+
+</pre>
+
+<!-- ==================== CLASSES ==================== -->
+<a name="section-Classes"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Classes</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Classes"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.utils.sea.Sea-class.html" class="summary-name">Sea</a><br />
+      This is the base class the 'Atom', 'List', and 'Map' classes.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.utils.sea.Atom-class.html" class="summary-name">Atom</a><br />
+      This class represents the &quot;atomic&quot; parameters in a config
+        file.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.utils.sea.List-class.html" class="summary-name">List</a><br />
+      This class represents the &quot;list&quot; parameters in a config 
+        file.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.utils.sea.Key-class.html" class="summary-name">Key</a><br />
+      An instance of this class will be used as the key of the <a 
+        href="schrodinger.utils.sea.Map-class.html" class="link">Map</a> 
+        class (see below).
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.utils.sea.Map-class.html" class="summary-name">Map</a><br />
+      This class represents the &quot;map&quot; parameters in a config 
+        file.
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.utils.sea._Evalor-class.html" class="summary-name" onclick="show_private();">_Evalor</a><br />
+      This is the evaluator class for checking validity of parameters.
+    </td>
+  </tr>
+</table>
+<!-- ==================== FUNCTIONS ==================== -->
+<a name="section-Functions"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Functions</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Functions"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="is_equal"></a><span class="summary-sig-name">is_equal</span>(<span class="summary-sig-arg">a</span>,
+        <span class="summary-sig-arg">b</span>,
+        <span class="summary-sig-arg">epsilon</span>=<span class="summary-sig-default">1e-06</span>)</span><br />
+      Compares two floating numbers and returns True if the absolute 
+      difference is within epsilon (defaults to 1E-6), False if not.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#boolean" class="summary-sig-name">boolean</a>(<span class="summary-sig-arg">s</span>)</span><br />
+      Returns True if the string 's' is one of the following: 'true', 
+      'yes', and 'on', or False if it is one of the following: 'false', 
+      'no', and 'off'.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#_debug_print" class="summary-sig-name" onclick="show_private();">_debug_print</a>(<span class="summary-sig-arg">s</span>,
+        <span class="summary-sig-arg">nl</span>=<span class="summary-sig-default">True</span>)</span><br />
+      Prints out some information for debugging purposes.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#_val_filter" class="summary-sig-name" onclick="show_private();">_val_filter</a>(<span class="summary-sig-arg">val</span>)</span><br />
+      Filters a given value 'val' and returns a new 'Sea' (or its 
+      derivatives) object representing the value.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#_list_filter" class="summary-sig-name" onclick="show_private();">_list_filter</a>(<span class="summary-sig-arg">val_list</span>)</span><br />
+      Returns a 'List' object for the given list of objects.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#_escape_dollar" class="summary-sig-name" onclick="show_private();">_escape_dollar</a>(<span class="summary-sig-arg">s</span>)</span><br />
+      This function is needed by the 'expand_macro' function below.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#_escape_dollar2" class="summary-sig-name" onclick="show_private();">_escape_dollar2</a>(<span class="summary-sig-arg">s</span>)</span><br />
+      This function is needed by the 'expand_macro' function below.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#_strip_bracket" class="summary-sig-name" onclick="show_private();">_strip_bracket</a>(<span class="summary-sig-arg">s</span>)</span><br />
+      Mutates a given string 's' by following the following rules:
+1.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#_strip_bracket2" class="summary-sig-name" onclick="show_private();">_strip_bracket2</a>(<span class="summary-sig-arg">s</span>)</span><br />
+      Mutates a given string 's' by following the following rules:
+1.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#expand_macro_old" class="summary-sig-name">expand_macro_old</a>(<span class="summary-sig-arg">s</span>,
+        <span class="summary-sig-arg">macro_dict</span>)</span><br />
+      Replaces the macros in the string 's' using the values given by the 
+      macro dictionary 'macro_dict'.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#expand_macro" class="summary-sig-name">expand_macro</a>(<span class="summary-sig-arg">s</span>,
+        <span class="summary-sig-arg">macro_dict</span>)</span><br />
+      Replaces the macros in the string 's' using the values given by the 
+      macro dictionary 'macro_dict'.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="get_val"></a><span class="summary-sig-name">get_val</span>(<span class="summary-sig-arg">my_macro_dict</span>,
+        <span class="summary-sig-arg">sea_object</span>)</span><br />
+      Returns values of the `sea_object' with the given macro dictionary 
+      (`macro_dict').</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="asea_copy"></a><span class="summary-sig-name">asea_copy</span>(<span class="summary-sig-arg">src</span>,
+        <span class="summary-sig-arg">des</span>)</span><br />
+      Copies all keys and the associated values in the 'Map' object 'src' 
+      to the 'Map' object 'des', but does not change the parent and pmode 
+      of the 'des'.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="pathname"></a><span class="summary-sig-name">pathname</span>(<span class="summary-sig-arg">x</span>)</span><br />
+      Given a 'Map' object 'x', returns its pathname.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#diff" class="summary-sig-name">diff</a>(<span class="summary-sig-arg">x</span>,
+        <span class="summary-sig-arg">reference</span>)</span><br />
+      Returns the difference between 'x' and 'reference'.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#filter" class="summary-sig-name">filter</a>(<span class="summary-sig-arg">x</span>,
+        <span class="summary-sig-arg">tag</span>=<span class="summary-sig-default"><code class="variable-group">set([</code><code class="variable-group">])</code></span>)</span><br />
+      Extracts a subset of keys from the 'Map' object 'x' that has the tag.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="is_atom_list"></a><span class="summary-sig-name">is_atom_list</span>(<span class="summary-sig-arg">a</span>)</span><br />
+      This function returns:
+   True  - if 'a' is a List object and all of its elements are instances of the 'Atom' class,
+   True  - if 'a' is a List object and is empty,
+   False - if otherwise.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#expand_sea_string" class="summary-sig-name">expand_sea_string</a>(<span class="summary-sig-arg">my_sea</span>,
+        <span class="summary-sig-arg">scope</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>)</span><br />
+      expand_sea return an expanded string of a sea obj.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="expand_ark_string"></a><span class="summary-sig-name">expand_ark_string</span>(<span class="summary-sig-arg">my_ark</span>,
+        <span class="summary-sig-arg">scope</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#__op_mul" class="summary-sig-name" onclick="show_private();">__op_mul</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Evaluates the &quot;multiplication&quot; expression and returns 
+      product of the arg[0], arg[1], arg[3], ...</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#__op_eq" class="summary-sig-name" onclick="show_private();">__op_eq</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Evaluates the &quot;equal&quot; expression and returns True the 
+      arg[0] and arg[1] are equal or False otherwise.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#__op_lt" class="summary-sig-name" onclick="show_private();">__op_lt</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Evaluates the &quot;less than&quot; expression and returns True the 
+      arg[0] is less than arg[1] or False otherwise.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#__op_le" class="summary-sig-name" onclick="show_private();">__op_le</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Evaluates the &quot;less or equal&quot; expression and returns True 
+      the arg[0] is less than or equal to arg[1] or False otherwise.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#__op_gt" class="summary-sig-name" onclick="show_private();">__op_gt</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Evaluates the &quot;greater than&quot; expression and returns True 
+      the arg[0] is greater than arg[1] or False otherwise.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#__op_ge" class="summary-sig-name" onclick="show_private();">__op_ge</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Evaluates the &quot;greater or equal&quot; expression and returns 
+      True the arg[0] is greater than or equal to arg[1] or False 
+      otherwise.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#__op_and" class="summary-sig-name" onclick="show_private();">__op_and</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Evaluates the &quot;logic and&quot; expression and returns True if 
+      both arg[0] and arg[1] are true.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#__op_or" class="summary-sig-name" onclick="show_private();">__op_or</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Evaluates the &quot;logic or&quot; expression and returns True if 
+      either arg[0] or arg[1] is true.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#__op_not" class="summary-sig-name" onclick="show_private();">__op_not</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Evaluates the &quot;logic not&quot; expression and returns True if 
+      arg[0] is false or False if arg[0] is true.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#__op_at" class="summary-sig-name" onclick="show_private();">__op_at</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Evaluates the &quot;at&quot; expression and returns the referenced 
+      value.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#__op_minus" class="summary-sig-name" onclick="show_private();">__op_minus</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Evaluates the &quot;minus&quot; expression and returns arithmatic 
+      result (the difference between two values, or the negative value).</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#__op_cat" class="summary-sig-name" onclick="show_private();">__op_cat</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Contatenate two strings and returns the result.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#__op_sizeof" class="summary-sig-name" onclick="show_private();">__op_sizeof</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Evaluates the &quot;less than&quot; expression and returns True the 
+      arg[0] is less than arg[1] or False otherwise.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="is_powerof2"></a><span class="summary-sig-name">is_powerof2</span>(<span class="summary-sig-arg">x</span>)</span><br />
+      Returns True if 'x' is a power of 2, or False otherwise.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#_xchk_power2" class="summary-sig-name" onclick="show_private();">_xchk_power2</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">valid</span>,
+        <span class="summary-sig-arg">ev</span>,
+        <span class="summary-sig-arg">prefix</span>)</span><br />
+      This is an external checker.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#_xchk_file_exists" class="summary-sig-name" onclick="show_private();">_xchk_file_exists</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">valid</span>,
+        <span class="summary-sig-arg">ev</span>,
+        <span class="summary-sig-arg">prefix</span>)</span><br />
+      This is an external checker.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#_xchk_dir_exists" class="summary-sig-name" onclick="show_private();">_xchk_dir_exists</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">valid</span>,
+        <span class="summary-sig-arg">ev</span>,
+        <span class="summary-sig-arg">prefix</span>)</span><br />
+      This is an external checker.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#_eval" class="summary-sig-name" onclick="show_private();">_eval</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">arg</span>)</span><br />
+      Evaluates the expression and returns the results.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#reg_xcheck" class="summary-sig-name">reg_xcheck</a>(<span class="summary-sig-arg">name</span>,
+        <span class="summary-sig-arg">func</span>)</span><br />
+      Registers external checker.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="_match"></a><span class="summary-sig-name">_match</span>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">valid</span>,
+        <span class="summary-sig-arg">ev</span>,
+        <span class="summary-sig-arg">prefix</span>,
+        <span class="summary-sig-arg">tag</span>)</span><br />
+      Finds the best match.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="_check_atom"></a><span class="summary-sig-name">_check_atom</span>(<span class="summary-sig-arg">atom</span>,
+        <span class="summary-sig-arg">valid</span>,
+        <span class="summary-sig-arg">ev</span>,
+        <span class="summary-sig-arg">prefix</span>)</span><br />
+      Checks the validity of atom.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="_check_list"></a><span class="summary-sig-name">_check_list</span>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">valid</span>,
+        <span class="summary-sig-arg">ev</span>,
+        <span class="summary-sig-arg">prefix</span>,
+        <span class="summary-sig-arg">tag</span>)</span><br />
+      Checks the validity of list.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="_check_map"></a><span class="summary-sig-name">_check_map</span>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">valid</span>,
+        <span class="summary-sig-arg">ev</span>,
+        <span class="summary-sig-arg">prefix</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">tag</span>=<span class="summary-sig-default"><code class="variable-group">set([</code><code class="variable-group">])</code></span>)</span><br />
+      Checks the validity of a map.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="check_map"></a><span class="summary-sig-name">check_map</span>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">valid</span>,
+        <span class="summary-sig-arg">ev</span>,
+        <span class="summary-sig-arg">tag</span>=<span class="summary-sig-default"><code class="variable-group">set([</code><code class="variable-group">])</code></span>)</span><br />
+      Checks the validity of a map.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.utils.sea-module.html#check_map2" class="summary-sig-name">check_map2</a>(<span class="summary-sig-arg">map</span>,
+        <span class="summary-sig-arg">valid</span>,
+        <span class="summary-sig-arg">tag</span>=<span class="summary-sig-default"><code class="variable-group">set([</code><code class="variable-group">])</code></span>)</span><br />
+      Similiar to the 'check_map' function (see above), but no need to 
+      provide a '_Evalor' object.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="test"></a><span class="summary-sig-name">test</span>()</span><br />
+      Unit test.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+</table>
+<!-- ==================== VARIABLES ==================== -->
+<a name="section-Variables"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Variables</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Variables"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="__CHECK_SEA_DEBUG"></a><span class="summary-name">__CHECK_SEA_DEBUG</span> = <code title="False">False</code>
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="__debug_str_buf"></a><span class="summary-name">__debug_str_buf</span> = <code title="''"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="macro_dict"></a><span class="summary-name">macro_dict</span> = <code title="{}"><code class="variable-group">{</code><code class="variable-group">}</code></code>
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.utils.sea-module.html#_STRIP_BRACKET_PATTERN" class="summary-name" onclick="show_private();">_STRIP_BRACKET_PATTERN</a> = <code title="re.compile(r'\x00\[[^\[]*?\$[^\]]*?\x00\]')">re.compile(r'\x00\[<code class="re-group">[^</code>\[<code class="re-group">]</code><code class="re-op">*?</code>\$<code class="re-group">[^</code>\]<code class="re-group">]</code><code class="re-op">*?</code>\x<code class="variable-ellipsis">...</code></code>
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.utils.sea-module.html#__OP" class="summary-name" onclick="show_private();">__OP</a> = <code title="{&quot;*&quot;: __op_mul, &quot;==&quot;: __op_eq, &quot;&lt;&quot;: __op_lt, &quot;&lt;=&quot;: __op_le, &quot;&gt;&quot;: __op_\
+gt, &quot;&gt;=&quot;: __op_gt, &quot;&amp;&amp;&quot;: __op_and, &quot;||&quot;: __op_or, &quot;!&quot;: __op_not, &quot;@&quot;: \
+__op_at, &quot;-&quot;: __op_minus, &quot;cat&quot;: __op_cat, &quot;sizeof&quot;: __op_sizeof,}">{&quot;*&quot;: __op_mul, &quot;==&quot;: __op_eq, &quot;&lt;&quot;: __op_lt, &quot;&lt;=&quot;: __op<code class="variable-ellipsis">...</code></code>
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.utils.sea-module.html#__TYPE" class="summary-name" onclick="show_private();">__TYPE</a> = <code title="{'bool': &lt;function boolean at 0x11349578&gt;,
+ 'bool0': (&lt;function boolean at 0x11349578&gt;, [False]),
+ 'bool1': (&lt;function boolean at 0x11349578&gt;, [True]),
+ 'enum': &lt;type 'str'&gt;,
+ 'float': &lt;type 'float'&gt;,
+ 'float+': (&lt;type 'float'&gt;, [0, inf]),
+ 'float-': (&lt;type 'float'&gt;, [-inf, 0]),
+ 'float0_1': (&lt;type 'float'&gt;, [0, 1.0]),
+...">{&quot;str&quot;: str, &quot;str1&quot;:(str, [1, 1000000000],), &quot;float&quot;:<code class="variable-ellipsis">...</code></code>
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.utils.sea-module.html#__CONVERTIBLE_TO" class="summary-name" onclick="show_private();">__CONVERTIBLE_TO</a> = <code title="{&lt;type 'float'&gt;: [&lt;type 'str'&gt;],
+ &lt;type 'int'&gt;: [&lt;type 'float'&gt;, &lt;type 'str'&gt;]}"><code class="variable-group">{</code>&lt;type 'float'&gt;<code class="variable-op">: </code><code class="variable-group">[</code>&lt;type 'str'&gt;<code class="variable-group">]</code><code class="variable-op">, </code>&lt;type 'int<code class="variable-ellipsis">...</code></code>
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.utils.sea-module.html#__xcheck" class="summary-name" onclick="show_private();">__xcheck</a> = <code title="{&quot;power2&quot;: _xchk_power2, &quot;file_exists&quot;: _xchk_file_exists, &quot;dir_exists\
+&quot;: _xchk_dir_exists,}">{&quot;power2&quot;: _xchk_power2, &quot;file_exists&quot;: _xchk_file_<code class="variable-ellipsis">...</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="__package__"></a><span class="summary-name">__package__</span> = <code title="'schrodinger.utils'"><code class="variable-quote">'</code><code class="variable-string">schrodinger.utils</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+</table>
+<!-- ==================== FUNCTION DETAILS ==================== -->
+<a name="section-FunctionDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Function Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-FunctionDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="boolean"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">boolean</span>(<span class="sig-arg">s</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Returns True if the string 's' is one of the following: 'true', 'yes',
+  and 'on', or False if it is one of the following: 'false', 'no', and 
+  'off'.</p>
+  <p>Case difference will be ignored.</p>
+  <p>Raises a ValueError exception if 's' is none of the above strings.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="_debug_print"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_debug_print</span>(<span class="sig-arg">s</span>,
+        <span class="sig-arg">nl</span>=<span class="sig-default">True</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Prints out some information for debugging purposes.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>s</code></strong> - The string to print.</li>
+        <li><strong class="pname"><code>nl</code></strong> - Appends a new line to the string and flushes out the current 
+          contents in the print buffer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="_val_filter"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_val_filter</span>(<span class="sig-arg">val</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Filters a given value 'val' and returns a new 'Sea' (or its 
+  derivatives) object representing the value.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>val</code></strong> - This object can be of the following types:
+          <ul>
+            <li>
+              'Sea' or derivative: This function will just return a deep 
+              copy of 'val'
+            </li>
+            <li>
+              list or tuple: This function will return a 'List' (see below)
+              object.
+            </li>
+            <li>
+              Other non dict types: This function will return a 'Atom' (see
+              below) object.
+            </li>
+          </ul></li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="_list_filter"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_list_filter</span>(<span class="sig-arg">val_list</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Returns a 'List' object for the given list of objects. Usually, we do 
+  not need to call this function directly. Call '_val_filter' instead.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>val_list</code></strong> - This should be either a list or a tuple object. The elements of 
+          the list or tuple can be of any type.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="_escape_dollar"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_escape_dollar</span>(<span class="sig-arg">s</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <pre class="literalblock">
+
+This function is needed by the 'expand_macro' function below.
+It replaces dollar char '$' as in the following cases:
+   $$, $[, $]
+in a string with the ' ' char. The results for these cases will be the
+following:
+     ,  [,  ]
+respectively.
+
+</pre>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="_escape_dollar2"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_escape_dollar2</span>(<span class="sig-arg">s</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <pre class="literalblock">
+
+This function is needed by the 'expand_macro' function below.
+It replaces dollar char '$' as in the following cases:
+   $$, $[, $]
+in a string with the ' ' char. The results for these cases will be the
+following:
+     ,  [,  ]
+respectively.
+
+</pre>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="_strip_bracket"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_strip_bracket</span>(<span class="sig-arg">s</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <pre class="literalblock">
+
+Mutates a given string 's' by following the following rules:
+1. If there is a dollar sign '$' within a fragment of string that is
+   delimited by ' [' and ' ]', the entire fragment including the
+   ' [' and ' ]' delimiters will be removed.
+2. If there is no dollar sign within the fragment, then the fragment will
+   be retained, and only the delimiters will be removed.
+Examples:
+  _strip_bracket( &quot;desmond [_$JOBNAME ]&quot; ) # Returns &quot;desmond&quot;
+  _strip_bracket( &quot;desmond [_jobname ]&quot; )  # Returns &quot;desmond_jobname&quot;
+
+This function is usually used together with the '_escape_dollar' function
+in the 'expand_macro' function (see below).
+
+</pre>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="_strip_bracket2"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_strip_bracket2</span>(<span class="sig-arg">s</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <pre class="literalblock">
+
+Mutates a given string 's' by following the following rules:
+1. If there is a dollar sign '$' within a fragment of string that is
+   delimited by ' [' and ' ]', the entire fragment including the
+   ' [' and ' ]' delimiters will be removed.
+2. If there is no dollar sign within the fragment, then the fragment will
+   be retained, and only the delimiters will be removed.
+Examples:
+  _strip_bracket( &quot;desmond [_$JOBNAME ]&quot; ) # Returns &quot;desmond&quot;
+  _strip_bracket( &quot;desmond [_jobname ]&quot; )  # Returns &quot;desmond_jobname&quot;
+
+This function is usually used together with the '_escape_dollar' function
+in the 'expand_macro' function (see below).
+
+</pre>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="expand_macro_old"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">expand_macro_old</span>(<span class="sig-arg">s</span>,
+        <span class="sig-arg">macro_dict</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Replaces the macros in the string 's' using the values given by the 
+  macro dictionary 'macro_dict'. The expanded string will be returned.</p>
+  <p>Rules or conventions about macros and expansion:</p>
+  <ul>
+    <li>
+      All macros should start with a single '$', followed by capital 
+      letters, e.g., &quot;$JOBNAME&quot;, &quot;$USERNAME&quot;.
+    </li>
+    <li>
+      Optional string fragments should be bracketed by '$[' and '$]', e.g.,
+      &quot;myjob$[_lambda$LAMBDANO$]&quot;, where 
+      &quot;_lambda$LAMBDANO&quot; is an optional string fragment.
+    </li>
+    <li>
+      Optional string fragments will be retained with the brackets '$[' and
+      '$]' stripped off if the macro '$LAMBDANO' is defined; otherwise, the
+      optional string together with the brackets will be removed.
+    </li>
+  </ul>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="expand_macro"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">expand_macro</span>(<span class="sig-arg">s</span>,
+        <span class="sig-arg">macro_dict</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Replaces the macros in the string 's' using the values given by the 
+  macro dictionary 'macro_dict'. The expanded string will be returned.</p>
+  <p>Rules or conventions about macros and expansion:</p>
+  <ul>
+    <li>
+      All macros should start with a single '$', followed by capital 
+      letters, e.g., &quot;$JOBNAME&quot;, &quot;$USERNAME&quot;.
+    </li>
+    <li>
+      Optional string fragments should be bracketed by '$[' and '$]', e.g.,
+      &quot;myjob$[_lambda$LAMBDANO$]&quot;, where 
+      &quot;_lambda$LAMBDANO&quot; is an optional string fragment.
+    </li>
+    <li>
+      Optional string fragments will be retained with the brackets '$[' and
+      '$]' stripped off if the macro '$LAMBDANO' is defined; otherwise, the
+      optional string together with the brackets will be removed.
+    </li>
+  </ul>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="diff"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">diff</span>(<span class="sig-arg">x</span>,
+        <span class="sig-arg">reference</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Returns the difference between 'x' and 'reference'. Both 'x' and 
+  'reference' must be 'Map' objects. The difference is a 4-tuple: The first
+  element is a 'Map' object containing the changed values in 'x', the 
+  second element is a 'Map' object containing the changed value in 
+  'reference', the third element is a 'Map' object containing keys in x but
+  not in 'reference', the forth element is a 'Map' object containing keys 
+  in 'reference' but not in 'x'.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="filter"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">filter</span>(<span class="sig-arg">x</span>,
+        <span class="sig-arg">tag</span>=<span class="sig-default"><code class="variable-group">set([</code><code class="variable-group">])</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Extracts a subset of keys from the 'Map' object 'x' that has the tag. 
+  And returns a new 'Map' object containing the extracted keys.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="expand_sea_string"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">expand_sea_string</span>(<span class="sig-arg">my_sea</span>,
+        <span class="sig-arg">scope</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <pre class="literalblock">
+
+expand_sea return an expanded string of a sea obj.
+For instance, after calling expand_sea_string, 
+eneseq ={
+  name = foo.ene
+  first = 0
+}
+is converted into 
+eneseq.name = &quot;foo.ene&quot;
+eneseq.first = 0
+
+</pre>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="__op_mul"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__op_mul</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates the &quot;multiplication&quot; expression and returns 
+  product of the arg[0], arg[1], arg[3], ...</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - The 'arg' should be a 'sea.List' object that contains two or more
+          elements.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__op_eq"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__op_eq</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates the &quot;equal&quot; expression and returns True the arg[0]
+  and arg[1] are equal or False otherwise.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - The 'arg' should be a 'sea.List' object that contains two 
+          elements. Elements beyond the first two will be ignored.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__op_lt"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__op_lt</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates the &quot;less than&quot; expression and returns True the 
+  arg[0] is less than arg[1] or False otherwise.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - The 'arg' should be a 'sea.List' object that contains two 
+          elements. Elements beyond the first two will be ignored.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__op_le"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__op_le</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates the &quot;less or equal&quot; expression and returns True 
+  the arg[0] is less than or equal to arg[1] or False otherwise.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - The 'arg' should be a 'sea.List' object that contains two 
+          elements. Elements beyond the first two will be ignored.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__op_gt"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__op_gt</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates the &quot;greater than&quot; expression and returns True the
+  arg[0] is greater than arg[1] or False otherwise.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - The 'arg' should be a 'sea.List' object that contains two 
+          elements. Elements beyond the first two will be ignored.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__op_ge"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__op_ge</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates the &quot;greater or equal&quot; expression and returns True
+  the arg[0] is greater than or equal to arg[1] or False otherwise.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - The 'arg' should be a 'sea.List' object that contains two 
+          elements. Elements beyond the first two will be ignored.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__op_and"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__op_and</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates the &quot;logic and&quot; expression and returns True if 
+  both arg[0] and arg[1] are true.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - The 'arg' should be a 'sea.List' object that contains two 
+          elements. Elements beyond the first two will be ignored.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__op_or"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__op_or</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates the &quot;logic or&quot; expression and returns True if 
+  either arg[0] or arg[1] is true.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - The 'arg' should be a 'sea.List' object that contains two 
+          elements. Elements beyond the first two will be ignored.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__op_not"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__op_not</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates the &quot;logic not&quot; expression and returns True if 
+  arg[0] is false or False if arg[0] is true.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - The 'arg' should be a 'sea.List' object that contain only 1 
+          element. More than 1 elements will cause a 'ValueError' 
+          exception.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__op_at"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__op_at</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates the &quot;at&quot; expression and returns the referenced 
+  value.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - The 'arg' should be a 'sea.List' object that contain only 1 
+          element. More than 1 elements will cause a 'ValueError' 
+          exception.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__op_minus"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__op_minus</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates the &quot;minus&quot; expression and returns arithmatic 
+  result (the difference between two values, or the negative value).</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - The 'arg' should be a 'sea.List' object that contains at most two
+          elements. More than two elements will cause a 'ValueError' 
+          exception.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__op_cat"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__op_cat</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Contatenate two strings and returns the result.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - The 'arg' should be a 'sea.List' object that contains at least 1 
+          elements.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__op_sizeof"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__op_sizeof</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates the &quot;less than&quot; expression and returns True the 
+  arg[0] is less than arg[1] or False otherwise.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - The 'arg' should be a 'sea.List' object that contains two 
+          elements. Elements beyond the first two will be ignored.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="_xchk_power2"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_xchk_power2</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">valid</span>,
+        <span class="sig-arg">ev</span>,
+        <span class="sig-arg">prefix</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This is an external checker. It checks whether an integer value is 
+  power of 2 or not.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>map</code></strong> - 'map' contains the value to be checked. Use 'map.val' to get the 
+          value.</li>
+        <li><strong class="pname"><code>valid</code></strong> - 'valid' contains the validation criteria for the to-be-checked 
+          value.</li>
+        <li><strong class="pname"><code>ev</code></strong> - The evaluator, where the error messeages are collected.</li>
+        <li><strong class="pname"><code>prefix</code></strong> - The prefix of the checked parameter.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="_xchk_file_exists"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_xchk_file_exists</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">valid</span>,
+        <span class="sig-arg">ev</span>,
+        <span class="sig-arg">prefix</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This is an external checker. It checks whether a file (not a dir) 
+  exists.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>map</code></strong> - 'map' contains the value to be checked. Use 'map.val' to get the 
+          valuefile name.</li>
+        <li><strong class="pname"><code>valid</code></strong> - 'valid' contains the validation criteria for the to-be-checked 
+          value.</li>
+        <li><strong class="pname"><code>ev</code></strong> - The evaluator, where the error messeages are collected.</li>
+        <li><strong class="pname"><code>prefix</code></strong> - The prefix of the checked parameter.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="_xchk_dir_exists"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_xchk_dir_exists</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">valid</span>,
+        <span class="sig-arg">ev</span>,
+        <span class="sig-arg">prefix</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This is an external checker. It checks whether a dir (not a file) 
+  exists.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>map</code></strong> - 'map' contains the value to be checked. Use 'map.val' to get the 
+          valuefile name.</li>
+        <li><strong class="pname"><code>valid</code></strong> - 'valid' contains the validation criteria for the to-be-checked 
+          value.</li>
+        <li><strong class="pname"><code>ev</code></strong> - The evaluator, where the error messeages are collected.</li>
+        <li><strong class="pname"><code>prefix</code></strong> - The prefix of the checked parameter.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="_eval"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_eval</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">arg</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Evaluates the expression and returns the results.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>arg</code></strong> - 'arg' can be either a 'sea.List' object or a 'sea.Atom' object, 
+          representing a prefix expression.</li>
+        <li><strong class="pname"><code>map</code></strong> - The original map that the elements in the 'arg' refer.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="reg_xcheck"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">reg_xcheck</span>(<span class="sig-arg">name</span>,
+        <span class="sig-arg">func</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Registers external checker.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>name</code></strong> - Name of the checker.</li>
+        <li><strong class="pname"><code>func</code></strong> - Callable object that checks validity of a parameter. For 
+          interface requirement, see '_xchk_power2', or 
+          '_xchk_file_exists', or '_xchk_dir_exists' for example.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="check_map2"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">check_map2</span>(<span class="sig-arg">map</span>,
+        <span class="sig-arg">valid</span>,
+        <span class="sig-arg">tag</span>=<span class="sig-default"><code class="variable-group">set([</code><code class="variable-group">])</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Similiar to the 'check_map' function (see above), but no need to 
+  provide a '_Evalor' object. A new '_Evalor' object will be created and 
+  returned.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== VARIABLES DETAILS ==================== -->
+<a name="section-VariablesDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Variables Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-VariablesDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="_STRIP_BRACKET_PATTERN"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">_STRIP_BRACKET_PATTERN</h3>
+  
+  <dl class="fields">
+  </dl>
+  <dl class="fields">
+    <dt>Value:</dt>
+      <dd><table><tr><td><pre class="variable">
+re.compile(r'\x00\[<code class="re-group">[^</code>\[<code class="re-group">]</code><code class="re-op">*?</code>\$<code class="re-group">[^</code>\]<code class="re-group">]</code><code class="re-op">*?</code>\x00\]')
+</pre></td></tr></table>
+</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__OP"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">__OP</h3>
+  
+  <dl class="fields">
+  </dl>
+  <dl class="fields">
+    <dt>Value:</dt>
+      <dd><table><tr><td><pre class="variable">
+{&quot;*&quot;: __op_mul, &quot;==&quot;: __op_eq, &quot;&lt;&quot;: __op_lt, &quot;&lt;=&quot;: __op_le, &quot;&gt;&quot;: __op_<span class="variable-linewrap"><img src="crarr.png" alt="\" /></span>
+gt, &quot;&gt;=&quot;: __op_gt, &quot;&amp;&amp;&quot;: __op_and, &quot;||&quot;: __op_or, &quot;!&quot;: __op_not, &quot;@&quot;: <span class="variable-linewrap"><img src="crarr.png" alt="\" /></span>
+__op_at, &quot;-&quot;: __op_minus, &quot;cat&quot;: __op_cat, &quot;sizeof&quot;: __op_sizeof,}
+</pre></td></tr></table>
+</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__TYPE"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">__TYPE</h3>
+  
+  <dl class="fields">
+  </dl>
+  <dl class="fields">
+    <dt>Value:</dt>
+      <dd><table><tr><td><pre class="variable">
+<code class="variable-group">{</code><code class="variable-quote">'</code><code class="variable-string">bool</code><code class="variable-quote">'</code><code class="variable-op">: </code>&lt;function boolean at 0x11349578&gt;<code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">bool0</code><code class="variable-quote">'</code><code class="variable-op">: </code><code class="variable-group">(</code>&lt;function boolean at 0x11349578&gt;<code class="variable-op">, </code><code class="variable-group">[</code>False<code class="variable-group">]</code><code class="variable-group">)</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">bool1</code><code class="variable-quote">'</code><code class="variable-op">: </code><code class="variable-group">(</code>&lt;function boolean at 0x11349578&gt;<code class="variable-op">, </code><code class="variable-group">[</code>True<code class="variable-group">]</code><code class="variable-group">)</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">enum</code><code class="variable-quote">'</code><code class="variable-op">: </code>&lt;type 'str'&gt;<code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">float</code><code class="variable-quote">'</code><code class="variable-op">: </code>&lt;type 'float'&gt;<code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">float+</code><code class="variable-quote">'</code><code class="variable-op">: </code><code class="variable-group">(</code>&lt;type 'float'&gt;<code class="variable-op">, </code><code class="variable-group">[</code>0<code class="variable-op">, </code>inf<code class="variable-group">]</code><code class="variable-group">)</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">float-</code><code class="variable-quote">'</code><code class="variable-op">: </code><code class="variable-group">(</code>&lt;type 'float'&gt;<code class="variable-op">, </code><code class="variable-group">[</code>-inf<code class="variable-op">, </code>0<code class="variable-group">]</code><code class="variable-group">)</code><code class="variable-op">,</code>
+ <code class="variable-quote">'</code><code class="variable-string">float0_1</code><code class="variable-quote">'</code><code class="variable-op">: </code><code class="variable-group">(</code>&lt;type 'float'&gt;<code class="variable-op">, </code><code class="variable-group">[</code>0<code class="variable-op">, </code>1.0<code class="variable-group">]</code><code class="variable-group">)</code><code class="variable-op">,</code>
+<code class="variable-ellipsis">...</code>
+</pre></td></tr></table>
+</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__CONVERTIBLE_TO"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">__CONVERTIBLE_TO</h3>
+  
+  <dl class="fields">
+  </dl>
+  <dl class="fields">
+    <dt>Value:</dt>
+      <dd><table><tr><td><pre class="variable">
+<code class="variable-group">{</code>&lt;type 'float'&gt;<code class="variable-op">: </code><code class="variable-group">[</code>&lt;type 'str'&gt;<code class="variable-group">]</code><code class="variable-op">,</code>
+ &lt;type 'int'&gt;<code class="variable-op">: </code><code class="variable-group">[</code>&lt;type 'float'&gt;<code class="variable-op">, </code>&lt;type 'str'&gt;<code class="variable-group">]</code><code class="variable-group">}</code>
+</pre></td></tr></table>
+</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__xcheck"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">__xcheck</h3>
+  
+  <dl class="fields">
+  </dl>
+  <dl class="fields">
+    <dt>Value:</dt>
+      <dd><table><tr><td><pre class="variable">
+{&quot;power2&quot;: _xchk_power2, &quot;file_exists&quot;: _xchk_file_exists, &quot;dir_exists<span class="variable-linewrap"><img src="crarr.png" alt="\" /></span>
+&quot;: _xchk_dir_exists,}
+</pre></td></tr></table>
+</dd>
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="schrodinger-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >Suite 2012 Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Tue Sep 25 02:22:50 2012
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

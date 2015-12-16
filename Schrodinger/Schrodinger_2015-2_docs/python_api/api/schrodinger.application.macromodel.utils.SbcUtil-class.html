@@ -1,0 +1,762 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>schrodinger.application.macromodel.utils.SbcUtil</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >2015-2Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="schrodinger-module.html">Package&nbsp;schrodinger</a> ::
+        <a href="schrodinger.application-module.html">Package&nbsp;application</a> ::
+        <a href="schrodinger.application.macromodel-module.html">Package&nbsp;macromodel</a> ::
+        <a href="schrodinger.application.macromodel.utils-module.html">Module&nbsp;utils</a> ::
+        Class&nbsp;SbcUtil
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="schrodinger.application.macromodel.utils.SbcUtil-class.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== CLASS DESCRIPTION ==================== -->
+<h1 class="epydoc">Class SbcUtil</h1><p class="nomargin-top"></p>
+<p>A class for writing substructure/constraint files to accompany 
+  jobname.com.</p>
+  <p>MacroModel has different ways to define freely moving, restrained and 
+  constrained atoms. A good understanding of the SUBS/FXAT behavior is 
+  often essential; see the MacroModel Reference Manual for more details. 
+  Below are a few examples of some common idioms.</p>
+  <p>This class now support ASL2 with half-width flat-bottomed restraint 
+  potential. If self.use_flat_bottom_asl2 is True, then the ASL2 arguments 
+  are formatted thus:</p>
+<pre class="literalblock">
+   ASL2 arg1 = Flat-bottom width, in units of tenths of an angstrom.
+   ASL2 arg2 = Force constant.
+   ASL2 arg3 = Atom selection language string
+</pre>
+  <p>otherwise, ASL2 argument are formated as:</p>
+<pre class="literalblock">
+   ASL2 arg1 = Force constant. 
+   ASL2 arg2 = Atom selection language string
+</pre>
+  <p>API examples:</p>
+<pre class="literalblock">
+   # Example 1 ############################################################
+   # Writing a sbc file to restrain atoms during a minimization with ASL2.
+
+   # Write com file instructions for a simple geometry optimization.
+   # The ComUtil instance is configured such that it will write the
+   # SUBS opcode in the com file.
+   import schrodinger.application.macromodel.utils as mmodutils
+   mcu = mmodutils.ComUtil(subs=True)
+   com_file = mcu.mini(&quot;example_1.mae&quot;)
+   # MacroModel requires that the sbc file name match the input
+   # structure file, not the com file.
+   sbc_file = 'example_1.sbc' 
+
+   # Write sbc file that will modify the geometry optimization such that
+   # all atoms are harmonically restrained about their starting coordinates.
+   sbu = mmodutils.SbcUtil()
+   sbu.ASL2[1] = 200 # force constant for Cartesian restraints.
+   sbu.ASL2[2] = 'mol.n 1' # ASL identifying the restrained atoms.
+   sbu_args = [sbc_file, 'ASL2']
+   sbu.writeSbcFile(sbu_args)
+
+
+   # Example 2 ############################################################
+   # Writing a sbc file to perform a conformation search on part of a
+   # structure with ASL1/ASL2.
+
+   # Write com file instructions for a simple conformation search.
+   # The ComUtil instance is configured such that it will write the
+   # SUBS opcode in the com file.
+   import schrodinger.application.macromodel.utils as mmodutils
+   mcu = mmodutils.ComUtil(subs=True)
+   mcu.MCMM[1] = 100 # Short test search.
+   com_file = mcu.mcmm(&quot;example_2.mae&quot;)
+   # MacroModel requires that the sbc file name match the input
+   # structure file, not the com file.
+   sbc_file = &quot;example_2.sbc&quot; 
+
+   # Write an sbc file that will modify the search such that
+   # only sidechain atoms are assigned search parameters and sampled.
+   sbu = mmodutils.SbcUtil()
+   sbu.ASL1[1] = 0 # Add the substructure atoms (set up for search).
+   sbu.ASL1[2] = 'sidechain' # Substructure atoms (set up for search).
+
+   sbu.ASL2[1] = 250 # Restraint's harmonic force constant.
+   sbu.ASL2[2] = 'not sidechain' # The restrained atoms. 
+   sbu_args = [sbc_file, 'ASL1', 'ASL2']
+   sbu.writeSbcFile(sbu_args)
+
+
+   # Example 3 ############################################################
+   # Writing a sbc file to restrain/constrain part of the structure
+   # with SUBS/FXAT during a simple minimization. Here, the input
+   # structure is a ligand-receptor complex where the ligand has
+   # residue name MTW. The ligand will be freely optimized within the
+   # context of the receptor. The side-chain atoms will be fixed
+   # (restrained with a flat-bottom potential, 0.1 angstrom half-width)
+   # and a ~3 angstrom shell of nearby atoms will be frozen
+   # (constrained). All other atoms are ignored.
+
+   # Write com file instructions for a simple geometry optimization.
+   # The ComUtil instance is configured such that it will write the
+   # SUBS opcode in the com file.
+   import schrodinger.application.macromodel.utils as mmodutils
+   import schrodinger.structure as structure
+   import schrodinger.structutils.analyze as analyze
+   mcu = mmodutils.ComUtil(subs=True)
+   com_file = mcu.mini(&quot;example_3.mae&quot;)
+   sbc_file = &quot;example_3.sbc&quot; 
+
+   # Identify the atoms to optimize, restrain and constrain. All other
+   # atoms are ignored.
+   st = structure.StructureReader(&quot;example_3.mae&quot;).next()
+   ligand_atoms = analyze.evaluate_asl(st, 'res.pt MTW')
+   binding_site_atoms = analyze.evaluate_asl(
+       st,
+       'fillres (sidechain and within 5 res.pt MTW)'
+   )
+   nearby_atoms = analyze.evaluate_asl(
+       st,
+       'not (res.pt MTW or fillres (sidechain and within 5 res.pt MTW)) and within 10 res.pt MTW'
+   )
+
+   # Assign the atoms to SUBS and FXAT commands.
+   sbu = mmodutils.SbcUtil()
+   sbu_args = [sbc_file]
+   sbu_args.extend(sbu.setSubs(ligand_atoms))
+   sbu_args.extend(
+       sbu.setFixed(
+           binding_site_atoms,
+           force_constant=500,
+           half_width=1
+       )
+   )
+   sbu_args.extend(sbu.setFrozen(nearby_atoms))
+   sbu.writeSbcFile(sbu_args)
+
+
+   # Example 4 ############################################################
+   # Writing a sbc file to restrain/constrain part of the structure
+   # with ASL1/ASL2, where the input is a series of non-conformers.
+   # Here, the structure file contains a series of non-conformer
+   # polypeptides. The side-chains will be freely optimized and the
+   # backbone will be restrained. Note well, READ arg1=-1 tells
+   # MacroModel to evaluate the sbc for each input structure; a
+   # requirement since the input are non-conformers.
+
+   # Write com file instructions for a geometry optimization on a
+   # series of structures. The ComUtil instance is configured such
+   # that it will write the SUBS opcode in the com file.
+   import schrodinger.application.macromodel.utils as mmodutils
+   mcu = mmodutils.ComUtil(subs=True)
+   mcu.READ[1] = -1 # re-evaluate substructure information.
+   com_file = mcu.mini(&quot;example_4.mae&quot;)
+   sbc_file = &quot;example_4.sbc&quot;
+
+   # Assign the ASL1/2 commands and write the file.
+   sbu = mmodutils.SbcUtil()
+   sbu.ASL1[1] = 0 # Add the substructure atoms (set up for search).
+   sbu.ASL1[2] = 'sidechain' # Substructure atoms (set up for search).
+   sbu.ASL2[1] = 200 # Restraint's harmonic force constant.
+   sbu.ASL2[2] = 'not sidechain' # The restrained atoms. 
+   sbu_args = [sbc_file, 'ASL1', 'ASL2']
+   sbu.writeSbcFile(sbu_args)
+
+
+   # Example 5 ############################################################
+   # Writing a sbc file to restrain part of the structure with
+   # ASL1/ASL2 and flat-bottom restraints. Here, the structure file
+   # contains a series of non-conformer polypeptides. The side-chains
+   # will be freely optimized and the backbone will be restrained.
+   # Note well, READ arg1=-1 which tells MacroModel to evaluate the sbc
+   # for each input structure; a requirement since the input are
+   # non-conformers.
+
+   # Write com file instructions for a geometry optimization on a
+   # series of structures. The ComUtil instance is configured such
+   # that it will write the SUBS opcode in the com file.
+   import schrodinger.application.macromodel.utils as mmodutils
+   mcu = mmodutils.ComUtil(subs=True)
+   mcu.READ[1] = -1 # re-evaluate substructure information.
+   com_file = mcu.mini(&quot;example_5.mae&quot;)
+   sbc_file = &quot;example_5.sbc&quot;
+
+   # Assign the ASL1/2 commands and write the file.
+   sbu = mmodutils.SbcUtil(use_flat_bottom_asl2=True)
+   sbu.ASL1[1] = 0 # Add the substructure atoms (set up for search).
+   sbu.ASL1[2] = 'sidechain' # Substructure atoms (set up for search).
+   sbu.ASL2[1] = 5 # half-width, 0.5 angstroms. 
+   sbu.ASL2[2] = 200.0 # restrain 200 kJ/mol*A^2.
+   sbu.ASL2[3] = 'not sidechain' # The restrained atoms. 
+   sbu_args = [sbc_file, 'ASL1', 'ASL2']
+   sbu.writeSbcFile(sbu_args)
+
+
+   # Example 6 ############################################################
+   # Writing a sbc file to restrain atoms during a minimization
+   # with ASL2, confirming backwards compatible support for
+   # determining a suitable sbc file name.
+
+   # Write com file instructions for a simple geometry optimization.
+   # The ComUtil instance is configured such that it will write the
+   # SUBS opcode in the com file.
+   import schrodinger.application.macromodel.utils as mmodutils
+   mcu = mmodutils.ComUtil(subs=True)
+   com_file = mcu.mini(&quot;example_6.mae&quot;, &quot;example_6_test.com&quot;)
+
+   # Write sbc file that will modify the geometry optimization such that
+   # all atoms are harmonically restrained about their starting coordinates.
+   sbu = mmodutils.SbcUtil()
+   sbu.ASL2[1] = 200 # force constant for Cartesian restraints.
+   sbu.ASL2[2] = 'mol.n 1' # ASL identifying the restrained atoms.
+   sbu_args = [com_file, 'ASL2']
+
+   # MacroModel requires that the sbc file name match the input
+   # structure file, not the com file.  The method expects a
+   # sbc file name as the first argument, but for backwards
+   # compatibility, supports .com extensions. 
+   sbc_file = sbu.writeSbcFile(sbu_args)
+</pre>
+
+<!-- ==================== INSTANCE METHODS ==================== -->
+<a name="section-InstanceMethods"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Instance Methods</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-InstanceMethods"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="__init__"></a><span class="summary-sig-name">__init__</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">use_flat_bottom_asl2</span>=<span class="summary-sig-default">False</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.SbcUtil-class.html#writeSbcFile" class="summary-sig-name">writeSbcFile</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">sbc_args</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span><br />
+      Writes a sbc file for the list of opcodes, and returns the name
+of the written sbc file.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">list</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.SbcUtil-class.html#setSubs" class="summary-sig-name">setSubs</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">subs_list</span>)</span><br />
+      Returns:
+      List of 'SUBS' strings after assiging all atom indexed in subs_list 
+      to the self.SUBS dict, .</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">list</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.SbcUtil-class.html#setFixed" class="summary-sig-name">setFixed</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">fixed_list</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="summary-sig-arg">force_constant</span>=<span class="summary-sig-default">200</span>,
+        <span class="summary-sig-arg">half_width</span>=<span class="summary-sig-default">0</span>)</span><br />
+      Returns:
+      List of 'FXAT' strings after assiging all atom indexed in fixed_list 
+      to the self.FXAT dict.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">list</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.SbcUtil-class.html#setFrozen" class="summary-sig-name">setFrozen</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">frozen_list</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span><br />
+      Returns:
+      List of 'FXAT' strings after assiging all atom indexed in frozen_list
+      to the self.FXAT dict, .</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.SbcUtil-class.html#getOpcdArgs" class="summary-sig-name">getOpcdArgs</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">opcd</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>)</span><br />
+      The arguments come from the hash data members, any unknown or 
+      unassigned values default to 0 or 0.0.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="_formatOpcdStr"></a><span class="summary-sig-name">_formatOpcdStr</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">args</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="_formatSbcAsl1Str"></a><span class="summary-sig-name">_formatSbcAsl1Str</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">args</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="_getSbcAsl2Str"></a><span class="summary-sig-name">_getSbcAsl2Str</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">args</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.SbcUtil-class.html#setOpcdArgs" class="summary-sig-name">setOpcdArgs</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">opcd</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">arg1</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">arg2</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">arg3</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">arg4</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">arg5</span>=<span class="summary-sig-default">0.0</span>,
+        <span class="summary-sig-arg">arg6</span>=<span class="summary-sig-default">0.0</span>,
+        <span class="summary-sig-arg">arg7</span>=<span class="summary-sig-default">0.0</span>,
+        <span class="summary-sig-arg">arg8</span>=<span class="summary-sig-default">0.0</span>)</span><br />
+      This method returns True after adding the passed values to the 
+      desired opcd dictionary.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+</table>
+<!-- ==================== METHOD DETAILS ==================== -->
+<a name="section-MethodDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Method Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-MethodDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="writeSbcFile"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">writeSbcFile</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">sbc_args</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <pre class="literalblock">
+
+Writes a sbc file for the list of opcodes, and returns the name
+of the written sbc file.
+
+@param sbc_args:
+    List of arguments to serialize.  The first element should be
+    the file name to write, e.g. 'jobname.sbc', where the sbc
+    file name corresponds to the input structure file name not
+    the input com file name.  The second and subsequent elements
+    should be OPCD strings.
+@type sbc_args:
+    list
+
+@raises:
+    ValueError if the first element doesn't end with .sbc and
+    an appropriate sbc file name can't be determined.
+
+The arguments for the OPCDs are looked up in turn, evaluating
+the next eight list elements for the specific OPCD argument
+list, each time the OPCD is encountered.  See getOpcdArgs()
+and __init__() for more information about default arguments.
+For backwards compatibility, the first argument may also be a
+'.com', which will write basename.sbc if the com file can't
+be read, but will otherwise inspect the com file for the input
+structure file name and construct a suitable sbc file name.
+
+</pre>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="setSubs"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">setSubs</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">subs_list</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>subs_list</code></strong> (list) - List of atom indexes</li>
+    </ul></dd>
+    <dt>Returns: list</dt>
+        <dd>List of 'SUBS' strings after assiging all atom indexed in 
+          subs_list to the self.SUBS dict, .  This is a simple wrapper for 
+          setOpcdArgs() to conveniently set a large number of atoms at 
+          once.  Assigned SUBS have args5-8 set to 0.0 (the default).</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="setFixed"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">setFixed</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">fixed_list</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>,
+        <span class="sig-arg">force_constant</span>=<span class="sig-default">200</span>,
+        <span class="sig-arg">half_width</span>=<span class="sig-default">0</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>fixed_list</code></strong> (list) - List of atom indexes</li>
+        <li><strong class="pname"><code>force_constant</code></strong> (float) - Restraining force constant, typically in units of kJ/mol*A^2. 
+          Default is 200.</li>
+        <li><strong class="pname"><code>half_width</code></strong> (integer) - Half-width of the flat-bottom restraint potential, in tenths of 
+          an angstrom units.  Default is 0.</li>
+    </ul></dd>
+    <dt>Returns: list</dt>
+        <dd>List of 'FXAT' strings after assiging all atom indexed in 
+          fixed_list to the self.FXAT dict.  This is a simple wrapper for 
+          setOpcdArgs() to conveniently set a large number of atoms at 
+          once.  Assigned FXATs have arg5 = force_constant, and arg6 = 
+          half_width</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="setFrozen"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">setFrozen</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">frozen_list</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>frozen_list</code></strong> (list) - List of atom indexes</li>
+    </ul></dd>
+    <dt>Returns: list</dt>
+        <dd>List of 'FXAT' strings after assiging all atom indexed in 
+          frozen_list to the self.FXAT dict, .  This is a simple wrapper 
+          for setOpcdArgs() to conveniently set a large number of atoms at 
+          once.  Assigned FXATs have arg5 = -1, to freeze (constrain) the 
+          atoms in place.</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="getOpcdArgs"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">getOpcdArgs</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">opcd</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>The arguments come from the hash data members, any unknown or 
+  unassigned values default to 0 or 0.0.  You may customize the self hash 
+  arguments to your heart's content prior to invoking the method to get the
+  exact behavior you want.  The 'OPCD' lookup requires the passed argument 
+  to be a key for the hash, i.e. uppercase with no whitespace.  The array 
+  of arg values are numbers, not strings.</p>
+  <p>This method keeps count of the number of times an OPCD is called and 
+  automatically increments the array of args for the passed OPCD.  The 
+  first call for a given OPCD uses self['OPCD'] arg slices 1-8, the next 
+  call for that OPCD uses slices 9-16, the next 17-24, and so on.  
+  writeSbcFile() zeros the count after the com or sbc file is 
+  serialized.</p>
+  <p>Returns a formatted string of OPCD and arguments for the passed OPCD 
+  string.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>opcd</code></strong> (string) - MacroModel operation code.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="setOpcdArgs"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">setOpcdArgs</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">opcd</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">arg1</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">arg2</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">arg3</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">arg4</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">arg5</span>=<span class="sig-default">0.0</span>,
+        <span class="sig-arg">arg6</span>=<span class="sig-default">0.0</span>,
+        <span class="sig-arg">arg7</span>=<span class="sig-default">0.0</span>,
+        <span class="sig-arg">arg8</span>=<span class="sig-default">0.0</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method returns True after adding the passed values to the desired
+  opcd dictionary.</p>
+  <p>The dictionary is selected by the first parameter, which is required.
+  The rest of the parameters are mapped to the next eight argument indices 
+  in the dictionary.  Unspecified values default to 0 or 0.0.</p>
+  <p>This method determines the highest existing index (numeric hash key), 
+  and then assigns the passed args to the next available slots.  You may 
+  want to first blank the dictionary with the appropriate call of 
+  self['OPCD'].clear().</p>
+  <p>Assumming the dictionary has has been cleared, the first 'set' of a 
+  given OPCD assigns self['OPCD'] arg indices 1-8, the next call for that 
+  OPCD defines indices 9-16, the next 17-24, and so on.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >2015-2Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Sat May  9 06:31:18 2015
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

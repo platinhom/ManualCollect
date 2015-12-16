@@ -1,0 +1,2714 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>schrodinger.application.macromodel.utils.ComUtil</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="schrodinger-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >Suite 2012 Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="schrodinger-module.html">Package&nbsp;schrodinger</a> ::
+        <a href="schrodinger.application-module.html">Package&nbsp;application</a> ::
+        <a href="schrodinger.application.macromodel-module.html">Package&nbsp;macromodel</a> ::
+        <a href="schrodinger.application.macromodel.utils-module.html">Module&nbsp;utils</a> ::
+        Class&nbsp;ComUtil
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="schrodinger.application.macromodel.utils.ComUtil-class.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== CLASS DESCRIPTION ==================== -->
+<h1 class="epydoc">Class ComUtil</h1><p class="nomargin-top"></p>
+<dl><dt>Known Subclasses:</dt>
+<dd>
+      <ul class="subclass-list">
+<li><a href="schrodinger.application.macromodel.utils.ComUtilAppSci-class.html">ComUtilAppSci</a></li>  </ul>
+</dd></dl>
+
+<hr />
+<p>A class for writing MacroModel com files.</p>
+  <p>The class has methods to write jobname.com files for a broad range of 
+  calculation types.  The class is initallized with reasonable OPCD 
+  argument default values, so the methods like mini() are usable 'out of 
+  the box'.  The OPCD arguments are easily modified by accessing the dict 
+  values.  There is a generic writeComFile() method that allows you write 
+  any com file by passing a list of arguments, IO and OPCDs.</p>
+  <p>If no arguments are provide to the constructor the defaults are:</p>
+  <ul>
+    <li>
+      Potential energy surface is OPLS_2005, gas phase, with extended 
+      non-bonded cutoffs.
+    </li>
+    <li>
+      Minimization run up to 50000 iterations of PRCG.  Convergence is set 
+      to a gradient of 0.01.
+    </li>
+    <li>
+      Energy window is 50 kJ/mol and is only checked at the end of the 
+      minimization.
+    </li>
+    <li>
+      MacroModel/Maestro interaction files are not generated.  Enable by 
+      setting self.mmod = True.
+    </li>
+    <li>
+      Atom distance for conformer equivalence is 0.25 angstroms.
+    </li>
+  </ul>
+  <p>API examples:</p>
+<pre class="literalblock">
+   # Example 1 ############################################################
+   # Writing an energy listing com file via writeComFile. 
+   import schrodinger.application.macromodel.utils as mmodutils
+   mcu = mmodutils.ComUtil() # create a default instance of the class
+   com_file_args = [
+       'example1.com', # The name of the com file to write.
+       'input.mae', # The name of the input structure file.
+       'output.mae', # The name of the output structure file.
+       'EXNB',
+       'BDCO',
+       'FFLD',
+       'READ',
+       'ELST'
+   ]
+   mcu.writeComFile(com_file_args)
+
+   # Example 2 ############################################################
+   # Writing an energy listing com file via a utility methods.
+   import schrodinger.application.macromodel.utils as mmodutils
+   mcu = mmodutils.ComUtil()
+   com_file_name = mcu.elst('example2.mae')
+
+   # Example 3 ############################################################
+   # Writing an minimization com file with customized parameters.
+   import schrodinger.application.macromodel.utils as mmodutils
+   mcu = mmodutils.ComUtil()
+   mcu.MINI[1] = 9 # Use Truncated Newton Conjugate Gradient minimizer.
+   mcu.CONV[5] = 0.0001 # Halt when gradient reaches this stringent value.
+   mcu.mini('example3.mae')
+
+   # Example 4 ############################################################
+   # Writing an minimization com file that includes water GB/SA solvation.
+   import schrodinger.application.macromodel.utils as mmodutils
+   mcu = mmodutils.ComUtil(solv=True)
+   mcu.mini('example4.mae')
+
+   # Example 5 ############################################################
+   # Writing an minimization com file that requests a substructure.
+   # See the SbcUtil class for how to construct a .sbc file, this
+   # example assumes an appropriate .sbc file already exists.
+   import schrodinger.application.macromodel.utils as mmodutils
+   mcu = mmodutils.ComUtil(subs=True)
+   mcu.mini('example5.mae')
+</pre>
+
+<!-- ==================== INSTANCE METHODS ==================== -->
+<a name="section-InstanceMethods"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Instance Methods</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-InstanceMethods"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#__init__" class="summary-sig-name">__init__</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">ffld</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">oplsaa2005</code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">solv</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">ddde</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">bdco</span>=<span class="summary-sig-default">True</span>,
+        <span class="summary-sig-arg">chgf</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">exnb</span>=<span class="summary-sig-default">True</span>,
+        <span class="summary-sig-arg">auto</span>=<span class="summary-sig-default">True</span>,
+        <span class="summary-sig-arg">auop</span>=<span class="summary-sig-default">True</span>,
+        <span class="summary-sig-arg">subs</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">serial</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">demx</span>=<span class="summary-sig-default">True</span>,
+        <span class="summary-sig-arg">demx_final</span>=<span class="summary-sig-default">50</span>,
+        <span class="summary-sig-arg">demx_prelim</span>=<span class="summary-sig-default">100</span>,
+        <span class="summary-sig-arg">algn</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">nant</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">chyd</span>=<span class="summary-sig-default">True</span>,
+        <span class="summary-sig-arg">nprc</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">flap</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">mcrc</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">ddebug</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">nice</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">wait</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">host</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">hostfile</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">arch</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">local</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">interval</span>=<span class="summary-sig-default">5</span>,
+        <span class="summary-sig-arg">no_redirect</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">tmpdir</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">ver</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">rel</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">proj</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">disp</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">user</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">para_bmin</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">para_bmin_jobcts</span>=<span class="summary-sig-default">100</span>,
+        <span class="summary-sig-arg">para_bmin_njobs</span>=<span class="summary-sig-default">10</span>,
+        <span class="summary-sig-arg">para_bmin_output_org</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">debug</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">beautify</span>=<span class="summary-sig-default">True</span>,
+        <span class="summary-sig-arg">refit_args</span>=<span class="summary-sig-default">True</span>)</span><br />
+      This method loads the default data members and methods.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#writeComFile" class="summary-sig-name">writeComFile</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">com_args</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span><br />
+      This method writes a com file, and returns the name of the written 
+      com file.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="writeSbcFile"></a><span class="summary-sig-name">writeSbcFile</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">sbc_args</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span><br />
+      Deprecated wrapper for <a 
+      href="schrodinger.application.macromodel.utils.SbcUtil-class.html#writeSbcFile"
+      class="link">SbcUtil.writeSbcFile</a>.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#getOpcdArgs" class="summary-sig-name">getOpcdArgs</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">opcd</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>)</span><br />
+      This method returns a formatted string of OPCD and arguments for the 
+      passed OPCD string.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#setOpcdArgs" class="summary-sig-name">setOpcdArgs</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">opcd</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">arg1</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">arg2</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">arg3</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">arg4</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">arg5</span>=<span class="summary-sig-default">0.0</span>,
+        <span class="summary-sig-arg">arg6</span>=<span class="summary-sig-default">0.0</span>,
+        <span class="summary-sig-arg">arg7</span>=<span class="summary-sig-default">0.0</span>,
+        <span class="summary-sig-arg">arg8</span>=<span class="summary-sig-default">0.0</span>)</span><br />
+      This method returns True after adding the passed values to the 
+      desired opcd dictionary.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#setupAset" class="summary-sig-name">setupAset</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">set_dict</span>,
+        <span class="summary-sig-arg">arg7</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">arg8</span>=<span class="summary-sig-default">0</span>)</span><br />
+      Define ASET arguments from a set dictionary.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#getLaunchCommand" class="summary-sig-name">getLaunchCommand</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>)</span><br />
+      This method returns a list of arguments that form the toplevel 
+      command invocation with all the flags set in the instance.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#elst" class="summary-sig-name">elst</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a single point energy listing, 
+      returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#dlst" class="summary-sig-name">dlst</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a single point energy listing of 
+      1st and 2nd derivatives, returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mini" class="summary-sig-name">mini</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a geometry optimization, returns 
+      the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#addc" class="summary-sig-name">addc</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for redundant conformer elimination, 
+      returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#filter" class="summary-sig-name">filter</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a special atom filtering, similar 
+      to premin's, but with 0 minimization iterations; returns the name of 
+      the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mult" class="summary-sig-name">mult</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a geometry optimization and 
+      filtering with MULT and COMP;  returns the name of the com file 
+      written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#driv" class="summary-sig-name">driv</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a geometry drive;  returns the name
+      of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#lmod" class="summary-sig-name">lmod</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a lowmode conformation search; 
+      returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#llmd" class="summary-sig-name">llmd</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a large scale lowmode conformation 
+      search;  returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mcmm" class="summary-sig-name">mcmm</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a monte carlo multiple minimum 
+      conformation search;  returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#spmc" class="summary-sig-name">spmc</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a systematic pseudo monte carlo 
+      multiple minimum conformation search; returns the name of the com 
+      file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mcmmlmod" class="summary-sig-name">mcmmlmod</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a mixed monte carlo multiple 
+      minimum/lowmode conformation search;  returns the name of the com 
+      file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mcmmllmd" class="summary-sig-name">mcmmllmd</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a mixed monte carlo multiple 
+      minimum/large scale lowmode conformation search;  returns the name of
+      the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#cgen" class="summary-sig-name">cgen</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a ligand torsion search with 
+      ConfGen;  returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mdyn" class="summary-sig-name">mdyn</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a molecular dynamics simulation; 
+      returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mcsd" class="summary-sig-name">mcsd</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a mixed Monte Carlo/Stochastic 
+      Dynamics simulation; returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mmc" class="summary-sig-name">mmc</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a Metropolis Monte Carlo ensemble 
+      generation; returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#adf" class="summary-sig-name">adf</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for an All Degrees of Freedom 
+      simulation (a Metropolis Monte Carlo with passive Importance 
+      sampling) calculation; returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#jbw" class="summary-sig-name">jbw</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a Jump Between Wells simulation (a 
+      Metropolis Monte carlo simulation with active Importance sampling); 
+      returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#jbw_sd" class="summary-sig-name">jbw_sd</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a Jump Between Wells/Stochastic 
+      Dynamics simulation (a MCSD simulation with active Importance 
+      sampling);  returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#geom" class="summary-sig-name">geom</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a geometry analysis;  returns the 
+      name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#copyalgn" class="summary-sig-name">copyalgn</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for an ALGN/COPY positioning of ligands
+      on a reference ligand;  returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mbaeMiniEdiff" class="summary-sig-name">mbaeMiniEdiff</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for an MBAE multiple minimization run, 
+      in energy difference mode;  returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mbaeMiniInter" class="summary-sig-name">mbaeMiniInter</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">recep_atom</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for an MBAE multiple minimization run, 
+      in set interaction mode;  returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mbaeCsLmod" class="summary-sig-name">mbaeCsLmod</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for an MBAE low mode conformation 
+      search run, in energy difference mode;  returns the name of the com 
+      file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mbaeCsMcmm" class="summary-sig-name">mbaeCsMcmm</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for an MBAE monte carlo conformation 
+      search run, in energy difference mode;  returns the name of the com 
+      file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mbaeCsMcmmLmod" class="summary-sig-name">mbaeCsMcmmLmod</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for an MBAE mixed lowmode monte carlo 
+      conformation search run, in energy difference mode; returns the name 
+      of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#logP" class="summary-sig-name">logP</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a multiple minimization with logP 
+      calculation;  returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#fep" class="summary-sig-name">fep</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a Free Energy Perturbation with 
+      stochastic dynamics sampling;  returns the name of the com file 
+      written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#loop" class="summary-sig-name">loop</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a protein LOOP conformation search;
+      returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#aset" class="summary-sig-name">aset</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a atom set interaction (ASET) 
+      analysis;  returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#minta" class="summary-sig-name">minta</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a Mode integration MINTA 
+      calculation (conformational free energy);  returns the name of the 
+      com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#rrho" class="summary-sig-name">rrho</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file for a Rigid Rotor Harmonic Oscillator 
+      calculation (normal mode analysis of thermodyanic quantities);  
+      returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#vibr" class="summary-sig-name">vibr</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file to visualize vibrational modes with 
+      VIBR; returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#vbr2" class="summary-sig-name">vbr2</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">mae_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">com_file</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">out_file</span>=<span class="summary-sig-default">None</span>)</span><br />
+      This method writes a com file to visualize vibrational modes with 
+      VBR2; returns the name of the com file written.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+</table>
+<!-- ==================== STATIC METHODS ==================== -->
+<a name="section-StaticMethods"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Static Methods</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-StaticMethods"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.macromodel.utils.ComUtil-class.html#outComFile" class="summary-sig-name">outComFile</a>(<span class="summary-sig-arg">file_name</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">structure_file_ext</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">.mae</code><code class="variable-quote">'</code></span>)</span><br />
+      This is a static helper method for the jobs that write com files.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+</table>
+<!-- ==================== INSTANCE VARIABLES ==================== -->
+<a name="section-InstanceVariables"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Instance Variables</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-InstanceVariables"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">boolean</span>
+    </td><td class="summary">
+        <a href="schrodinger.application.macromodel.utils.ComUtil-class.html#beautify" class="summary-name">beautify</a><br />
+      If True don't write disabled opcds.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">boolean</span>
+    </td><td class="summary">
+        <a href="schrodinger.application.macromodel.utils.ComUtil-class.html#cgo3" class="summary-name">cgo3</a><br />
+      If True enable the writing of CGO3 to com files.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">boolean</span>
+    </td><td class="summary">
+        <a href="schrodinger.application.macromodel.utils.ComUtil-class.html#cgo4" class="summary-name">cgo4</a><br />
+      If True enable the writing of CGO3 to com files.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">boolean</span>
+    </td><td class="summary">
+        <a href="schrodinger.application.macromodel.utils.ComUtil-class.html#cgo5" class="summary-name">cgo5</a><br />
+      If True enable the writing of CGO5 to com files.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">boolean</span>
+    </td><td class="summary">
+        <a href="schrodinger.application.macromodel.utils.ComUtil-class.html#cgo6" class="summary-name">cgo6</a><br />
+      If True enable the writing of CGO6 to com files.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">boolean</span>
+    </td><td class="summary">
+        <a href="schrodinger.application.macromodel.utils.ComUtil-class.html#mmod" class="summary-name">mmod</a><br />
+      If True enable MMOD and write MacroModel/Maestro interaction-monitor 
+      files.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">boolean</span>
+    </td><td class="summary">
+        <a href="schrodinger.application.macromodel.utils.ComUtil-class.html#refit_args" class="summary-name">refit_args</a><br />
+      If True reformat large float value to fit in the alternate field 
+      format (%6.3f - %9.0f).
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">boolean</span>
+    </td><td class="summary">
+        <a name="serial_nonconf_input"></a><span class="summary-name">serial_nonconf_input</span><br />
+      If True enable DEBG 55 property management when self.serial is also 
+      True.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">string</span>
+    </td><td class="summary">
+        <a href="schrodinger.application.macromodel.utils.ComUtil-class.html#structure_file_ext" class="summary-name">structure_file_ext</a><br />
+      Default structure file extention for file names automatically 
+      determined by outComFile().
+    </td>
+  </tr>
+</table>
+<!-- ==================== METHOD DETAILS ==================== -->
+<a name="section-MethodDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Method Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-MethodDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="__init__"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__init__</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">ffld</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">oplsaa2005</code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">solv</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">ddde</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">bdco</span>=<span class="sig-default">True</span>,
+        <span class="sig-arg">chgf</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">exnb</span>=<span class="sig-default">True</span>,
+        <span class="sig-arg">auto</span>=<span class="sig-default">True</span>,
+        <span class="sig-arg">auop</span>=<span class="sig-default">True</span>,
+        <span class="sig-arg">subs</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">serial</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">demx</span>=<span class="sig-default">True</span>,
+        <span class="sig-arg">demx_final</span>=<span class="sig-default">50</span>,
+        <span class="sig-arg">demx_prelim</span>=<span class="sig-default">100</span>,
+        <span class="sig-arg">algn</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">nant</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">chyd</span>=<span class="sig-default">True</span>,
+        <span class="sig-arg">nprc</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">flap</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">mcrc</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">ddebug</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">nice</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">wait</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">host</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">hostfile</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">arch</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">local</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">interval</span>=<span class="sig-default">5</span>,
+        <span class="sig-arg">no_redirect</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">tmpdir</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">ver</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">rel</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">proj</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">disp</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">user</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">para_bmin</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">para_bmin_jobcts</span>=<span class="sig-default">100</span>,
+        <span class="sig-arg">para_bmin_njobs</span>=<span class="sig-default">10</span>,
+        <span class="sig-arg">para_bmin_output_org</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">debug</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">beautify</span>=<span class="sig-default">True</span>,
+        <span class="sig-arg">refit_args</span>=<span class="sig-default">True</span>)</span>
+    <br /><em class="fname">(Constructor)</em>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method loads the default data members and methods.</p>
+  <p>It sets default OPCD arguments, and com file preferences (e.g. no 
+  solvent model, OPLSAA_2005, yes to BDCO).</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>ffld</code></strong> (string) - String identifier for the force field.  The FFLD value is 
+          assigned by regular expression evaluation of the string.</li>
+        <li><strong class="pname"><code>solv</code></strong> (boolean) - If True enable the writing of SOLV to com files.  By default 
+          solv=False and the opcode is not written, even if it appears in 
+          the list of opcodes.</li>
+        <li><strong class="pname"><code>ddde</code></strong> (boolean) - If True enable distance-dependent dielectric electrostatic 
+          treatment, with a dielectric constant of 4.0.</li>
+        <li><strong class="pname"><code>serial</code></strong> (boolean) - If True enable serial processing mode.  This sets AUTO arg6=1, 
+          and MCOP arg4=1 where appropriate.</li>
+        <li><strong class="pname"><code>bdco</code></strong> (boolean) - If True enable the writing of BDCO to com files.  By default 
+          bdco=True and the opcode is written if it appears in the list of 
+          opcodes.</li>
+        <li><strong class="pname"><code>subs</code></strong> (boolean) - If True enable the writing of SUBS to com files.  By default 
+          subs=False and the opcode is not written, even if it appears in 
+          the list of opcodes.</li>
+        <li><strong class="pname"><code>chgf</code></strong> (boolean) - If True enable the writing of CHGF to com files.  By default 
+          chgf=False and the opcode is not written, even if it appears in 
+          the list of opcodes.</li>
+        <li><strong class="pname"><code>exnb</code></strong> (boolean) - If True enable the writing of EXNB to com files.  By default 
+          exnb=True.  If False it is not written, even if it appears in the
+          list of opcodes.</li>
+        <li><strong class="pname"><code>auto</code></strong> (boolean) - If True enable the writing of AUTO to com files.  By default 
+          auto=True.  If False it is not written, even if it appears in the
+          list of opcodes.</li>
+        <li><strong class="pname"><code>auop</code></strong> (boolean) - If True enable the writing of AUOP to com files.  By default 
+          auop=True.  If False it is not written, even if it appears in the
+          list of opcodes.</li>
+        <li><strong class="pname"><code>nant</code></strong> (boolean) - If True enable the writing of NANT to com files.  By default 
+          nant=False.  If False it is not written, even if it appears in 
+          the list of opcodes.</li>
+        <li><strong class="pname"><code>algn</code></strong> (boolean) - If True enable the writing of COPY/ALGN to MBAE com files 
+          generated by the pre-defined methods, e.g. mbaeCsLmod()</li>
+        <li><strong class="pname"><code>demx</code></strong> (boolean) - If True enable the writing of DEMX to com files.  By default 
+          demx=True.  If False it is not written, even if it appears in the
+          list of opcodes.</li>
+        <li><strong class="pname"><code>demx_final</code></strong> (float) - Energy window for the final DEMX test.  Default is 50 kJ/mol</li>
+        <li><strong class="pname"><code>demx_prelim</code></strong> (float) - Energy window for the preliminary DEMX test.  Default is 100 
+          kJ/mol.   By default DEMX arg2 is set to 10000, so the prelimnary
+          test is seldom performed.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="writeComFile"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">writeComFile</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">com_args</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file, and returns the name of the written com
+  file.</p>
+  <p>It requires a list containing the name of the com file to be written, 
+  the name of the input file, the name of the output file, and a series of 
+  OPCDs.  The arguments for the OPCDs are looked up in turn, evaluating the
+  next eight elements for the specific OPCD argument dictionary, each time 
+  the OPCD is encountered. See setOpcdArgs(), getOpcdArgs(), and __init__()
+  for more information about default arguments.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="getOpcdArgs"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">getOpcdArgs</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">opcd</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method returns a formatted string of OPCD and arguments for the 
+  passed OPCD string.</p>
+  <p>The arguments come from the hash data members, any unknown or 
+  unassigned values default to 0 or 0.0.  You may customize the self hash 
+  arguments to your heart's content prior to invoking the method to get the
+  exact behavior you want.  The 'OPCD' lookup requires the passed argument 
+  to be a key for the hash, i.e. uppercase with no whitespace.  The array 
+  of arg values are numbers, not strings.</p>
+  <p>This method keeps count of the number of times an OPCD is called and 
+  automatically increments the array of args for the passed OPCD.  The 
+  first call for a given OPCD uses self['OPCD'] arg slices 1-8, the next 
+  call for that OPCD uses slices 9-16, the next 17-24, and so on.  
+  writeComFile() zeros the count after the com file is serialized.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="setOpcdArgs"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">setOpcdArgs</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">opcd</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">arg1</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">arg2</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">arg3</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">arg4</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">arg5</span>=<span class="sig-default">0.0</span>,
+        <span class="sig-arg">arg6</span>=<span class="sig-default">0.0</span>,
+        <span class="sig-arg">arg7</span>=<span class="sig-default">0.0</span>,
+        <span class="sig-arg">arg8</span>=<span class="sig-default">0.0</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method returns True after adding the passed values to the desired
+  opcd dictionary.</p>
+  <p>The dictionary is selected by the first parameter, which is required.
+  The rest of the parameters are mapped to the next eight argument indices 
+  in the dictionary.  Unspecified values default to 0 or 0.0.</p>
+  <p>This method determines the highest existing index (numeric hash key), 
+  and then assigns the passed args to the next available slots.  You may 
+  want to first blank the dictionary with the appropriate call of 
+  self['OPCD'].clear().</p>
+  <p>Assumming the dictionary has has been cleared, the first 'set' of a 
+  given OPCD assigns self['OPCD'] arg indices 1-8, the next call for that 
+  OPCD defines indices 9-16, the next 17-24, and so on.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="outComFile"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">outComFile</span>(<span class="sig-arg">file_name</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">structure_file_ext</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">.mae</code><code class="variable-quote">'</code></span>)</span>
+    <br /><em class="fname">Static Method</em>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This is a static helper method for the jobs that write com files. 
+  Returns an 'out' string for the passed 'in' string.</p>
+  <p>Raises an Exception if the file name can't be determined.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>file_name</code></strong> (string) - If passed 'jobname.com' string argument, it returns the 
+          appropriate 'jobname-out.mae' string.  If passed a 'foo.mae' 
+          file, it returns an appropriate 'foo.com' file name.</li>
+        <li><strong class="pname"><code>structure_file_ext</code></strong> (string) - Output structure file extension.  Default is '.mae'.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="setupAset"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">setupAset</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">set_dict</span>,
+        <span class="sig-arg">arg7</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">arg8</span>=<span class="sig-default">0</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Define ASET arguments from a set dictionary.</p>
+  <p>Numeric hash keys index the lists of atom numbers. The numerical key 
+  is taken as the set number identifier.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="getLaunchCommand"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">getLaunchCommand</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method returns a list of arguments that form the toplevel command
+  invocation with all the flags set in the instance.</p>
+  <p>It takes a string argument that specifies the name of the com file to 
+  run, and returns the fully qualified executable and all commandline 
+  arguments.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="elst"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">elst</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a single point energy listing, 
+  returns the name of the com file written.</p>
+  <p>It requires a string containing the the name of a maestro format file 
+  that will be used as the job input, and returns the string name of the 
+  com file.  It may also accept an optional string file name that becomes 
+  the name of the com file plus the root of the generated -out.mae 
+  file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="dlst"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">dlst</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a single point energy listing of 1st
+  and 2nd derivatives, returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="mini"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">mini</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a geometry optimization, returns the
+  name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="addc"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">addc</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for redundant conformer elimination, 
+  returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>COMP atoms must be set outside of this method.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="filter"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">filter</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a special atom filtering, similar to
+  premin's, but with 0 minimization iterations; returns the name of the com
+  file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="mult"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">mult</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a geometry optimization and 
+  filtering with MULT and COMP;  returns the name of the com file 
+  written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.  It is
+  intended for filtering conformation search output.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="driv"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">driv</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a geometry drive;  returns the name 
+  of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.  It is
+  intended for filtering conformation search output.</p>
+  <p>DEGB 150 starts the drive from the input geometry, not the endpoint of
+  the previous iteration.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="lmod"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">lmod</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a lowmode conformation search; 
+  returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="llmd"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">llmd</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a large scale lowmode conformation 
+  search;  returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="mcmm"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">mcmm</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a monte carlo multiple minimum 
+  conformation search;  returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="spmc"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">spmc</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a systematic pseudo monte carlo 
+  multiple minimum conformation search; returns the name of the com file 
+  written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.  This 
+  method always uses torsional memory and will preoptimize ring closure 
+  distances.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="mcmmlmod"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">mcmmlmod</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a mixed monte carlo multiple 
+  minimum/lowmode conformation search;  returns the name of the com file 
+  written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="mcmmllmd"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">mcmmllmd</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a mixed monte carlo multiple 
+  minimum/large scale lowmode conformation search;  returns the name of the
+  com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="cgen"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">cgen</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a ligand torsion search with 
+  ConfGen;  returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="mdyn"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">mdyn</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a molecular dynamics simulation; 
+  returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="mcsd"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">mcsd</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a mixed Monte Carlo/Stochastic 
+  Dynamics simulation; returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="mmc"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">mmc</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a Metropolis Monte Carlo ensemble 
+  generation; returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>The arguments for ZMAT must be set outside this method.  ZMAT makes 
+  all the structural changes so the min-max range should allow diverse 
+  sampling (5 deg bends, 180 tors).</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="adf"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">adf</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for an All Degrees of Freedom simulation
+  (a Metropolis Monte Carlo with passive Importance sampling) calculation; 
+  returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>The arguments for ZMAT must be set outside this method.  ZMAT makes 
+  all the structural changes so the min-max range should allow diverse 
+  sampling (5 deg bends, 180 tors).</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="jbw"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">jbw</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a Jump Between Wells simulation (a 
+  Metropolis Monte carlo simulation with active Importance sampling); 
+  returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>The arguments for ZMAT must be set outside this method.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="jbw_sd"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">jbw_sd</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a Jump Between Wells/Stochastic 
+  Dynamics simulation (a MCSD simulation with active Importance sampling);
+  returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>The arguments for ZMAT must be set outside this method.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="geom"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">geom</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a geometry analysis;  returns the 
+  name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>The arguments for GEOM must be set outside this method.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="copyalgn"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">copyalgn</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for an ALGN/COPY positioning of ligands 
+  on a reference ligand;  returns the name of the com file written.</p>
+  <p>The ligands are positioned on the first ligand (all four ways) with 
+  ALGN/COPY.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="mbaeMiniEdiff"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">mbaeMiniEdiff</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for an MBAE multiple minimization run, 
+  in energy difference mode;  returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="mbaeMiniInter"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">mbaeMiniInter</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">recep_atom</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for an MBAE multiple minimization run, 
+  in set interaction mode;  returns the name of the com file written.  
+  recep_atom is the last atomic index of the receptor structure.  If 
+  recep_atom is None then the first  structure in the mae_file is 
+  evaluated.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>The ASET arguments are set by snooping the input file for the number 
+  of atoms in the receptor.</p>
+  <p>raises IOError if the receptor atom total can't be determined from the
+  input structure file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="mbaeCsLmod"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">mbaeCsLmod</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for an MBAE low mode conformation search
+  run, in energy difference mode;  returns the name of the com file 
+  written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>If ComUtil.algn is true, then a the job will positions the ligands on 
+  the reference ligand, with all four alignments.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="mbaeCsMcmm"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">mbaeCsMcmm</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for an MBAE monte carlo conformation 
+  search run, in energy difference mode;  returns the name of the com file 
+  written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>If ComUtil.algn is true, then a the job will positions the ligands on 
+  the reference ligand, with all four alignments.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="mbaeCsMcmmLmod"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">mbaeCsMcmmLmod</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for an MBAE mixed lowmode monte carlo 
+  conformation search run, in energy difference mode; returns the name of 
+  the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>If ComUtil.algn is true, then a the job will positions the ligands on 
+  the reference ligand, with all four alignments.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="logP"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">logP</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a multiple minimization with logP 
+  calculation;  returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="fep"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">fep</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a Free Energy Perturbation with 
+  stochastic dynamics sampling;  returns the name of the com file 
+  written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="loop"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">loop</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a protein LOOP conformation search;
+  returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="aset"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">aset</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a atom set interaction (ASET) 
+  analysis;  returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>The arguments for ASET must be set outside this method.</p>
+  <p>Uses a BGIN/END loop to process each input file member, but single 
+  structure input files are allowed.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="minta"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">minta</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a Mode integration MINTA calculation
+  (conformational free energy);  returns the name of the com file 
+  written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="rrho"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">rrho</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file for a Rigid Rotor Harmonic Oscillator 
+  calculation (normal mode analysis of thermodyanic quantities);  returns 
+  the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>The structure is minimized prior to RRHO calculation. The optimization
+  can be omitted by setting MINI[3] = 0</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="vibr"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">vibr</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file to visualize vibrational modes with 
+  VIBR; returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>The structure is minimized prior to VIBR calculation. The optimization
+  can be omitted by setting MINI[3] = 0</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="vbr2"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">vbr2</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">mae_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">com_file</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">out_file</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method writes a com file to visualize vibrational modes with 
+  VBR2; returns the name of the com file written.</p>
+  <p>It requires a string containing the name of a maestro format file that
+  will be used as the job input, and returns the string name of the com 
+  file.  It may also accept an optional string file name that becomes the 
+  name of the com file plus the root of the generated -out.mae file.</p>
+  <p>The structure is minimized prior to VBR2 calculation. The optimization
+  can be omitted by setting MINI[3] = 0</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== INSTANCE VARIABLE DETAILS ==================== -->
+<a name="section-InstanceVariableDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Instance Variable Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-InstanceVariableDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="beautify"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">beautify</h3>
+  If True don't write disabled opcds.  If False, disabled opcds are printed
+  as commented-out lines.  Default is True
+  <dl class="fields">
+    <dt>Type:</dt>
+      <dd>boolean</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="cgo3"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">cgo3</h3>
+  If True enable the writing of CGO3 to com files.  By default bdco=True 
+  and the opcode is written if it appears in the list of opcodes.
+  <dl class="fields">
+    <dt>Type:</dt>
+      <dd>boolean</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="cgo4"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">cgo4</h3>
+  If True enable the writing of CGO3 to com files.  By default bdco=True 
+  and the opcode is written if it appears in the list of opcodes.
+  <dl class="fields">
+    <dt>Type:</dt>
+      <dd>boolean</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="cgo5"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">cgo5</h3>
+  If True enable the writing of CGO5 to com files.  By default bdco=True 
+  and the opcode is written if it appears in the list of opcodes.
+  <dl class="fields">
+    <dt>Type:</dt>
+      <dd>boolean</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="cgo6"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">cgo6</h3>
+  If True enable the writing of CGO6 to com files.  By default bdco=True 
+  and the opcode is written if it appears in the list of opcodes.
+  <dl class="fields">
+    <dt>Type:</dt>
+      <dd>boolean</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="mmod"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">mmod</h3>
+  If True enable MMOD and write MacroModel/Maestro interaction-monitor 
+  files.  This is seldom useful in a script context, but is provided to as 
+  an option to make com files look more like Maestro generated files.  
+  Default is False.
+  <dl class="fields">
+    <dt>Type:</dt>
+      <dd>boolean</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="refit_args"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">refit_args</h3>
+  If True reformat large float value to fit in the alternate field format 
+  (%6.3f - %9.0f).  If False, values are printed as %5.4f Default is True.
+  <dl class="fields">
+    <dt>Type:</dt>
+      <dd>boolean</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="structure_file_ext"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">structure_file_ext</h3>
+  Default structure file extention for file names automatically determined 
+  by outComFile().  Default is '.mae'.
+  <dl class="fields">
+    <dt>Type:</dt>
+      <dd>string</dd>
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="schrodinger-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >Suite 2012 Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Tue Sep 25 02:23:04 2012
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

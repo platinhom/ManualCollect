@@ -1,0 +1,2595 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<!--
+!!	ph4_guide.htm	User's Guide to MOE pharmacophores
+!!			Location: $MANSRC/apps
+!!
+!!	24-mar-2010 (al) add automatic query generation
+!!	15-dec-2008 (al) created
+!!-->
+
+<title>Introduction to Pharmacophores in MOE</title>
+
+<meta main_keywords pharmacophore annotation, query, search, elucidate />
+<meta main_keywords feature, constraint, consensus, expression, volume />
+<meta main_keywords included, excluded, exterior, atom, projected />
+<meta main_keywords centroid, link, group />
+
+<meta keywords virtual library, 1HPV, automatic, moebatch />
+<meta keywords batch, data preparation, conformation, wash, protonate />
+<meta keywords donor, acceptor, ligator, bioisostere />
+<meta keywords radius, site finder, ligand, receptor, refine />
+<meta keywords directional, VDW, surface, SMARTS, partial match, logic />
+<meta keywords hit entries, essential, water, binding pocket />
+<meta keywords spacing, cluster, active coverage, filter, shape />
+<meta keywords save, validate, script, substructure, unified />
+
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Introduction to Pharmacophores in MOE</h2>
+<hr noshade="noshade" />
+
+<p>MOE's pharmacophore modeling tools determine the chemical features
+and their spatial arrangement in 3D that are essential to the binding
+of a ligand to its receptor and thus to the ligand's drug activity.
+Pharmacophore models can be generated from
+the structural data of protein-ligand complexes as well as from ligands
+when no receptor information is available and from the receptor structure
+when no ligands are available.  The generated models can be used to screen
+virtual compound libraries for potentially active molecules.  </p>
+
+<ul>
+<li><a href="#What_is_a_Pharmacophore?">What is a Pharmacophore?</a>
+</li>
+<li><a href="#Pharmacophore_Applications_in_MOE">Pharmacophore Applications in MOE</a>
+    <ul>
+    <li><a href="#Generating_Pharmacophore_Queries">Generating Pharmacophore Queries</a>
+    <li><a href="#Using_Pharmacophore_Queries">Using Pharmacophore Queries</a>
+    </ul>
+</li>
+<li><a href="#Introduction_to_Pharmacophore_Modeling">
+	Introduction to Pharmacophore Modeling and Searching</a>
+    <ul>
+    <li><a href="#Preparing_the_Data">Preparing the Data</a>
+    </li>
+    <li><a href="#Pharmacophore_Annotations">Pharmacophore Annotations</a>
+        <ul>
+	<li><a href="#About_Annotation_Points">About Annotation Points</a>
+	</li>
+	</ul>
+    </li>
+    <li><a href="#Creating_a_Query">Manual Query Generation</a>
+        <ul>
+	<li><a class="example"
+	    href="#Example:_Annotation_1HPV_Ligand">Example:
+	    Pharmacophore Annotation Points for the 1HPV Ligand</a>
+	</li>
+	</ul>
+        <ul>
+	<li><a href="#Creating_Features">Creating Features</a>
+	    <ul>
+	    <li><a class="example"
+		href="#Example:_Query_Features">Example:
+		Creating and Editing Pharmacophore Query Features
+		for the 1HPV Ligand</a>
+	    </li>
+	    </ul>
+	</li>
+	</ul>
+    </li>
+    <li><a href="#Automatic_Query_Generation">Automatic Query Generation</a>
+        <ul>
+	<li><a href="#Consensus_Features">Consensus Features</a>
+	</li><li><a href="#Elucidator">Pharmacophore Elucidator</a>
+	</li>
+	</ul>
+    </li>
+    <li><a href="#Performing_a_Pharmacophore_Search">Performing a Pharmacophore Search</a>
+        <ul>
+	<li><a class="example"
+	    href="#Example:_Pharmacophore_Search"> Example:
+	    Pharmacophore Search Using 1HPV-query1</a>
+	</li>
+        </ul>
+    </li>
+    <li><a href="#Refining_the_Query">Refining the Query</a>
+        <ul>
+	<li><a href="#About_Constraints">About Constraints</a>
+	</li>
+	</ul>
+	<ul>
+	<li><a class="example"
+	    href="#Example:_Refining_Query"> Example:
+	    Refining the 1HPV-query1 Pharmacophore Query</a>
+	</li>
+	</ul>
+    </li>
+    <li><a href="#Validating_the_Query">Validating the Query</a>
+	<ul>
+	<li><a class="example" href="#Example:_1HPV-query2_Validation">
+	    Example: 1HPV-query2 Query Validation</a>
+	</li>
+	</ul>
+    </li>
+    <li><a href="#Automatic_Pharmacophore_Query_Generation">Automatic Pharmacophore Query Generation</a></li>
+    </ul>
+</li>
+<li><a href="#Running_in_MOE/batch">Running in MOE/batch</a>
+</li>
+<li><a href="#References">References</a>
+</li>
+<li><a href="#Pharmacophore_Reference">Pharmacophore Reference</a>
+</li>
+<li><a href="#SVL_Commands">SVL Commands</a>
+</li>
+<li><a href="#See_Also">See Also</a>
+</li>
+</ul>
+
+<a name="What_is_a_Pharmacophore?"></a>
+<h2>What is a Pharmacophore?</h2>
+
+<p>
+The term <i>pharmacophore</i> was coined by Paul Ehrlich
+in 1909 to mean
+"a molecular framework that carries (<i>phoros</i>) the
+essential features responsible for a drug's (<i>pharmacon</i>)
+biological activity" [Ehrlich&nbsp;1909].
+In other words,
+a pharmacophore is a 3D model describing the type and location
+of the binding interactions between a ligand and its target receptor.
+The IUPAC definition [IUPAC&nbsp;1998] is more precise:
+"A pharmacophore is an ensemble of steric and electronic features
+that is necessary to ensure the optimal supramolecular interactions
+with a specific biological target and to trigger (or
+block) its biological response."
+The term <i>supramolecular</i> means noncovalent.  Typical
+pharmacophoric features include hydrogen bond donor, hydrogen
+bond acceptor, hydrophobic, and positively and negatively
+ionized areas.
+</p>
+
+<img src="ph4_guide/ph4cons_serotonin.png"
+class="iconleft"
+alt="Consensus Pharmacophore Query" />
+
+<p>
+A pharmacophoric feature characterizes a particular property 
+and is not tied to a specific chemical structure;
+indeed different chemical groups may share the
+same property and so be represented by the same feature.
+It is thus a mistake to name as pharmacophoric features chemical
+functionalities such as guanidines or sulfonamides or
+typical structural skeletons such as flavones or steroids
+[IUPAC&nbsp;1998].
+</p>
+
+<p>The term <i>pharmacophore modeling</i> refers to the generation of
+a pharmacophore hypothesis for the binding interactions in a
+particular active site.  
+Several different pharmacophore models for the same active site
+can be overlaid and reduced to their shared features
+so that common interactions are retained.
+Such a <i>consensus pharmacophore</i>
+can be considered as "the largest common denominator shared by a set
+of active molecules" [IUPAC 1998].
+</p>
+
+<img src="ph4_guide/ann_serotonin.png"
+class="floatright"
+alt="Pharmacophore Query Definition: Annotations" />
+
+<p>In MOE, the computerized representation of a hypothesized pharmacophore
+is called a <i>pharmacophore query</i>.
+A MOE pharmacophore query is a set of
+<i>query features</i> that are typically created from
+ligand <i>annotation points</i>.
+<a href="#Phamacophore_Annotations">Annotation points</a>
+(automatically detected
+in MOE) are markers in space that show the location and type of
+biologically important atoms and groups, such as hydrogen donors
+and acceptors, aromatic centers, projected positions of possible
+interaction partners or R-groups, charged groups, and bio-isosteres.
+The annotation points on a ligand are the potential locations of
+the features that will constitute the pharmacophore query.
+Annotation points relevant to the pharmacophore are converted into
+query features with the addition of an extra parameter: a non-zero
+radius that encodes the permissible variation in the pharmacophore query's
+geometry.
+</p>
+
+<p>
+Once generated, a
+pharmacophore query can be used
+to screen virtual compound libraries for novel ligands.
+Pharmacophore queries can also be used to filter conformer databases,
+e.g. output from molecular docking runs, for biologically active
+conformations.
+</p>
+
+<a name="Pharmacophore_Applications_in_MOE"></a>
+<h2>Pharmacophore Applications in MOE</h2>
+
+<a name="Generating_Pharmacophore_Queries"></a>
+<h3>Generating Pharmacophore Queries</h3>
+<p>
+In MOE, various tools are available for generating pharmacophore
+queries depending on the kind of structural data available.
+</p>
+
+<blockquote>
+
+<table border="0" cellpadding="5">
+<tr>
+<td valign="top">
+<img src="ph4_guide/hiv1lig_thumb.png" alt="Ligand-Based">
+</td>
+<td valign="top">
+<b>Ligand-Based.</b> The pharmacophore query is determined from
+a collection of active (and possibly inactive) ligands.  No
+target information is used.  MOE applications relevant to
+this task include:
+
+<p>
+    <ul>
+    <li><a href="flex.htm">Flexible Alignment</a>. Flexibly align small molecules.
+    </li>
+    <li><a href="ph4_query.htm#Running_Pharmacophore_Consensus">Pharmacophore Consensus</a>.
+	Obtain consensus features from aligned ligands.
+    </li>
+    <li><a href="ph4_elu.htm">Pharmacophore Elucidation</a>.
+	Automatically determine a pharmacophore query from active
+	(and optionally inactive) ligands.
+    </li>
+    <li><a href="ph4_query.htm">Pharmacophore Query Editor</a>.
+	Create new and edit existing pharmacophore queries.
+    </li>
+    </ul>
+</p>
+</td>
+</tr>
+
+<tr>
+<td valign="top">
+<img src="ph4_guide/complex_thumb.png" alt="Complex-Based">
+</td>
+<td valign="top">
+<b>Complex-Based.</b> The pharmacophore query is determined from
+the structural data of protein-ligand complexes.  MOE applications
+relevant to this task include:
+
+<p>
+    <ul>
+    <li><a href="plif.htm#Query_Generator">PLIF</a>. Generate a pharmacophore
+	query from a consensus of Protein Ligand Interaction Fingerprints.
+    </li>
+    <li><a href="ph4_query.htm">Pharmacophore Query Editor</a>.
+	Create new and edit existing pharmacophore queries.
+    </li>
+    </ul>
+</p>
+</td>
+</tr>
+
+<tr>
+<td valign="top">
+<img src="ph4_guide/target_thumb.png" alt="Target-Based">
+</td>
+<td valign="top">
+<b>Target-Based.</b> The pharmacophore query is determined from the
+structural data of the receptor only.  MOE applications relevant to this
+task include:
+
+<p>
+    <ul>
+    <li><a href="sitefind.htm">Site Finder</a>. Locate binding cavities
+	on a macromolecular structure.
+    </li>
+    <li>Surfaces and Maps.
+
+	<ul>
+
+	<li>
+	<a href="surfmap.htm#ElectrostaticFeatures">Electrostatic Feature Map</a>.
+	Locate binding interaction sites using electrostatics.
+	</li>
+
+	<li>
+	<a href="surfmap.htm#InteractionPotentials">Interaction Potentials</a>.
+	Predict the preferred location of user-specified probe atoms,
+	</li>
+
+	<li>
+	<a href="surfmap.htm#ContactPreferences">Non-Bonded Contact Preferences</a>.
+	Locate binding interaction sites using statistics culled from
+	the Protein Data Bank.
+	</li>
+
+	</ul>
+
+    </li>
+    <li><a href="ph4_query.htm">Pharmacophore Query Editor</a>.
+	Create new and edit existing pharmacophore queries.
+    </li>
+    </ul>
+</p>
+
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<a name="Using_Pharmacophore_Queries"></a>
+<h3>Using Pharmacophore Queries</h3>
+
+<p>Pharmacophore models can be used in various MOE applications:
+</p>
+
+    <p>
+    <ul>
+
+    <li><a href="ph4_search.htm">Pharmacophore Search</a>. Search 3D
+	conformation databases for structures that match the pharmacophore query.
+	The <a href="confgui.htm">Conformation Import</a> application
+	can be used to generate 3D conformation databases from
+	vendor catalogs and in-house databases.
+	<br />
+	<br />
+    </li>
+
+    <li><a href="docking.htm">Dock</a>. Generate binding configurations
+	of ligands to a macromolecular target.  A pharmacophore query can
+	be used to determine the initial placement of the ligand and to
+	constrain the final poses.
+	<br />
+	<br />
+    </li>
+
+    <li><a href="scaffold.htm">Scaffold Replacement and Fragment Linking</a>. 
+	<i>Scaffold Replacement</i>.
+	Replace the chemical core or <i>scaffold</i> of a biologically
+	active series of compounds in an effort to improve activity
+	and/or other desirable properties.  <i>Fragment Linking.</i>
+	Connect disconnected
+	fragments (usually chemical entities whose binding positions
+	in the pocket are known) to create a new molecular entity
+	which binds to the pocket through the favorable binding locations
+	of the constituent fragments.
+	<br />
+	<br />
+    </li>
+
+    <li><a href="../quasar/qcrsel.htm">QuaSAR-Reagent</a>. Estimate the
+	contribution to biological activity of the R-groups and scaffolds
+	of a virtual combinatorial library.  Activity can be assessed using
+	different kinds of models, including pharmacophore.
+	<br />
+	<br />
+    </li>
+
+    <li><a href="../quasar/modcomp.htm">Model-Composer</a>. Create a
+	composite model from one or more models of varying types,
+	including pharmacophore.  
+	<br />
+	<br />
+    </li>
+
+    <li><a href="../quasar/modcomp.htm">Model-Evaluate</a>. Evaluate
+	a model, which may include a pharmacophoric component,
+	on a molecular database.
+    </li>
+
+    </ul>
+    </p>
+
+<a name="Introduction_to_Pharmacophore_Modeling"></a>
+<h2>Introduction to Pharmacophore Modeling and Searching</h2>
+
+<p>
+In MOE, creating a pharmacophore model or <i>query</i>
+involves a number of steps:
+</p>
+
+<ol>
+<li>Prepare the data.</li>
+<li>Generate pharmacophore annotation points.</li>
+<li>Select features to include in the pharmacophore query.</li>
+<li>Refine the query.</li>
+</ol>
+
+<a name="Preparing_the_Data"></a>
+<h3>Preparing the Data</h3>
+
+<p>
+The kind of preparatory steps needed depends on what data are
+available.  For example, since a
+pharmacophore model ought to be representative throughout the
+3D conformational space occupied by a set of ligands,
+in ligand-based query generation, a set of
+<a href="confgui.htm">input conformations</a> must be
+generated if they are not already available.
+Furthermore, for subsequent annotation using the
+automatic annotation services of the Pharmacophore Query Editor,
+these conformations must represent "exact"
+(i.e. <a href="../mdb/wash.htm">washed</a>) structures.
+For example,
+carboxylate is considered structurally distinct from carboxylic
+acid: no implicit tautomer transformations are performed.
+<i>Molecules are annotated as-presented.</i>
+If exact structures are not already available,
+they must be generated too.
+</p>
+
+<center>
+<table border="0" width="50%">
+<tr>
+<td>
+<center>
+<img src="ph4_guide/acetate.png" alt="Acetate" />
+<br />
+Acetate
+</center>
+</td>
+<td>
+<center>
+<img src="ph4_guide/acetic_acid.png" alt="Acetic acid" />
+<br />
+Acetic acid
+</center>
+</td>
+</tr>
+</table>
+</center>
+
+<p>In complex-based query generation, should the crystallized complex
+be available, ligand conformation is no longer an issue as the
+structure contains the ligand in its bound form.  This simplifies
+the task of determining a pharmacophore for the target and minimal
+data preparation is necessary.
+</p>
+
+<p>In target-based query generation, exploratory investigation
+of the receptor is needed to locate binding cavities and
+identify within them where and what kind of
+important interactions take place.
+This kind of investigation can also used in the query refinement
+step.
+</p>
+
+<p>
+<ul class="help">
+<li class="help">
+For a detailed explanation of how to prepare a database of conformations,
+please refer to
+<a href="../moe/prep3ddb.htm">Preparing a 3D Structure Database</a>.
+</li>
+
+<p>
+<li class="help">
+For an example of how to prepare a database of conformations, please
+refer to the
+<a href="../tutorials/ph4_tut.htm#CreatingData">Pharmacophore Tutorial</a>.
+</li>
+</p>
+
+</ul>
+</p>
+
+<a name="Pharmacophore_Annotations"></a>
+<h3>Pharmacophore Annotations</h3>
+
+<p>
+Annotation is the process of identifying regions of
+pharmacophoric importance in space
+around a molecular conformation and associating with those regions
+pharmacophore types.
+In MOE, the 
+<a href="ph4_query.htm">Pharmacophore Query Editor</a> 
+both annotates the molecular system currently loaded in MOE
+as well as renders the resulting annotations graphically in the MOE Window.
+</p>
+
+<p>
+Locating and assigning pharmacophore annotations can be done
+in different ways.
+Although MOE provides a variety of built-in
+<a href="ph4_annot.htm"><i>pharmacophore annotation schemes</i></a>
+or simply <i>schemes</i>, each of which has its own
+particular set of annotation types,
+the default <b>Unified</b> scheme is to be preferred as it
+is comprehensive, providing the annotation types of all
+the other schemes without loss of efficiency.
+</p>
+
+<p>
+Once assigned, annotations can be turned into features using
+the Pharmacophore Query Editor.  Note, however, that it is not a
+requirement that a feature be created from an annotation.
+Features can be created, positioned, and assigned pharmacophoric
+types within the Pharmacophore Query Editor independent of
+annotations, although it is rarely necessary to do so.
+Annotations thus serve as <i>suggestions</i> for
+which type of features to use and where they should be located.
+In almost all cases, features are created from annotation points.
+</p>
+
+<!-- ================== START More About Annotation Points ================= -->
+
+<div class="extra_info">
+<a name="About_Annotation_Points"></a>
+<h3>About Annotation Points</h3>
+
+<p>Annotation points can be broadly divided into three categories:
+<i>atom</i>, <i>projected</i>, and <i>centroid</i>,
+the latter including bioisosteres.
+A special fourth class of annotations, <i>links</i>, denotes
+points of substitution on candidate scaffold molecules
+and potential R-group substituents, and is designed
+to assist in scaffold replacement or mimetic projects.
+
+</p>
+
+<table style="border-collapse: collapse; empty-cells: hide;"
+    border="1" cellpadding="5"
+>
+<tr>
+<th colspan="4" style="background-color:#cccccc">Atom</th>
+</tr>
+
+<tr>
+<td valign="top"><b>Don</b></td>
+<td width="15%"valign="top">H-bond Donor</td>
+<td rowspan="6">
+<i>Atom</i> annotations are located directly on an atom of a molecule
+and typically indicate a function related to protein-ligand binding.
+</td>
+
+<td rowspan="6" valign="center">
+<img src="ph4_guide/ann_atom.png">
+</td>
+
+</tr>
+
+<tr>
+<td valign="top"><b>Acc</b></td>
+<td valign="top">H-bond Acceptor</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Cat</b></td>
+<td valign="top">Cation</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Ani</b></td>
+<td valign="top">Anion</td>
+</tr>
+
+<tr>
+<td valign="top"><b>ML</b></td>
+<td valign="top">Metal Ligator</td>
+</tr>
+
+<tr>
+<td valign="top"><b>HydA</b></td>
+<td valign="top">Hydrophobic Atom</td>
+</tr>
+
+<tr>
+<th colspan="4" style="background-color:#cccccc">Projected</th>
+</tr>
+
+<tr>
+<td valign="top"><b>Don2</b></td>
+<td valign="top">Projected Donor</td>
+<td rowspan="4">
+<i>Projected</i> annotations are (typically) located along
+implicit lone pair or implicit hydrogen directions and are
+used to annotate the location of possible hydrogen bond or metal
+ligation partners, or possible R-group atom locations.
+</td>
+
+<td rowspan="4" valign="center">
+<img src="ph4_guide/ann_projected.png">
+</td>
+
+</tr>
+
+<tr>
+<td valign="top"><b>Acc2</b></td>
+<td valign="top">Projected Acceptor</td>
+</tr>
+
+<tr>
+<td valign="top"><b>ML2</b></td>
+<td valign="top">Projected Metal Ligator</td>
+</tr>
+
+<tr>
+<td valign="top"><b>PiN</b></td>
+<td valign="top">Ring Normal</td>
+</tr>
+
+<tr>
+<th colspan="4" style="background-color:#cccccc">Centroid and Bioisostere</th>
+</tr>
+
+<tr>
+
+<td><b>Aro</b></td>
+<td valign="top">Aromatic</td>
+<td valign="center" rowspan="3">
+<i>Centroid</i> annotations (Aro, PiR, CN2) are located at the geometric center
+of a subset of the atoms of a molecule.
+</td>
+
+<td rowspan="5" valign="center">
+<img src="ph4_guide/ann_centroid.png">
+</td>
+
+</tr>
+
+<tr>
+<td valign="top"><b>PiR</b></td>
+<td valign="top">pi-Ring</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Hyd</b></td>
+<td valign="top">Hydrophobic</td>
+</tr>
+
+<tr>
+
+<td valign="top"><b>CN2</b></td>
+<td valign="top">NCN+</td>
+
+<td valign="top" rowspan="2">
+<i>Bioisostere</i> annotations (CN2, O2) indicate locations for bioisosteric
+replacement, i.e. substituents which may be exchanged for other
+substituents having similar physical or chemical properties such that
+biological properties of the parent compound are preserved or enhanced.
+</td>
+
+</tr>
+
+<tr>
+<td valign="top"><b>O2</b></td>
+<td valign="top">COO-</td>
+</tr>
+
+</table>
+
+<p>
+<ul class="help">
+<li class="help">
+For more details, please refer to the
+<a href="ph4_annot.htm">Pharmacophore Annotation Reference</a>.
+</ul>
+</li>
+</p>
+
+</div>
+
+<!-- ================== END More About Annotation Points ================= -->
+
+<a name="Creating_a_Query"></a>
+<h3>Manual Query Generation</h3>
+
+<p>A pharmacophore query can be created manually using
+the <a href="ph4_query.htm">Pharmacophore Query Editor</a>,
+which is the primary MOE interface for creating and editing pharmacophores queries.
+The Pharmacophore Query Editor is used primarily to manually select annotation
+points and convert them into pharmacophore features.
+</p>
+
+<p>
+The Pharmacophore Query Editor is also used to:
+</p>
+
+    <ul>
+    <li>Add and remove query features.</li>
+    <li>Modify feature attributes, e.g. type and radius.</li>
+    <li>Add expressions, including
+<a href="../moe/molsystems/smiles.html#SMARTS">SMARTS</a>
+filters, to features.</li>
+    <li>Add volume constraints.</li>
+    <li>Add partial matching options.</li>
+    <li>Visualize pharmacophore queries and customize rendering options.</li>
+    <li>Launch the
+<a href="ph4_query.htm#Running_Pharmacophore_Consensus">Pharmacophore Consensus</a> panel,
+which is used to suggest a consensus set of pharmacophore features.
+    </li>
+    </ul>
+
+<p>
+<ul class="help">
+<li class="help">
+For more details, please refer to the
+<a href="ph4_query.htm">Pharmacophore Query Editor Reference</a>.
+</li>
+</ul>
+</p>
+
+<p>The panel is opened with the commands:</p>
+
+<p class="indent_novspace">
+    <span class="nobr"><b>MOE | File | New | Pharmacophore Query</b></span>
+</p>
+
+or
+
+<p class="indent_novspace">
+    <span class="nobr"><b>MOE | Compute | Pharmacophore Query</b></span>
+</p>
+
+<center>
+<table border="0" cellpadding="10" width="80%">
+<tr>
+<td>
+<img src="ph4_guide/ph4_query_panel.png" alt="Pharmacophore Query Editor" />
+</td>
+<td>
+<img src="ph4_guide/ph4_unified_info.png" alt="Unified Info" />
+</td>
+</tr>
+</table>
+</center>
+
+<p>Pressing the <b>Scheme:&nbsp;Info</b> button in the panel
+opens a list of the different annotation types and controls
+which ones are displayed in the Main
+Window.
+The <b>Ligand Annotation</b> options in
+the bottom of the panel control which atoms are annotated (e.g. visible
+atoms or atoms of selected chains only) and how the annotation
+points are displayed (e.g. as points, with or without labels).
+For example, in
+<b>Long</b> mode, each annotation point is labeled by its annotation type.
+</p>
+
+<!-- ==================== START HIV1-PR Annotations =================== -->
+
+<div class="example">
+<a name="Pharmacophore_Annotation_Points_for_the_1HPV_Ligand"></a>
+<a name="Example:_Annotation_1HPV_Ligand"></a>
+
+<h3>Example: Pharmacophore Annotation Points for the 1HPV Ligand</h3>
+
+<p>The input data for this example is the crystal complex of
+1HPV taken from the PDB.  Since this complex provides
+the bound conformation of the ligand,
+conformational analysis is unnecessary.
+The only preparatory steps necessary for annotation are
+loading the data into MOE and then, for convenience,
+visually isolating the ligand.
+</p>
+
+<ol>
+    <li><i>Load the file.</i>
+	<p class="indent_novspace">
+	<span class="nobr"><b>File | Open</b>
+	<tt>$MOE/sample/mol/1hpv.pdb</tt></span>
+	</p>
+	Press OK in the
+	<b>Load PDB File</b> panel (use the default settings).
+	The structure of 1HPV should appear in the MOE Window.
+    </li>
+    <li><i>Isolate the ligand.</i>
+	<ol type="a">
+	<li>Hide all atoms.
+	<span class="nobr"><b>MOE | Popup | Hide | All Atoms</b></span>
+	</li>
+	<li>
+	Show just the ligand atoms.
+	<span class="nobr"><b>MOE | Popup | Show | Ligand</b></span>
+	</li>
+	</ol>
+    </li>
+    <li><i>Center the view.</i>
+	<p class="indent_novspace">
+	<span class="nobr"><b>MOE | RHS | Center</b></span>
+	</p>
+    </li>
+    <li><i>Render the ligand in stick mode.</i>
+	<p class="indent_novspace">
+	<span class="nobr"><b>MOE | Footer | Atoms | Stick</b></span>
+	</p>
+    </li>
+</ol>
+
+<p>The ligand VX-478 should now be isolated in the MOE Window.
+This is an orally active HIV-1 PR ligand.
+To annotate the ligand, open the Pharmacophore Query Editor.
+</p>
+    <blockquote>
+    <span class="nobr"><b>MOE | File | New | Pharmacophore Query</b></span>
+    </blockquote>
+
+<p>When the panel opens, the ligand is automatically annotated.
+By default, a wide variety of the calculated annotations are rendered
+in the MOE Window.
+For the purposes of the present example,
+the annotation types of interest are:
+
+    <blockquote>
+    <table border="1" cellpadding="3">
+    <tr>
+    <td><b><i>Don</i></b></td>
+    <td>Donor Atoms</td>
+    </tr>
+    <tr>
+    <td><b><i>Acc</i></b></td>
+    <td>Acceptor Atoms</td>
+    </tr>
+    <tr>
+    <td><b><i>Aro</i></b></td>
+    <td>Aromatic centroids</td>
+    </tr>
+    <tr>
+    <td><b><i>Hyd</i></b></td>
+    <td>Hydrophobic atoms and centers</td>
+    </tr>
+    </table>
+    </blockquote>
+
+<div class="floatright">
+<img src="ph4_guide/1hpv_ann.png" alt="1HPV Pharmacophore Annotation Points" />
+<p class="caption">
+Pharmacophore annotations
+</p>
+</div>
+
+These may be isolated visually by turning off
+the display of all other types.  This can be
+accomplished using the <b>Unified Info</b> panel, which
+is opened with
+    <blockquote>
+    <b>Scheme: Info</b>
+    </blockquote>
+
+This panel lists all the types of annotation points
+defined in the current scheme.
+</p>
+
+<ol>
+    <li><i>Turn off the display of all annotations.</i>
+	<p class="indent_novspace">
+	<b>Show | None</b>
+	</p>
+    </li>
+    <li><i>Turn on the display of the desired annotations.</i>
+	<p class="indent_novspace">
+	Use the checkboxes in the <b>Unified Info</b> panel.
+	</p>
+    </li>
+</ol>
+
+<p>The HIV1-PR ligand should now be annotated with 4 kinds of
+annotation points.
+</p>
+</div>
+
+<!-- ==================== END HIV1-PR Annotations =================== -->
+
+<p><a name="Creating_Features"></a>
+</p>
+
+<h4>Creating Features</h4>
+
+<br clear="both" />
+
+<div class="floatright">
+<img src="ph4_guide/ph4_query_panel_create_feature.png"
+alt="Pharmacophore Query Panel Feature List" />
+</div>
+
+<p>A feature can be added to a pharmacophore query by selecting one
+or more corresponding annotation points in the MOE Window and then
+pressing the <b>Create:&nbsp;Feature</b> button in the Pharmacophore
+Query Editor panel.  The newly created feature appears in the panel
+list area, which displays each feature's automatically-generated
+name and an associated expression that describes the feature.
+To the right of the feature list are buttons for deleting
+features from the query and for changing their position in the list
+(for purposes of better visualization).
+</p>
+
+<p>Each feature in the query has:
+</p>
+
+<ul>
+    <li>A location in space, which can be modified directly in the
+MOE Window in the same way as that of an atom: by selecting the feature
+(either in the panel or in the MOE Window) and then using
+<tt>Shift</tt>-<tt>Alt</tt>-drag middle;
+    </li>
+    <li>A radius, which is controlled by the value of <b>R</b>
+in the panel; and
+    </li>
+    <li>A logical expression called a <i>feature expression</i>
+that may include both annotation point types and
+<a href="../moe/molsystems/smiles.html#SMARTS">SMARTS</a>
+strings.  A feature inherits its types from its generating
+annotation points.
+    </li>
+</ul>
+
+<p>Once completed, a pharmacophore query can be saved to a MOE pharmacophore
+file for future use by pressing <b>Save</b> in
+the Pharmacophore Query Editor.  The default extension is <tt>.ph4</tt>.
+This file can subsequently be edited with
+the Pharmacophore Query Editor or used by other applications
+such as <a href="ph4_search.htm">Pharmacophore Search</a> or
+<a href="docking.htm">Dock</a>.
+</p>
+
+<!-- ==================== START HIV1-PR Features =================== -->
+
+<br clear="both" />
+
+<div class="example">
+<a name="Creating_and_Editing_Pharmacophore_Query_Features_for_the_1HPV_Ligand"></a>
+<a name="Example:_Query_Features"></a>
+<h3>Example: Creating and Editing Pharmacophore Query
+Features for the 1HPV Ligand</h3>
+
+<div class="floatright">
+<img src="ph4_guide/1hpv_query1.png" alt="1HPV Pharmacophore Query Features" />
+<p class="caption">
+1HPV pharmacophore query features
+</p>
+</div>
+
+<p>For the HIV-1 PR ligand, a simple pharmacophore query can be
+created using four features, one for each of the rings, and one
+associated with the isopropyl group.
+</p>
+
+<ol>
+
+<p>
+
+<li>
+
+<i>Create a feature for each ring.</i>
+<br />
+For each of the rings of the ligand do the following:
+</p>
+
+<p>
+<ol type="a">
+
+    <li>In the MOE Window, select the annotation point at the center
+    of the ring.  If two annotation points
+    overlap, select them both.</li>
+
+    <li>Press <b>Create:&nbsp;Feature</b> in the Pharmacophore Query Editor.
+    A new feature will be drawn in the MOE Window and
+    will appear in the Pharmacophore Query Editor list.
+    </li>
+</ol>
+</p>
+
+<p>
+One of the rings will result in a feature labeled <b>Hyd</b>,
+and two in features labeled <b>Hyd|Aro</b>. 
+</p>
+</li>
+</p>
+
+<p>
+<li>
+<i>Change the feature color.</i>
+<br />
+Select all features in the list with <b>Popup | Select All</b>,
+then use the <b>Color</b> option to change the color of all
+features to <b>Green</b>.
+
+<p>
+The features can also be edited singly by selecting them one at a time
+and making the changes.
+</p>
+</li>
+</p>
+
+<br clear="both" />
+<div class="floatright">
+<img src="ph4_guide/write_query_panel.png" alt="Write Query Panel" />
+</div>
+
+<p>
+<li>
+<i>Change the feature radius.</i>
+<br />
+With all features selected,
+change the radius of every feature to 1.5 by entering the value in the
+<b>R</b> field or by using the dial.
+The changes take effect immediately.
+</p>
+</li>
+</p>
+
+<p>
+<li>
+<i>Create an isopropyl group feature.</i>
+<br />
+Select the 3 annotation points on the isopropyl group.
+Press <b>Create:&nbsp;Feature</b> to create a <b>Hyd</b>
+feature at the centroid of the annotation points.
+</p>
+
+<p>Select the new <b>Hyd</b> feature and change its color
+to green and its radius to 1.5.
+</p>
+</li>
+</p>
+
+<p>
+<li>
+<i>Change the feature type.</i>
+<br />
+In the feature list, select both <b>Hyd</b> features
+(select one, then hold the
+<a class="svl" href="../moe/hellomoe.htm#Listbox">Ctrl</a> key to
+toggle the selection of the second feature).
+Change the feature type of both features by
+modifying the contents of the <b>F*</b> textfield
+to <b>Hyd|Aro</b>.  Press <b>Apply</b> to put the change
+into effect.
+</p>
+</li>
+</p>
+
+<p>
+<li>
+<a name="Save_the_pharmacophore_query"></a>
+<i>Save the pharmacophore query for future use.</i>
+<br />
+Press <b>Save</b>.
+In the <b>Write Query File</b> panel, enter
+<tt>1HPV-query1.ph4</tt>.  Press <b>OK</b>.
+</p>
+</li>
+</p>
+
+</ol>
+
+</div>
+
+<a name="Automatic_Query_Generation"></a>
+<h3>Automatic Query Generation</h3>
+
+<p>When multiple ligands are available (and assuming they bind
+in similar ways to the receptor), it is possible to automate
+at least parts of the query generation process.
+Pharmacophore Consensus can be used to suggest features that are
+common to many of the actives, and is an aid to manual
+query generation.  Pharmacophore Elucidator generates and
+scores pharmacophore queries for a set of aligned molecules,
+and little or no manual intervention is required.
+Both applications require molecular conformations.
+</p>
+
+<a name="Consensus_Features"></a>
+<h4>Consensus Features</h4>
+
+<p>
+The <a href="ph4_query.htm#RunningConsensus">Pharmacophore Consensus</a>
+application
+calculates a set of <i>consensus features</i> from the
+aggregate annotation points of a set of
+<a href="flex.htm">aligned molecules</a>.
+The features are scored based on the number of molecule in which
+they appear, and are easily included in a
+pharmacophore query.  The molecular conformations must have been
+precalculated and aligned and loaded into MOE.
+
+</p>
+
+<p>
+<center>
+<table border="0" width="90%">
+<tr>
+<td>
+<img src="ph4_guide/consensus_suggfeatures.png"
+alt="Pharmacophore Consensus Suggested Features" />
+</td>
+<td>
+<img src="ph4_guide/consensus_panel.png" alt="Pharmacophore Consensus Panel" />
+</td>
+</tr>
+</table>
+</center>
+</p>
+
+<p>The Pharmacophore Consensus
+panel is opened from the Pharmacophore Query Editor
+by pressing <b>Consensus</b> (at top right).
+Once the suggested features have been calculated (by pressing
+<b>Calculate</b> in the Pharmacophore Consensus panel),
+they can be transferred to the invoking
+Pharmacophore Query Editor by selecting them
+in the <b>Suggested Features</b> list and pressing <b>Load Selected</b>.
+The selected features will be appended to
+the feature list in the query editor.
+</p>
+
+<p>
+<ul class="help">
+<li class="help">
+Please refer to the <a href="../tutorials/ph4_tut.htm#Consensus">Pharmacophore
+Tutorial</a> for an example of how to use the Pharmacophore Consensus
+application.
+</li>
+</ul>
+</p>
+
+<a name="Elucidator"></a>
+<h4>Pharmacophore Elucidator</h4>
+
+<p>The Pharmacophore Elucidator exhaustively generates pharmacophore
+queries for a set of
+<a href="flex.htm">aligned molecules</a>.
+and scores them based on a combined measure of
+how well they overlay the ligands and
+how well they classify the data set into actives and inactives.
+</p>
+
+<p>
+<center>
+<img src="../apps/ph4_elu/elupanel.png" alt="Pharmacophore Elucidator panel" />
+</center>
+</p>
+
+<p>
+Molecular conformations can be either read in
+or calculated at runtime by choosing one of the conformation
+generation methods from the <b>Conformations</b> option menu
+(<b>As-Is</b> implies that the conformations have been precalculated).
+</p>
+
+<p>To run the application, an <b>Output Database</b> name must be
+supplied.  The <b>Active Coverage</b> (which is the number of active
+molecules represented by the given query) and <b>Feature Limit</b>
+(maximum number of pharmacophore features) parameters can be adjusted
+based on the amount and type of data available.
+<b>Query Spacing</b> and <b>Query Cluster</b> are resolution tuning
+parameters used to determine when a query is considered to be
+representative of a molecule and when two queries are considered
+to be the same.  Only different queries that satisfy the Active
+Coverage and Feature Limit parameters are output.
+</p>
+
+<p>
+For more details about scoring and query generation, please refer
+to the <a href="../apps/ph4_elu.htm">Pharmacophore Elucidator</a>
+manual page.
+</p>
+
+<!-- ==================== END HIV1-PR Features =================== -->
+
+<a name="Performing_a_Pharmacophore_Search"></a>
+<h3>Performing a Pharmacophore Search</h3>
+
+<p>Pharmacophore searching in MOE is performed using the
+Pharmacophore Search application.  There are two ways
+to invoke Pharmacophore Search:
+
+<ul>
+    <li>In the Pharmacophore Query Editor panel, press <b>Search</b>.</li>
+    <li>In a MOE Database Viewer, select
+	<b>DBV&nbsp;|&nbsp;File&nbsp;|&nbsp;Pharmacophore&nbsp;Search</b>.
+    </li>
+</ul>
+
+<p>When invoked from a Pharmacophore Query Editor, the query currently
+open in the Editor is used for the search.  This launch point is convenient
+when the query is undergoing iterative refinement,
+and search results are
+being examined after each modification step to evaluate the changes being made.
+A Pharmacophore Search panel launched
+from a Pharmacophore Query Editor automatically uses the latest version of
+the pharmacophore query for its search.
+The databases to be searched are supplied when <b>Search</b> is pressed,
+and can be modified from within the Pharmacophore Search panel
+using the <b>Input</b> controls.
+</p>
+
+<p>If Pharmacophore Search is invoked from a Database Viewer, a
+pharmacophore query must be specified in the Pharmacophore Search panel
+using the <b>Query:&nbsp;Browse</b> button.  A Pharmacophore Query Editor
+can also be opened from the Pharmacophore Search panel using
+<b>Query:&nbsp;Edit</b> to edit the
+query currently being used by the Search panel.
+</p>
+
+<p>
+<center>
+<img src="ph4_guide/ph4_search_panel.png" alt="Pharmacophore Search Panel" />
+</center>
+</p>
+
+<p>In general, the bound conformations of the ligands being searched
+are not known.  A conformational search must be performed on the
+candidate molecules prior to initiating the search
+(or existent conformational databases used);
+the pharmacophore search is then applied
+to those conformations.  The search
+proceeds by annotating each candidate ligand conformation and
+then attempting to match the annotations to the constraints
+of the pharmacophore query such that all restrictions of the
+query are satisfied.  There can be more than one way in which
+a candidate conformation can match a query.
+</p>
+
+<p>Successful matches (<i>hits</i>) can be written to an output
+database using the <b>Output</b> options; they can also be selected
+or isolated in the input Database Viewer using the
+<b>Hit Entries</b> menu.
+</p>
+
+<!-- ==================== START HIV1-PR Search =================== -->
+
+<div class="example">
+<a name="Pharmacophore_Search_Using_1HPV-query1"></a>
+<a name="Example:_Pharmacophore_Search"></a>
+<h3>Example: Pharmacophore Search Using 1HPV-query1</h3>
+
+<p>In the 1HPV example, a prepared database of bound conformations of
+HIV-1 PR inhibitors is already available so no initial
+conformational analysis need be done.
+
+<div class="floatright">
+<img src="ph4_guide/ph4_search_from_dbv.png"
+alt="Open Pharmacophore Search from Database Viewer" />
+</div>
+
+<p>
+<ol>
+
+<li>
+<i>Open the database of bound conformations of HIV-1 PR inhibitors.</i>
+
+	<blockquote>
+	<span class="nobr"><b>MOE | File | Open</b>
+	<tt>hiv_1pr_ligands.mdb</tt></b></span>
+	</blockquote>
+
+</li>
+</p>
+
+<p>
+<li><i>Open the Pharmacophore Search panel from the Database Viewer.</i>
+    <blockquote>
+    <span class="nobr"><b>DBV | Compute | Pharmacophore | Search</b></span>
+    </blockquote>
+</li>
+</p>
+
+<p>
+<li>
+<i>Specify the query.</i>
+<br />
+Press <b>Query:&nbsp;Browse</b> to
+open a file selection box.  In the resultant <b>Open File</b> panel,
+locate and select the query file <tt>1HPV-query1.ph4</tt>
+(from <a href="#Save_the_pharmacophore_query">above</a>);
+press <b>OK</b>.  The query file name now appears
+in the Pharmacophore Search panel.
+</li>
+</p>
+
+<p>
+<li>
+<i>Choose how the search results will be reported.</i>
+<br />
+In the Pharmacophore Search panel, choose <b>Hit&nbsp;Entries:&nbsp;Select</b>.
+This will cause the search
+hits to be selected in the Database Viewer.
+Keep the default parameters in the <b>Results</b> area of the panel:
+the output conformations will be written
+to the file <tt>ph4out.mdb</tt>.
+</li>
+</p>
+
+<p>
+<li>
+<i>Perform the search.</i>
+<br />
+Press <b>Search</b> to begin the pharmacophore search.  The status line at
+the bottom of the panel reports the current status of the search.
+Hits will be selected in the Database Viewer as the search proceeds.
+</li>
+</p>
+
+<p>
+<li>
+<i>Examine the results.</i>
+<br />
+When the search is finished, the status line reports the number
+of unique molecules searched and the number of unique molecules
+of which at least one conformation was found to be a hit.
+In this case, almost all the molecules are search hits.
+The hit structures output
+to the database <tt>ph4out.mdb</tt> are aligned to the query.
+Press <b>Results:&nbsp;Open</b> to open the output
+database in a Database Viewer.
+</li>
+</p>
+
+</ol>
+
+<a name="Analyzing_the_1HPV-query1_Search_Results"></a>
+<h3>Analyzing the 1HPV-query1 Search Results</h3>
+
+<p>The output of the search can be visually compared to the
+to the pharmacophore query by browsing through the database of
+output molecules while the pharmacophore query is rendered in
+the MOE Window.
+</p>
+
+<br clear="both" />
+<div class="floatright">
+<img src="ph4_guide/dbv_browse.png" alt="Database Browser" />
+</div>
+
+<ol>
+<p>
+<li>
+<i>Close the current molecular system.</i>
+</p>
+    <blockquote>
+    <span class="nobr"><b>MOE | File | Close</b></span>
+    </blockquote>
+</li>
+</p>
+
+<p>
+<li>
+<i>Open the query</i>.
+</p>
+    <blockquote>
+    <span class="menu">MOE | Open |
+	<tt>1HPV-query1.ph4</tt></span>
+    </blockquote>
+</li>
+</p>
+
+<p>
+<li>
+<i>Run the</i> <b>Database Browser</b>.
+<br />
+In the output Database Viewer (<tt>ph4out.mdb</tt>), choose
+</p>
+
+    <blockquote>
+    <span class="nobr"><b>DBV | File | Browser</b></span>
+    </blockquote>
+
+<p>
+The first structure from the database being viewed is
+automatically loaded into MOE.
+</p>
+</li>
+</p>
+
+<br clear="both" />
+<div class="floatright">
+<img src="ph4_guide/ph4out_browse.png" alt="Browsed Molecule with Query" />
+<p class="caption">
+Browsed molecule with query
+</p>
+</div>
+
+<p>
+<li>
+<i>Change the molecule rendering to stick mode.</i>
+</p>
+    <blockquote>
+    <span class="nobr"><b>MOE | Popup | Atoms</b></span>
+    </blockquote>
+<p>
+All subsequently browsed structures
+will be rendered in this mode.
+</p>
+</li>
+</p>
+
+<p>
+<li>
+<i>Hide the query annotation points.</i>
+<br />
+In the <b>Pharmacophore Query Editor</b>, choose
+</p>
+<blockquote>
+    <span class="nobr"><b>Ligand Annotation: None</b></span>
+</blockquote>
+</li>
+</p>
+
+<p>
+<li>
+<i>Scroll through the database of search hits.</i>
+<br />
+In the <b>Database Browser</b>, use the arrows or the slider.
+Notice the many different
+orientations of the ligands.  It is likely that many of these
+would clash with the receptor.
+</li>
+</p>
+
+</ol>
+
+<br clear="both" />
+
+<p>The <tt>1HPV-query1.ph4</tt> pharmacophore query
+is rather simplistic and would probably match many inactive compounds.
+At the same time, it successfully matched most of the candidate inhibitors.
+This suggests that the query may be a reasonable starting point
+for a more advanced query.  In the next section,
+query refinement will be discussed.
+</p>
+
+</div>
+
+<!-- ==================== END HIV1-PR Search =================== -->
+
+<a name="Refining_the_Query"></a>
+<h3>Refining the Query</h3>
+
+<p>Pharmacophore queries can be improved by an iterative cycle
+of refinement and validation.  The goal is a query with
+a high true positive rate and low false positive and
+false negative rate.
+A simple pharmacophore query, for example the one
+presented in the HIV-1 PR example, might use only ligand
+information.  If the receptor structure is available,
+knowledge of the binding pocket can be used to enhance
+the query with steric and other structural constraints.
+</p>
+
+<p>
+Some strategies for refining pharmacophore queries include:
+</p>
+
+<ul>
+
+<li>
+<p>
+<b>Using constraints.</b> MOE pharmacophore queries can
+be enhanced with a variety of constraints.  These can be
+used, for example, to characterize the structure or
+other properties of the binding pocket.
+
+   <ul>
+   <li><i>Volumes.</i> Volume filters help avoid clashes
+	with the receptor and confine hits to limited
+	spatial regions.
+   </li>
+   <li><i>Logic constraints and SMARTS expressions.</i>
+	Explicit descriptions of permitted types and
+	chemical environments can be associated with
+	both features and volumes.
+    </li>
+    <li><i>Partial Matching and Essential Features.</i>
+	Both optional and required features can be specified.
+    </li>
+    </ul>
+
+</li>
+
+<li>
+<p>
+<b>Adding / deleting features and volumes.</b> Larger numbers of
+features may reduce the hit rate but increase specificity.
+</li>
+
+<li>
+<p>
+<b>Determining features from pocket analysis.</b>
+Examination of the binding pocket, for example in terms of
+electrostatics and preferred contacts, can reveal potentially
+important pharmacophoric features.
+</li>
+
+<li>
+<p>
+<b>Adjusting feature radius and position.</b>
+Custom fine-tuning can improve performance.  Note that
+features are normalized with respect to feature size (radius)
+so that large radius features (i.e. features
+with higher positional tolerance) are not given more importance
+than small radius ones.
+</li>
+
+</ul>
+
+<p>When further refinement of a pharmacophore query using
+explicit 3D constraints yields little gain, 2D modeling
+approaches in MOE can be used to refine the pharmacophore
+search results.  For example, a
+<a href="../quasar/model.htm">binary QSAR</a>
+filter could be used to pre- or post-process the hit list.
+</p>
+
+<p>
+<ul class="help">
+<li class="help">
+Please refer to the <a href="../tutorials/ph4_tut.htm#Tuning">Pharmacophore
+Tutorial</a> for an example of how to refine a query
+using interactive tuning and directional features.
+</li>
+</ul>
+</p>
+
+<!-- ================== START More About Constraints ================= -->
+
+<div class="extra_info">
+<a name="About_Constraints"></a>
+<h3>About Constraints</h3>
+
+MOE pharmacophore queries can be
+refined with a number of different constraints:
+
+<dl>
+
+<dt><p><b>Volume and Shape Filters</b></dt>
+<dd>Volume constraints are spatial constraints imposed
+on particular atoms.  These constraints
+serve both to
+confine hits to spatial regions in which steric clashes
+with the receptor are avoided as well as to ensure that
+favorable contact regions will be populated with
+appropriate atoms.
+
+<p>Each volume constraint, analogously to features, has an
+associated <i>volume expression</i>.  The
+volume expression is a
+<a href="../moe/molsystems/smiles.html#SMARTS">SMARTS</a>
+string.  The empty string (i.e. if no expression is
+specified) is equivalent to <tt>[#Q]</tt>, which
+means &quot;any heavy atom&quot;.  The volume constraint
+places restrictions only
+on atoms that match the volume expression.
+</p>
+
+<p>
+There are three types of volume constraint:
+</p>
+
+    <p>
+    <table border="0">
+	<tr>
+	<td><img src="ph4_guide/excluded_volume.png"></td>
+	<td><i>Excluded volume.</i> No atoms matching the
+	    volume expression are permitted inside the
+	    volume (useful for modeling receptor shape).
+	    The volume delimits the region of space that
+	    may not be occupied by the prescribed atoms.
+	</td>
+	</tr>
+	<tr>
+	<td><img src="ph4_guide/exterior_volume.png"></td>
+	<td><i>Exterior volume.</i> No atoms matching the
+	volume expression are permitted outside the
+	volume (useful for modeling ligand shape).
+	The volume delimits the region of space (the <i>exterior</i>
+	boundary) that may be occupied
+	by the prescribed atoms.
+	</td>
+	</tr>
+	<tr>
+	<td><img src="ph4_guide/included_volume.png"></td>
+	<td><i>Included volume.</i> At least one atom specified by
+	the volume expression must be located inside the volume.
+	</td>
+	</tr>
+    </table>
+    </p>
+
+    <p>
+    The volume constraint is specified as one or more spheres where
+    each sphere is centered on a selected atom.
+    </p>
+
+    <p><span class="tip">Tip</span> Volume constraints are evaluated
+    on atom centers, i.e the atoms are considered to be points having
+    zero radii.  As a consequence, there still may be clashes between the hit
+    molecules and the pharmacophore volumes.
+    It is advisable therefore to take into account the van der Waals radii of
+    candidate ligand atoms by calculating the
+    <a href="surfmap.htm">Interaction (VDW) surface</a> and
+    adjusting (increasing, if excluded volume, decreasing otherwise) the
+    radii of the volume constraints so that they just penetrate the
+    interaction surface.  To allow for some tolerance, relax
+    (decrease if excluded volume, increase otherwise)
+    this radius by 0.3-0.5&Aring;.
+    </p>
+
+</dd>
+
+<dt><p><b>Feature Expressions</b></dt>
+<dd>These are logical constraints that
+    can be added to both features and volumes, e.g.
+    <span class="nobr"><tt>Don &amp; Acc</tt></span>
+    and can help focus the query toward a specific property.
+</dd>
+
+<dt><p><b>SMARTS Matches</b></dt>
+<dd>The chemistry of a group (substructure) to be matched
+    can be specified within a feature expression using
+    <a href="../moe/molsystems/smiles.html">SMARTS</a> strings,
+    e.g. <span class="nobr"><tt>Don &amp; Acc ! &quot;[N]&quot;</tt></span>
+</dd>
+</tr>
+
+<dt><p><b>Partial Matches</b></dt>
+<dd>Allowing partial matches permits optional features
+    to be included and can make the query less specific.
+</dd>
+
+<dt><p><b>Essential Features</b></dt>
+<dd>Features marked essential to
+    the query must always be matched, even when partial matching
+    is enabled.
+</dd>
+
+<dt><p><b>Group Constraints</b></dt>
+<dd>These specify that a certain
+    number of the specified features must be matched.
+    This kind of constraint may be useful for
+    accounting for alternative feature locations, e.g.
+    to allow for sidechain flexibility.
+</dd>
+
+</dl>
+
+<p>
+<ul class="help">
+<li class="help">
+Please refer to the <a href="../tutorials/ph4_tut.htm#Shapes">Pharmacophore
+Tutorial</a> for an example of how to use volume constraints.
+</li>
+</ul>
+</p>
+
+</div>
+
+<!-- ================== END More About Constraints ================= -->
+
+<!-- ==================== START HIV1-PR Refinement =================== -->
+
+<div class="example">
+<a name="Refining_the_1HPV-query1_Pharmacophore_Query"></a>
+<a name="Example:_Refining_Query"></a>
+<h3>Example: Refining the 1HPV-query1 Pharmacophore Query</h3>
+
+<p>An analysis of properties of the binding pocket can suggest features to
+include in a pharmacophore query.  In the following, a pocket
+analysis is first demonstrated, then the results of the analysis
+applied to refining the simple query that was generated
+in <a href="#Example:_Query_Features">earlier</a>.
+</p>
+
+<h4>Analyzing the Binding Pocket</h4>
+
+<p>The binding pocket can viewed both in 2D and 3D to help identify
+important points of interaction.
+A 2D depiction of the ligand
+interactions with the pocket can be obtained using the
+<a href="prolig2d.htm">Ligand Interactions</a> application.
+With <tt>$MOE/sample/mol/1hpv.pdb</tt> loaded in the system,
+open the panel using
+</p>
+
+<blockquote>
+<span class="nobr"><b>MOE | Compute | Ligand Interactions</b></span>
+</blockquote>
+
+<p>In the Ligand Interactions panel, press <b>Isolate</b> to
+isolate the ligand and pocket residues in the MOE Window.
+Turn on hydrogen bond display with
+</p>
+
+<blockquote>
+<span class="nobr"><b>MOE | Footer |
+<a href="../moe/gui/mainwin.htm#Contacts">Contacts</a></b></span>
+</blockquote>
+
+<p>
+A bound water HOH_201 (also bound to ILE50) and an
+H-bond interaction of the ligand hydroxyl group with
+residue ASP25 can be observed in both
+the Ligand Interactions panel and the MOE Window.
+</p>
+
+<p>
+<center>
+<img src="ph4_guide/ligand_int_moe.png" alt="Ligand Interactions in MOE Window" />
+<p class="caption">
+Water HOH_201 bound to ILE50 and H-bond to ASP25
+</p>
+</center>
+</p>
+
+<p>
+<center>
+<img src="ph4_guide/ligand_int.png"
+alt="Ligand Interactions Panel" />
+</center>
+</p>
+
+<p>Now we will look more closely at the ligand-pocket interactions in 3D.</p>
+
+<div class="floatright">
+<img src="ph4_guide/ligand_int_prot3d.png" alt="Ligand Interactions in MOE Window" />
+<p class="caption">
+Protonated ligand and receptor
+</p>
+</div>
+
+<ol>
+<li>
+
+<i>Protonate the system.</i>
+<br />
+For accurate drawing of surface interaction maps and of creation of
+volume constraints, explicit atoms are required.  Currently,
+the system is in hydrogen-suppressed mode.  The system can be
+protonated using
+
+<blockquote>
+<span class="nobr"><b>MOE | Compute | Protonate 3D</b></span>
+</blockquote>
+
+<p>
+In general, explicit hydrogen atoms are required for all-atom
+molecular mechanics, dynamics, and electrostatic calculations.
+The <a href="protonate3d.htm">Protonate 3D</a>
+application assigns ionization states and calculates
+hydrogen positions in a macromolecular structure.
+</p>
+
+
+<p>In the Protonate 3D panel, press <b>OK</b>.  The calculation
+may take a few moments to complete; progress is reported in the
+MOE Window.
+<br clear="both" />
+</p>
+
+</li>
+
+<p>
+<li>
+
+<div class="floatright">
+<img src="ph4_guide/ligand_int_prot3d_hnonpol.png"
+alt="Ligand Interactions in MOE Window" />
+<p class="caption">
+Ligand and receptor, hydrogens hidden
+</p>
+</div>
+
+<i>Hide non-polar hydrogens.</i>
+<br />
+Hiding the non-polar
+hydrogens permits a clearer view of the binding site:
+
+<blockquote>
+<span class="nobr"><b>MOE | RHS | Hydrogens</b></span>
+</blockquote>
+
+<p>Press the Hydrogens buttons successively until
+the hydrogen display is as desired.  Successive presses
+cycle between no hydrogens displayed, polar hydrogens only,
+and all hydrogens.
+</p>
+
+<p>Closer examination of the binding site
+will reveal that the water hydrogens are well-positioned for
+hydrogen-bonding as is the ligand hydroxyl hydrogen.
+The ASP25 residue is now protonated as well, and donates an
+H-bond to the ligand hydroxyl group.
+</p>
+
+<p>In this image, hydrogen bonds are displayed as white dotted
+lines, whilst red and purple dotted lines represent ligand-solvent
+and ligand-pocket interactions respectively, as calculated by the Ligand
+Interactions application.
+<br clear="both" />
+
+</p>
+</li>
+</p>
+
+<p>
+<li>
+<i>Draw the pocket.</i>
+<br />
+The binding pocket can be depicted using a 3D molecular surface.
+Select
+
+<blockquote>
+<span class="nobr"><b>MOE | Compute | Surfaces and Maps</b></span>
+</blockquote>
+
+<div class="floatright">
+<img src="ph4_guide/ligand_msurf.png"
+alt="Molecular Surface of Binding Pocket" />
+<img src="ph4_guide/ligand_msurf_channel.png"
+alt="Side View of Molecular Surface of Binding Pocket" />
+<p class="caption">
+Molecular surface of pocket, top and side views
+</p>
+</div>
+
+<p>
+Press <b>Apply</b> to calculate the Molecular Surface around the
+receptor atoms near the ligand.  Here,
+<b>Color</b> has been set to <b>Constant</b>, with the
+<b>Surface Color</b> orange and the surface type <b>Solid</b>.  
+</p>
+
+<p>By <a href="../moe/gui/mainwin.htm#Viewing">rotating the view</a>
+to obtain a side view, the active site channel between the A and
+B chains of the receptor can be seen.
+</p>
+
+<p>
+In these images, the transparency of the surface has been
+adjusted (using the <b>TF</b> and <b>TB</b> sliders in the
+Surfaces and Maps panel) for better ligand visibility.
+
+<br clear="both" />
+</p>
+
+</li>
+</p>
+
+<p>
+<li>
+<div class="floatright">
+<img src="surfmap/msurf_estatic.png"
+alt="Surfaces and Maps Panel, Electrostatic Map" />
+</div>
+
+<i>Calculate pocket electrostatics.</i>
+<br />
+The <a href="surfmap.htm#ElectrostaticFeatures">electrostatic maps</a>
+of the 1HPV pocket predict where hydrophobic,
+hydrogen bond acceptor and hydrogen bond donor contacts are preferred.
+Partial charges must be assigned to the system before the calculation
+is performed.  Here, the charges have already been assigned by
+the Protonate 3D application.
+</p>
+
+<p>In the <b>Surfaces and Maps</b> panel, change the <b>Surface</b>
+to <b>Electrostatic Map</b>.  Press <b>Apply</b>.
+</p>
+
+<p>The calculation solves the Poisson-Boltzmann equation for the
+electrostatic potential, which is then used to generate the
+acceptor, donor, and hydrophobic predictive maps.  The maps
+show the locations in space at which an atom of the given
+type has a potential equal to the value (in kcal/mol) given by the
+corresponding <b>Level</b> slider.
+</p>
+
+<p>We will now examine each of the electrostatic maps in turn.
+<br clear="both" />
+</p>
+
+</li>
+</p>
+
+<p>
+<li>
+
+<div class="floatright">
+<img src="ph4_guide/ligand_hyd_map.png" alt="Hydrophobic Map" />
+<p class="caption">
+Hydrophobic map
+</p>
+</div>
+
+<i>Analyze the hydrophobic map.</i>
+<br />
+Isolate the hydrophobic map.  The hydrophobic map gives the
+locations of receptor contact and of low preference for
+acceptors and donors.
+</p>
+
+<p>
+Here, the rendering mode has been set to
+<b>Solid</b> and the color to green.  Hide the other two
+maps by setting the rendering mode of <b>Acc</b> and <b>Don</b>
+to <b>None</b>.
+</p>
+
+<p>There are four -3 kcal/mol hydrophobic regions.
+The 1HPV receptor comprises two chains identical in sequence, and,
+accordingly,
+the hydrophobic areas appear as a mirrored pair, with one smaller
+and one larger hydrophobic preference region associated with each
+chain.
+These regions are suggestive of
+locations for <i>hydrophobic</i> and/or <i>aromatic</i>
+pharmacophore features.
+
+<br clear="both" />
+</p>
+</li>
+</p>
+
+<p>
+<li>
+
+<div class="floatright">
+<img src="ph4_guide/ligand_acc_map.png" alt="Acceptor Map" />
+<p class="caption">
+Acceptor map
+</p>
+</div>
+
+<i>Analyze the hydrogen acceptor map.</i>
+<br />
+Isolate the hydrogen acceptor map by setting the <b>Hyd</b>
+and <b>Don</b> rendering modes to <b>None</b>.  Here, the
+rendering mode of <b>Acc</b> has been set to <b>Solid</b>.
+</p>
+
+<p>There is a -2 kcal/mol hydrogen acceptor region contacting
+the bound water HOH_201.  This suggests adding a <i>projected feature</i>
+to the pharmacophore to contact this area.
+
+<br clear="both" />
+</p>
+
+</li>
+</p>
+
+
+<p>
+<li>
+<i>Analyze the hydrogen donor map.</i>
+
+<div class="floatright">
+<img src="ph4_guide/ligand_don_map.png" alt="Donor Map" />
+<p class="caption">
+Donor map
+</p>
+</div>
+
+<br />
+Isolate the hydrogen donor map by setting the <b>Hyd</b>
+and <b>Acc</b> rendering modes to <b>None</b>.  Here, the
+rendering mode of <b>Don</b> has been set to <b>Solid</b>.
+</p>
+
+<p>There is a -2 kcal/mol hydrogen donor region at ASP25 contacting
+the hydroxyl group on the ligand.  This suggests a possible
+<i>donor</i> pharmacophore feature.
+</p>
+
+</li>
+</p>
+
+</ol>
+
+<h4>Refining the Query</h4>
+
+<p>Having analyzed the ligand-pocket interactions, we can now
+refine the 1HPV-query1 pharmacophore
+query by adding the pharmacophore features suggested by the analysis.
+If it is still open, close the Ligand Interactions panel as it
+is no longer needed.
+<br clear="both" />
+</p>
+
+
+<ol>
+
+<li>
+<div class="floatright">
+<img src="ph4_guide/hyd_map_and_query.png"
+alt="Hydrophobic Map with Pharmacophore Query" />
+<p class="caption">
+Hydrophobic map and query
+</p>
+</div>
+
+<i>Open the query.</i>
+<br />
+Open the simple pharmacophore query created earlier:
+
+<blockquote>
+<span class="nobr"><b>MOE | File | Open | </b><tt>1HPV-query1.ph4</tt></span>.
+</blockquote>
+
+<p>
+The Pharmacophore Query Editor will open with the <tt>1HPV-query1.ph4</tt>
+query loaded.  At the same time, the query will be rendered in the MOE Window.
+</p>
+</li>
+
+<p>
+<li>
+<i>Tidy up the rendering area.</i>
+<br />
+For better visualization:
+    <ul>
+    <li>Hide all electrostatic maps by setting their rendering mode
+	to <b>None</b> in the Surfaces and Maps panel.
+    </li>
+    <li>Hide the receptor atoms with
+    <span class="nobr"><b>MOE | Popup | Hide | Receptor</b></span>.
+    </li>
+    </ul>
+</li>
+
+<br clear="both" />
+</p>
+
+<p>
+<li>
+<div class="floatright">
+<img src="ph4_guide/acc_map_and_query.png"
+alt="Acceptor Map with Pharmacophore Query" />
+<p class="caption">
+Acceptor map with query
+</p>
+</div>
+
+<i>Add features suggested by the hydrophobic map.</i>
+<br />
+Show the hydrophobic map (in isolation) by setting the <b>Hyd</b>
+rendering mode to <b>Solid</b>.  The hydrophobic
+features already in the query can be seen to coincide with the regions of
+preferred hydrophobic contact.  Thus, no additional features are
+needed to capture the interactions depicted by the hydrophobic map.
+</li>
+</p>
+
+<p>
+<li>
+
+<i>Add features suggested by the hydrogen acceptor map.</i>
+<br />
+Hide the hydrophobic map (set its rendering mode to
+<b>None</b> in the Surfaces and Maps panel).
+</p>
+
+<p>
+In the Pharmacophore Query Editor, press the <b>Scheme: Info</b> button
+to open the information panel for the current scheme (<b>Unified</b>).
+In the <b>Unified Info</b> panel, turn on
+<b>Acc2</b> to enable the projected acceptor annotation points
+(the pharmacophore type is <i>Acc2</i>) and then close the Info panel.
+Turn on <b>Show Projecting Vectors</b> in the Pharmacophore
+Query Editor.
+</p>
+
+<p>In the MOE Window, projected <i>Acc2</i> acceptor annotation
+points will be displayed.  It can be seen that the projections from the
+C=O and SO2 groups coincide with the bound water.
+</p>
+
+<p>Select these two annotation points, then press
+<b>Create: Feature</b>.  An <b>Acc2</b> projected feature
+will be created at the centroid of the selected annotation points.
+</p>
+
+<br clear="both" />
+</li>
+</p>
+
+
+<p>
+<li>
+
+<div class="floatright">
+<img src="ph4_guide/don_map_and_query.png"
+alt="Donor Map with Pharmacophore Query" />
+<p class="caption">
+Donor map with query
+</p>
+</div>
+
+<i>Add features suggested by the hydrogen donor map.</i>
+<br />
+In the Unified Info panel, turn off <b>Acc2</b>.
+In the Pharmacophore Query Editor, change the Ligand
+Annotation render mode to <b>Long</b>.
+</p>
+
+<p>In the MOE Window,
+an annotation point can be seen on the hydroxyl group.
+Select this annotation point (it is easiest to do
+this by
+<a href="../moe/gui/mouse.html#SelectingAtoms">left-dragging the mouse</a>),
+then press <b>Create: Feature</b> to create a <b>Don&Acc</b>
+feature on the hydroxyl group.
+</p>
+
+</li>
+
+<br clear="both" />
+</p>
+
+<p>
+<li>
+
+<div class="floatright">
+<img src="ph4_guide/msurf_and_excl_volume.png"
+alt="Excluded Volume" />
+<p class="caption">
+Excluded volumes
+</p>
+</div>
+
+<i>Add excluded volumes on the receptor atoms
+of the binding site to avoid steric clashes within the pocket.
+</i>
+<br />
+First ensure no atoms are selected using
+<span class="nobr"><b>MOE | Popup | Select | Clear</b></span>.
+Then, select the binding pocket atoms with
+<span class="nobr"><b>MOE | Popup | Select | Pocket</b></span>.
+</p>
+
+<p>In the Pharmacophore Query Editor, press <b>Create: Union</b>.
+This will create a grouped volume feature made up of volumes
+placed on all selected atoms.  By default, the volume is already
+of type <b>Excluded</b>.
+</p>
+
+<p>Increase the radius <b>R</b> of the volume feature to 2.0.
+As explained above in the section on
+<a href="#About_Constraints">constraints</a>,
+atoms are considered to have zero radii when evaluating
+them against volume constraints.  To avoid clashes,
+the volume radius should be increased to take into account
+the van der Waals radii of the ligand atoms of interest.
+The value of 2.0 accounts for the atom radii, with some
+tolerance.
+</p>
+
+<p>
+For easier visualization, you can turn off the display of the volumes
+in the MOE Window by selecting <b>V1</b> in the feature list of
+the Pharmacophore Query Editor and then turning on the
+<b>Hidden</b> checkbox.
+</p>
+
+<p>When the volume feature is selected in the list and the <b>Hidden</b>
+attribute is on, the centers of the volumes are marked with selection
+markers and a dotted contour line drawn around the volumes showing
+the volume's location.
+</p>
+
+<p>Note that the Hidden attribute only affects rendering in the MOE Window.
+It has no effect on searching:
+hidden features participate in pharmacophore searching as normal.
+</p>
+
+</li>
+</p>
+
+<!--
+
+<br clear="both" />
+<div class="floatright">
+<img src="ph4_guide/msurf_and_hidden_excl_volume.png"
+alt="Excluded Volume" />
+<p class="caption">
+The refined query
+</p>
+</div>
+
+-->
+
+<p>
+<li><i>Save the refined query.</i>
+<br />Press <b>Save</b> in the Pharmacophore Query Editor.
+In the <b>Write Query File</b> panel, enter the name
+<tt>1HPV-query2.ph4</tt> and press <b>OK</b>.
+</li>
+</p>
+
+<br clear="both" />
+
+</div>
+
+</ol>
+
+
+<!-- ==================== END HIV1-PR Refinement =================== -->
+
+<a name="Validating_the_Query"></a>
+<h3>Validating the Query</h3>
+
+<p>Once a pharmacophore query has been refined, it can be evaluated
+by performing a pharmacophore search.  If the results of this search are
+found to be unsatisfactory, another round of
+query refinement can be done.  In this way, the pharmacophore
+query can be iteratively improved.
+</p>
+
+
+<!-- ==================== START HIV1-PR Validation =================== -->
+
+<div class="example">
+<a name="Example:_1HPV-query2_Validation"></a>
+<h3>Example: 1HPV-query2 Query Validation</h3>
+
+<p>Close the current system with
+<span class="nobr"><b>MOE | File | Close</b></span>.
+Open the database of HIV-1-PR inhibitors:
+<span class="menu">MOE | File | Open |
+<tt>$MOE/sample/mol/hiv1pr_ligands.mdb</tt></span>.
+</p>
+
+<center>
+<img src="ph4_guide/hiv1pr_ligands_mdb.png"
+alt="Database of HIV-1-PR Ligands" />
+</center>
+
+<ol>
+<li>
+<p class="nonebottom">
+<i>Open the</i> <b>Pharmacophore Search</b> <i>panel.</i>
+</p>
+<p class="indent_bottomspace">
+<span class="nobr"><b>DBV | File | Pharmacophore Search</b></span>
+</p>
+</li>
+
+<li>
+<p>
+<i>Specify the pharmacophore query.</i>
+<br />
+Press <b>Query: Browse</b>.  In the <b>Open File</b> panel,
+locate and select <tt>1HPV-query2.ph4</tt>.  Press <b>OK</b>.
+</p>
+</li>
+
+<li>
+<p>
+<i>Specify how the search output will be reported.</i>
+<br />
+In the Pharmacophore Search panel, change the <b>Hit Entries</b>
+option to <b>Select</b>, which will select the results in the
+Database Viewer.  Set the <b>Output</b> database to
+<tt>ph4out2.mdb</tt>.
+</p>
+</li>
+
+<li>
+<p>
+<i>Perform the search.</i>
+<br />
+Press <b>Search</b>.  The status line at the bottom of the panel
+reports the search status.  The hits will be selected in the
+Database Viewer.
+</p>
+</li>
+
+</ol>
+
+<p>Some observations can be made on closer examination of the
+search results:
+</p>
+
+<ul>
+<li>
+<p>
+The search results in 24 hits out of 82 molecules.
+Compared to the original query <tt>1HPV-query1.ph4</tt>,
+the refined query is more selective.
+If the output database is examined as described above in the
+example on
+<a href="#Example:_Pharmacophore_Search">pharmacophore search</a>,
+it can be seen that the hits
+exhibit mostly the same orientation, a desirable result.
+</p>
+
+<li>
+<p>
+Experiments using partial matches can be made.
+However, since
+the presence of the projected acceptor feature <i>Acc2</i>
+prevents hits that displace the bound water,
+the <i>Acc2</i> feature should probably be made essential
+when partial matches are enabled.  To make a feature essential,
+turn on its
+<b>F:Essential</b> attribute in the Pharmacophore Query Editor.
+</p>
+</li>
+
+</ul>
+
+</div>
+
+<!-- ==================== END HIV1-PR Validation =================== -->
+
+<p>The iterative process of pharmacophore query refinement is
+facilitated by the intimate connection between the Pharmacophore
+Search and the Pharmacophore Query Editor panels.  Pressing
+<b>Edit</b> in the Pharmacophore Search panel opens the 
+Pharmacophore Query Editor.  Subsequently, all searches will
+use the query currently loaded in the editor.
+Thus any changes made in the
+editor take effect immediately in the next search.
+Similarly, pressing <b>Search</b> in the Pharmacophore
+Query Editor opens a Pharmacophore Search window
+linked to the editor in the same way.
+</p>
+
+
+<a name="Automatic_Pharmacophore_Query_Generation"></a>
+<h3>Automatic Pharmacophore Query Generation</h3>
+
+<p>Pharmacophore queries can be manually generated, edited,
+and customized using the Pharmacophore Query Editor.
+In addition, there are
+various tools in MOE for generating pharmacophore queries
+automatically:
+</p>
+
+<ul>
+    <li><p>
+	<a href="ph4_query.htm#Running_Pharmacophore_Consensus">Pharmacophore Consensus</a>.
+	Obtain consensus features from aligned ligands.
+	</p>
+
+	<p>
+	The Pharmacophore Consensus panel is opened from the Pharmacophore
+	Query Editor.  It calculates consensus features from
+	a set of aligned molecules loaded in MOE or found in a database.
+	Ligand alignment can be achieved using MOE's
+	<a href="flex.htm">Flexible Alignment</a> application.
+	The suggested features can be loaded back into the Pharmacophore
+	Query Editor.
+	</p>
+    </li>
+    <li><p>
+	<a href="ph4_elu.htm">Pharmacophore Elucidation</a>.
+	Automatically determine a pharmacophore query from active
+	(and optionally inactive) ligands.
+	</p>
+
+	<p>
+	The pharmacophore query is elucidated without knowledge of
+	the receptor.
+	It is assumed, however, that the ligands bind to the receptor
+	in the same
+	mode, i.e. they overlay well, and that the collection of ligands
+	is sufficiently diverse so that important pharmacophoric features
+	will emerge.  The elucidator operates on 3D conformations; these
+	can be generated automatically by the application if not provided.
+	</p>
+    </li>
+    <li><p>
+	<a href="plif.htm#Query_Generator">PLIF</a>. Generate a pharmacophore
+	query from a consensus of Protein Ligand Interaction Fingerprints.
+	</p>
+
+	<p>
+	The PLIF application uses fingerprints to encode interactions
+	such as hydrogen bonds, ionic interactions, and
+	surface contacts between ligands and
+	proteins.  The application operates either
+	on a database of complexed ligand-proteins (e.g. a collection
+	of crystal structures) or on a receptor
+	loaded in MOE and a database of ligands in their bound conformations
+	(e.g. the results of rigid-receptor docking).
+	Since the fingerprints encode structural information, a set of
+	consensus pharmacophore features
+	can be derived from a consensus of interaction fingerprints.
+	In order to be meaningful, the ligand binding modes
+	should be similar, i.e. the bits in the interaction fingerprint
+	which are important to activity should be highly conserved
+	across all fingerprints being used to generate the
+	pharmacophore features.
+	</p>
+    </li>
+</ul>
+
+<a name="Running_in_MOE/batch"></a>
+<h2>Running in MOE/batch</h2>
+
+<p>
+Pharmacophore query generation in general requires user interaction
+and is not well-suited for batch mode.  Pharmacophore search, on the
+other hand, can be done in MOE/batch using an SVL
+<a href="../tutorials/svltour.html#Scripts">script</a>
+or
+<a href="../tutorials/svltour.html#Executable_Programs">runnable file</a>
+that invokes the SVL function
+<a class="svl" href="../moe/fcnref/ph4srch.htm">ph4_Search</a>.
+In the following, we show how to use a script to run
+pharmacophore search as a batch job.
+</p>
+
+<p>
+An SVL script is a sequence of SVL expressions stored in a plain text file.
+The expressions are executed as though they had been entered at the SVL
+<a href="../moe/hellomoe.htm#Command_Line_Interface_(CLI)">CLI</a>
+(Command Line Interface), except that in a script each expression
+must be terminated by a semi-colon (;).
+</p>
+
+<p>Here is an example of a one-line script for performing a pharmacophore search
+on the database <tt>dbfile.mdb</tt>
+using the pharmacophore query file <tt>query.ph4</tt>:
+</p>
+
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4'];
+</pre>
+
+<p>The above call assumes that <tt>dbfile.mdb</tt> contains
+a pre-calculated molecule index field called <tt>mseq</tt> (molecule sequence
+number).
+</p>
+
+<p>Here is an example of a more complicated invocation, using
+some of the possible <tt>ph4_Search</tt> options.
+These lines would be the exact contents of the script file:
+
+<pre>
+    ph4_Search [
+	'dbfile.mdb',
+	'query.ph4',
+	[
+	    molfield: 'ligand2',	// input molecule field name
+	    maxmolhits: 5000,		// max # hits to generate per entry
+	    use_mseqfield: 0,		// don't use the mseq field
+	    out_dbfile:'srch_out.mdb',	// output database file name
+	    out_append: 0		// overwrite output database file
+	]
+    ];
+</pre>
+
+<p>Supposing one of the above calling sequences is saved to the file
+<tt>'ph4search.svl'</tt>.  The search
+can then be executed in MOE/batch using the following
+in a command shell (Unix) or in a command prompt window
+(Windows):
+</p>
+
+<pre>
+    % moebatch -script ph4search.svl
+</pre>
+
+<p>This command invokes <tt>moebatch</tt> to run the script and
+then terminate once the script has finished executing.
+</p>
+
+<p>Using
+<a class="svl" href="../svl/fcnref/print.html">print</a> and
+<a class="svl" href="../svl/fcnref/freadetc.html">write</a> statements
+in the script file
+allows additional information to be reported to the shell:
+</p>
+
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4'];
+    write ['\nDone.  {}\n\n', asctime []];
+</pre>
+
+<p>
+will, on completion of the search, print a message similar to this:
+</p>
+
+<pre>
+    Done. Thu Dec 18 12:45:30 2008
+</pre>
+
+<a name="References"></a>
+<h2>References</h2>
+
+<table cellpadding="3">
+
+<tr>
+<td valign="top">[Ehrlich&nbsp;1909]</td>
+<td valign="top">Ehrlich, P.; <i>Ber. Dtsch. Chem. Ges. 42</i> (<b>1909</b>)
+17&ndash;47.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[IUPAC&nbsp;1998]</td>
+<td valign="top">Wermuth, C.G., Ganellin, C.R., Lindberg, P., Mitscher, L.A.;
+Glossary of Terms Used in Medicinal Chemistry (IUPAC
+Recommendations 1998); <i>Pure &amp; Appl. Chem. 70:5</i> (<b>1998</b>)
+1129&ndash;1143.
+</td>
+</tr>
+
+</table>
+
+<a name="Pharmacophore_Reference"></a>
+<h2>Pharmacophore Reference</h2>
+
+<ul>
+
+<li>
+<a href="ph4_intro.htm">Overview of Pharmacophore Applications</a>.
+</li>
+<li>
+<a href="ph4_annot.htm">Pharmacophore Annotation Schemes</a>.
+Automatically identify ligand annotation points.
+</li>
+<li>
+<a href="ph4_query.htm">Pharmacophore Query Editor</a>. Create and
+edit pharmacophore queries.
+</li>
+<li>
+<a href="ph4_elu.htm">Pharmacophore Elucidator</a>. Automatically
+generate pharmacophore queries from collections of compounds.
+</li>
+<li>
+<a href="ph4_search.htm">Pharmacophore Search</a>. Screen virtual
+databases of 3D conformations.
+</li>
+<li>
+<a href="../tutorials/ph4_tut.htm">Pharmacophore Tutorial</a>. Use
+MOE pharmacophore applications to study serotonin 5-HT3 receptors.
+</li>
+
+</ul>
+
+<a name="SVL_Commands"></a>
+<h2>SVL Commands</h2>
+
+<a class="svl" href="../moe/fcnref/ph4srch.htm">ph4_Search</a>
+
+<a name="See_Also"></a>
+<h2>See Also</h2>
+
+<a href="plif.htm#Query_Generator">PLIF</a><br />
+<a href="flex.htm">Flexible Alignment</a><br />
+<a href="sitefind.htm">Site Finder</a><br />
+<a href="surfmap.htm">Surfaces and Maps</a><br />
+<a href="docking.htm">Dock</a><br />
+
+<br />
+
+<a href="../mdb/ph4calc.htm">Pharmacophore-Type Molecular Fingerprints</a><br />
+<a href="../quasar/descr.htm">Pharmacophore Feature Descriptors</a>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

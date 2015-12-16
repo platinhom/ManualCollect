@@ -1,0 +1,594 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	lmmd_tut.htm	LowModeMD Tutorial
+!!
+!!	02-oct-2010 (hs) formatted
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<title>LowModeMD Tutorial</title>
+
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>LowModeMD Tutorial</h2>
+<hr noshade="noshade" />
+
+<h2>Introduction</h2>
+
+<p>This tutorial examines the loop conformation of rho-kinase,
+PDB entry 2F2U, to illustrate how to:
+</p>
+
+<p>
+<ol>
+<p><li>Run LowModeMD conformational search.</li></p>
+<p><li>Perform protein loop sampling.</li></p>
+<p><li>Reduce computational time by:
+    <p>
+    <ul>
+    <li>Restricting calculations to zones of interaction (atom shells);
+    </li><li>Reducing the degrees of freedom by fixing atoms next to
+	the active zone;
+    </li><li>Using tethers to steer the search toward
+	interesting conformations.
+    </li>
+    </ul>
+    </p>
+</li></p>
+</ol>
+</p>
+
+<p>
+The crystal structure of rho-kinase,
+a serine/threonine-protein kinase,
+contains a dimer, the two monomers of which exhibit different
+conformations of the P-loop (Ile98-Gln107). During binding, the
+extended conformation folds further to lock in the bound ligand. The
+first chain in the PDB file is in fact the extended loop conformation, while the
+other instance (chain 3) is the fully folded conformation. The 7-membered
+ring of the ligand (fasudil) adopts a different
+orientation as a result of the P-loop motion. In this tutorial, we will
+simulate the unbinding mechanism by starting from the folded state, and
+generating the extended conformation via LowModeMD. When classical MD methods
+are used for this purpose, even long simulations may fail to observe the
+conformational switch [Godha&nbsp;2008].
+The active zone of our model will consist of the P-loop and
+the ligand (shown below in red) which will be fully flexible. The
+neighboring residues (shown in yellow) will be fixed so that they can still be
+sensed by the active molecules and finally the distant residues (gray) will be
+inert. Thus, during the simulation, the red area
+will move freely while it senses the geometry of the immobile yellow area.
+</p>
+
+<p align="center"><img src="lmmd_tut/lmmd_fig01_shells.png" alt="MOE-LMMD" />
+</p>
+
+<p><b>LowModeMD</b>.
+LowModeMD is a conformational search method that uses implicit vibrational
+analysis to focus a MD trajectory along the low-mode vibrations. This
+has the effect of searching for minima along the valleys and troughs on the
+potential energy surface. LowModeMD is the default conformational search
+method in MOE because it is has the best overall performance on a wide set of
+structures from small molecules to peptides, macrocycles, and protein loops.</p>
+
+<p>LowModeMD can
+be used for modeling proteins of known families (for example antibodies), for
+studying the flexibility of certain structural regions of macromolecules such
+as protein loops, and modeling of ligands and solvents in the active sites. It
+can also be used for comprehensive conformational analysis of medium size molecules
+such as short peptides and macrocycles. The method also allows tethers and constraints
+to be added to the system. In this tutorial, we will use LowModeMD for conformational
+search of a protein loop.</p>
+
+<p><b>Protein Loop Sampling</b>.
+Conformational search of a protein loop and similar large systems can be very
+challenging due to the large number of degrees of freedom, complicated
+non-bonded interactions, and the steric hindrance and
+rigidity in the structure which impedes conformational switching.
+Classical MD/MC methods tend to be very slow for this purpose, since they
+spend most of the time near the equilibrium energy conformation, thus generating
+structures with low conformational diversity. In this tutorial, we will
+see how LowModeMD can explore the conformational space of a protein loop
+efficiently by accentuating the conformational changes mostly on dihedral
+rotations, i.e. the low mode conformational changes.
+
+<p>
+<b>Defining shells (layers) of atoms</b>.
+ When studying large molecular systems, often only local effects are
+interesting; for example the interactions of a ligand with an active site,
+or conformational changes of a certain loop. In such cases, forcefield
+calculations could be accelerated by
+ignoring atoms distant from the active zone, thereby
+reducing the number of atoms taking part in the computations.
+In MOE, such faraway atoms
+can be made <i>inert</i>.  Inert atoms are effectively invisible during
+forcefield calculations. MD calculations can be additionally accelerated by
+reducing the number of degrees of freedom, for example by confining the
+position of atoms neighboring the active zone. In this tutorial we
+will use proximity functions in MOE to define different
+zones of interaction, setting the atoms within them
+to inert or fixed to accelerate the LowModeMD calculation. It is also
+possible to further steer the conformational search towards interesting
+ conformations and save time using constraints and tether forces.
+Here we will tether the ligand atoms to retain their approximate positions
+in the active site. <p>
+
+<h3>Conventions Used in this Tutorial</h3>
+
+<p><table cellpadding="3">
+<tr>
+<td valign="top" bgcolor="#cccccc">MOE
+<td valign="top">MOE Window
+</tr>
+<tr>
+<td valign="top" bgcolor="#cccccc">SE
+<td valign="top">Sequence Editor
+</tr>
+<tr>
+<td valign="top" bgcolor="#cccccc">RHS
+<td valign="top">The right hand side button bar
+</tr>
+<tr>
+<td valign="top" bgcolor="#cccccc">Footer
+<td valign="top">The footer button bar
+</tr>
+</table>
+
+
+<h2>Instructions</h2>
+
+<ol>
+
+<p>
+<li>
+<i>Open the PDB file.</i>
+
+<blockquote>
+<span class="menu">MOE | File | Open</span>
+</blockquote>
+
+<p>
+Select <tt>2f2u.pdb</tt> and press <b>OK</b>.
+</p>
+
+</li></p><p><li>
+<i>Superpose the two protein chains.</i>
+
+<blockquote>
+<span class="menu">
+MOE | Compute | Biopolymer | Superpose
+</span>
+</blockquote>
+
+<p>
+Press <b>Superpose</b> and <b>Close</b>.</p>
+
+</li></p><p><li>
+
+<i>Show the ligands and backbones ribbons only.</i>
+
+<blockquote>
+<span class="menu">
+MOE | RHS | Hide | All<br />
+MOE | RHS | Show | Ligand<br />
+</span>
+</blockquote>
+
+<blockquote>
+<span class="menu">
+MOE | Footer | Ribbon
+</span>
+</blockquote>
+
+<p>
+In the ribbon panel, press 
+<img src="lmmd_tut/lmmd_fig02_arrow.png" style="vertical-align: bottom;"
+alt="MOE-LMMD" />
+and color by
+<img src="lmmd_tut/lmmd_fig03_chains.png" style="vertical-align: bottom;"
+alt="lmmd_fig03_chains.png" />
+</p>
+
+<blockquote>
+<span class="menu">
+MOE | RHS | Center
+</span>
+</blockquote>
+
+<p>
+The result as shown below demonstrates two conformations of the protein
+(extended in orange and folded in magenta) along with the induced conformations
+of the ligands.</p>
+
+<p align="center"><img src="lmmd_tut/lmmd_fig04_twoconformers.png"
+alt="MOE-LMMD" /></p>
+
+</li></p><p><li>
+
+<i>Remove unwanted chains.</i>
+
+<br />
+
+These include the extended conformation of the protein and its ligand,
+plus all the water molecules. To do this, bring up the sequence editor
+by <span class="menu">MOE | SEQ </span>. Then select these
+chains by holding <b>Ctrl</b> on the keyboard and pressing
+chain numbers <b>1,3,5,6</b>.  The result is shown below:
+</p>
+
+
+<p align="center"><img src="lmmd_tut/lmmd_fig05_seq.png" alt="MOE-LMMD"></p>
+
+</li></p><p><li>
+
+<i>Delete the selected chains.</i>
+<blockquote>
+<span class="menu">
+SE | Edit | Delete Selected Chains
+</span>
+</blockquote>
+
+<p>
+Press <b>OK</b> in the confirmation dialog.
+</p>
+
+</li></p><p><li>
+
+<i>Add hydrogens to the system.</i>
+<br />
+Run the Protonate3D application:
+
+<blockquote>
+<span class="menu">
+MOE | Compute | Protonate3D
+</span>
+</blockquote>
+
+<p>Leave the default options and press <b>OK</b>.</p>
+
+</li></p><p><li>
+
+<i>Fix all the atoms in the system.</i>
+
+<blockquote>
+<span class="menu">
+MOE | RHS | Select | All<br />
+MOE | RHS | Constrain | Fix
+</span>
+</blockquote>
+
+<p> This is the first step in creating a shell of fixed atoms around the active atoms.</p>
+
+<p>
+Next, clear the atom selection using
+<span class="menu"> MOE | RHS | Select | Clear</span>.
+Later on we will unfix the active atoms.</p>
+
+</li></p><p><li>
+
+<i>Define the active part of the model.</i>
+<br />
+The active part of our model will consist of the P-loop and the ligand. 
+To select the P-loop, use the Sequence Editor. First ensure that the both
+residue UID display and to synchronize the residue-atom selection are
+toggled on:
+
+<blockquote>
+<span class="menu">
+SE | Display | Residue UID<br />
+SE | Selection | Synchronize
+</span>
+</blockquote>
+
+<p>Then move the horizontal scroll bar to the right to see the residues in
+96-106 UID region.
+Select the first residue of the P-loop by clicking on Ile98, hold Shift
+on keyboard
+and click on the last residue of the P-loop (Gln107). As shown below,
+the atoms of  this loop will be selected in the main MOE window along
+with the selection of the residues.</p>
+
+</li></p><p><li>
+
+<i>Add the ligand to the current selection.</i>
+
+<blockquote>
+<span class="menu">
+MOE | RHS | Select | Ligand
+</span>
+</blockquote>
+
+</li></p><p><li>
+
+<i>Unfix the selected atoms.</i>
+
+<blockquote>
+<span class="menu">
+MOE | RHS | Constrain | Unfix
+</span>
+</blockquote>
+
+<p> This will unfix the ligand and the P-loop atoms so that they can move freely during the simulation.</p>
+</li></p><p><li>
+
+<i>Render the selected atoms for easy visualization.</i>
+
+<blockquote>
+<span class="menu">
+MOE | RHS | Show | Selected<br />
+MOE | Footer | Atoms | Color | Chain<br />
+MOE | Footer | Atoms | Label | Residue<br />
+MOE | Footer | Ribbon | Color | <i>red</i>
+</span>
+</blockquote>
+
+
+<p>
+At this point, the active atoms (P-loop + ligand)
+should still be selected. If the selection was
+accidentally lost (for example by clicking on an empty area in the main MOE
+window), since these are the only visible atoms on the screen they can be
+re-selected by drawing a box around them while holding the left mouse button.
+</p>
+
+</li></p><p><li>
+
+<i>Define the inert zome: set distant atoms to <b>inert</b>.</i>
+<br />
+We will now make the atoms that are too far from the active atoms
+inert:
+
+<blockquote>
+<span class="menu">
+MOE | RHS | Extend | Near Residues
+</span>
+</blockquote>
+
+<p>
+This extends the selection to nearby residues: all atoms belonging
+to residues having at least one atom within 4.5&nbsp;&Aring;
+of the selected
+atoms will be added to selection.
+
+<blockquote>
+<span class="menu">
+MOE | RHS | Select | Invert<br />
+MOE | Edit | Potential | Inert<br />
+</span>
+</blockquote>
+
+<p>
+By inverting the selection, all atoms that are far away from the active
+atoms (i.e. from the ligand and the P-loop) will be selected. Since these
+atoms are too distant from the active atoms they almost have no effect on
+the calculations, and thus can be set to inert.</p>
+
+<p>
+To distinguish visually the inert parts:
+
+
+<blockquote>
+<span class="menu">
+MOE | Footer | Ribbon | <i>gray</i>
+</span>
+</blockquote>
+
+<p>As shown below, the flexible core includes the P-loop (red ribbon)
+and the ligand (magenta), surrounded by the fixed atoms (orange) which
+in turn are surrounded by the inert atoms (gray).
+</p>
+
+<p align="center">
+<img src="lmmd_tut/lmmd_fig07_allsetup.png" alt="MOE-LMMD" />
+</p>
+
+</li></p><p><li>
+
+<i>Limit the ligand's translational movements using tether forces.</i>
+<br />
+First clear the selection:
+
+<blockquote>
+<span class="menu">
+MOE | RHS | Select | Clear
+</span>
+</blockquote>
+
+<p>Next select the ligand:</p>
+
+<blockquote>
+<span class="menu">
+MOE | RHS | Select | Ligand
+</span>
+</blockquote>
+
+<p>Then tether the ligand:</p>
+
+<blockquote>
+<span class="menu">
+MOE | RHS | Constrain | Tether
+</span>
+</blockquote>
+
+<p>This applies a tether constant of 10 kcal/mol&Aring;<sup>2</sup> on the
+selected atoms.</p>
+
+</li></p><p><li>
+
+<i>Run conformational analysis using the LowModeMD method.</i>
+
+<blockquote>
+<span class="menu">
+MOE |MOE |  Compute | Conformations | Conformational Search
+</span>
+</blockquote>
+
+<p>Change the <b>RMS Gradient</b> from
+<tt>0.005</tt> to <tt>0.1</tt>.
+This is to accelerate the calculation.
+</p>
+
+<p>Change the <b>Energy Window</b> from
+<tt>7</tt> to <tt>100</tt>&nbsp;kcal/mol. The default
+values are appropriate for small molecules; they should be increased for
+larger structures such as the protein loop in this tutorial.
+</p>
+
+<p>Press <b>OK</b>
+to run the conformational search. The program first generates random
+initial atomic velocities with kinetic energy concentrated on the low modes.
+Then it performs NVT dynamics for 0.5&nbsp;ps at 300&nbsp;K
+and then minimizes the system. The process
+is repeated to sample other minima.
+</p>
+
+<p>
+Most other methods including Kolossv&aacute;ry's low mode search (LMOD)
+[Kolossv&aacute;ry&nbsp;1996][Kolossv&aacute;ry&nbsp;2001] use explicit
+matrix diagonalization and compute the Hessian to find the low modes; this is
+extremely slow (on the order of hours for proteins). The LowModeMD in MOE
+uses an efficient implicit method for estimating the low-frequency modes
+which involves no diagonalization or formal mode
+calculations. The method used is analogous to low-band frequency filtering,
+except that here
+we are dealing with velocities that we attenuate at high
+range. A more detailed description is published [Labute&nbsp;2010].
+</p>
+
+<p>
+As the LowModeMD calculation proceeds, the loop unfolding will be visible in
+real-time. The most visible
+characteristic of P-loop backbone unfolding is the Phe103
+moving away from the ligand as shown below.
+</p>
+
+<p align="center">
+<img src="lmmd_tut/lmmd_fig08_finalresult.png" alt="MOE-LMMD" /></p>
+
+</li></p><p><li>
+
+<i>Stop the search.</i>
+<br />
+After about 10 conformations were created in the output
+database, you can stop the search:
+
+<blockquote>
+<span class="menu">
+MOE | Cancel | Conformational Search
+</span>
+</blockquote>
+
+</li></p>
+
+</ol>
+
+<h2>Summary</b></h2>
+
+<p>This tutorial showcased the use of the LowMode
+conformational search method for complex systems such as
+protein loops, macrocycles, peptides, and small molecules.
+When focusing on local changes, calculations
+can be accelerated dramatically by fixing the position of neighboring atoms and
+setting the distant atoms to inert.
+</p>
+
+<p>
+<b>Note:</b>
+The conformational search panel in MOE allows
+LowModeMD search as well as systematic and stochastic searches. The panel
+accepts single molecules we well as databases as input. Shape descriptors are
+printed in the output which can be useful for clustering generated
+conformations of small molecules, peptides, and macrocycles.
+</p>
+
+
+<p><h2>References</h2></p>
+
+<p><table width="100%" cellpadding="5">
+
+<tr>
+<td valign="top">[Godha&nbsp;2008]</td>
+<td valign="top">
+Godha, K.; Hakoshima, T.; A molecular mechanism of P-loop pliability
+of Rho-kinase investigated by molecular dynamic simulation; <i>Journal of
+Computer-Aided Molecular Design 22</i> (<b>2008</b>) 789&ndash;797.
+</td>
+</tr>
+
+<tr>
+<td valign="top">
+[Kolossv&aacute;ry&nbsp;1996]
+</td>
+<td valign="top">
+Kolossv&aacute;ry, I.; Guida, W.C.; Low Mode Search. An Efficient, Automated
+Computational Method for Conformational Analysis: Application to Cyclic and
+Acyclic Alkanes and Cyclic Peptides; <i>Journal of American Chemical Society,
+118</i> (<b>1996</b>), 5011&ndash;5019.
+</td>
+</tr>
+
+<tr>
+<td valign="top">
+[Kolossv&aacute;ry&nbsp;2001]
+</td>
+<td valign="top">
+Kolossv&aacute;ry,I.; Keseru,G. M.; Hessian-Free Low-Mode Conformational Search for
+Large-Scale Protein Loop Optimization: Application to c-jun N-Terminal Kinase
+JNK3; <i>Journal of Computational Chemistry 22</i> (<b>2001</b>), 21&ndash;30.
+</td>
+</tr>
+
+<tr>
+<td valign="top">
+[Labute&nbsp;2010]
+</td>
+<td valign="top">
+Labute, P.; LowModeMD-Implicit Low-Mode Velocity Filtering Applied to
+Conformational Search of Macrocycles and Protein Loops;
+<i>Journal of Chemical Information and
+Modelling 50</i> (<b>2010</b>) 792&ndash;800.
+</td>
+</tr>
+
+</table>
+</p>
+
+<h2>SVL Commands</h2>
+
+<a class="svl" href="../moe/fcnref/csrchfcn.htm"> ConfSearch</a>
+
+<h2> See Also</h2>
+<a href="../apps/confsrch.htm">Generating and Analyzing Conformations</a><br />
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

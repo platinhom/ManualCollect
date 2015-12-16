@@ -1,0 +1,187 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--	db_read.htm
+!!
+!!	09-jul-2003 (al) Modified second example for db_ReadFields
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions db_Read>
+<meta functions db_ReadColumn>
+<meta functions db_ReadFields>
+
+<title>MOE Database Functions: db_Read,...</title>
+
+</head>
+
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>MOE Database Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    entry_record = <a class="fcnlink" href="#db_Read">db_Read</a> [ mdb_key, entry_key ]
+
+    value = <a class="fcnlink" href="#db_ReadColumn">db_ReadColumn</a> [ mdb_key, 'field_name' ]
+    value = <a class="fcnlink" href="#db_ReadColumn">db_ReadColumn</a> [ 'mdb_name', 'field_name' ]
+
+    values = <a class="fcnlink" href="#db_ReadFields">db_ReadFields</a> [ mdb_key, entry_key, field_tokens ]
+    values = <a class="fcnlink" href="#db_ReadFields">db_ReadFields</a> [ 'filename', entry_key, field_tokens ]
+</pre>
+
+
+<p><a name="db_Read"></a></p><h2>Description</h2>
+<pre>
+entry_record = <span class="fcndef">db_Read</span> [ mdb_key, entry_key ]
+</pre>
+
+<p>Used for reading an entire entry, as specified by
+<tt>entry_key</tt> (a scalar), from the database identified by
+<tt>mdb_key</tt>. <tt>entry_record</tt> is a tagged vector in which every
+field value is tagged by its field name.</p>
+
+<p>In the following example, the sample function accepts a database filename 
+and a vector of integers specifying entry positions. The function
+prints the information for each of these entries.  No error checking is
+done. If the values in <tt>n</tt> are out of range, an error will result.
+
+<pre>
+    global function print_entries [filename, n]
+	local mdb_key = db_Open [filename,'read'];
+	local e = db_Entries mdb_key;
+	print apt db_Read[ mdb_key, e[n] ];
+	db_Close mdb_key; 
+    endfunction
+
+        // at the command line:
+
+    svl&gt; print_entries ['csfbrot.mdb', [1,2] ]
+    [ [ mol:[ ['Small Molecule' ], [ &quot;A&quot;, 1 ], ... ], .... ],
+    [ mol:[ ['Smaller Molecule' ], ... ], .... ] ] 
+</pre>
+
+<p><a name="db_ReadColumn"></a></p><p><hr noshade="noshade" />
+<pre>
+value = <span class="fcndef">db_ReadColumn</span> [ mdb_key, 'field_name' ]
+value = <span class="fcndef">db_ReadColumn</span> [ 'mdb_name', 'field_name' ]
+</pre>
+
+<p>Reads an entire field (column) of data from a
+database specified either by key (as returned by <tt>db_Open</tt>) or by
+filename.</p>
+
+<p>The following will read all molecules from a database's molecule field
+named <tt>compound</tt> into a variable <tt>cpd</tt>.
+
+<pre>
+    local cpd = db_ReadColumn [ mdb, 'compound' ];
+</pre>
+
+</p><p><a name="db_ReadFields"></a></p><p><hr noshade="noshade" />
+<pre>
+values = <span class="fcndef">db_ReadFields</span> [ mdb_key, entry_key, field_tokens ]
+values = <span class="fcndef">db_ReadFields</span> [ 'filename', entry_key, field_tokens ]
+</pre>
+
+<p>Reads individual fields from an entry specified by
+<tt>entry_key</tt> in a database specified by either <tt>mdb_key</tt> or
+<tt>'filename'</tt>.  The returned vector <tt>values</tt> contains the field
+value for each of the fields specified by field name in
+<tt>field_tokens</tt>. </p>
+
+<p>In the following example, we read the values of two fields
+(<tt>'molecule'</tt> and <tt>'energy'</tt>) for the first entry of the
+database <tt>'my_database.mdb'</tt>. Data is placed into variables
+<tt>mol</tt> and <tt>energy</tt>.
+
+<pre>
+    local function processfields []
+	local mdb = db_Open ['my_database.mdb','read']; 
+	local entries = db_Entries mdb;    // get entry numbers
+
+	    // Get data from the first entry in database
+
+	local [mol,energy] = db_ReadFields [ 
+	    mdb, 
+	    first entries,                 // read from first entry only
+	    ['molecule','energy']
+	]; 
+	db_Close mdb; 
+
+	    // Do something with the field values
+
+	...
+
+    endfunction
+</pre>
+
+<p>To read the field values from a subset of entries in the database, we call
+the function <tt>db_ReadFields</tt> using <tt>apt</tt>. The
+returned data is now two vectors, which are once again assigned to variables
+<tt>mol</tt> and <tt>energy</tt>.
+
+<pre>
+    local function processfields []
+	local mdb = db_Open ['my_database.mdb','read']; 
+
+	    // Read from the first 10 entries in database
+
+	local entries = keep [db_Entries mdb, 10];
+
+	local [mol,energy] = apt db_ReadFields [ 
+	    mdb,                         // unit extends
+	    entries,                     // read from all entries
+	    [['molecule','energy']]      // unit extends
+	]; 
+	db_Close mdb; 
+
+	    // Do something with the field values
+
+	...
+
+    endfunction
+</pre>
+
+
+<h2>See Also</h2>
+   <a href="introdb.html">Database Functions</a><br />
+<p>
+   <a class="svl" href="mol.htm">mol_Create</a><br />
+   <a class="svl" href="db_crfie.html">db_Delete</a><br />
+   <a class="svl" href="db_entry.html">db_Entries</a><br />
+   <a class="svl" href="db_ftype.html">db_Fields</a><br />
+   <a class="svl" href="db_crfie.html">db_Write</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!! 	protomer.htm
+!! 
+!!      30-sep-2009 (ac) added ctab_ProtomerUnique
+!!	06-oct-2008 (jl) moved stylesheet link to header
+!!    	09-aug-2007 (ac) created
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<title>Tautomer and Protomer Enumeration</title>
+<meta keywords>
+<meta functions ctab_EnumerateProtomers>
+<meta functions ctab_ProtomerUnique>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Tautomer and Protomer Enumeration</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    [ctabs, graph] = <a class="fcnlink" href="#ctab_EnumerateProtomers">ctab_EnumerateProtomers</a> [ctab, opt]
+    idxlists = <a class="fcnlink" href="#ctab_ProtomerUnique">ctab_ProtomerUnique</a> [ctablist, opt]
+</pre>
+
+<h2>Description</h2>
+
+<p>Given a molecular input, the protomer enumeration feature enumerates a list
+of molecular species which are related to the input by a sequence of
+transformations, which consist of some combination of  tautomeric shifts,
+resonance interchanges, protonation and/or deprotonation reactions. The manner
+in which the enumeration is performed is stepwise, and the applicable range of
+transformations can be controlled to an extent by optional parameters.
+</p>
+
+<p><a name="ctab_EnumerateProtomers"></a></p><hr noshade="noshade" />
+</p>
+
+<pre>
+[ctabs, graph] = <span class="fcndef">ctab_EnumerateProtomers</span> [ctab, opt]
+</pre>
+
+<p>The function <tt>ctab_EnumerateProtomers</tt> performs an exhaustive
+enumeration of protomers, starting with the input structure, and terminating
+when no new results can be found, or the maximum limit is achieved.
+</p>
+
+<p>The first parameter, <tt>ctab</tt>, must be a molecular species expressed in
+the <a href="ctabfcn.htm">CTAB</a> format. Explicit hydrogen atoms are treated
+as inviolate honorary heavy atoms during the enumeration process, therefore in
+order for the enumeration to have any effect, the input representation must have
+some or all explicit hydrogen atoms subsumed into the <tt>CTAB_A_HCOUNT</tt>
+field. The implicit hydrogen fields must all be defined, i.e. non-negative,
+otherwise the enumeration function will fail. It is also inappropriate to
+provide aromatic bond types (<tt>CTAB_BT_ARO</tt>), which will not be properly
+handled.
+</p>
+
+<p>One way to obtain such a suitable input is:
+</p>
+
+<pre>
+    svl&gt; ctab = ctab_Extract [akeys, [heavy:1, aro:0]]
+</pre>
+
+<p>The <tt>opt</tt> parameter is a tagged vector which allows various options to
+be controlled. Tautomer enumeration is always enabled.
+</p>
+
+<blockquote><dl>
+
+<p><dt><tt>charge</tt> : <i>flag</i>
+</dt></p>
+
+<dd>If non-zero then some limited forms of resonance-style charge migration is
+included in the enumeration steps, for example N(+)=C-N becomes interchangeable
+with N-C=N(+). While resonance-equivalent forms are filtered from the final
+output on the grounds of degeneracy, their presence during the enumeration
+process can give rise to derived tautomers or protomers, due to the possibility
+of different acidity and neighboring functional groups. The default is 0.
+</dd>
+
+<p><dt><tt>titrate</tt> : <i>flag</i>
+</dt></p>
+
+<dd>If non-zero then a number of transformations which involve adding or
+subtracting a proton to bases and acids respectively are allowed, which leads to
+the generation of protomers which have different overall charge and molecular
+formula, but the same heavy atom skeleton. While the eligible acids and bases
+are restricted to functional groups which have borderline pKa values, each of
+the protonation/deprotonation transforms is considered fully reversible, which
+leads to a combinatorial explosion of results when applied to molecules with a
+large number of protonic functional groups (e.g. many carboxylic acid or
+aliphatic amine functional groups). The default is 0.
+</dd>
+
+<p><dt><tt>unique</tt> : <i>flag</i>
+</dt></p>
+
+<dd>If on, then each proposed result of a transformation is converted to a
+canonically unique molecular representation, compared with those of the
+molecules already in the set, and discarded if already present. In this way,
+topologically degenerate results such as C(=O)OH and C(OH)=O will not be
+returned as two separate entries. If off, then the canonical reordering is not
+performed, and so the two attachment points for hydrogen on a carboxylic acid
+would be considered distinct results. The latter mode is particularly
+appropriate when the input molecule already has well defined 3D geometry, e.g.
+for ligands bound in an active site. The default is 1.
+</dd>
+
+<p><dt><tt>limit</tt> : <i>number</i>
+</dt></p>
+
+<dd>Because the enumeration process is stepwise, and the number of possible
+results is nominally exponential with respect to certain functional groups, the
+enumeration will be terminated when it reaches a predefined limit. The default
+is 100.
+</dd>
+
+</dl></blockquote>
+
+<p>The first entry in the returned vector, <tt>ctabs</tt>, is an array of one or
+more molecular species, expressed in the CTAB format. The order of these results
+is arbitrary, except that the input molecule is always present, and always
+first. It is guaranteed that for each returned molecule, the atom number and
+atom ordering is identical. The hydrogen count, charge and bond order fields
+will be different for each result.
+</p>
+
+<p>The second return parameter, <tt>graph</tt>, describes the manner in which
+the returned results are related by transformations, in neighbor-list format.
+The presence of an edge between two nodes implies that there is a protomer
+transformation between the two species.
+</p>
+
+<p><a name="ctab_ProtomerUnique"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+idxlists = <span class="fcndef">ctab_ProtomerUnique</span> [ctablist, opt]
+</pre>
+
+<p>Given a list of molecular structures, determines which of them are
+tautomers or protomers of each other, and for each set of related
+structures, returns their indices.
+</p>
+
+<p>The requirements for the input structures and options are the same as
+for <tt>ctab_EnumerateProtomers</tt> as described above, and the
+input may be composed of
+tautomers only or both tautomers and protomers.
+</p>
+
+<p>Consider the molecules represented by the following SMILES strings:
+</p>
+
+<pre>
+    CC(=O)CCC
+    CC(O)=CCC
+    CC(O)CC=C
+</pre>
+
+<p>The first two molecules are keto-enol tautomers of each other, while the
+third molecule has the same molecular formula and heavy-atom skeleton, but it is
+not a tautomer of either of the first two. The indices returned by the function
+would be: <tt><span class="nobr">[[1, 2], 3]</span></tt>.
+</p>
+
+<p>The function does not determine which tautomer or protomer should be used as
+the canonical reference, and the ordering within a group of indices has no
+special meaning. For efficiency purposes, this function should not be called
+with molecular species which have a different heavy-atom topology, since they
+cannot be protomers. When all input structures are the same, no protomer
+enumeration is necessary. Otherwise, protomer enumeration will have to be
+conducted for at least one of the input structures. The worst case scenario is
+that protomers will be enumerated for all input structures, which happens when
+none of the structures are protomers of each other.
+</p>
+
+<h2>See Also</h2>
+
+<a href="ctabfcn.htm">CTAB Functions</a><br />
+<a class="svl" href="washmol.htm">WashMoleculeCTAB</a><br />
+<a class="svl" href="washmol.htm">WashMoleculeMOE</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

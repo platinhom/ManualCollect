@@ -1,0 +1,214 @@
+<html>
+<head>
+<title>Atomic Measurements Example</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body bgcolor="#FFFFFF" text="#000000">
+<h1>Measure Atomic-Level Quantities</h1>
+
+<p>This example shows how to measure atomic-level (rather than volumetric)
+quantities such and angles, RMSDs, surface areas, and so forth.
+
+<hr>
+<h2>Atomic Coordinates in Chimera</h2>
+<p>The first concept to understand is that when models are moved in Chimera,
+the atomic coordinates are not changed.  Instead, a &quot;transformation&quot;
+matrix is updated that transforms the model's original coordinates into
+&quot;world&quot; coordinates (<i>i.e.</i> into the overall coordinate system).
+Consequently, there are two methods for obtaining a coordinate from a chimera.Atom
+object:  <code>coord()</code>, which returns the Atom's original coordinate, and
+<code>xformCoord()</code>, which returns the transformed coordinate.  Note that
+some structure-editing activities in Chimera <i>will</i> change the original
+coordinates (<i>e.g.</i> changing a torsion angle).
+
+<p>Therefore, if you are measuring quantities that might involve multiple models,
+you should use the <code>xformCoord()</code> method.  If your measurements are
+completely intra-model you can instead use the very slightly faster <code>coord()</code> method.
+
+<hr>
+<h2>Getting Atoms, Bonds, Residues</h2>
+<p>The &quot;<a href="Main_ObjectModel.html">Chimera's Object Model</a>&quot; example
+discusses how to access various Chimera objects in detail,
+but here's an executive summary for the
+<a href="http://www.urbandictionary.com/define.php?term=tl%3Bdr">tl;dr</a> crowd:
+<h3>Getting a list of open chimera.Molecule models</h3>
+<pre>from chimera import OpenModels, Molecule
+mols = OpenModels.list(modelTypes=[Molecule])
+</pre>
+<h3>Getting lists of chimera.Atoms/Bonds/Residues from a chimera.Molecule object</h3>
+The Atoms/Bonds/Residues in a chimera.Molecule object are contained in that object's
+<code>atoms</code>/<code>bonds</code>/<code>residues</code> attributes, respectively.
+<h3>Getting Atoms/Bonds/Residues from the current selection</h3>
+To get the Atoms/Bonds/Residues in the current selection (perhaps set by the user
+or earlier in the code via the <a href="../faq.html#q2"><code>runCommand()</code> function</a>), use the 
+<code>currentAtoms</code>/<code>currentBonds</code>/<code>currentResidues</code> functions
+in the chimera.selection module, <i>e.g.</i>:
+<pre>from chimera.selection import currentAtoms
+sel_atoms = currentAtoms()</pre>
+<h3>Getting Atoms/Bonds/Residues/Molecules from related Atoms/Bonds/Residues</h3>
+Here are some import methods/attributes for accessing Atoms/Bonds/Residues
+related to other Atoms/Bonds/Residues:
+<dl>
+<dt><i>Atom</i><code>.neighbors</code>
+<dt><i>Atom</i><code>.primaryNeighbors()</code>
+<dd>Returns a list of the Atoms bonded to the given Atom.
+Some high-resolution structures can have multiple positions for a single atom,
+and in those cases 
+<code>primaryNeighbors()</code>
+will only return one Atom among those positions whereas
+<code>neighbors</code> will return all of them.
+<dt><i>Atom</i><code>.bonds</code>
+<dt><i>Atom</i><code>.primaryBonds()</code>
+<dd>Returns a list of the Bonds the Atom is involved in.
+&nbsp;<code>primaryBonds()</code> is analogous to
+<i>Atom</i><code>.primaryNeighbors()</code>.
+<dt><i>Atom</i><code>.bondsMap</code>
+<dd>Returns a dictionary whose keys are Atoms the given Atom is bonded to,
+and the values are the corresponding Bonds.
+<dt><i>Atom</i><code>.residue</code>
+<dd>Returns the Residue the Atom is in.
+<dt><i>Atom</i><code>.molecule</code>
+<dd>Returns the Molecule model the Atom is in.
+<dt><i>Bond</i><code>.atoms</code>
+<dd>Returns a list of the two Atoms forming the Bond.
+<dt><i>Residue</i><code>.atoms</code>
+<dd>Returns a list of the Atoms in the Residue.
+<dt><i>Residue</i><code>.atomsMap</code>
+<dd>Returns a dictionary whose keys are atom names.
+The values are <i>lists</i> of Atoms with the corresponding name.
+The values are lists because in some structure formats (<i>e.g.</i>
+Mol2, XYZ) small molecules atoms are not given unique names
+(for example, all carbons are named &quot;C&quot;).
+Also, PDB files where an atom has alternate locations will
+produce multiple Atoms with the same name in a Residue.
+<dt><i>Residue</i><code>.molecule</code>
+<dd>Returns the Molecule model the Residue is in.
+</dl>
+
+<hr>
+<h2>Point objects</h2>
+<p>Both the <i>Atom</i><code>.coord()</code> and <i>Atom</i><code>.xformCoord()</code> methods return
+chimera.Point objects.  Point objects have the following built-in measurement methods:
+<dl>
+<dt><i>Point</i><code>.distance(</code><i>Point</i><code>)</code>
+<dd>Returns the distance in angstroms between the two Points.
+<dt><i>Point</i><code>.sqdistance(</code><i>Point</i><code>)</code>
+<dd>Returns the square of the distance in angstroms between the two Points.
+Taking square roots is slow, so this method is faster than the <code>distance()</code>
+method.  Therefore in code where speed is important,
+when possible you should work with squares of distances rather than the
+distances themselves (<i>e.g.</i> when comparing a distance to a cutoff value,
+compare the squares instead [and make sure to only compute the square of the cutoff once!]).
+</dl>
+
+<hr>
+<h2>Basic Measurement Functions</h2>
+The chimera module offers several basic measurement functions:
+<dl>
+<dt><code>chimera.distance(</code><i>Point</i><code>, </code><i>Point</i><code>)</code>
+<dt><code>chimera.sqdistance(</code><i>Point</i><code>, </code><i>Point</i><code>)</code>
+<dd>Returns the distance (or distance squared) in angstroms between the two Points.
+Functionally identical to <i>Point</i></code>.distance(</code><i>Point</i></code>)</code>
+and <i>Point</i></code>.sqdistance(</code><i>Point</i></code>)</code> methods respectively.
+<dt><code>chimera.angle(</code><i>Point</i><code>, </code><i>Point</i><code>, </code><i>Point</i><code>)</code>
+<dd>Returns the angle in degrees formed by the points.
+The angle value ranges from 0 to 180.
+<dt><code>chimera.dihedral(</code><i>Point</i><code>, </code><i>Point</i><code>, </code><i>Point</i><code>, </code><i>Point</i><code>)</code>
+<dd>Returns the dihedral angle in degrees formed by the points.
+The angle value ranges from -180 to 180.&nbsp;
+Note that Residues have <i>phi</i>, <i>psi</i>, and <i>chi1</i> through <i>chi4</i>
+attributes that can be queried for the corresponding values
+(value will be <i>None</i> if the Residue lacks that kind of angle).
+In fact, those attributes can be set and the structure will be adjusted appropriately!
+</dl>
+Here's a simple code snippet for finding the angle between three atoms (<i>a1, a2, a3)</i>
+that may not all be in the same model (and therefore need to have the
+<code>xformCoord()</code> method used to fetch their coordinates):
+<pre>import chimera
+angle = chimera.angle(a1.xformCoord(), a2.xformCoord(), a3.xformCoord())</pre>
+Alternatively, if the three atoms are in a list (<i>atoms</i>),
+you can use slightly fancier Python:
+<pre>import chimera
+angle = chimera.angle(*[a.xformCoord() for a in atoms])</pre>
+
+<hr>
+<h2>Axes, Planes, Centroids</h2>
+<h3>Preliminaries</h3>
+<p>The <code>centroid</code>,
+<code>axis</code>,
+and <code>plane</code> functions described below utilize chimera.Point, chimera.Vector,
+and chimera.Plane objects for some of their return values.
+A chimera.Point object, described previously, abstracts a point in Cartesian
+3-space.  A chimera.Vector objects abstracts a direction vector in 3-space
+with finite length (<i>i.e.</i> it is not infinite and has an associated length).
+A chimera.Plane object abstracts an infinite plane in 3-space.
+Each of these objects has useful member functions that you can
+learn about by using the <i>help</i> Python function in the IDLE tool
+(<i>e.g.</i> <code>help(chimera.Plane)</code>).
+For instance, if <i>p</i> is a Plane and <i>pt</i> is a Point, then
+<i>p</i><code>.distance(</code><i>pt</i><code>)</code>
+is the distance from the Point <i>pt</i> to the Plane <i>p</i>.
+<p>The <code>axis</code> and <code>plane</code> functions take an
+<i>n</i>-by-3 numpy array as one of their input arguments.
+The easiest way to generate such an array from Atom coordinates is
+to use the <code>numpyArrayFromAtoms</code> function from the <i>chimera</i> module
+(<i>i.e.</i>
+<code>chimera.numpyArrayFromAtoms(</code><i>Atoms</i><code>)</code>
+or, if transformed coordinates are required,
+<code>chimera.numpyArrayFromAtoms(</code><i>Atoms</i><code>, <code>xformed=True</code>)</code>).
+<h3>The Functions</h3>
+<p>The <i>StructMeasure</i> module has three convenient functions for finding the
+best-fitting axis, centroid, or plane through a set of points.  They are:
+<dl>
+<dt><code>StructMeasure.centroid(</code><i>points</i>, <code>weights=None)</code>
+<dd>Returns a chimera.Point object.  <i>points</i> is a sequence of chimera.Point
+objects.  <code>weights</code> is an optional sequence of corresponding numeric weights
+to give those Points when computing the centroid.  <code>weights</code> is most frequently
+used when mass weighting is desired.
+To that end, it is useful to know that the mass of atom <i>a</i>
+is given by <i>a</i><code>.element.mass</code>.
+<dt><code>StructMeasure.axis(</code><i>xyzs</i>, <code>findBounds=False</code>,
+<code>findRadius=False</code>, <code>iterate=True</code>, <code>weights=None)</code>
+<dd>Returns a chimera.Point and chimera.Vector.
+The Point is the center of the axis, and the Vector indicates the direction
+of the axis (and is of unit length).
+As discussed in <b>Preliminaries</b>,
+<i>xyzs</i> is an <i>n</i>-by-3 numpy array.
+If <code>findBounds</code> is <code>True</code>,
+two floating point numbers are appended to the return values,
+indicating the scaling values needed for the Vector to reach the
+approximate end of the axis given the input coordinates.
+One of the scaling values will be negative.
+If <code>findRadius</code> is <code>True</code>,
+a floating point number, indicating the approximate radius of the axis
+given the input coordinates, will be appended to the return values.
+If <code>iterate</code> is <code>True</code>,
+the best-fitting axis as determined by principal-component analysis
+will be iteratively tweaked to try to get the axis as equidistant as
+possible from the points determining the axis.
+For helical sets of atoms, the principal-component axis will tend to tilt
+towards the final atoms of the helix.  The tilt is more pronounced the
+shorter the helix, and <code>iterate</code> attempts to correct the tilt.
+<code>weights</code> is the same as in the <code>centroid</code> function.
+<dt><code>StructMeasure.plane(</code><i>xyzs</i>, <code>findBounds=False)</code>
+<dd>Returns a chimera.Plane whose origin is the centroid of <i>xyzs</i>.
+As discussed in <b>Preliminaries</b>,
+<i>xyzs</i> is an <i>n</i>-by-3 numpy array.
+If <code>findBounds</code> is <code>True</code>,
+a Point,
+which represents the furthest <i>xyz</i> from the origin when projected onto the Plane,
+is appended to the return value.
+</dl>
+<hr>
+<h2>Surface Areas</h2>
+<p>Once a surface has been computed for a model,
+all Atoms and Residues of that model will have an
+<code>areaSAS</code> attribute (solvent accessible surface area)
+and an
+<code>areaSES</code> attribute (solvent excluded surface area).
+One possible way to get a surface computed for a model is to
+call the <i><a href="../../UsersGuide/midas/surface.html">surface</a></i> command via the
+<a href="../faq.html#q2"><code>runCommand()</code> function</a>.
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Selection Methods</TITLE>
+<META NAME="description" CONTENT="Selection Methods">
+<META NAME="keywords" CONTENT="ug">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ug.css">
+
+<LINK REL="previous" HREF="node83.html">
+<LINK REL="up" HREF="node54.html">
+<LINK REL="next" HREF="node90.html">
+</HEAD>
+
+<BODY BGCOLOR="WHITE">
+<!--Navigation Panel-->
+<A NAME="tex2html2144"
+  HREF="node90.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html2138"
+  HREF="node54.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html2134"
+  HREF="node88.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html2140"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html2142"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html2145"
+  HREF="node90.html">Definition of Keywords and</A>
+<B> Up:</B> <A NAME="tex2html2139"
+  HREF="node54.html">Molecular Drawing Methods</A>
+<B> Previous:</B> <A NAME="tex2html2135"
+  HREF="node88.html">Materials</A>
+ &nbsp; <B>  <A NAME="tex2html2141"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html2143"
+  HREF="node251.html">Index</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION00930000000000000000"></A>
+<A NAME="ug:topic:selections"></A><A NAME="5202"></A>
+<BR>
+Selection Methods
+</H1>
+
+<P>
+VMD has a rather powerful atom selection language available.  It is
+based around the assumption that every atom has a set of associated with it 
+values which can be
+accessed through <A NAME="5203"></A>
+<A NAME="5204"></A>
+keywords.  These values could be
+boolean (is this a protein atom?), numeric (as in the atom
+index or atomic mass), or string (the atom name).  The values can
+even be referenced via a Tcl array.
+
+<P>
+To start off, here are some examples of valid selection commands in
+VMD.  Following these will be a more in depth description of how
+selections work.
+
+<P>
+<A NAME="5205"></A>
+<PRE>
+        name CA
+        resid 35
+        name CA and resname ALA
+        backbone
+        not protein
+        protein (backbone or name H)
+        name 'A 1'
+        name 'A *'
+        name "C.*"
+        mass &lt; 5
+        numbonds = 2
+        abs(charge) &gt; 1
+        x &lt; 6 and x &gt; 3
+        sqr(x-5)+sqr(y+4)+sqr(z) &gt; sqr(5)
+        within 5 of name FE
+        exwithin 3 of protein
+        protein within 5 of nucleic
+        same resname as (protein within 5 of nucleic)
+        protein sequence "C..C"
+        name eq $atomname
+</PRE>
+
+<P>
+<A NAME="5208"></A>
+<A NAME="5209"></A>
+There are two types of selection modes.  The first is a keyword
+followed by a list of either values or a range of values.  For example,
+<PRE>
+        name CA
+</PRE>
+selects all atoms with the name CA (which could be a C<IMG
+ WIDTH="14" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img34.png"
+ ALT="$ {}_\alpha$">
+ or a calcium);
+<PRE>
+        resname ALA PHE ASP
+</PRE>
+selects all atoms in either alanine, phenylalanine, or asparagine;
+<PRE>
+        index 5
+</PRE>
+selects the 6th atom (in the internal VMD numbering scheme).
+
+<P>
+VMD can also do range selections, similar to X-PLOR's `:' notation:
+<PRE>
+        mass 5 to 11.5
+</PRE>
+selects atoms with mass between 5 and 11.5 inclusive,
+<PRE>
+        resname ALA to CYS TYR
+</PRE>
+selects atoms in alanine, arginine, asparagine, aspartic acid, cystine,
+and also tyrosine.
+
+<P>
+The keyword selection works by checking each term on the list
+following the keyword.  The term is either a single word (eg,
+<code>name CA</code>) or a range (eg <code>resid 35 to 90</code>).
+
+<P>
+The method for determining the range checking is determined from the
+keyword data type; numeric comparisons are different than string
+comparisons.  The comparison should work as expected so that ``8'' is
+between ``1'' and ``11'' in a numeric context but not in a string one.
+This may lead to some peculiar problems.  Some keywords, such as <TT>segname</TT>, can take on string values but can also be used by some
+people as a number field.  Suppose someone labeled the <TT>segname</TT>
+field with the numbers 1 through 12 on the assumption that they are
+numbers.  That person would be rather confused to find that
+<code>segname 1 to 11</code>  only returns two segments.  Also, strings
+will be converted (via <TT>atof()</TT>) to a number so if the string
+isn't a number, it will be given the value of 0.  It is possible to
+force a search to be done in either a string or numeric context
+using the
+<A HREF="node95.html#ug:topic:selections:comparison">relational operator</A>
+
+<P>
+Selections can be combined with the boolean operators <TT>and</TT> and <TT>or</TT>, collected inside of parenthesis, and modified by
+<TT>not</TT>, as in
+<PRE>
+        (name CA or name CB) and mass 12 to 17
+</PRE>
+which selects all atoms name CA or CB and have masses between 
+12 and 17 amu (this could be used to distinguish a C-alpha from a
+calcium).  VMD has operator precedence similar to C so leaving the parentheis out of the previous expression, as in:
+<PRE>
+        name CA or name CB and mass 12 to 17
+</PRE>
+actually selects all atoms named CA or those that are named CB and
+have the appropriate mass.
+
+<P>
+<BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL>
+<LI><A NAME="tex2html2146"
+  HREF="node90.html">Definition of Keywords and Functions</A>
+<LI><A NAME="tex2html2147"
+  HREF="node91.html">Boolean Keywords</A>
+<LI><A NAME="tex2html2148"
+  HREF="node92.html">Short Circuiting</A>
+<LI><A NAME="tex2html2149"
+  HREF="node93.html">Quoting with Single Quotes</A>
+<LI><A NAME="tex2html2150"
+  HREF="node94.html">Double Quotes and Regular Expressions</A>
+<LI><A NAME="tex2html2151"
+  HREF="node95.html">Comparison selections</A>
+<LI><A NAME="tex2html2152"
+  HREF="node96.html">Comparison Operators</A>
+<LI><A NAME="tex2html2153"
+  HREF="node97.html">Other selections</A>
+<UL>
+<LI><A NAME="tex2html2154"
+  HREF="node97.html#SECTION00938100000000000000">sequence</A>
+<LI><A NAME="tex2html2155"
+  HREF="node97.html#SECTION00938200000000000000"><TT>within</TT> and <TT>same</TT></A>
+<LI><A NAME="tex2html2156"
+  HREF="node97.html#SECTION00938300000000000000">Finding contact residues</A>
+</UL></UL>
+<!--End of Table of Child-Links-->
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html2144"
+  HREF="node90.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html2138"
+  HREF="node54.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html2134"
+  HREF="node88.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html2140"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html2142"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html2145"
+  HREF="node90.html">Definition of Keywords and</A>
+<B> Up:</B> <A NAME="tex2html2139"
+  HREF="node54.html">Molecular Drawing Methods</A>
+<B> Previous:</B> <A NAME="tex2html2135"
+  HREF="node88.html">Materials</A>
+ &nbsp; <B>  <A NAME="tex2html2141"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html2143"
+  HREF="node251.html">Index</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+vmd@ks.uiuc.edu
+</ADDRESS>
+</BODY>
+</HTML>

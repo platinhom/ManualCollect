@@ -1,0 +1,1599 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	grfcn.htm	flat graphics function reference
+!!
+!!	08-jul-2008 (ac) gr_encode, gr_fwrite
+!!-->
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions gr_create, gr_destroy, gr_key, gr_header, gr_setheader>
+<meta functions gr_point, gr_line, gr_box, gr_oval, gr_curve, gr_text, gr_pixmap>
+<meta functions gr_draw, gr_data, gr_render_pixmap, gr_print, gr_export>
+<meta functions gr_encode, gr_fwrite>
+
+<title>Flat Graphics Object Functions</title>
+
+<style type="text/css">
+    li, dd { padding-bottom: 0.5em; }
+</style>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Flat Graphics Object Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    key = <a class="fcnlink" href="#gr_create">gr_create</a> header
+    key = <a class="fcnlink" href="#gr_create">gr_create</a> key
+    
+    <a class="fcnlink" href="#gr_destroy">gr_destroy</a> key
+    
+    key = <a class="fcnlink" href="#gr_key">gr_key</a> key
+    
+    header = <a class="fcnlink" href="#gr_header">gr_header</a> key
+    
+    <a class="fcnlink" href="#gr_setheader">gr_setheader</a> [ key, header ]  
+
+    bounds   = <a class="fcnlink" href="#gr_point">gr_point</a>  [ key, [id, [ x, y ], col, size] ]
+    
+    bounds   = <a class="fcnlink" href="#gr_line">gr_line</a>   [ key, [id, [ x1, y1 ], [ x2, y2 ], col, size] ]
+    
+    bounds   = <a class="fcnlink" href="#gr_box">gr_box</a>    [ key, [id, [ x1, y1 ], [ x2, y2 ], col, size, fill] ]
+    
+    bounds   = <a class="fcnlink" href="#gr_oval">gr_oval</a>   [ key, [id, [ cx, cy ], [ rw, rh ], col, size, fill] ]
+    
+    bounds   = <a class="fcnlink" href="#gr_curve">gr_curve</a>  [ key, [id, [ x, y ], [ dx, dy ], edge, col, size, cap, fill] ]
+    
+    bounds_b = <a class="fcnlink" href="#gr_text">gr_text</a>   [ key, [id, [ x, y ], text, font, col, size, opt] ]
+    
+    bounds   = <a class="fcnlink" href="#gr_pixmap">gr_pixmap</a> [ key, [id, [ x, y ], [ w, h ], matrix] ]
+
+    <a class="fcnlink" href="#gr_draw">gr_draw</a> [ key, source, xform ]
+    
+    data = <a class="fcnlink" href="#gr_data">gr_data</a> key
+    
+    img = <a class="fcnlink" href="#gr_render_pixmap">gr_render_pixmap</a> [ img, source, xform, clip ]
+    
+    <a class="fcnlink" href="#gr_export">gr_export</a> key
+    
+    <a class="fcnlink" href="#gr_print">gr_print</a> key
+    
+    mimetypes = <a class="fcnlink" href="#gr_encode">gr_encode</a> []
+    data      = <a class="fcnlink" href="#gr_encode">gr_encode</a> [ source, mimetype, xform, opt ]
+    
+    <a class="fcnlink" href="#gr_fwrite">gr_fwrite</a> [ file, source, mimetype, xform, opt ]
+</pre>
+
+<h2>Description</h2>
+
+<p>Flat graphics objects consist of device-independent 2D drawing primitives,
+which can be created and manipulated by SVL programs. Such objects can be
+owned and displayed by widgets, printed, previewed on screen, or output to
+bitmap or vector file formats. They can also be serialized and deserialized, as
+well as written to files or byte streams in their own format. There is no need
+for any immediate display context, and flat graphic objects can be created and
+handled in batch as well as in interactive applications.
+</p>
+
+<p>A flat graphics object is defined in terms that enable it to be rendered on
+a number of different devices. Each supported device has its own rendering
+engine which is charged with the task of representing the graphics primitives
+as accurately as possible. Such devices include, but are not necessarily
+limited to: X-window graphics (Unix and Linux), Microsoft GDI (Windows, screen
+and printer), PostScript (all platforms), raster bitmap formats (such as PNG,
+GIF, JPG, etc.) and potentially other formats which may be added in future
+releases.
+</p>
+
+<p>Objects can be created without any foreknowledge of the devices on which
+they will be rendered, and so very few assumptions about the nature of the
+device are necessary. It is simple to generate a flat graphical object which is
+suitable for displaying on the screen, encapsulating in a widget, printing on a
+sheet of paper, and/or embedding in a document using a third-party application.
+</p>
+
+<p>The object itself consists of a header which contains layout hints (such as
+size and units), and a list of <i>primitives</i> (such as lines, boxes, circles,
+etc.) which make up the graphics content.
+</p>
+
+<p>There are three main ways in which flat graphics objects are used once they
+are created and the desired primitives have been drawn into it:
+</p>
+
+<ol>
+
+<li>A one-way output device is selected (such as a printer or a foreign file
+format), and the object is transmitted to the appropriate rendering engine,
+then discarded;
+</li>
+
+<li>The object is handed over to a widget, which takes over its management,
+displaying while active, and destroying once finished;
+</li>
+
+<li>The object is serialized and stored in a byte stream (such as a file), for
+later retrieval.
+</li>
+
+</ol>
+
+<h4>Object Management</h4>
+
+<p><a name="gr_create"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+key = <span class="fcndef">gr_create</span>
+header key = <span class="fcndef">gr_create</span> key
+</pre>
+
+<p>The <tt>gr_create</tt> function creates or duplicates a flat graphics
+object. Both syntaxes return a numeric key which subsequently is used to
+refer to this object.  When the object is no longer needed, the key should be
+destroyed using <a class="svl" href="#gr_destroy"><tt>gr_destroy</tt></a>.
+Every call to <tt>gr_create</tt> should be paired with a call to
+<tt>gr_destroy</tt>.
+
+</p>
+
+<pre>
+    svl&gt; key = gr_create [
+        title: 'diagram',
+        size: [100, 100],
+        units: 'pt'
+    ];
+</pre>
+
+<p>The above code creates a new graphics object using the provided tagged
+vector as the <i>header</i>. A newly assigned <tt>key</tt> is returned.
+
+<pre>
+    svl&gt; dup_key = gr_create orig_key;
+</pre>
+
+<p>This invocation makes a duplicate of the first key and returns the
+duplicate.  The two keys <tt>dup_key</tt> and <tt>orig_key</tt> are two
+distinct references to the same object.  Any changes made to the object
+using one key can be seen from the other.  The two keys must be destroyed
+separately, as they can have different lifecycles.  The object remains
+in existence as long as there are keys associated with it.  Once a key is
+destroyed, it becomes invalid and must not be used again, even though the
+object might still exist (owing to the presence of other valid keys that
+refer to it).
+
+</p>
+
+<p>The following header tags are explicitly recognized:
+</p>
+
+<blockquote>
+
+<dl>
+
+<dt><tt>size</tt></dt>
+
+<dd>Vector of two numbers, defining the width and height, in
+units specified by the <tt>units</tt> tag.
+</dd>
+
+<dt><tt>units</tt></dt>
+
+<dd>Token indicating the positional units. Must be either
+<tt>'pt'</tt> or <tt>'pix'</tt>.
+</dd>
+
+<dt><tt>opacity</tt></dt>
+
+<dd>Solid color background to use when rendering the object;
+default is no background.
+</dd>
+
+</dl></blockquote>
+
+<p>All tags within a header are technically optional, but a flat graphical
+object cannot be expected to be rendered well without <tt>size</tt> and
+<tt>units</tt>. Specification of <tt>size</tt> is in the form of <tt>[ width,
+height ]</tt>; the origin is <i>always</i> at zero. The numbers given for the
+size should be considered to be the smallest possible device unit larger than
+the actual number, for instance if the dimensions were rendered as pixels
+without scaling, the domain of the object would be x in [0 to 99], y in [0 to
+99], if the graphics object were to be rendered onto a device where a logical
+unit equates to a single pixel.
+
+</p>
+
+<p>There are only two <tt>units</tt> available, and the value must be one
+of <tt>'pix'</tt> or <tt>'pt'</tt>. The former is device-specific, and is
+recommended only for specific uses such as objects which will only be used
+to display within widgets or be rendered into bitmaps. The preferred units
+for scalable, device-independent graphics is the point (<tt>'pt'</tt>),
+which is defined at the time of rendering. For screen-displayed objects,
+the mapping between points and pixels is tied to the definition of font
+sizes. For example, on a contemporary screen where a "12-point" font is
+drawn 12 pixels high, the mapping between points and pixels is 1:1; on a
+high-resolution screen where a "12-point" font is drawn 24 pixels high,
+the mapping would be 1:2.
+
+</p>
+
+<p>For printers and printer-like devices, a point is defined specifically as
+1/72th of an inch. External vector formats use the printer units as a baseline
+size, but can be expected to be scaled by later applications during viewing or
+prior to final output.
+
+</p>
+
+<p>By default a graphics object has no background. When it is rendered to an
+output device, it will be drawn overlaid upon anything that may have been drawn
+underneath it. This may be changed by setting the <tt>opacity</tt> header option
+to a specific color. If a solid color is specified, the boundaries of the object
+will be filled prior to rendering. A fully transparent color may be specified as
+-1, or a mask of 0xFF000000, which is equivalent to no background. The effect of
+partial transparency is undefined.
+
+</p>
+
+<p>Other than these, a header can consist of any number of options, which must
+be specified as scalar tokens, and may be interpreted by certain rendering
+devices. In the example given earlier, a <tt>title</tt> was given, which is
+considered meta-information.
+
+</p>
+
+<p><a name="gr_destroy"></a></p>
+<p><hr noshade /></p>
+    
+<a name="gr_destroy" id="gr_destroy"></a>
+<pre>
+<span class="fcndef">gr_destroy</span> key
+</pre>
+
+<p>Destroys or de-references a key. Every call to <tt>gr_create</tt>
+should have a corresponding call to <tt>gr_destroy</tt>, otherwise keys
+will last for the duration of the SVL task. Memory devoted to a graphics
+object will be freed only when the total reference count (number of valid
+keys associated with the object) drops to zero, or the SVL task ends.
+
+</p>
+
+<p>Once destroyed, a key is invalid and should never be used again.
+</p>
+
+<p><a name="gr_key"></a></p>
+<p><hr noshade /></p>
+    
+<pre>
+key = <span class="fcndef">gr_key</span> key
+</pre>
+
+<p>Returns 0 if the indicated key is not valid (e.g. has been destroyed or
+was never created).  Using the returned key instead of the original key in
+the primitive drawing functions ensures silent failure -- the functions
+generate errors if a bad key is given, but do not complain about key 0.
+
+</p>
+
+<p><a name="gr_setheader"></a></p>
+<p><a name="gr_header"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+header = <span class="fcndef">gr_header</span> key
+
+<span class="fcndef">gr_setheader</span> [ key, header ]
+</pre>
+
+<p>Gets or sets a header in its entirety. <tt>gr_header</tt> returns a tagged
+vector containing all the header elements; <tt>gr_setheader</tt>
+replaces <i>all</i> header elements with the tagged vector provided.
+
+</p>
+
+<pre>
+    svl&gt; hdr = gr_header key;
+    svl&gt; hdr.title = 'another diagram';
+    svl&gt; gr_setheader [key, hdr];
+</pre>
+
+<p>The above example fetches, modifies, and resubmits a header.
+
+</p>
+
+<p>There is no guarantee that changes to a header will be propagated
+immediately, or even properly, if the object is already in use. For instance if
+the size of an object is changed when it is already a layout feature of a
+widget, the panel will not immediately resize itself, and may not display
+correctly until there is an external cue to do so.
+
+</p>
+
+<h4>Drawing Primitives</h4>
+
+<p>A flat graphics object starts out containing 0 primitives, and can be
+extended indefinitely, subject to memory availability. Each call to one of the
+drawing primitives appends one primitive to the end. Order is preserved. There
+is no direct way to delete, rearrange or query the contents of flat graphical
+objects, except via the serialization functions described later.
+
+</p>
+
+<p>While each call to a primitive drawing function creates exactly 1
+primitive, most of the primitives are themselves vectors, and can have
+any number of elements. For instance the <tt>gr_line</tt> function can
+be used to append a primitive for drawing just one line, but it can also
+be used to append a primitive containing 0, 2, or <i>N</i> lines. The
+vector notations are described for the individual functions. There are
+two exceptions: <tt>gr_curve</tt> describes just one specific entity,
+which happens to have a variable number of points; <tt>gr_pixmap</tt>
+encodes for just one pixmap, which is itself a 2D matrix of points.
+
+</p>
+
+<p>All of the primitives require one or more sets of coordinates. These should
+generally be within the boundaries of the <tt>size</tt> parameter in the
+header. Any object which lies wholly or entirely outside the region may be
+clipped on rendering, depending on the device. Clipping is <i>never</i>
+performed at the graphics object level, i.e. a primitive which has no overlap
+with the defined boundaries will still be included in the underlying data
+structure.
+
+</p>
+
+<p>Coordinates of the (x, y) variety are assumed to be in the units of the
+object (i.e. pixels or points). The directions are in mathematical space, i.e.
+the origin (0,0) is at the bottom left; increasing X is to the right, and
+increasing Y is up.
+
+</p>
+
+<div align="center">
+<img src="grfcn/mathcoord.gif" alt="Mathematical Coordinates" />
+</div>
+
+<p>This can be disconcerting if one is accustomed to screen coordinates,
+which have their origin at the top right. The above diagram shows a box
+specified by coordinates (x1,y1)-(x2,y2); the first point refers to the
+bottom left corner of the box, the second, the top right. The exact
+interpretations of the coordinates are explained with the definitions of
+each primitive.
+
+</p>
+
+<p>All coordinates and sizes are double-precision floating point numbers.
+Fractional positions are valid, because it is often possible that the final
+output device may support sub-pixel addressing or be operating at a greater
+resolution than anticipated.
+
+</p>
+
+<p>While coordinates must be considered always potentially scalable (there is
+the possibility of stretching or squashing during the final rendering process),
+there are two ways to specify <i>size</i> values (three, in some cases):
+
+</p>
+
+<ol>
+
+<li><i>Positive numbers.</i>  These are used for features such as line
+thickness or font height, and will be scaled along with coordinates; for
+instance if the rendered output was magnified twofold, so also would be
+the size.
+
+</li>
+
+<li><i>Negative numbers.</i>  These are also used for features such as
+line thickness or font height, but while the numbers may be altered
+by the initial mapping from points into device pixels, any subsequent
+transformations will <i>not scale</i>, and the absolute value will absolutely
+be used; for instance, if a thickness of -3 was specified for a line,
+no amount of zooming will change this.
+
+</li>
+
+<li><i>Zero.</i>  This is used for thicknesses only, and implies device
+minimum pixel size, typically used to draw a "hairline", or 1-pixel border.
+
+</li>
+</ol>
+
+<p>Most of the primitives require at least one color specification. Colors
+are specified as integer values of the general form 0xTTRRGGBB: 8-bits
+each for transparency, red, green and blue. Pure maximum intensity red is
+0xFF0000, green is 0xFF00, blue is 0xFF. Colors are interpreted as sRGB
+values, gamma-corrected such that the halfway value component (0x80)
+represents 50% intensity.  Note that some output devices may introduce
+additional corrections, but it may be possible to calibrate them
+to achieve (near-) linearity.
+
+</p>
+
+<p>The high order byte of a color is the <i>transparency</i> (not to be
+confused with alpha channel, its complement), whereby a mask of 0xFF000000
+means completely transparent, and no bits set in this range means completely
+opaque. Completely transparent colors can be used to specify no-operation,
+which is useful for primitives such as <tt>gr_box</tt> where two colors are
+mandated. A useful shortcut for the no-operation color is -1, which is
+equivalent to 0xFFFFFFFF on 32-bit platforms, but is also defined to have the
+same meaning in the event of 64-bit integers being used.
+
+</p>
+
+<p>Color values can be entered directly, usually as hexadecimal, or
+by using the <a class="svl" href="icolor.htm">icolor</a> function,
+e.g. <tt>icolor'black'</tt>.
+
+</p>
+
+<p>The extent to which partial transparency is honored depends on the device.
+Some devices do not support any intrinsic notion of alpha blending, and so the
+final rendering of partial transparency may be implemented by use of dithering,
+or reducing the 8 bits to merely on/off.
+
+</p>
+
+<p>By default, flat graphical objects have no concept of a background color,
+and so all of the primitives will be drawn into their designated region,
+overlaid on top of any existing content. This is not the case when the
+<i>opacity</i> header attribute is set to a solid color, which causes
+the rendering region to be painted with this color before drawing any of
+the primitives.
+
+</p>
+
+<p>All of the functions for drawing primitives return the bounding box
+of the primitives created by the action, in the coordinate units of the
+object itself.  For the geometric drawing functions (points, lines, boxes,
+ovals and curves) the bounding box can be calculated precisely. For text
+primitives, the bounding region must be considered imprecise, because the
+calculation is done before the output device is known, and there is some
+variation in choice of fonts and kerning methodologies.
+
+</p>
+
+<p>The first parameter of each drawing primitive is <tt>id</tt>, which is an
+arbitrary floating point number which is associated with the primitive. For
+most purposes, this should be given as 0.
+
+</p>
+
+<p><a name="gr_point"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+bounds = <span class="fcndef">gr_point</span> [ key, [ id, [ x, y ], col, size ] ]
+</pre>
+
+<p>Draws some number of points at the indicated positions, with the selected
+color and size. No-operation colors (i.e. full transparency colors) will
+result in invisible points. A size of 0 has a special meaning, and will
+result in a single device-pixel being drawn.  Nonzero sizes imply points
+which are circular, and the size can be considered to be the diameter of the
+circle; negative size values imply nonscalability.  Points are always
+solid, unless the color indicates transparency, in which case they will
+be alpha blended or dithered, depending on the capabilities of the device.
+
+</p>
+
+<p>The return value is 4 scalars of the form <tt>[[x1, y1], [x2, y2]]</tt>,
+which is a bounding box that contains all of the points, taking into account
+their sizes.
+
+</p>
+
+<p>Unit extension may be used for any of the parameters after <tt>id</tt>, for
+instance:
+
+</p>
+
+<pre>
+    svl&gt; gr_point [key, [0, [[1, 2, 3], [5, 5, 5]], 0xFF0000, [2, 2, 2]]
+    svl&gt; gr_point [key, [0, [[1, 2, 3], 5], 0xFF0000, 2]
+</pre>
+
+<p>
+are exactly equivalent, and will both draw 3 red dots lined up in a row.
+
+</p>
+
+<p>The following code will produce a pattern of random dots with random sizes
+and colors in a 100 x 100 unit square:
+
+</p>
+
+<pre>
+    svl&gt; gr_point [key, [0,
+             [app rand rep [100, 100], app rand rep [100, 100]],
+             app rand rep [0xFFFFFF, 100],
+             app rand rep [5, 100]
+         ]];
+        
+</pre>
+
+<p><a name="gr_line"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+bounds = <span class="fcndef">gr_line</span> [ key, [ id, [ x1, y1 ], [ x2, y2 ], col, size ] ]
+</pre>
+
+<p>Draws some number of simple lines, with the from/to coordinates as
+specified. The line points are inclusive, i.e. it may be taken as given that
+the device pixels at both ends will be drawn. The line (x1,y1)-(x2,y2) is the
+same as (x2,y2)-(x1,y1).
+
+</p>
+
+<p>This primitive supports two further parameters, <tt>col</tt> and
+<tt>size</tt>. As for all primitives, the colors support transparency. The
+size may be positive, zero or negative, for scalable thickness, hairline, and
+nonscalable thickness.
+
+</p>
+
+<p>The capped ends of the line are defined to be rounded, and will be rendered
+as such if the thickness is sufficient for there to be a distinction. Note that
+the primitive <tt>gr_curve</tt> can be used instead to achieve more
+sophisticated style control.
+
+</p>
+
+<p>The following example creates three black lines:
+
+</p>
+
+<pre>
+    svl&gt; gr_line [key, [0,
+             [[50, 72, 72], [70, 65, 75]],
+             [[60, 78, 78], [70, 56, 84]],
+             icolor'black',
+             1
+         ]];
+</pre>
+
+<p><a name="gr_box"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+bounds = <span class="fcndef">gr_box</span> [ key, [ id, [ x1, y1 ], [ x2, y2 ], col, size, fill ] ]
+</pre>
+
+<p>Draws some number of boxes, using the lower and upper coordinates to form
+the rectangles.  Each set of coordinates in the form of (x1,y1)-(x2,y2) must
+satisfy the conditions x1 &lt; x2 and y1 &lt; y2, otherwise the rectangle is
+invalid and no box will be drawn.
+
+</p>
+
+<p>The <tt>col</tt> parameter refers to the color of the border drawn around
+the box; a no-operation color (such as -1) will result in no border being
+drawn. The <tt>size</tt> parameter is the thickness of this border (see
+<tt>gr_line</tt>), and is only relevant if the border color is other than a
+no-operation. The edges of the box are always drawn in a squared (rather than
+rounded) manner.
+
+<p>The <tt>fill</tt> parameter is the color for the interior of the box, and may
+be a no-operation color. As with all colors, transparency is supported. If both
+fill and border are enabled, there is the possibility of overlap if the border
+thickness evaluates to more than one pixel on the output device; the box is
+filled first, then the border is drawn around it, the line itself being drawn
+centered on the exact edge of the box.
+
+</p>
+
+<p>The following example draws a single box with a black border and a pale gray
+interior:
+
+</p>
+
+<pre>
+    svl&gt; gr_box [key, [0, 
+             [1, 1],
+             [99, 99],
+             icolor'black',
+             1,
+             0xE0E0E0
+         ]];
+</pre>
+
+
+<p><a name="gr_oval"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+bounds = <span class="fcndef">gr_oval</span> [ key, [ id, [ cx, cy ], [ rw, rh ], col, size, fill ] ]
+</pre>
+
+<p>Draws some number of ovals (circles or ellipses). Coordinates are specified
+as the <i>center</i> positions, and radial extents for both the axes. For
+instance, the coordinates (10,10);(2,2) create a circle with the centre at
+(10,10), a diameter of 4, and a bounding box of (8,8)-(12,12). Circles are drawn
+by repeating the radius; ellipses are drawn by specifying different values for
+the radial width and radial height.
+
+</p>
+
+<p>Other than the different coordinate style, the parameters and behavior are
+analogous to <tt>gr_box</tt>.
+
+</p>
+
+<p>The following example draws a single circle with a black outline and an
+empty interior:
+
+<pre>
+    svl&gt; gr_oval [key, [0,
+            [30, 70],
+            [14, 14],
+            icolor'black',
+            1,
+            -1
+        ]];
+</pre>
+
+<p><a name="gr_curve"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+bounds = <span class="fcndef">gr_curve</span> [ key, [ id, [ x, y ], [ dx, dy ], edge, col, size, cap, fill ] ]
+</pre>
+
+<p>The curve is a relatively complex primitive which encapsulates
+several major drawing features, some of which are refinements of the previously
+described primitives. <tt>gr_curve</tt> should be used when one or more of the
+following features is needed:
+
+</p>
+
+<ul>
+
+<li>open polygons, with controllable line-join styles;
+</li>
+
+<li>closed polygons of arbitrary shape, with filled interiors;
+</li>
+
+<li>curved lines with specifiable gradients;
+</li>
+
+<li>polygons with non-linear edges;
+</li>
+
+<li>lines with specific dot-pattern styles.
+</li>
+
+</ul>
+
+<p>The <tt>[x, y]</tt> parameters contain all of the points that make up the
+construct. The lines are implied by connecting up the points in order, then
+reconnecting the last point to the first point. Edges are described in sequence.
+For instance, a curve made up of [[x1,x2,x3],[y1,y2,y3]] has three implied
+edges, which are (x1,y1)-(x2,y2), (x2,y2)-(x3,y3) and (x3,y3)-(x1,y1), in that
+order.
+
+</p>
+
+<p>The <tt>[dx, dy]</tt> parameters specify the gradient at the corresponding
+point. If the lines are to be straight, i.e. direct path between point N and
+point N+1, specify the gradients as (0,0). When the curve is being depicted on
+the rendering device, two points N and N+1 are converted into a curve using the
+gradients at either end, if either one of them is non-null. A gradient pointing
+in the general direction of the line, at both points, will result in a
+near-linear or gentle curve. Gradients pointing in opposite directions to one
+another, or to the line vector, produce more striking deviations from the
+straight-edge case.
+
+</p>
+
+<p>The <tt>edge</tt> vector can be specified in two ways. If the primitive does
+not make use of the various line patterns, it is convenient to use the numeric
+shortcut, where 0 evaluates to no edge, and 1 evaluates to a solid edge. Unit
+extension of 1 can concisely specify a closed shape; an open shape might be
+specified as, say, [1,1,1,1,0] for a shape of 5 points which describe 4
+consecutively connected lines.
+
+</p>
+
+<p>To make use of line styles, the <tt>edge</tt> vector should be specified
+using tokens instead (note that it is not valid to mix numbers and tokens for
+this parameter). Valid token values are <tt>'none'</tt>, <tt>'solid'</tt>,
+<tt>'dashed'</tt>, <tt>'dotted'</tt> and <tt>'dashdot'</tt>. The partial-line
+styles are self-explanatory. The exact spacing of the dots and dashes scales
+with the line thickness, i.e. a line twice as thick will have double the
+spacing.
+
+</p>
+
+<p>The <tt>col</tt> parameter refers to the colors of the edges. It is possible
+to prevent some edges from being drawn by specifying non-operation colors, but
+the proper way to disable certain edges is with the <tt>edge</tt> parameter.
+
+</p>
+
+<p><tt>size</tt> refers to the thickness of the edge lines, and uses the same
+conventions as previously described primitives such as <tt>gr_line</tt>.
+
+</p>
+
+<p><tt>cap</tt> describes the manner in which points (vertices) are capped or
+connected, depending on the number of connections. Vector elements correspond to
+points. They may be specified as numbers or tokens, but not both. 0 or <tt>'rounded'</tt>
+means that line-ends will be drawn as it capped by a circle with the diameter of
+the line thickness, and that line-joins will be smoothed. 1 or <tt>'squared'</tt> means
+that line-ends will be drawn as if ended with a box, rotated to be
+parallel/orthogonal to the direction of the line, and line-joins will be drawn
+in a mitered fashion.
+
+</p>
+
+<p>The <tt>fill</tt> parameter differs from the others in that it is a scalar,
+and providing a vector quantity will result in an error. It is the color which
+is to be used to fill the shape. A no-operation color (such as -1) will prevent
+any filling. Filling is done in an even/odd fashion, if the line sequence
+crosses over itself. It is quite valid to have some non-drawn edges for filled
+curves; the filling process ignores the edge status.
+
+</p>
+
+<p>The following example uses a simple formula to generate an unfilled closed
+polygon (a hexagon):
+
+</p>
+
+<pre>
+    svl&gt; gr_curve [key, [0,
+             [30 + 20 * cos ((1/3) * PI * dec igen 6),
+              70 + 20 * sin ((1/3) * PI * dec igen 6)],
+             [0, 0],
+             1,
+             icolor'black',
+             1,
+             0,
+             -1
+         ]];
+</pre>
+
+<p>This next example draws a single line between two points, which is slightly
+warped, has a dotted line-style, and is unfilled and unclosed:
+
+</p>
+
+<pre>
+    svl&gt; gr_curve [key, [0,
+             [[80, 80], [60, 80]],
+             [[-15, 15], 20],
+             ['dotted', 'none'],
+             0x808080,
+             1,
+             0,
+             -1
+         ]];
+</pre>
+
+<p><a name="gr_text"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+bounds_b = <span class="fcndef">gr_text</span> [ key, [ id, [ x, y ], text, font, col, size, opt ] ]
+</pre>
+
+<p>Draws some number of text fragments with indicated positions and properties.
+
+</p>
+
+<p>The <tt>x</tt> and <tt>y</tt> values are the reference positions for the
+text, but which point they refer to depends on the options (see below).
+
+</p>
+
+<p><tt>text</tt> is the text fragment to be drawn, and must be given as tokens.
+A subset of HTML is supported, and the text may be multi-line. The following
+HTML tags are recognized:
+
+</p>
+
+<pre>
+    &lt;b&gt; ... &lt;/b&gt;
+    &lt;i&gt; ... &lt;/i&gt;
+    &lt;u&gt; ... &lt;/u&gt;
+    &lt;big&gt; ... &lt;/big&gt;
+    &lt;small&gt; ... &lt;/small&gt;
+    &lt;sup&gt; ... &lt;/sup&gt;
+    &lt;sub&gt; ... &lt;/sub&gt;
+    &lt;tt&gt; ... &lt;/tt&gt;
+    &lt;br&gt;
+    &lt;p&gt;
+</pre>
+
+<p>The HTML parsing is simple, and tags can only be specified in their basic
+form, without any accompanying attributes, and should be supplied in lower
+case. Except for the line breaks (<tt>p</tt> and <tt>br</tt>), all tags should
+be closed. Also, certain HTML entities such as &amp;lt; and &amp;gt; are
+necessarily supported.
+
+</p>
+
+<p>The <tt>font</tt> parameter is the base font and style for the text which is
+used throughout, except where modified by HTML tags within the text (such as
+super/subscript, big/small, and tt). There are four base fonts:
+
+</p>
+
+<pre>
+    sys
+    rm
+    sf
+    tt
+</pre>
+
+<p>These are specified as tokens (<tt>'sys'</tt>, <tt>'rm'</tt>, <tt>'sf'</tt>,
+<tt>'tt'</tt>), and approximately correspond to, respectively: "system" font
+not unlike the default font used by MOE; "Roman" (such as Times New Roman),
+"Serif" (such as Arial) and "TeleType" (non-proportionally spaced, generally a
+Courier-like font). Although bold and italic can be accomplished by using HTML
+tags within the text, it is also valid to append  <tt>'-b'</tt>, <tt>'-i'</tt>
+or <tt>'-bi'</tt> to the font, e.g. 'sys-bi' refers to the emboldened &amp;
+italicized version of the system font.
+
+</p>
+
+<p>The actual font used depends on the output device. Scalable fonts may be
+assumed for all output devices, and so fractional increments in font size will
+be handled reasonably.
+
+</p>
+
+<p>The <tt>col</tt> parameter refers to the color of the characters being
+drawn. Note that there is never any background-drawing effect, and the only
+device pixels which are eventually drawn are those of the characters themselves.
+
+</p>
+
+<p><tt>size</tt> is the nominal height of the font. Negative numbers can be used
+to specify the drawing of text which is invariant to scaling. When rendering to
+devices that support continuous scaling of fonts, there is no implied font size
+increment. Some devices however have a limited selection of sizes, and so an
+algorithm will be used to determine the closest size.
+
+</p>
+
+<p><tt>opt</tt> is a tagged vector, and may be omitted entirely from the
+function call if all the defaults are desired. All of the options are scalar and
+apply to the contents of the primitive, i.e. if multiple text items are
+incorporated, the options given are the same for all.
+
+</p>
+
+<p>Options supported are:
+
+</p>
+
+<ul>
+
+<li>
+<p>
+
+<tt>position</tt>: Determines the manner in which the (x,y) coordinates
+are interpreted. The default behavior is <tt>'baselineleft'</tt>, which means
+that the (x,y) coordinate is that of the baseline of the first line of text;
+characters are drawn from left to right, with their ascent upward and descent
+downward. Variations on baseline positioning are <tt>'baselinecenter'</tt> and
+<tt>'baselineright'</tt>, in which cases the y-position also refers to the
+baseline of the text, but the x-position refers to the center or right,
+respectively.
+
+</p>
+
+<p>Other valid values are <tt>'topleft'</tt>, <tt>'topcenter'</tt>,
+<tt>'topright'</tt>, <tt>'middleleft'</tt>, <tt>'middlecenter'</tt>,
+<tt>'middleright'</tt>, <tt>'bottomleft'</tt>, <tt>'bottomcenter'</tt>,
+<tt>'bottomright'</tt>, which are the box-based positioning modes:
+
+</p>
+
+<p>
+<div align="center">
+<img src="grfcn/grob2.gif" alt="Positioning Schematic" />
+</div>
+</p>
+
+<p>As shown in the schematic above, the box represents the <i>entire</i> size
+of the text, which is calculated first. Depending on the value of
+<tt>position</tt>, the text is placed such that the box is relative to one of
+the nine locations as indicated. The box size is the amount of space determined
+<i>at the time of rendering</i> to encapsulate all of the text precisely, to the
+nearest device pixel. It includes the font ascents and descents within its
+bounds.
+
+</p>
+
+<li><tt>alignment</tt>: Only relevant for text that spans multiple lines.
+The total bounding box of the text is drawn and positioned regardless of the
+text alignment, but once text drawing commences, the lines are positioned
+according to this parameter. The default value is <tt>'left'</tt>; alternatives
+are <tt>'center'</tt> and <tt>'right'</tt>.
+
+</li>
+
+</ul>
+
+<p>The return value of <tt>gr_text</tt> is slightly different to the other
+primitives, and is of the form <tt>[[x1, y1], [x2, y2], b]</tt>, where the
+first two vectors contain the bounding box, and the final number is the
+y-position of the baseline of the first line of text. The return value also
+differs from the other primitives in that the numbers must be assumed to
+contain a systematic error. This is because depending on the output device, the
+choice of font, the spacing algorithm and the device pixel rounding policy may
+vary. Therefore the data must be considered to be an estimate, and relying on
+the return value to provide pixel-level precision is not advisable.
+
+</p>
+
+<p>The following example is the simplest possible invocation style, drawing the
+text "Hello World!" from its baseline:
+
+</p>
+
+<pre>
+    svl&gt; gr_text [key, [0, 
+             [10, 10], 
+             'Hello World!',
+             'sys',
+             icolor'black',
+             10
+         ]];
+</pre>
+
+<p>The next example draws two lines of text, with some embedded HTML effects,
+and a boxed-based text position, followed by a vectorized example:
+
+</p>
+
+<pre>
+    svl&gt; gr_text [key, [0,
+             [50, 5],
+             '&lt;b&gt;&lt;i&gt;Sodium benzoate&lt;/i&gt;&lt;/b&gt;&lt;br&gt;'
+               '&lt;small&gt;&lt;sup&gt;13&lt;/sup&gt;C enriched&lt;/small&gt;',
+             'sf',
+             icolor'black',
+             8,
+             [position: 'bottomcenter', alignment: 'center']
+         ]];
+
+    svl&gt; gr_text [key, [0,
+             [[60, 78, 78, 50, 82], [70, 52, 88, 40, 70]],
+             ['&lt;sup&gt;13&lt;/sup&gt;C', 'O', 'O', 'Na&lt;sup&gt;+&lt;/sup&gt;', '-'],
+             'rm',
+             [icolor'red', 0, 0, 0, 0],
+             8,
+             [position: 'middleleft']
+         ]];
+</pre>
+
+<p><a name="gr_pixmap"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+bounds = <span class="fcndef">gr_pixmap</span> [ key, [ id, [ x, y ], [ w, h ], matrix ] ]
+</pre>
+
+<p>Draws a single pixmap with the given position and scaling properties, and the
+content matrix.
+
+</p>
+
+<p>The <tt>[x, y]</tt> parameters reference the top left point of the
+rectangular pixmap. Consistent with most internal pixmap representations, the
+pixels are drawn to the right and <i>down</i> from the given position.
+
+</p>
+
+<p><tt>[w, h]</tt> refer to the shape into which the pixmap should be mapped,
+i.e. a bounding box of (x, y - |h|)-(x + |w|, y). This rectangle will be
+stretched or compacted in either direction as eventual device scaling dictates.
+Like the <tt>size</tt> parameters of the other primitives, both <tt>w</tt> and
+<tt>h</tt> may be negative, which makes them nonscaling. Zero has a special
+meaning: the pixmap will be drawn with a 1:1 correlation between pixels in the
+pixmap and pixels on the device. This is appropriate only for device-specific
+uses such as within widgets, and even then usually only in cases where it is
+known that the object itself will not be scaled.
+
+</p>
+
+<p><tt>matrix</tt> contains the pixmap itself. The format is a 2-dimensional
+matrix of pixels, the primary dimension being the Y-axis (top to bottom), the
+secondary dimension being the X-axis (left to right). Each cell should be an
+integer using the same TRGB color format as the other primitives, i.e.
+0xTTRRGGBB. As for other drawing functions, the transparency byte is nominally
+continuous between 0 .. 255, but the actual device implementations do not
+guarantee this, and may round to on/off, or use a dithering pattern. It is safe
+to assume that when none of the TT bits are set the point is opaque, and when
+all the bits are set the point is entirely transparent. The same gamma
+correction method is used for pixmaps as for other primitives, i.e. 0x80 is
+defined to be 50% intensity.
+
+</p>
+
+<p>The following is a trivial example of a 2 x 2 pixmap, drawn in a
+device-dependent pixel-to-pixel manner. The top left pixel is transparent, and
+the others are RGB primary colors:
+
+</p>
+
+<pre>
+    svl&gt; gr_pixmap [key, [0,
+             [50, 50],
+             [0, 0],
+             [[0xFF000000, 0x00FF0000],
+              [0x0000FF00, 0x000000FF]]
+         ]];
+</pre>
+
+<p>The next example applies a simple formula to a vector of strings, which
+represents a simple glyph; the X's are translated into solid black pixels, and
+the dots are translated into transparent pixels. The width and height are
+submitted such that one pixmap pixel is one object coordinate unit, so the
+pixmap will be scaled as necessary during the final rendering:
+
+</p>
+
+<pre>
+    svl&gt; delta = [
+             ".....X.....",
+             "....X.X....",
+             "...X...X...",
+             "..X.....X..",
+             ".X.......X.",
+             "XXXXXXXXXXX"
+         ];
+    
+    svl&gt; gr_pixmap [key, [0,
+             [0, 70],
+             [l_length delta, length delta],
+             (delta == ".") * 0xFFFFFFFF
+         ]];
+</pre>
+
+
+<p><a name="gr_destroy"></a></p>
+<p><a name="gr_text"></a></p>
+<p><a name="gr_curve"></a></p>
+<p><a name="gr_text"></a></p>
+<p><a name="gr_line"></a></p>
+<p><a name="gr_oval"></a></p>
+<p><a name="gr_curve"></a></p>
+<p><a name="gr_box"></a></p>
+<p><a name="gr_create"></a></p>
+<p><hr noshade /></p>
+
+<img src="grfcn/grob1.gif" align="right" />
+
+<p>A selection of the examples shown above combines to form the following
+graphical object, rendered in an X-window:
+</p>
+
+<pre>
+    local key = gr_create [
+        title: 'diagram',
+        size: [100, 100], 
+        units: 'pt'
+    ];
+
+    gr_box [key, [0, 
+        [1, 1],
+        [99, 99],
+        icolor'black',
+        1,
+        0xE0E0E0
+    ]];
+    
+    gr_curve [key, [0,
+        [30 + 20 * cos ((1/3) * PI * dec igen 6),
+         70 + 20 * sin ((1/3) * PI * dec igen 6)],
+        [0, 0],
+        1,
+        icolor'black',
+        1,
+        0,
+        -1
+    ]];
+    
+    gr_oval [key, [0,
+        [30, 70],
+        [14, 14],
+        icolor'black',
+        1,
+        -1
+    ]];
+    
+    gr_line [key, [0,
+        [[50, 72, 72], [70, 65, 75]],
+        [[60, 78, 78], [70, 56, 84]],
+        icolor'black',
+        1
+    ]];
+    
+    gr_text [key, [0,
+        [[60, 78, 78, 50, 82], [70, 52, 88, 40, 70]],
+        ['&lt;sup&gt;13&lt;/sup&gt;C', 'O', 'O', 'Na&lt;sup&gt;+&lt;/sup&gt;', '-'],
+        'rm',
+        [icolor'red', 0, 0, 0, 0],
+        8,
+        [position: 'middleleft']
+    ]];
+    
+    gr_curve [key, [0,
+        [[80, 80], [60, 80]],
+        [[-15, 15], 20],
+        ['dotted', 'none'],
+        0x808080,
+        1,
+        0,
+        -1
+    ]];
+    
+    gr_text [key, [0,
+        [50, 5],
+        '&lt;b&gt;&lt;i&gt;Sodium benzoate&lt;/i&gt;&lt;/b>&lt;br&gt;'
+        '&lt;small>&lt;sup&gt;13&lt;/sup&gt;C enriched&lt;/small&gt;',
+        'sf',
+        icolor'black',
+        8,
+        [position: 'bottomcenter', alignment: 'center']
+    ]];
+
+    {... display in panel ... }
+    
+    gr_destroy key;
+</pre>
+
+<br clear="both" />
+
+<p><a name="gr_draw"></a></p>
+<p><a name="gr_data"></a></p>
+
+<h4>Serialization</h4>
+
+<pre>
+<span class="fcndef">gr_draw</span> [ key, source_vector, xform ]
+<span class="fcndef">gr_draw</span> [ key, source_key, xform ]
+
+data = <span class="fcndef">gr_data</span> key
+</pre>
+
+<p>Although flat graphical objects are manipulated internally by MOE, they can
+be extracted and reconstructed in an SVL vector notation which is very similar
+to the commands used to draw the primitives.
+
+</p>
+
+<p>For a sequence of drawing primitives in the general form of:
+
+</p>
+
+<pre>
+    gr_{prim1} [ key, [ ...{data1}... ] ]
+    gr_{prim2} [ key, [ ...{data2}... ] ]
+    ...
+    gr_{primN} [ key, [ ...{dataN}... ] ]
+</pre>
+
+<p>... the serialized analog would be an SVL vector of the form:
+
+</p>
+
+<pre>
+[
+    [ 'gr_{prim1}, [ ...{data1}... ] ]
+    [ 'gr_{prim2}, [ ...{data2}... ] ]
+    ...
+    [ 'gr_{primN}, [ ...{dataN}... ] ]
+]
+</pre>
+
+<p>Essentially the key has been substituted for a token of the actual primitive
+function. This is the format of the return value of <tt>gr_data</tt>, and the
+format accepted by <tt>gr_draw</tt>.
+
+</p>
+
+<p><tt>gr_data</tt> simply returns the primitives contained within a current
+graphics object, in the above format. 
+
+</p>
+
+<p><tt>gr_draw</tt> has two invocations: if the source is a vector of the form
+described above, the primitives will be drawn into the destination key as if the
+corresponding commands had been called directly. If the source is the key of an
+existing object, the content of that object will be used.
+
+</p>
+
+<p>The <tt>gr_draw</tt> function accepts an optional parameter for transforming
+the source coordinates in the form of the <tt>xform</tt> argument: <tt>[ox, oy,
+sw, sh]</tt>. The 4-number vector may be omitted or partially specified. The
+scaling parameters <tt>sw</tt> and <tt>sh</tt> are applied first, followed by
+the translation parameters <tt>ox</tt> and <tt>oy</tt>. Partial specifications
+are such that the following equivalences hold:
+
+</p>
+
+<pre>
+    []               === [0, 0, 1, 1]
+    oxy              === [oxy, oxy, 1, 1]
+    [ox, oy]         === [ox, oy, 1, 1]
+    [ox, oy, swh]    === [ox, oy, swh, swh]
+    [ox, oy, sw, sh] === [ox, oy, sw, sh]
+</pre>
+
+<p>The default value, <tt>[0, 0, 1, 1]</tt> is equivalent to no change of
+coordinates.
+
+</p>
+
+<p>As described for the various <tt>size</tt> parameters of primitives, scaling
+done by <tt>gr_draw</tt> is one occasion where negative values are honored where
+appropriate, i.e. 2x scaling for a size of 10 will cause the new size to be 20,
+but a size of -10 will remain as -10. 
+
+</p>
+
+<p>These two functions can be combined to create a new object with the same
+data, for instance:
+
+</p>
+
+<pre>
+    svl&gt; local newkey = gr_create gr_header oldkey;
+    svl&gt; gr_draw [newkey, gr_data oldkey];
+</pre>
+
+<p>A similar method can be used to create an identical object of double the
+size:
+
+</p>
+
+<pre>
+    svl&gt; local header = gr_header oldkey;
+    svl&gt; local newkey = gr_create tagpoke [
+             header,
+             'size',
+             header.size * 2
+         ];
+    svl&gt; gr_draw [newkey, oldkey, [0, 0, 2, 2]];
+</pre>
+
+<p>Note that the first example explicitly serializes the content using
+<tt>gr_data</tt>, whereas the second example achieves the same effect
+implicitly by providing the key as the source.
+
+</p>
+
+<p><a name="gr_render_pixmap"></a></p>
+<h4>Image Rendering</h4>
+
+<pre>
+img = <span class="fcndef">gr_render_pixmap</span> [ img, source ]
+img = <span class="fcndef">gr_render_pixmap</span> [ img, source, xform ]
+img = <span class="fcndef">gr_render_pixmap</span> [ img, source, xform, clip ]
+</pre>
+
+<p>Flat graphics objects can be rendered directly into an SVL data structure
+using the <tt>gr_render_pixmap</tt> function.
+
+</p>
+
+<p>The substrate for the rendering is the <tt>img</tt> parameter which is a
+matrix of integer values, in the TRGB format: 8 significant bits each for
+transparency (0xFF000000), red (0xFF0000), green (0xFF00) and blue (0xFF).
+<tt>source</tt> is either the key of an instantiated graphic object, or the SVL
+vector representation of a graphic object. <tt>xform</tt> is an optional
+transformation of the form <tt>[ox, oy, sw, sh]</tt> (identical to that
+described for <tt>gr_draw</tt>), and <tt>clip</tt> is an optional bounding
+rectangle <tt>[x1, y1, x2, y2]</tt> in the coordinates of the destination
+system. The default clipping region is the extent of the image matrix, but it
+can be reduced by using the <tt>clip</tt> parameter. The return value is the new
+image matrix which has the rendering applied to it. If the graphical object
+contained no primitives, it would be the same as the <tt>img</tt> parameter.
+
+</p>
+
+<p><tt>img</tt> should be a vector of vectors where the row corresponds to the
+Y-coordinate (top to bottom) and the column to the X-coordinate (left to
+right), where each element is an integer which corresponds to a pixel. Note
+that this coordinate system is different from the coordinates used within the
+<tt>key</tt> source and the <tt>xform</tt> and <tt>clip</tt> parameters. The
+returned image is suitable for use with the <tt>gr_pixmap</tt> primitive, and
+can also be used for writing bitmaps to files. The data structure is suitable
+for multiple calls to <tt>gr_render_pixmap</tt>.
+
+</p>
+
+<p>The rendering process has complete support for transparency within the
+<tt>img</tt> parameter, the returned image matrix, and all of the primitives
+which are extracted from <tt>key</tt>.
+
+</p>
+
+<p>The input pixmap is considered to be the background for the rendering
+operation. Common starting points for an image include:
+
+</p>
+
+<pre>
+    img = rep [rep [0x00FFFFFF, width], height]; // white background
+    img = rep [rep [0x00000000, width], height]; // black background
+    img = rep [rep [0xFF000000, width], height]; // transparent background
+</pre>
+
+<p>The following example draws a graphical object onto an opaque black
+background 50 x 50 pixels in size, and assumes that the coordinates of the
+graphical object in <tt>key</tt> are already suitably positioned and scaled:
+
+</p>
+
+<pre>
+    img = rep [rep [0, 50], 50];
+    img = gr_render_pixmap [img, key];
+</pre>
+
+<p>The next example maps a graphical object onto a partially transparent red
+background with size reduction, offset and clipping:
+
+</p>
+
+<pre>
+    img = rep [rep [0x80FF0000, 100], 50];
+    img = gr_render_pixmap [img, key, [25,0,0.5,0.5], [25,0,75,0]];
+</pre>
+
+<p>The following example creates a very simple graphics object, renders it into
+a pixmap with a transparent background, uses translation and scaling to draw
+another smaller copy overtop, then writes the resulting pixmap to a raster file
+(PNG format).
+
+</p>
+
+<pre>
+    grkey = gr_create [];
+    gr_box [grkey, [0, [5,5], [45,45], -1, 0, icolor'blue']];
+    gr_oval [grkey, [0, [25,25], [24,15], icolor'black', 0, icolor'white']];
+    img = rep [rep [0xFF000000, 50], 50];
+    img = gr_render_pixmap [img, grkey]; 			// draw full-size
+    img = gr_render_pixmap [img, grkey, [20,20,0.2,0.2]]; 	// miniature
+    gr_destroy grkey;
+    fwrite_PNG ['test.png', img];
+</pre>
+
+<p><a name="gr_export"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+<span class="fcndef">gr_export</span> key
+</pre>
+
+<p>Opens up the <a href="../../apps/print.htm#GraphicExportPanel">Export
+Image</a> panel allowing you to export the grob represented by <tt>key</tt>
+to various graphical file formats.</p>
+
+</p>
+
+<p><a name="gr_print"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+<span class="fcndef">gr_print</span> key
+</pre>
+
+<p>Opens up the <a href="../../apps/print.htm#PrintImage">Print Preview
+Panel</a> with the grob represented by <tt>key</tt>.  See
+<a href="../../apps/print.htm#PrintGrob">Printing Graphical Objects</a> for
+details on the panel controls specific to grobs.</p>
+
+</p>
+
+<p><a name="gr_encode"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+mimetypes = <span class="fcndef">gr_encode</span> []
+data      = <span class="fcndef">gr_encode</span> [ source, mimetype, xform, opt ]
+</pre>
+
+<p>Returns a binary representation based on the provided graphic object, in the
+format specified by the given MIME type. If <tt>gr_encode</tt> is called without
+arguments, the return value is a laminated vector of the form
+<span class="nobr"><tt>[mimetype, extension, description]</tt></span>. The available MIME
+types are various types of embeddable graphics, of both raster and vector
+flavors.
+
+</p>
+
+<p>The <tt>source</tt> parameter must refer either to an instantiated graphic
+object key, or the serialized vector representation of a graphic object.
+<tt>mimetype</tt> must be a token which corresponds to a supported MIME type.
+The <tt>xform</tt> parameter, of the form <span class="nobr"><tt>[ox, oy, sw,
+sh]</tt></span>, is optional, and will default to <tt>[0,0,1,1]</tt>. The offset
+parts, <tt>ox</tt> and <tt>oy</tt>, are irrelevant for most of the output
+formats, and will be ignored. The scaling parts, <tt>sw</tt> and <tt>sh</tt>,
+are honored, and will also affect the dimensions of the output. The width and
+height of the output graphic are determined from the <tt>size</tt> member of the
+graphic object header, to which the scaling part of the <tt>xform</tt> parameter
+is also applied. The <tt>opt</tt> parameter is a tagged vector, with meaning
+that varies depending on the output type.
+
+</p>
+
+<p>The following table has a brief description of the encoding schemes for each
+of the MIME types:
+
+</p>
+
+<p><table class="titlebar" border="1" cellpadding="5">
+
+<tr>
+<th>MIME&nbsp;Type</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>image/png</tt></td>
+<td valign="baseline">
+
+The Portable Network Graphic (PNG) scheme. For most purposes, this format is the
+preferred choice for raster images, since it provides for efficient and largely
+lossless compression, as well as 24-bit color and full alpha transparency. It is
+understood by almost all external applications which manipulate raster graphics.
+
+</td>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>image/jpeg</tt></td>
+<td valign="baseline">
+
+The Joint Photographic Experts Group (JPEG) scheme. While this raster format is
+widely implemented and highly appropriate for photograph-style graphics, the
+lossy compression algorithms do not always provide a faithful representation of
+line drawings, and there is no concept of transparency.
+
+</td>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>image/gif</tt></td>
+<td valign="baseline">
+
+The Graphical Interchange Format (GIF) scheme, an 8-bit palette-based raster
+format, which has an optional single color reserved for on/off transparency.
+This format is obsolete, and should not be used except for cases when an
+external application may not be able to use the PNG format.
+
+</td>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>image/bmp</tt></td>
+<td valign="baseline">
+
+The Windows Bitmap scheme, which supports full color and alpha transparency.
+This format is useful for interaction with native Windows applications, but the
+compression scheme is limited, which results in large output files. It is also
+not widely implemented amongst non Windows-specific applications.
+
+</td>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>image/x-emf</tt></td>
+<td valign="baseline">
+
+The Windows Enhanced Metafile Plus scheme, which is a serialized representation
+of Windows GDI+ drawing functions, described by a <a
+href="http://msdn.microsoft.com/en-us/library/cc204376.aspx">Microsoft
+specification</a>. It is important to note that only the advanced EMF+ graphics
+instructions are included in the output. For some implementations of the format,
+older EMF graphics instructions are contained alongside the newer equivalents
+for backward compatibility purposes. For most practical purposes, the output
+from this encoding scheme must be considered specific to Windows platforms,
+though the data can be generated on any platform.
+
+</td>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>image/svg+xml</tt></td>
+<td valign="baseline">
+
+<p>
+The Scalable Vector Graphics (SVG) scheme, which is an XML dialect described by
+a <a href="http://www.w3.org/Graphics/SVG/">W3C specification</a>. This
+specification is a superset of the functionality provided by graphic objects,
+allowing the graphic object primitives to be translated to SVG primitives.
+Before using this format, it is advisable to examine the completeness of
+implementation by the intended rendering devices.
+
+</p>
+
+<p>The SVG format does not allow for embedded pixmaps, which can only be
+implemented by writing external files.  By default, <tt>gr_encode</tt> will not
+include any pixmap primitives in the output. If the <tt>opt</tt> parameter
+includes the tag <tt><span class="nobr">[imagepfx: <i>token</i>]</span></tt>, then for each
+pixmap contained in the graphic object, a file will be written with
+<tt><i>token</i></tt> as the base name. These files will be referenced from
+within the SVG content.
+
+</p>
+</td>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>image/grob</tt></td>
+<td valign="baseline">
+
+An internal encoding scheme for graphic objects, which is a direct
+translation of the serialized data. The format is whitespace-insensitive text.
+
+</td>
+</tr>
+
+</table>
+</p>
+    
+<p><a name="gr_fwrite"></a></p>
+<p><hr noshade /></p>
+
+<pre>
+<span class="fcndef">gr_fwrite</span> [ file, source, mimetype, xform, opt ]
+</pre>
+
+<p>The <tt>gr_fwrite</tt> function performs the same task as the
+<tt>gr_encode</tt> function, except that instead of returning the encoded data,
+it is written to the given indicated file descriptor. The <tt>file</tt>
+parameter can be either a filename token, or the handle of a file which is
+currently open for output.
+
+</p>
+
+<h2>See Also</h2>
+<p>
+ 
+<a href="../../moe/fcnref/gobj.htm">3D Graphic Object Functions</a><br />
+<a href="../svlgui/wt_intro.htm">SVL Window Toolkit</a><br />
+<a href="../svlgui/fcnref/introwt.htm">Window Toolkit Functions</a>
+
+</p>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

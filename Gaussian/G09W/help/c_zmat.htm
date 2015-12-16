@@ -1,0 +1,167 @@
+<html><head>
+<title></title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style type="text/css">
+<!--
+
+p {
+	font-family: "Times New Roman", Times, serif;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+}
+
+-->
+</style>
+</head><body>
+<h1>Constructing Z-Matrices</h1>
+<p>This section presents a brief overview of traditional Z-matrix descriptions of molecular systems. There are restrictions on the size of a Z-matrix: the maximum number of variables and the maximum number of atoms within a calculation. These are set consistently for a maximum of 250,000 real atoms (including ghost but not dummy atoms), and a maximum of 250,000 Z-matrix centers (atoms, ghost atoms, and dummy atoms).</p>
+<h2>Using Internal Coordinates</h2>
+<p>Each line of a Z-matrix gives the internal coordinates for one of the atoms within the molecule. The most-used Z-matrix format uses the following syntax:</p>
+<p><font face="Times New Roman, Times, serif" size="3"><i>Element-label</i></font>, <font face="Times New Roman, Times, serif" size="3"><i>atom</i></font> 1, <font face="Times New Roman, Times, serif" size="3"><i>bond-length</i></font>, <font face="Times New Roman, Times, serif" size="3"><i>atom</i></font> 2, <font face="Times New Roman, Times, serif" size="3"><i>bond-angle</i></font>, <font face="Times New Roman, Times, serif" size="3"><i>atom</i></font> 3, <font face="Times New Roman, Times, serif" size="3"><i>dihedral-angle</i></font> [,<font face="Times New Roman, Times, serif" size="3"><i>format-code</i></font>]</p>
+<p>Although these examples use commas to separate items within a line, any valid separator may be used. <font face="Times New Roman, Times, serif" size="3"><i>Element-label</i></font> is a character string consisting of either the chemical symbol for the atom or its atomic number. If the elemental symbol is used, it may be optionally followed by other alphanumeric characters to create an identifying label for that atom. A common practice is to follow the element name with a secondary identifying integer: C1, C2, etc.</p>
+<p><font face="Times New Roman, Times, serif" size="3"><i>Atom</i></font>1, <font face="Times New Roman, Times, serif" size="3"><i>atom</i></font>2, <font face="Times New Roman, Times, serif" size="3"><i>atom</i></font>3 are the labels for previously-specified atoms and are used to define the current atoms&rsquo; position. Alternatively, the other atoms&rsquo; line numbers within the molecule specification section may be used for the values of variables, where the charge and spin multiplicity line is line 0.</p>
+<p>The position of the current atom is then specified by giving the length of the bond joining it to <font face="Times New Roman, Times, serif" size="3"><i>atom</i></font>1, the angle formed by this bond and the bond joining <font face="Times New Roman, Times, serif" size="3"><i>atom</i></font>1 and <font face="Times New Roman, Times, serif" size="3"><i>atom</i></font>2, and the dihedral (torsion) angle formed by the plane containing <font face="Times New Roman, Times, serif" size="3"><i>atom</i></font>1, <font face="Times New Roman, Times, serif" size="3"><i>atom</i></font>2 and <font face="Times New Roman, Times, serif" size="3"><i>atom</i></font>3 with the plane containing the current atom, <font face="Times New Roman, Times, serif" size="3"><i>atom</i></font>1 and <font face="Times New Roman, Times, serif" size="3"><i>atom</i></font>2. Note that bond angles must be in the range 0&deg;space&lt; <font face="Times New Roman, Times, serif" size="3"><i>angle</i></font> &lt; 180&deg;. Dihedral angles may take on any value.</p>
+<p>The optional format-code parameter specifies the format of the Z-matrix input. For the syntax being described here, this code is always <b><font color="#0000FF">0</font></b>. This code is needed only when additional parameters follow the normal Z-matrix specification data, as in an <b><font color="#0000FF">ONIOM</font></b> calculation.</p>
+<p>As an initial example, consider hydrogen peroxide. A Z-matrix for this structure would be:</p>
+<pre>
+H
+O 1 0.9
+O 2 1.4 1 105.0
+H 3 0.9 2 105.0 1 120.0
+</pre>
+<p>The first line of the Z-matrix simply specifies a hydrogen. The next line lists an oxygen atom and specifies the internuclear distance between it and the hydrogen as 0.9 Angstroms. The third line defines another oxygen with an O-O distance of 1.4 Angstroms (i.e., from atom 2, the other oxygen) and having an O-O-H angle (with atoms 2 and 1) of 105 degrees. The fourth and final line is the only one for which all three internal coordinates need be given. It defines the other hydrogen as bonded to the second oxygen with an H-O distance of 0.9 Angstroms, an H-O-O angle of 105 degrees and a H-O-O-H dihedral angle of 120 degrees.</p>
+<p>Variables may be used to specify some or all of the values within the Z-matrix. Here is another version of the previous Z-matrix:</p>
+<pre>
+H
+O 1 <b>R1</b>
+O 2 <b>R2</b> 1 <b>A</b>
+H 3 <b>R1</b> 2 <b>A</b> 1 <b>D</b>
+  Variables:
+R1 0.9
+R2 1.4
+A 105.0
+D 120.0
+</pre>
+<p>Symmetry constraints on the molecule are reflected in the internal coordinates. The two H-O distances are specified by the same variable, as are the two H-O-O bond angles. When such a Z-matrix is used for a geometry optimization in internal coordinates (<b><font color="#0000FF">Opt=Z-matrix</font></b>), the values of the variables will be optimized to locate the lowest energy structure. For a full optimization (<b><font color="#0000FF">FOpt</font></b>), the variables are required to be linearly independent and include all degrees of freedom in the molecule. For a partial optimization (<b><font color="#0000FF">POpt</font></b>), variables in a second section (often labeled <font face="Courier New, Courier, monospace" size="-1">Constants</font>:) are held fixed in value while those in the first section are optimized:</p>
+<pre>  Variables:
+R1 0.9
+R2 1.4
+A 105.0
+  Constants:
+D 120.0</pre>
+<p>See the examples in the discussion of the <b><font color="#0000FF">Opt</font></b> keyword for more information about optimizations in internal coordinates.</p>
+<h3>Mixing Internal and Cartesian Coordinates</h3>
+<p>Cartesian coordinates are actually a special case of the Z-matrix, as in this example:</p>
+<pre>C   0.00   0.00   0.00
+C   0.00   0.00   1.52
+H   1.02   0.00  -0.39
+H  -0.51  -0.88  -0.39
+H  -0.51   0.88  -0.39
+H  -1.02   0.00   1.92
+H   0.51  -0.88   1.92
+H   0.51   0.88   1.92</pre>
+<p>It is also possible to use both internal and Cartesian coordinates within the same Z-matrix, as in this example:</p>
+<pre>O 0 xo  0.  zo
+C 0 0.  yc  0.
+C 0 0. -yc  0.
+N 0 xn  0.  0. 
+H 2 r1 3 a1 1  b1
+H 2 r2 3 a2 1  b2
+H 3 r1 2 a1 1 -b1
+H 3 r2 2 a2 1 -b2
+H 4 r3 2 a3 3  d3 
+  Variables: 
+xo -1.
+zo  0.
+yc  1.
+xn  1.
+r1 1.08
+r2 1.08
+r3 1.02
+a1 125.
+a2 125.
+d3 160.
+b1  90.
+b2 -90.</pre>
+<p>This Z-matrix has several features worth noting:</p>
+<ul>
+<li>
+<p>The variable names for the Cartesian coordinates are given symbolically in the same manner as for internal coordinate variables.</p>
+</li>
+<li>
+<p>The integer 0 after the atomic symbol indicates symbolic Cartesian coordinates to follow.</p>
+</li>
+<li>
+<p>Cartesian coordinates can be related by a sign change just as dihedral angles can.</p>
+</li></ul>
+<h3>Alternate Z-matrix Format</h3>
+<p>An alternative Z-matrix format allows nuclear positions to be specified using two bond angles rather than a bond angle and a dihedral angle. This is indicated by a <b><font color="#0000FF">1</font></b> in an additional field following the second angle (this field defaults to <b><font color="#0000FF">0</font></b>, which indicates a dihedral angle as the third component):</p>
+<pre>C4 O1 0.9 C2 120.3 O2 180.0 0
+C5 O1 1.0 C2 110.4 C4 105.4 1
+C6 O1 R C2 A1 C3 A2 1</pre>
+<p>The first line uses a dihedral angle while the latter two use a second bond angle.</p>
+<h3>Using Dummy Atoms</h3>
+<p>This section will illustrate the use of dummy atoms within Z-matrices, which are represented by the pseudo atomic symbol <b><font color="#0000FF">X</font></b>. The following example illustrates the use of a dummy atom to fix the three-fold axis in C<sub>3v</sub> ammonia:</p>
+<pre>N
+X 1 1.
+H 1 nh 2 hnx
+H 1 nh 2 hnx 3  120.0
+H 1 nh 2 hnx 3 -120.0
+ 
+nh 1.0
+hnx 70.0</pre>
+<p>The position of the dummy on the axis is irrelevant, and the distance 1.0 used could have been replaced by any other positive number. <b><font color="#0000FF">hnx</font></b> is the angle between an N-H bond and the threefold axis.</p>
+<p>Here is a Z-matrix for oxirane:</p>
+<pre>X
+C1  X halfcc
+O   X     ox C1 90.
+C2  X halfcc  O 90. C1 180.0
+H1 C1     ch  X hcc  O  hcco
+H2 C1     ch  X hcc  O -hcco
+H3 C2     ch  X hcc  O  hcco
+H4 C2     ch  X hcc  O -hcco
+ 
+halfcc   0.75
+ox       1.0
+ch       1.08
+hcc    130.0
+hcco   130.0</pre>
+<p>This example illustrates two points. First, a dummy atom is placed at the center of the C-C bond to help constrain the cco triangle to be isosceles. <b><font color="#0000FF">ox</font></b> is then the perpendicular distance from O to the C-C bond, and the angles oxc are held at 90 degrees. Second, some of the entries in the Z-matrix are represented by the negative of the dihedral angle variable <b><font color="#0000FF">hcco</font></b>.</p>
+<p>The following examples illustrate the use of dummy atoms for specifying linear bonds. Geometry optimizations in internal coordinates are unable to handle bond angles of l80 degrees which occur in linear molecular fragments, such as acetylene or the C<sub>4</sub> chain in butatriene. Difficulties may also be encountered in nearly linear situations such as ethynyl groups in asymmetrical molecules. These situations can be avoided by introducing dummy atoms along the angle bisector and using the half-angle as the variable or constant:</p>
+<pre>N
+C 1 cn
+X 2 1. 1 90.
+H 2 ch 3 90. 1 180.
+ 
+cn 1.20
+ch 1.06</pre>
+<p>Similarly, in this Z-matrix intended for a geometry optimization, <b><font color="#0000FF">half</font></b> represents half of the N-C-O angle which is expected to be close to linear. Note that a value of <b><font color="#0000FF">half</font></b> less than 90 degrees corresponds to a cis arrangement:</p>
+<pre>N
+C 1 cn
+X 2 1. 1 half
+O 2 co 3 half 1 180.0
+H 4 oh 2  coh 3   0.0
+ 
+cn 1.20
+co 1.3
+oh 1.0
+half 80.0
+coh 105.</pre>
+<h2>Model Builder Geometry Specifications</h2>
+<p>The model builder is another facility within Gaussian for quickly specifying certain sorts of molecular systems <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Pople67a">Pople67a</a>]</font>. It is requested with the <b><font color="#0000FF">ModelA</font></b> or <b><font color="#0000FF">ModelB</font></b> options, and it requires additional input in a separate section within the job file.</p>
+<p>The basic input to the model builder is called a <font face="Times New Roman, Times, serif" size="3"><i>short formula matrix</i></font>, a collection of lines, each of which defines an atom (by atomic symbol) and its connectivity, by up to six more entries. Each of these can be either an integer, which is the number of the line defining another explicitly specified atom to which the current atom is bonded, or an atomic symbol (e.g. H, F) to which the current atom is connected by a terminal bond, or a symbol for a terminal functional group which is bonded to the current atom. The functional groups currently available are OH, NH2, Me, Et, NPr, IPr, NBu, IBu, and TBu.</p>
+<p>The short formula matrix also implicitly defines the rotational geometry about each bond in the following manner. Suppose atoms X and Y are explicitly specified. Then X will appear in row Y and Y will appear in row X. Let <font face="Times New Roman, Times, serif" size="3"><i>I</i></font> be the atom to the right of X in row Y and <font face="Times New Roman, Times, serif" size="3"><i>J</i></font> be the atom to the right of Y in row X. Then atoms <font face="Times New Roman, Times, serif" size="3"><i>I</i></font> and <font face="Times New Roman, Times, serif" size="3"><i>J</i></font> are put in the trans orientation about the X-Y bond. The short formula matrix may be followed by optional lines modifying the generated structure. There are zero or more of each of the following lines, which must be grouped together in the order given here:</p>
+<p><b><font color="#0000FF">AtomGeom,<font face="Times New Roman, Times, serif" size="3"><i>I</i></font>,<font face="Times New Roman, Times, serif" size="3"><i>Geom</i></font></font></b><br>
+Normally the local geometry about an atom is defined by the number and types of bond about the atom (e.g., carbon in methane is tetrahedral, in ethylene is trigonal, etc.). All bond angles at one center must be are equal. The <b><font color="#0000FF">AtomGeom</font></b> line changes the value of the bonds at center <font face="Times New Roman, Times, serif" size="3"><i>I</i></font>. <font face="Times New Roman, Times, serif" size="3"><i>Geom</i></font> may be the angle as a floating point number, or one of the strings <b><font color="#0000FF">Tetr</font></b>, <b><font color="#0000FF">Pyra</font></b>, <b><font color="#0000FF">Trig</font></b>, <b><font color="#0000FF">Bent</font></b>, or <b><font color="#0000FF">Line</font></b>.
+</p>
+<p><b><font color="#0000FF">BondRot,<font face="Times New Roman, Times, serif" size="3"><i>I</i></font>,<font face="Times New Roman, Times, serif" size="3"><i>J</i></font>,<font face="Times New Roman, Times, serif" size="3"><i>K</i></font>,<font face="Times New Roman, Times, serif" size="3"><i>L</i></font>,<font face="Times New Roman, Times, serif" size="3"><i>Geom</i></font></font></b><br>
+This changes the orientations of the <font face="Times New Roman, Times, serif" size="3"><i>I</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>J</i></font> and <font face="Times New Roman, Times, serif" size="3"><i>K</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>L</i></font> bonds about the <font face="Times New Roman, Times, serif" size="3"><i>J</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>K</i></font> bond. <font face="Times New Roman, Times, serif" size="3"><i>Geom</i></font> is either the dihedral angle or one of the strings <b><font color="#0000FF">Cis</font></b> (&ge;0), <b><font color="#0000FF">Trans</font></b> (&ge;180), <b><font color="#0000FF">Gaup</font></b> (&ge;+60), or <b><font color="#0000FF">Gaum</font></b> (&ge;&ndash;60).
+</p>
+<p><b><font color="#0000FF">BondLen,<font face="Times New Roman, Times, serif" size="3"><i>I</i></font>,<font face="Times New Roman, Times, serif" size="3"><i>J</i></font>,<font face="Times New Roman, Times, serif" size="3"><i>NewLen</i></font></font></b><br>
+This sets the length of the <font face="Times New Roman, Times, serif" size="3"><i>I</i></font>-<font face="Times New Roman, Times, serif" size="3"><i>J</i></font> bond to <font face="Times New Roman, Times, serif" size="3"><i>NewLen</i></font> (a floating point value).
+</p>
+<p>The model builder can only build structures with atoms in their normal valencies. If a radical is desired, its extra valence can be effectively &ldquo;tied down&rdquo; using dummy atoms, which are specified by a minus sign before the atomic symbol (e.g., &ndash;H). Only terminal atoms can be dummy atoms.</p>
+<p>The two available models (A and B) differ in that model A takes into account the type (single, double, triple, etc.) of a bond in assigning bond lengths, while model B bond lengths depend only on the types of the atoms involved. Model B is available for all atoms from H to Cl except He and Ne. If Model A is requested and an atom is used for which no Model A bond length is defined, the appropriate Model B bond length is used instead.</p>
+<hr><p><font face="Times New Roman, Times, serif" size="-1"><i>Last updated on: 10 May 2009</i></font></p>
+</body></html>

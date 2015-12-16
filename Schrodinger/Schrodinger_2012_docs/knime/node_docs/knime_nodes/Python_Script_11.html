@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<html>
+<head>
+<title>Node description for Python Script 1:1</title>
+<style type="text/css">
+			body {
+	background-color: #fff;
+	font-family: Tahoma, Arial, Helvetica; 
+	font-size: 10pt;
+	padding: 0.1em 0.1em 1.5em 0.1em;
+}
+
+tt, pre {
+	font-family: Courier New, Courier, Arial, Helvetica; 
+	font-size: 14px;
+}
+
+p {
+	text-align: justify;
+	/*padding: 0 10px;*/
+}
+
+
+
+h1{
+	font-size: 28px;
+	text-align: center;
+	border-bottom: thick solid #ffd600;
+}
+
+h2{
+	font-size: 18px;
+	/*padding-left: 5px;*/
+	border-bottom: thin dotted #ffd600;
+}
+
+.deprecated {
+	color: red; font-style: italic;
+}
+
+dl{
+	margin-left: 1px;
+	padding: 0;
+}
+
+dt {
+	font-weight: bold;
+	margin-bottom: 10px;
+}
+
+dd{
+	margin-bottom: 20px; 
+}
+
+table{
+	font-size:100%;
+}
+
+td{
+	padding: 0.5em 0.5em;
+	vertical-align:top;
+}
+
+
+.dt {
+	font-weight: bold;
+}
+
+a{
+	color: #000;
+}
+	
+a:visited{
+	color: #666;
+}
+
+.warn{
+	color: #cf0000;
+}
+		</style>
+</head>
+<body>
+<h1>Python Script 1:1</h1>
+<p>
+<p>
+Executes a Python script which has access to all Schrodinger python libraries, taking 1 input table and returning 1 output table.
+</p>
+
+<p>The node defaults to a script that simply iterates through the input rows and outputs the same data:</p>
+<pre>
+iterator = inData[0].iterator()
+while iterator.hasNext():
+	row = iterator.next()
+	outContainer[0].addRowToTable(row)
+</pre>
+
+<p>There are a number of python classes that we have implemented to allow easy access to the input table(s), 
+and easy creation of the output table(s).  
+</p>
+<p>
+<b>BufferedInputTable</b> - The array variable inData with this type is used to reference the input table(s), in the simple case above 
+inData[0] references the only input table.<br/>
+<i>iterator() </i>- Returns a DataRowIterator that iterates through each row of the input table.
+<i>getDataTableSpec() </i>- Returns a DataTableSpec class which defines the input table specification (i.e., an instance of the class DataTableSpec)
+</p>
+<p>
+<b>DataRowIterator</b> - This class is used to iterate through the rows input table.  Each row is accessed using the <b>DataRow</b> class.<br/>
+<i>hasNext() </i>- Returns whether there is another row returned when <i>next()</i> is called.<br/>
+<i>next() </i>- Returns the next <b>DataRow</b> in the table.
+</p>
+<p>
+<b>DataRow</b> - This class is used to access all of the cells in a particular row of an input table.<br/>
+<i>getBufferedDataTable() </i>- Returns the BufferedDataTable associated with this particular row.  The table specification can be accessed from this instance, which has the columns and types of this row.<br/>
+<i>getCell(index) </i>- Returns the cell as the <b>DataCell</b> class with related column type (see below).<br/>
+<i>getKey() </i>- Returns the key value of the row.<br/>
+<i>setKey(keyValue) </i>- Sets the key value of the row.<br/>
+</p>
+<p>
+<b>BufferedDataContainer</b> - The array variable outContainer with this type is used to reference and populate the output table(s), in the simple case above, 
+outContainer[0] references the only output table.<br/>
+<i>addRowToTable(dataRow) </i>- Appends a row to the container.  The specification of the output table is set to the types of cells in the added rows.
+If rows that have different types in the columns are added to the same <b>BufferedDataContainer</b>, then an error occurs.  If there are missing cells 
+(e.g., the currently added row has more cells than any previous rows) then the table is filled with missing cells with<b>MissingCell</b> type.<br/>
+</p>
+<p>
+<b>DataTableSpec</b> - The table specification that defines the table's columns and their types.  Both types <b>BufferedInputTable</b> and <b>BufferedDataContainer</b>
+provide a <b>DataTableSpec</b> that have couple ways of looking up columns and types:<br/>
+<i> allColumns </i>- An ordered list of the <b>DataColumnSpec</b> columns.<br/>
+<i> columnByNumber </i>- A dictionary of the <b>DataColumnSpec</b> columns that uses the index as the lookup key.<br/>
+<i> columnIndexByName </i>- A dictionary that uses the column name as the key to lookup the column order.<br/>
+<i> findColumnIndex(columName) </i>- Returns the column order from the column name.<br/>
+</p>
+<p>
+<b>DataColumnSpec</b> - The column specification which keeps the column name and type.<br/>
+<i> getName() </i>- Returns the column name.<br/>
+<i> getType() </i>- Returns the column data value java class.  There is also a global dictionary <i>columnTypeToCellType</i> that maps this
+data value java class to <b>DataCell</b>.<br/>
+</p>
+<h>DataCell types</h>
+<p>
+<b>DataCell</b> - This is the base class that represents a cell in a table.  In most cases, a cell is represented by a 
+subclass listed below, and only special instances have <b>DataCell</b> type (such as the global instance variable <b>MissingCell</b> which converts to
+a missing cell in Knime)<br/>
+<i> setValue(val)</i>- This function sets the value of the cell.  Most cells use this member variable self.value to store the
+value of the cell.  Some cells use the variable self.cellFileName to store external file names as the value. (the member variable self.hasFile is set if the file name is used)<br/>
+</p>
+<p>
+<b>PdbCell</b> - Cell type that stores PDB molecules.
+<i>setToStructure(structure)</i> - Sets the value of this cell to a schrodinger.structure.Structure class.<br/>
+<i>getStructureReader()</i> - Returns a schrodinger.structure.StructureReader instance of this cell.<br/>
+</p>
+<p>
+<b>SdfCell</b> - Cell type that stores Sdf molecules.
+<i>setToStructure(structure)</i> - Sets the value of this cell to a schrodinger.structure.Structure class.<br/>
+<i>getStructureReader()</i> - Returns a schrodinger.structure.StructureReader instance of this cell.<br/>
+</p>
+<p>
+<b>Mol2Cell</b> - Cell type that stores Mol2 molecules.
+<i>setToStructure(structure)</i> - Sets the value of this cell to a schrodinger.structure.Structure class.<br/>
+<i>getStructureReader()</i> - Returns a schrodinger.structure.StructureReader instance of this cell.<br/>
+</p>
+<p>
+<b>SmilesCell</b> - Cell type that stores a Smiles molecule.
+</p>
+<p>
+<b>StringCell</b> - Cell type that stores a primitive string value.
+</p>
+<p>
+<b>IntCell</b> - Cell type that stores a primitive integer value.
+</p>
+<p>
+<b>DoubleCell</b> - Cell type that stores a primitive double value.
+</p>
+<p>
+<b>MaestroCell</b> - Cell type that stores Maestro molecules.
+<i>setToStructure(structure)</i> - Sets the value of this cell to a schrodinger.structure.Structure class.<br/>
+<i>getStructureReader()</i> - Returns a schrodinger.structure.StructureReader instance of this cell.<br/>
+</p>
+<p>
+<b>SequenceCell</b> - Cell type that stores Sequence(s).
+</p>
+<p>
+<b>AlignmentCell</b> - Cell type that stores Alignment(s).
+</p>
+<p>
+<b>LogFileCell</b> - Cell type that stores log files.
+</p>
+<p>
+<b>TextFileCell</b> - Cell type that stores text files.
+</p>
+<h>Code Examples</h>
+<p>Here are some more simple examples that will help understand how to use this Python node:
+</p>
+<p>Adding a 3rd column that is the sum of the first 2 columns:</p>
+<pre>
+iterator = inData[0].iterator()
+while iterator.hasNext():
+    row = iterator.next()
+    fc0 = row.getCell(0)
+    fc1 = row.getCell(1)
+    newDoubleCell = DoubleCell()
+    newDoubleCell.setValue(fc0.value + fc1.value)
+    newRow = AppendedColumnRow(row, [ newDoubleCell ])  # Appending new column to the input columns
+    newRow.colNames = [ "Sum of Column 1 and 2"]   # sets the column name
+    outContainer[0].addRowToTable(newRow)
+</pre>
+<p>Converting SD to Maestro type:</p>
+<pre>
+iterator = inData[0].iterator()
+while iterator.hasNext():
+    row = iterator.next()
+    sdc = row.getCell(0)
+    for st in sdc.getStructureReader():
+        newCell = MaestroCell()
+        newCell.setToStructure(st)
+        newRow = DefaultRow(row.getKey(), [ newCell ])  # DefaultRow does not include the input columns
+        outContainer[0].addRowToTable(newRow)
+</pre>
+<p>Ungrouping input Maestro molecules (similar to the Ungroup MAE node):</p>
+<pre>
+iterator = inData[0].iterator()
+r = 0
+while iterator.hasNext():
+    row = iterator.next()
+    mc = row.getCell(0)
+    for st in mc.getStructureReader():
+        newMC = MaestroCell()
+        newMC.setToStructure(st)
+        newRow = DefaultRow("Row%s" % r, [ newMC ])
+        outContainer[0].addRowToTable(newRow)
+        r = r + 1
+</pre>
+<p>DataRow types</p>
+<p>
+<b>DefaultRow</b> - This class is used to generate rows used for output.
+<br/>
+<i> DataRow(rowKey, cellList[]) </i>- The constructor takes a row key and cell list.<br/>
+
+</p>
+<p>
+<b>AppendedColumnRow</b> - This class is used to generate rows from a row instance and appended cells.  
+The row key from the row instance given is used as the row key and the appended cells are added 
+after the cells in the row instance.<br/>
+<i> AppendedColumnRow(row, cellList[])</i> - The constructor takes a row and a cell list.<br/>
+</p>
+</p>
+<h2>Ports</h2>
+<dl>
+<dt>Input Ports</dt>
+<dd>
+<table>
+<tr>
+<td class="dt">0</td>
+<td>This table is accessable in the python script using the variable inData[0] that has the type BufferedDataTable.</td>
+</tr>
+</table>
+</dd>
+<dt>Output Ports</dt>
+<dd>
+<table>
+<tr>
+<td class="dt">0</td>
+<td>This output table is generated after the python script is executed from the variable outContainer[0] which has the type BufferedDataContainer.</td>
+</tr>
+</table>
+</dd>
+</dl>
+<h2>Views</h2>
+<dl>
+<dt>Std output/error of Python Script 1:1</dt>
+<dd>Std output/error of Python Script 1:1</dd>
+</dl>
+</body>
+</html>

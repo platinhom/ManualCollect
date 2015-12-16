@@ -1,0 +1,177 @@
+<!--
+--- UCSF Chimera Copyright ---
+Copyright (c) 2013-2014 Regents of the University of California.
+All rights reserved.  This software provided pursuant to a
+license agreement containing restrictions on its disclosure,
+duplication and use.  This notice must be embedded in or
+attached to all copies, including partial copies, of the
+software or any revisions or derivations thereof.
+--- UCSF Chimera Copyright ---
+-->
+
+<html><head>
+<title>Surface Calculation Failures and Workarounds</title>
+</head><body>
+<h2>Surface Calculation Failures and Workarounds</h2>
+<p>
+<a href="representation.html#surfaces">Molecular surface</a> calculations
+in Chimera (<b><A href="midas/surface.html">surface</A></b> command,
+<A href="menu.html#actsurface"><b>Actions... Surface... show</b></a>
+in the menu)
+use the MSMS package and are subject to sporadic numerical failure.
+These failures are not very predictable, except for a tendency to occur
+more frequently for larger structures. Most failures are on structures with
+&gt;10,000 atoms, and on the largest (~50,000 atoms), it may not be
+possible to find settings that allow successful calculation of the
+<a href="representation.html#surfaces">molecular surface</a>
+(but see <a href="#alternatives">alternatives</a>).
+Failures may even vary from platform to platform, with one computer failing 
+but another successfully generating the molecular surface of the 
+same structure using the same parameters, due to small differences in rounding.
+Surface calculation fails more often on Windows than on Mac and Linux,
+and more often in the 64-bit Windows version of Chimera than in the
+32-bit Windows version.
+</p><p>
+Unfortunately, how to avoid a failure is also not very predictable,
+but anything that affects the surface shape (even quite subtly) may suffice.
+</p><p>
+The first thing to consider is whether the surface calculation has failed
+completely, or whether the main component (generally enclosing the structure)
+has been generated successfully and the failure only affects the
+smaller components (generally interior bubbles).
+If the surface of interest is shown and other components are
+not needed for display or calculations, 
+surface calculation error messages can be ignored. 
+It is possible, however, for the calculation to proceed without error
+messages but still generate localized defects such as interior bubbles 
+poking through the outer surface.
+</p>
+
+<a name="workarounds"></a>
+<h3>Workarounds</h3>
+<ol>
+<li><b>Subdividing the problem</b>.
+The first two approaches involve breaking the problem into parts
+to simplify the calculation:
+<br><br>
+<ul>
+<li>If the structure has multiple chains and it is acceptable to have
+each chain enclosed in a separate surface, one can use the command
+<a href="midas/split.html"><b>split</b></a> before trying to generate 
+the surface. This command places the chains into different models. 
+For example, if the structure is originally model #0,
+it will become #0.1, #0.2, <i>etc.</i>, and in Chimera, 
+different models give rise to different molecular surfaces.
+Potential disadvantages of using
+<a href="midas/split.html"><b>split</b></a>
+are that previously saved <a href="midas/savepos.html">positions</a>
+will cease to work, and any surface based on the original
+model will not go away automatically.
+<br><br>
+<li>If breaking the problem into parts without splitting the model is
+desired, one can use the command 
+<a href="midas/surfcat.html"><b>surfcat</b></a> to tell Chimera exactly
+which atoms should be grouped together into a surface.
+With this method, saved <a href="midas/savepos.html">positions</a>
+will continue to work, and any previous surfaces involving the same atoms
+will go away automatically. The following encloses protein chain A in its
+own molecular surface:
+<blockquote>
+<b><a href="midas/surfcat.html">surfcat</a> &nbsp;one &nbsp;:.a&protein</b>
+<br>
+<b><a href="midas/surface.html">surface</a> &nbsp;one</b>
+</blockquote>
+</ul>
+<li><b>Adjusting molecular surface parameters</b>.
+The next set of approaches subtly change the surface shape 
+or triangulation process without changing the set of atoms to be enclosed:
+<br><br>
+<ul>
+<li>The <a href="midas/vdwrad.html">VDW radii</a> of atoms can be
+increased slightly, for example with the command:
+<blockquote>
+<b><a href="midas/vdwdefine.html">vdwdefine</a> &nbsp;+.01</b>
+</blockquote>
+This command also allows decreasing the radii, but increases are more likely
+to circumvent the failure.
+<br><br>
+<li><a href="representation.html#surfaces">Molecular surface</a>
+calculation parameters, namely <b>probe radius</b>
+and <b>vertex density</b>, can be changed. They can be set at the time of
+surface calculation with the <a href="midas/surface.html"><b>surface</b></a>
+command, or prior to surface calculation in the 
+<a href="preferences.html#New Surfaces"><b>New Surfaces</b> preferences</a>.
+If the main component (disconnected part) has been calculated successfully, 
+another approach is to <a href="selection.html">select</a> it and then use the
+<a href="inspection.html"><b>Selection Inspector</b></a> to adjust the 
+associated <a href="inspection.html#msmsprop"><b>MSMS surface</b>
+parameters</a> after the fact.
+The <b>show disjoint surfaces</b> setting controls whether Chimera will 
+try to calculate all components instead of just one.
+</ul>
+<br>
+<a name="alternatives"></a>
+<li><b>Alternative kinds of surfaces</b>.
+The last two possibilities generate surfaces that are not exactly the
+(solvent-excluded) <a href="representation.html#surfaces">molecular surface</a>,
+but may suffice for visualization:
+<br><br>
+<ul>
+<li>The command <a href="midas/molmap.html"><b>molmap</b></a> can be used
+to simulate a density map of the atoms and display an isosurface, for example:
+<blockquote>
+<b><a href="midas/molmap.html">molmap</a> &nbsp;#0&protein &nbsp;4
+&nbsp;gridSpacing &nbsp0.5</b>
+</blockquote>
+...where larger values of the &ldquo;resolution&rdquo; (4 in the example)
+give a smoother but slightly larger surface.
+<br><br>
+<li><a href="../ContributedSoftware/multiscale/framemulti.html"
+target="_top"><b>Multiscale Models</b></a> generates 
+<a href="../ContributedSoftware/multiscale/multiscale.html#lowres">low-resolution surfaces</a>,
+one per biopolymer chain. The surfaces are essentially smoothed isosurfaces
+of atom occupancy, with <b>Resolution</b> adjustable in the dialog.
+</ul>
+<br>
+Like molecular surfaces,
+these alternative surfaces can be colored to match the underlying atoms (see
+<a href="../ContributedSoftware/colorzone/colorzone.html"><b>Color Zone</b></a>
+and <a href="midas/msc.html"><b>msc</b></a>)
+or to show associated data such as electrostatic potential (see
+<a href="../ContributedSoftware/surfcolor/surfcolor.html"><b>Surface
+Color</b></a> and <a href="midas/coulombic.html"><b>coulombic</b></a>
+with the <a href="midas/coulombic.html#options"><b>atoms</b> option</a>).
+<br><br>
+<li><b>CPK representation</b>.
+Displaying all atoms as VDW spheres also gives a 
+space-filling representation of the molecule, 
+albeit not smoothed like a surface. For example, commands:
+<blockquote>
+<b><a href="midas/ribbon.html">~ribbon</a>
+<br>
+<a href="midas/show.html">show</a> protein
+<br>
+<a href="midas/represent.html">repr</a> sphere protein
+<br>
+<a href="midas/color.html">color</a> tan</b>
+</blockquote>
+<li><b>Surface area values only (no surface display)</b>.
+Finally, if the goal is to obtain surface area values rather than
+a displayed surface, see
+<a href="../ContributedSoftware/surfvol/surfvol.html"><b>Area/Volume 
+from Web</b></a>.  This tool uses the
+<a href="http://helixweb.nih.gov/structbio/basic.html" 
+target="_blank"><b>StrucTools</b> server</a> to calculate atomic
+surface areas or Voronoi volumes and assigns the resulting values as atom
+<a href="../ContributedSoftware/defineattrib/defineattrib.html#attribdef">attributes</a>.
+The output can also be written to a file.  The overall total is reported 
+in the <a href="reply.html"><b>Reply Log</b></a>, and the atomic values 
+and totals per residue are automatically listed as atom and residue 
+attributes, respectively, in the
+<a href="../ContributedSoftware/render/render.html"><b>Render/Select by
+Attribute</b></a> dialog.
+</blockquote>
+</ol>
+<hr>
+<address>UCSF Computer Graphics Laboratory / March 2014</address>
+</body></html>

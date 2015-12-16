@@ -1,0 +1,262 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!! 	washmol.htm
+!! 
+!!      30-sep-2009 (ac) created
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<title>Molecule Washing</title>
+<meta keywords>
+<meta functions WashMoleculeCTAB, WashMoleculeMOE>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Molecule Washing</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    [ctablist, changed, filtlist] = <a class="fcnlink" href="#WashMoleculeMOE">WashMoleculeMOE</a> [akeys, opt]
+    [ctablist, changed, filtlist] = <a class="fcnlink" href="#WashMoleculeCTAB">WashMoleculeCTAB</a> [ctab, opt]
+</pre>
+
+<h2>Description</h2>
+
+<p><a name="WashMoleculeMOE"></a>
+<p><a name="WashMoleculeCTAB"></a>
+
+<pre>
+[ctablist, changed, filtlist] = <span class="fcndef" href="#WashMoleculeMOE">WashMoleculeMOE</span> [akeys, opt]
+[ctablist, changed, filtlist] = <span class="fcndef" href="#WashMoleculeCTAB">WashMoleculeCTAB</span> [ctab, opt]
+</pre>
+
+<p>Both functions provide a sequence of "wash" steps for a molecular connection
+table. <tt>WashMoleculeMOE</tt> accepts an input molecule by way of atom keys,
+which are internally converted to a CTAB representation, while
+<tt>WashMoleculeCTAB</tt> takes a CTAB datastructure.
+
+<p>The first return value, <tt>ctablist</tt>, is a list of molecular structures
+in CTAB form. For most washing modes, this will consist of just a single
+entry. The <tt>changed</tt> value is a flag which is set to 1 if any
+significant modifications were made, or 0 if the input molecule was already
+"clean". <tt>filtlist</tt> contains a list of CTAB structures representing
+anything that was filtered out during the washing sequence.
+
+<p>The actual steps carried out during the washing process is determined by the
+contents of the <tt>opt</tt> argument, which takes the following form:
+
+<blockquote><dl>
+
+<p><dt><tt>dim</tt> : <i>number</i>
+
+<dd>The dimensionality of the input coordinates. The default value, 0, means
+that it is not known what significance the input coordinates have, and an
+educated guess will be made when necessary. A value of 1 means that they are
+definitely meaningless; a value of 2 means that the coordinates are from a 2D
+depiction, and a value of 3 means that they are from a 3D model. For some
+structure normalization, it is necessary to know the dimensionality of the
+structure, e.g. wedge bonds are only meaningful for 2D sketches, while cis/trans
+alkene stereochemistry is meaningful for both 2D and 3D structures.
+
+<p><dt><tt>depict</tt> : <i>flag</i>
+
+<dd>If set to 1,
+then the coordinates of the input structure will be replaced by the
+results of a 2D depiction layout.  The default is 0 (the coordinates
+will not be modified).
+
+<p><dt><tt>scale</tt> : <i>flag</i>
+
+<dd>If set to 1,
+then the X and Y coordinates of the input structure will be
+examined to see if the average bond distance is approximately 1.5&Aring;.
+If not, then
+the coordinates will be scaled so that this is the case.
+The default is 0 (no scaling).
+
+<p><dt><tt>hydrogens</tt> : <i>token</i>
+
+<dd>By default, explicit hydrogens will not be modified
+(<i>token</i> is set to <tt>''</tt>).
+If set to
+<tt>'add'</tt>, then any missing explicit hydrogen atoms will be created, and
+their positions will be assigned appropriately (either 2D or 3D geometry). If
+set to <tt>'del'</tt>, then explicit hydrogen atoms will be deleted - except
+those for which cannot be recreated unambiguously using a simple Lewis valence
+formula.
+
+<p><dt><tt>ylide</tt> : <i>flag</i>
+
+<dd>If set to 1,
+then ylide standardization rules are applied. Functional groups
+which may be represented by either charge-separated or double-bond notation are
+converted into a single form regardless of how they were input. The selected
+form is that which is most commonly used for 2D sketches, e.g. <tt>P=O</tt> and
+<tt>S=O</tt> bonds are represented as double bonds, whereas the nitro group is
+represented as <tt>[N+](=O)[O-]</tt>.
+The default is 0 (no standardization performed).
+
+<p><dt><tt>chiral</tt> : <i>flag</i>
+
+<dd>If set to 1,
+derives chiral parity values for chiral atoms which do not already
+have a chiral parity, as long as the chirality can be determined either from 3D
+geometry or 2D geometry combined with wedge bonds.
+The default is 0 (no chirality is derived).
+
+<p><dt><tt>wedge</tt> : <i>flag</i>
+
+<dd>If set to 1,
+wedge bonds will be rederived from chiral parity values. This
+should only be used if the input molecules are definitely 2D, or combined with
+the <tt>depict</tt> option.
+The default is 0 (no recalculation of wedge bonds is done).
+
+<p><dt><tt>salts</tt> : <i>flag</i>
+
+<dd>If set to 1,
+disconnection of covalently bound simple salts is performed, e.g.
+<tt>CC(=O)O[Na]</tt> is converted into <tt>CC(=O)[O-].[Na+]</tt>.
+The default is 0 (no disconnection is done).
+
+<p><dt><tt>component</tt> : <i>flag</i>
+
+<dd>If set to 1,
+then all connected components are removed except the one with the
+largest number of heavy atoms (or the first, in the event of a tie). Excised
+components are returned in the filter list. If used with the <tt>salts</tt>
+flag, the salt disconnection is carried out first, i.e. the small ions will be
+removed.  The default is 0 (no components are removed).
+
+<p><dt><tt>depracids</tt> : <i>flag</i>
+
+<dd>If set to 1,
+then standard rules are used to deprotonate functional groups which
+exist predominantly as their conjugate bases in aqueous solution, e.g.
+carboxylic acids.  The default is 0 (no deprotonation takes place).
+
+<p><dt><tt>protbases</tt> : <i>flag</i>
+
+<dd>The counterpart to <tt>depracids</tt>, which protonates strong bases, such
+as primary amines.   The default is 0 (no protonation takes place).
+
+<p><dt><tt>neutralize</tt> : <i>flag</i>
+
+<dd>If set to 1,
+then any species which has localized charge (other than ylide
+bonds) will be subjected to an attempt to prepare an entirely neutral
+representation. If an entirely neutral structure can be achieved by reversing
+standard aqueous protonation/deprotonation rules, the result can be obtained
+quickly. Otherwise, it is necessary to perform a full protomer enumeration in
+order to search for the result with the lowest charge magnitude. This situation
+is often triggered by protonation states which are linked to double bond
+migration.
+The default is 0 (no neutralization is done).
+
+<p><dt><tt>tautomers</tt> : <i>flag</i>
+
+<dd>If set to 1,
+then tautomer enumeration will be enabled. This is one of the
+triggers which causes the result to contain multiple structures.
+The default is 0 (no tautomer enumeration is performed).
+
+<p><dt><tt>protomers</tt> : <i>flag</i>
+
+<dd>If set to 1,
+then protomer enumeration will be enabled. Tautomer enumeration is
+implicitly enabled, and the result will likely contain multiple structures.
+The default is 0 (no protomer enumeration is performed).
+
+<p><dt><tt>exclacids</tt> : <i>flag</i>
+
+<dd>Enumeration modes only. If set to 1,
+then the resulting tautomers/protomers will
+be filtered so that species which contain an acidic functional group which is
+normally deprotonated in aqueous solution are excluded from the result list, and
+added to the filter list instead.
+The default is 0.
+
+<p><dt><tt>exclbases</tt> : <i>flag</i>
+
+<dd>The counterpart to <tt>exclacids</tt>, except that it filters out species
+with basic functional groups which are normally protonated in aqueous solution.
+The default is 0.
+
+<p><dt><tt>enumsize</tt> : <i>number</i>
+
+<dd>When an enumeration mode is being used, the default maximum size is 10
+structures, which can be overridden with this option.
+
+<p><dt><tt>enumdup</tt> : <i>flag</i>
+
+<dd>If set to 1,
+enumerated molecules will be filtered in order to
+remove structures which are topologically equivalent. If set to 0 (default),
+then topological duplicates will be retained.
+This is most often appropriate when an
+input molecule has specific 3D geometry, e.g. a ligand bound in an active site,
+for which normal symmetry rules do not apply.
+
+<p><dt><tt>AB_rules</tt> : <i>laminated vector</i>
+
+<dd>This parameter can be specified as a laminated vector of the form
+<nobr><tt>[type, smarts]</tt></nobr>, where each is an array of tokens. Each
+entry of <tt>type(i)</tt> must be one of: <tt>'none'</tt>, <tt>'acid'</tt> or
+<tt>'base'</tt>. The corresponding <tt>smarts(i)</tt> value must be a token
+which is a valid SMARTS string. If the type is <tt>'acid'</tt>, then any atom
+which matches the SMARTS string needs to be deprotonated; if the type is
+<tt>'base'</tt> then matching atoms need to be protonated; if the type is
+<tt>'none'</tt>, then no change is required. The action to be applied to each
+atom is taken from the first SMARTS string that it matches, so matching a type
+of <tt>'none'</tt> causes subsequent rules to be ignored.
+
+
+
+</dl></blockquote>
+
+
+<h2>See Also</h2>
+
+<a href="ctabfcn.htm">CTAB Functions</a><br />
+<a href="../../mdb/wash.htm">Database Wash</a>
+
+<p>
+<a class="svl" href="protomer.htm">ctab_EnumerateProtomers</a><br />
+<a class="svl" href="sdwash.htm">sdwash</a><br />
+<a class="svl" href="depictor.htm">DepictionCoordinates</a><br />
+<a class="svl" href="depictor.htm">DepictionCoordinatesCTAB</a>
+</p>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

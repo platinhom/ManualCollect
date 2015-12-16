@@ -1,0 +1,656 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!! 	wash.htm
+!! 
+!!	29-oct-2009 (cw) fixed resonance figure;updated menu commands for 2009
+!!	06-oct-2008 (kk) minor edit; minor table reformat
+!!   	29-apr-2008 (al) scale and neutralize option
+!!   	19-sep-2007 (ac) changed mseq to pseq
+!!  	11-sep-2007 (ac) updated
+!! 	?   	    (??) created
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<meta panel Wash Molecules>
+<meta panel Database Wash>
+
+<title>Database Wash</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Database Wash</h2>
+<hr noshade="noshade" />
+
+<ul>
+  <li><a href="#Methods">Methods</a>
+  <ul>
+    <li><a href="#MolName">Molecule Naming</a>
+    <li><a href="#Depict">2D Depiction</a>
+    <li><a href="#Hydrogen">Addition or Removal of Hydrogen Atoms</a>
+    <li><a href="#SaltDisc">Salt Disconnection</a>
+    <li><a href="#RemMinor">Removal of Minor Components</a>
+    <li><a href="#AcidBase">Acids and Bases</a>
+    <li><a href="#TautProt">Tautomers and Protomers</a>
+  </ul>
+  <li><a href="#Panel">Running the Application</a>
+  <li><a href="#Ref">References</a>
+  <li><a href="#SeeAlso">See Also</a>
+</ul>
+
+<!-- =========================== BACKGROUND =============================== -->
+
+<h2><a name="Methods">Methods</a></h2>
+
+<p>Prior to conducting an operation on a database of molecules, it is often
+desirable to apply to each molecule a set of cleaning rules such as removing
+extraneous salts or adjusting protonation states, in order to ensure that 
+each structure is in a form suitable for subsequent modeling steps such
+as conformation enumeration and protein-ligand docking. The
+Database Wash application is suitable for applying a preparation policy to all
+entries in a MOE molecular database.
+
+<p>The Database Wash application proceeds by applying the following operations
+to each input structure, with each step being optional:
+
+<ol>
+
+<li><p>Replace or recalculate the molecule name
+
+<li><p>Disconnect simple metal salts drawn in covalent notation
+
+<li><p>Remove minor components (e.g. counterions and solvent molecules),
+optionally storing the removed components in an alternate field
+
+<li><p>Rebalance protonation states by deprotonating strong acids and/or
+protonating strong bases
+
+<li><p>Add explicit hydrogen atoms, or remove safely-deletable explicit hydrogen
+atoms
+
+<li><p>Replace the atomic coordinates with an aesthetic 2D depiction layout
+
+<li><p>Enumerate tautomers and possibly also protonation states
+
+<li><p>Filter enumerated structures according to strong acid/base rules
+
+</ol>
+
+<p>The following sections describe the various wash operations which are
+pertinent to MOE molecular databases. The results of the wash operation can be
+written back to the original database, or they can be emitted to a new database.
+When using the tautomer/protomer enumeration mode, the output must be written to
+a new database, since a one-to-many relationship is established between the
+input and output.
+
+<p>A similar set of operations is available for application directly to MDL SD
+files, which is described in the documentation for the 
+<a href="../moe/fcnref/sdwash.htm"><tt>sdwash</tt></a>
+command line tool.
+
+<h3><a name="MolName">Molecule Naming</a></h3>
+
+<p>In a MOE molecular database, each entry has an optional molecule name, which
+is shown in the database viewer when the viewing size of the field is shrunk to
+a single line. The molecule name can originate from a variety of sources,
+such as
+importation from another database format which supports molecule names (e.g. MDL
+SD files), or canonical name calculation
+(e.g.  <span class="nobr">
+<b>DBV | Compute | Molecule | <a href="dbedit.htm#MoleculeNames">Molecule Names</a></b>
+</span>).
+Regardless of whether the molecule name is a computed
+property or a registration key, it is potentially useful for tracking the
+progress of a chemical entity after it is subjected to various calculations.
+
+<p>When washing a database, the molecule name can be left unaltered, or it can
+be replaced with a canonical SMILES string, or its value can be set to the value
+of a field which is also present in the database.
+
+<h3><a name="Depict">2D Depiction</a></h3>
+
+<p>If the database is being prepared for a purpose which involves viewing of the
+molecules, it is often desirable to have the molecular geometry of the molecules
+replaced by a 2D layout which conforms to aesthetic diagram conventions. Using
+the MOE 2D depiction algorithm [Clark&nbsp;2006], a suitable layout can be
+produced for
+each molecule, such that the molecules in the database can be easily viewed in
+place, or exported to external applications.
+
+<h3><a name="Hydrogen">Addition or Removal of Hydrogen Atoms</a></h3>
+
+<p>Many sources of molecular data are stored in hydrogen-suppressed mode, and it
+is therefore assumed that the number of hydrogen atoms attached to each atom in
+the structure can be computed by a formula which takes into account atomic
+element, charge, bond orders, and various other possible annotations such as
+radical state. While for most organic molecules this calculation is simple and
+unambiguous, the implicit hydrogen count can be unreliable for atoms which are
+hypervalent, are not in the organic block of the periodic table, or have unusual
+properties such as radicals or carbenes, which are not always appropriately
+annotated.
+
+<p>When washing a molecular database with addition of hydrogen atoms, the
+algorithm that is used for determining the number of hydrogen atoms to add to
+each heavy atom is the same as is used throughout MOE, and is equivalent to:
+
+<pre>    implicitH = aHCount akeys - aExplicitHCount akeys</pre>
+
+<p>For each heavy atom which has an implicit atom count of greater than zero,
+the corresponding number of hydrogen atoms will be created. New hydrogen atoms
+are added to the end of the molecule entry, and bonded to their parent atom. For
+calculated negative numbers of implicit hydrogen atoms, no action is taken.
+
+<p>The method used for removing hydrogen atoms from input structures is by
+contrast very conservative, since most file formats do not have a field for
+storing the number of implicit hydrogen atoms. When converting a molecule into a
+hydrogen-suppressed representation, explicit hydrogen atoms are only deleted if
+there is no ambiguity as to whether they can be safely recreated.
+
+<p>Explicit hydrogen atoms are considered safe to delete if they meet all the
+following criteria:
+
+<ul>
+
+<li>Terminal
+
+<li>Neutral
+
+<li>Sigma-bonded
+
+<li>Not annotated as an attachment point (A0, A1, ..., A9)
+
+<li>The parent atom is one of: B, C, N, P, As, O, S, Se, Te, F, Cl, Br, I
+
+<li>For the parent atom: valence + bond orders - charge = 8
+
+</ul>
+
+<p>All other hydrogen atoms are considered unsafe to delete, and will remain in
+the output molecule.
+
+<h3><a name="SaltDisc">Salt Disconnection</a></h3>
+
+<p>For metal salts, multiple drawing conventions are sometimes used. For many
+computational purposes, it is desirable to prevent salts from being drawn in
+their covalent form, e.g. Na(+).Cl(-) is preferable to Na-Cl.
+
+<p>The washing rules used for converting covalently bound atom pairs into ionic
+salts are conservative, and only apply if all the following conditions are met:
+
+<ul>
+
+<li>The electropositive element is one of Li, Na, K, Rb or Cs
+
+<li>The electronegative element is one of C, N, O, F, P, S, Cl, Se, Br, I
+
+<li>Both elements have an ionic charge of 0
+
+<li>The electropositive element is terminal
+
+<li>Both atoms are connected by a single bond
+
+</ul>
+
+<p>For any atom pair where all these conditions are satisfied, the bond is
+removed, the electropositive atom is set to +1 and the electronegative atom to
+-1.
+
+<h3><a name="RemMinor">Removal of Minor Components</a></h3>
+
+<p>For many purposes, it is necessary to ensure that there is only one connected
+component in the final output, which typically involves removing salts
+(including those which may have been algorithmically disconnected, see
+previous section), small
+adducts and solvent molecules. The method used to determine which is the major
+component is to count the number of heavy atoms in each fully bonded set of
+atoms, and keep only that which has the largest number. In the event of a draw,
+the first component is retained.
+
+<p>If the database contains major components which have fewer heavy atoms than
+the unwanted components, then this feature will not produce the desired result
+for these cases.
+
+<h3><a name="AcidBase">Acids and Bases</a></h3>
+
+<p>Protonation state of certain functional groups can be adjusted to the most
+probable state in an aqueous environment by enabling the deprotonation of strong
+acids and protonation of strong bases.
+
+<p>Certain functional groups are considered to be always protonated or always
+deprotonated when dissolved in near-neutral water. If these options are enabled,
+they will be adjusted accordingly.
+
+<p>For functional groups which have a pKa of close to 7, which cannot reasonably
+be classified as being exclusively protonated or deprotonated, no modifications
+are made, and the protonation state of the input molecule is taken to be
+instructive.
+
+<p>The following functional motifs may be classified as being either strong
+acids or strong bases:
+
+<div align="center">
+<table cellpadding="5">
+<tr><th>Acids<th>Bases
+<tr><td>&nbsp;&nbsp;<img src="wash/acids.png">&nbsp;&nbsp;
+    <td>&nbsp;&nbsp;<img src="wash/bases.png">&nbsp;&nbsp;
+</table>
+</div>
+
+<p>For hydroxy acids, the <b>X</b> attachment is defined to be a conjugated
+electron withdrawing group which is analogous to a carbonyl substituent. Amines
+are also considered acidic if they have two strongly electron withdrawing
+substituents. 
+
+<p>A subset of nitrogen centers are considered to be basic. Any amine which has
+a combination hydrogen and sp3 carbon substituents is considered a strong base.
+N=C-N centers are considered basic if they are aliphatic and do not feature
+electron withdrawing substituents.
+
+<p>An option exists to neutralize acids and bases.  First, an attempt is made
+to find a protonation state in which all the atoms are neutral.  If this
+proves impossible, then an attempt is made to find a protonation state
+in which the species is neutral overall.  If this also fails,
+the least charge-bearing form of the structure is determined.
+
+<h3><a name="TautProt">Tautomers and Protomers</a></h3>
+
+<p>Many molecular species exist in solution as an ensemble of tautomers and
+protonation states, and for some purposes it is not sufficient to assume that a
+single variation of the structure is sufficiently representative to describe the
+properties of the molecule. It is possible to use the Database Wash application
+to enumerate the set of kinetically accessible tautomers, and optionally produce
+all of the titration states of acidic or basic functional groups.
+
+<p>The tautomer &amp; protomer enumeration algorithm is based on a collection of
+molecular transformations, which match particular functional areas of interest,
+and modify some of the regional molecular properties, which may include
+hydrogen count, charge and bond order. The transformations are divided into
+three distinct types:
+
+<ul>
+
+<li>Tautomer isomerizations, which involve the movement of a single hydrogen
+atom and some number of double bonds
+
+<li>Resonance charge migration, which involves the movement of an ionic charge
+and some number of double bonds
+
+<li>Protonation or deprotonation, which involves adding or subtracting a single
+proton
+
+</ul>
+
+<p>The algorithm for generating tautomers is a stepwise breadth first search,
+which proceeds as follows:
+
+<ol>
+
+<li>Define result set as containing the input structure only
+
+<li>Produce a new set by applying all available transforms to all of the
+molecules which were added to the result set in the previous iteration
+
+<li>Exclude any new results which have appeared before
+
+<li>If no new results remain, stop
+
+<li>Append new set to result set
+
+<li>Go to 2 and repeat.
+
+</ol>
+
+<p>The enumeration process therefore collects derivative species which are
+further separated from the original input structure with each iteration, but are
+otherwise not ordered. Due to the nature of the algorithm used, it is necessary
+to use a cutoff value for the number of results which may be returned, since the
+number of possible results is exponentially dependent on the number of certain
+moieties (e.g. a molecule which has 8 isolated ketone-enol opportunities and no
+symmetry will have no less than 256 possible tautomers; when enumerating
+protomers as well, the presence of large numbers of basic and/or acidic
+functional groups also causes a combinatorial explosion).
+
+<p>The transformation rules for tautomers have been implemented from a
+literature report on tautomer generation [Selzer 2006], with minor
+modifications.
+
+<p>Resonance equivalence for charged species are modeled on the following
+templates, with other elements being able to substitute for nitrogen or
+oxygen in some cases:
+
+<p><div align="center"><img src="wash/resonance.png"></div>
+
+<p>Multiple resonance forms of the same molecular species may be enumerated
+during the operation of the algorithm, and may lead to the production of
+otherwise unobtainable tautomers or protomers, but they are themselves
+considered degenerate representations of the same molecule, so only one instance
+of each is retained in the final output. For this reason, the resonance
+enumeration is largely invisible to the user.
+
+<p>A number of functional groups containing polar hydrogen atoms are considered
+worth enumerating in both the acid form and as the conjugate base. Some examples
+of recognized patterns are shown below:
+
+<div align="center"><table cellpadding="5">
+<tr><th>(1)<td><img src="wash/wacid1.png">
+<tr><th>(2)<td><img src="wash/wacid2.png">
+<tr><th>(3)<td><img src="wash/wacid3.png">
+<tr><th>(4)<td><img src="wash/wacid4.png">
+<tr><th>(5)<td><img src="wash/wacid5.png">
+</table></div>
+
+<p>Hydroxy substituents are deprotonated when they are close to a conjugated
+electron withdrawing moiety, such as in carboxylic acids or conjugated diketone
+tautomers (1). Similarly, -OH substituents attached to certain inorganic centers
+such as oxidized phosphorus and sulfur are deprotonated (2). Phenols and
+thiophenols are considered to be not worth enumerating, unless an electron
+withdrawing substituent is found in the <i>ortho</i> or <i>para</i> position
+(3). C-hydroxy and N-hydroxy patterns of small oxidized nitrogen-containing
+functional groups are typically enumerated (4). The tetrazole functional group
+is known to be acidic, and will be reversibly deprotonated, but less
+nitrogen-substituted heterocycles will not be (5).
+
+<p>A small number of nitrogen-containing structural motifs are considered
+suitably basic to be worth enumerating both protonated and unprotonated forms:
+<div align="center"><table cellpadding="5">
+<tr><th>(1)<td><img src="wash/wbase1.png">
+<tr><th>(2)<td><img src="wash/wbase2.png">
+<tr><th>(3)<td><img src="wash/wbase3.png">
+<tr><th>(4)<td><img src="wash/wbase4.png">
+</table></div>
+
+<p>Primary amines which are bonded to a combination of hydrogen or sp3 carbon
+atoms are considered basic, while those with non-sp3 carbon substituents are not
+(1). N-C=N structural fragments are reversibly protonated, but only if none of
+the constituent atoms are in a pi-ring (2). The 4-aminopyridine fragment is
+reversibly protonated on two sites (3). Imidazole is considered basic and is
+protonated, unless the 5-membered ring is fused to a larger aromatic system (4).
+
+<!-- =========================== INTERFACE ================================ -->
+
+<h2><a name="Panel">Running the Application</a></h2>
+
+<p>A MOE database can be submitted to the wash procedure by selecting
+<span class="nobr"><b>DBV | Compute | Molecule | Wash...</b></span>,
+which brings up the following panel:
+
+<p><div align="center"><img src="wash/panel.png"></div>
+
+<p><table width="100%" cellpadding="5">
+
+<tr>
+<td valign=top><span class="nobr"><b>Selected Entries Only</b></span>
+<td valign=top>
+
+If on, and the source database has at least one selected entry, then only
+the selected entries will be affected by the wash operation.
+
+<tr>
+<td valign=top><b>Source Field</b>
+<td valign=top>
+
+The molecular input for the wash operation must be specified. By default,
+this is the first field of type <tt>molecule</tt> in the database. Any of the
+molecular fields may be chosen. Alternatively, the molecule source may be given
+as a SMILES string, read from a particular field in the database. Note that if a
+SMILES field is used as the input, it is necessary to select a different field
+for the destination.
+
+<tr>
+<td valign=top><b>Destination Field</b>
+<td valign=top>
+
+If the Destination Field is non-blank, then it will be used as the name of
+the molecule-type field to which the result of the wash operation will be
+written. Otherwise, the result of the wash operation is used to overwrite the
+Source Field, if not running in an enumerative mode, or to a field in the
+output database with the same name as the value of Source Field in the case of
+enumeration. 
+
+<p>If the molecule source is a SMILES string, and a non-enumerative mode is
+being used, then a different field name must be specified.
+
+<tr>
+<td valign=top><b>Name From</b>
+<td valign=top>
+
+A field name may optionally be specified to use as a replacement for the name
+of the molecule. The name may be left unchanged,
+derived from a SMILES string, left empty, or taken from a field.
+
+<tr>
+<td valign=top><b>Output Database</b>
+<td valign=top>
+
+A database other than the source may be specified to contain the results of
+the wash procedure. If the wash is performed in one of the enumerative modes, it
+is mandatory to specify an output database which is different from the input.
+The output database will be overwritten when the operation begins.
+
+<tr>
+<td valign=top><b>Open in Database Viewer</b>
+<td valign=top>
+
+If on, then the output database will be opened in the database viewer when
+the wash procedure commences.
+
+<tr>
+<td valign=top><b>Fragments</b>
+<td valign=top>
+
+If <span class="nobr"><b>Disconnect Group I Metals</b></span> is enabled, then certain
+salts are converted from covalent bond notation into ionic salt notation, which
+causes the number of components in the system to increase. If
+<span class="nobr"><b>Keep Only Largest Molecular Fragment</b></span>
+is enabled, then the next step is to
+remove all but the largest connected component (defined by having the greatest
+number of heavy atoms) in the main molecule field. If
+<span class="nobr"><b>Save Deleted Fragments in Field</b></span>
+is on, then the corresponding field name is used
+to create a molecule field which will store the excised components.
+
+<tr>
+<td valign=top><b>Tautomers</b>
+<td valign=top>
+
+If the <b>Enumerate Tautomers</b> option is on, the wash procedure will
+be conducted in enumerative mode, which means that for each processed entry in
+the source database, 1-or-more resulting structures will be produced. These will
+be written to the output database, which must be specified.
+
+<p>The maximum number of enumerated results is given as <b>Limit</b>, beyond
+which the enumeration will be prematurely terminated.
+
+<p>By default, only tautomers are enumerated, which means that the enumeration
+will produce structures which have the same molecular formula, but different
+hydrogen atom connectivity. If
+<span class="nobr"><b>Enumerate Protonation States</b></span>
+is on, then in addition to enumerating tautomers, charge and hydrogen counts
+will also vary. Enabling enumeration of protonation states produces as many or
+more results per input structure than enumeration of tautomers alone.
+
+<p>If <b>Add Sequence Number to Output</b> is on, then the output database will
+contain a field called <tt>pseq</tt> which divides the results into
+blocks corresponding to the source entry number.
+
+<p>By default, the enumeration procedure automatically prunes results which are
+duplicates due to symmetry or to ZQH equivalence (a measurement based on
+the atomic number, heavy valence, total hydrogen count of the atoms, and 
+the molecular connectivity). If the
+<span class="nobr"><b>Allow Topological Duplicates</b></span>
+option is on, then results which are
+equivalent by topological symmetry will not be removed. This is useful if the
+atom indices have special meaning, or if the molecules have 3D conformations
+with lower symmetry than the topological connectivity.
+
+
+<tr>
+<td valign=top><b>Protonation</b>
+<td valign=top>
+
+If <b>Neutralize Protonated Molecules</b> is on, charged species
+will be replaced with:
+
+<p>
+<ul>
+<li>A protonation state in which all the atoms are
+neutral, if possible; otherwise
+<li>A protonation state in which the species is
+neutral overall, if possible; otherwise
+<li>The least charge-bearing form of the structure.
+</ul>
+
+<p>If <span class="nobr"><b>Deprotonate Strong Acids</b></span> is on, then
+functional groups
+which are deemed to be strong acids will have a proton removed, during the early
+stages of the wash process. If one of the enumeration modes is selected, then
+the results of the enumeration will be screened to remove molecules which
+contain a strong acid functional group. Enabling this option is appropriate
+when the species being studied are expected to behave as if they were in neutral
+or basic aqueous solution.
+
+<p>The <span class="nobr"><b>Protonate Strong Bases</b></span> option is the
+logical opposite
+of the above, which causes strong bases to be protonated.
+
+<p>The sets of strong
+acids and strong bases are mutually exclusive, but there are many functional
+groups which classify as neither, so enabling both of the above options is an
+approximate way of selecting the species which is most representative of the
+molecule as it exists in water. When combined with protomer enumeration, the
+result is that some of the enumerated protonation states may be pruned on
+account of having acidity or basicity that is too high, hence the remaining
+species are those which are likely to have at least a modest population in
+aqueous solution.
+
+<tr>
+<td valign=top><b>Hydrogens</b>
+<td valign=top>
+
+If <span class="nobr"><b>Add Explicit Hydrogens</b></span> is on,
+then hydrogen-suppressed molecular
+representations will have the requisite number of hydrogen atoms added. New
+hydrogen atoms are added at the end of the atom list. The manner in which the
+coordinates of new hydrogen atoms are determined depends on other options:
+
+<ul>
+
+<li>If depiction is on, hydrogen atoms are positioned during the depiction
+layout process;
+
+<li>If the structure is non-planar, then the hydrogen atoms are placed  in 3D,
+using the same algorithm as the <a href="../moe/fcnref/addh.html">Add_H</a>
+function;
+
+<li>If the structure is planar, then hydrogen atoms are placed as if the
+molecule were already drawn in a sketch-like manner, using the same algorithm as
+is used by the <a href="../moe/fcnref/depictor.htm">DepictionCoordinates</a>
+function;
+
+<li>If the structure has no coordinates (all zero), then no meaningful hydrogen
+placement is attempted.
+
+</ul>
+
+<p>For heavy atoms for which the number of attached explicit hydrogen atoms is
+greater than the number implied by valence rules, hydrogen atoms are neither
+added nor removed.
+
+<p>If <b>Delete Explicit Hydrogens</b> is on, then selected explicit hydrogen
+atoms are removed. The selection of hydrogen atoms which may be safely deleted
+is described <a href="#Hydrogen">above</a>.
+
+<p>Note that if one of the enumeration modes is enabled, the hydrogen atoms are
+always removed immediately prior to the enumeration. If
+<span class="nobr"><b>Add Explicit Hydrogens</b></span>
+is enabled, the hydrogen atoms will be re-added back
+individually for each enumerated case, since the number of hydrogen atoms
+varies.
+
+<tr>
+<td valign=top><b>Coordinates</b>
+<td valign=top>
+
+If <span class="nobr">
+<b>Replace Coordinates with a Generated 2D Depiction</b>
+</span> is on,
+the coordinates of the washed species will be replaced by the results of
+the 2D depiction layout algorithm. If off, the coordinates of the
+original atoms will not be modified. If the wash is enumerative,
+the depiction layout will be performed for the input molecule immediately
+prior to the enumeration step, and the same heavy-atom coordinates will
+be used for all of the tautomers and protomers.
+
+<p>If <b>Scale to Reasonable Bond Lengths</b> is on, molecule coordinates
+will be scaled so that the average bond length is characteristic of a 2D
+diagram layout.  This is useful when the source molecules have abnormally
+short bond lengths as produced by some drawing programs.
+
+</table>
+
+<p>To begin the process, click the <b>OK</b> button.
+
+<p><a name="Ref"></a><h2>References</h2>
+
+<table cellpadding=5 width=100%>
+
+<tr>
+<td valign=top>[Clark&nbsp;2006]
+<td valign=top>
+Clark, A. M., Labute, P., Santavy, M.;
+2D Structure Depiction;
+<i>J. Chem. Inf.  Model. 46</i> (<b>2006</b>) 1107&ndash;1123.
+</tr>
+
+<tr>
+<td valign=top>[Selzer&nbsp;2006]
+<td valign=top>
+Selzer, P.M., Oellien, F., Cramer. J., Beyer, C., Ihlenfeldt, W.-D.;
+The Impact of Tautomer Forms on Pharmacophore-Based Virtual Screening;
+<i>J. Chem. Inf. Model. 46</i> (<b>2006</b>) 2342&ndash;2354.
+</tr>
+
+</table>
+
+<a name="SeeAlso"></a>
+<h2>See Also</h2>
+
+<p>
+<a href="../moe/fcnref/sdwash.htm">sdwash</a><br>
+<a href="../moe/fcnref/ph4_tlst.html">ph4_aAcid</a><br>
+<a href="../moe/fcnref/ph4_tlst.html">ph4_aBase</a><br>
+<a href="../moe/fcnref/addh.html">Add_H</a><br>
+<a href="../moe/fcnref/protomer.htm">ctab_EnumerateProtomers</a><br>
+<a href="../moe/fcnref/depictor.htm">DepictionCoordinates</a><br>
+<a href="../mdb/db.htm">Molecular Database Viewer</a> 
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

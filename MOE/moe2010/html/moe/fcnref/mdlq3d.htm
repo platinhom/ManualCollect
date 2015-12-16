@@ -1,0 +1,276 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	mdlq3d.htm			MDL 3D query functions
+!!
+!!	03-mar-2010 (ac) created
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions mdlq3D_Open>
+<meta functions mdlq3D_Start>
+<meta functions mdlq3D_FindNext>
+<meta functions mdlq3D_Stop>
+<meta functions mdlq3D_Close>
+
+<title>MDL 3D Query Functions</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>MDL 3D Query Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    ctx = <a class="fcnlink" href="#mdlq3D_Open">mdlq3D_Open</a> [[qtab, features, groups], opt]
+	  <a class="fcnlink" href="#mdlq3D_Open">mdlq3D_Open</a> ctx
+
+	  <a class="fcnlink" href="#mdlq3D_Close">mdlq3D_Close</a> ctx
+
+	  <a class="fcnlink" href="#mdlq3D_Start">mdlq3D_Start</a> [ctx, akeys, atype, opt]
+	  <a class="fcnlink" href="#mdlq3D_Stop">mdlq3D_Stop</a> ctx
+
+    idx = <a class="fcnlink" href="#mdlq3D_FindNext">mdlq3D_FindNext</a> ctx
+</pre>
+
+<p>The MDL 3D Query functions can be used to search 3D structures, using a
+topological molecule description as the query, with the addition of 3D
+constraints and group assignments, which act as further restrictions on the
+search.
+
+<p>The 3D query functions are designed to run efficiently when searching
+macromolecules such as proteins. Searches can, however, be slow if the query is
+highly promiscuous. Best performance is obtained when the topological part of
+the query is highly selective, the group assignments distinguish types of atoms
+(e.g. ligand vs. receptor) and certain types of 3D query constraints are
+present, such as restrictive distance constraints.
+
+<p>The 3D features are encoded as a laminated list consisting of
+<nobr><tt>[type, name, idx, val]</tt></nobr>, with one entry for each 3D
+feature. The <tt>type</tt> is a token which defines the feature type, which is
+described in the following paragraph. <tt>name</tt> is an arbitrary description
+of the feature. The parameters of the feature are described by <tt>idx</tt> and
+<tt>val</tt>, which are both arbitrarily sized numeric vectors. The former is
+used for storing atom indices, while the latter makes up the boundaries of the
+feature itself (e.g. distance, angle, etc.).
+
+<p>Some of the 3D feature types create new implicit atom locations, rather than
+defining a constraint. Implicit atoms are referenced by subsequent constraints
+by defining the "atom" index to be the index into the list of features + the
+number of atoms in the query CTAB.
+
+<p>The following feature types are supported:
+
+<blockquote><dl>
+
+<p><dt><tt>'distance'</tt>
+
+<dd>The indices define two points, or a point and a line, or a point and a plane,
+and the values define a range [low, high]. The
+distance between the two objects, in the search structure, must fall within that
+range, otherwise the match will be rejected.
+
+<p><dt><tt>'angle'</tt>
+
+<dd>The indices define three points [A,B,C], or two intersecting lines,
+or two intersecting planes, from which the angle is derived. The
+central point is B when 3 points are given. The values define a range
+[low, high], in degrees. The acute angle
+between the objects must fall within that range, otherwise the match will be
+rejected.
+
+<p><dt><tt>'dihedral'</tt>
+
+<dd>The indices define four atoms [A,B,C,D], from which a dihedral angle is
+derived: the value is the difference in the angles between (A-B) and (D-C) (e.g.
+for an alkene, if A and D referred to atoms which were <i>cis</i> to each other,
+the angle would be close to 0&deg;, whereas if they were <i>trans</i>, it would be
+close to 180&deg;). The values define a range [low, high], in degrees, within 
+which the dihedral angle must fall.
+
+<p><dt><tt>'exclusion'</tt>
+
+<dd>The indices define the points which are allowed within the sphere.  The
+first index always corresponds to the center of the exclusion sphere.
+The first element of the value specifies the sphere radius (in &Aring;) and
+the second element is a boolean flag; when non-zero, non-query atoms are
+ignored when examining what atoms fall within the exclusion sphere.
+
+<p><dt><tt>'centroid'</tt>
+
+<dd>The indices refer to an arbitrary number of points. The center of these points
+is calculated, and added at this position as an honorary atom or 'point', which
+may be referred to by subsequent query features.
+
+<p><dt><tt>'point'</tt>
+
+<dd>The indices refer to two points [A,B], and the value is a fraction which
+defines a point as the distance between them, i.e. 0.5 refers to halfway between
+the two points, while 0 is at A, and 1 is at B. The calculated point is added as
+an honorary atom or 'point', which may be referred to by subsequent query features.
+
+<p><dt><tt>'pointabs'</tt>
+
+<dd>The indices refer to two points [A,B], and the value is a distance from the
+first point in the direction of the second, defining a point on the vector
+joining them. The calculated point is added as an honorary atom or 'point',
+which may be referred to by subsequent query features.  A pointabs may also be
+define by a point, a normal line and a distance in which case the computed point
+is along the vector from the point to the normal, the indicated distance away.
+
+<p><dt><tt>'line'</tt>
+
+<dd>The indices refer to two or more points; a best fit line is constructed
+when there are more than two points.  The value specifies an optional
+deviation (in &Aring;).  If non-zero, a best fit line with a deviation
+greater than that specified will cause the match to be rejected.
+The calculated line is added as an honorary object, which may be referred to by
+subsequent query features.
+
+<p><dt><tt>'normal'</tt>
+
+<dd>The indices refer to a point and a plane.  The point implicitly specifies
+in which direction from the plane the normal is directed.
+The calculated normal is added as an honorary object, which may be referred to by
+subsequent query features.
+
+<p><dt><tt>'plane'</tt>
+
+<dd>The indices refer to three or more points; a best fit plane is constructed
+when there are more than three points.  The value specifies an optional
+deviation (in &Aring;).  If non-zero, a best fit plane with a deviation
+greater than that specified will cause the match to be rejected.
+The calculated plane is added as an honorary object, which may be referred to by
+subsequent query features.  It is also possible to specify a plane by a point
+and a line provided the point does not lie on the line; this is equivalent to
+defining the plane by the given point and two points on the line.
+
+</dl></blockquote>
+
+<p>The atoms in the query and search structures can be classified. The query may
+be associated with an identifier "<tt>groups</tt>", which is specified as a
+laminated vector: <nobr><tt>[atype, rname]</tt></nobr>. The value of
+<tt>atype</tt> is a token, which may be empty (''), in which case the query atom
+can match any search atom. For any match between a query atom and a search atom,
+if both of their atom types are not empty tokens, then they must be equal,
+otherwise the match will be rejected. The value of <tt>rname</tt> is a token
+which, if not empty, must match the residue name (<a
+href="residue.htm"><tt>rName</tt></a>) for the matched search atom, otherwise
+the match will be rejected.
+
+<!-- ...................................................................... -->
+
+<p><a name="mdlq3D_Open"></a><a name="mdlq3D_Close"></a>
+</p><hr noshade="noshade" />
+
+<pre>
+ctx = <span class="fcndef">mdlq3D_Open</span> [[qtab, features, groups], opt]
+      <span class="fcndef">mdlq3D_Open</span> ctx
+      <span class="fcndef">mdlq3D_Close</span> ctx
+</pre>
+
+<p>A 3D query is defined by a context key, which must be created using the
+<tt>mdlq3D_Open</tt> function. An existing context can be duplicated by passing in
+an existing key, or dereferenced by calling <tt>mdlq3D_Close</tt>.
+Resources will
+be deallocated when the reference count drops to zero.
+
+<p>Creating a new query requires 3 parameters: <tt>qtab</tt>, <tt>features</tt>
+and <tt>groups</tt>. The first parameter is mandatory, while the others are
+optional. The <tt>opt</tt> parameter is reserved for future use. The structure
+of <tt>qtab</tt> is the same as that used by the <a href="mdlq.htm">MDL query
+functions</a>. The formats of <tt>features</tt> and <tt>groups</tt> is described
+above.
+
+<p>The atom coordinates in <tt>qtab</tt> datastructure are not important. The
+connection graph of <tt>qtab</tt> is allowed to contain multiple connected
+components. If the <tt>features</tt> and <tt>groups</tt> parameters are empty,
+then the query operation is approximately equivalent to using the purely
+topological <a href="mdlq.htm">MDL query functions</a>, except that the
+structures being searched must have reasonable 3D geometries. 
+
+<p>When a single query is to be applied to multiple search structures, the
+context should be reused whenever possible, since some overhead is required.
+
+<!-- ...................................................................... -->
+
+<p><a name="mdlq3D_Start"></a><a name="mdlq3D_Stop"></a>
+</p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">mdlq3D_Start</span> [ctx, akeys, atype, opt]
+<span class="fcndef">mdlq3D_Stop</span> ctx
+</pre>
+
+<p>The <tt>mdlq3D_Start</tt> function performs all of the preparation necessary
+to execute the query on the atoms specified by <tt>akeys</tt>. As soon as the
+search results have been obtained, the <tt>mdlq3D_Stop</tt> function should be
+called to deallocate resources. The provided atom keys are not duplicated, so if
+their properties are modified in the interim, the search operation will become
+unpredictable.
+
+<p>The <tt>atype</tt> parameter consists of a token for each element in
+<tt>akeys</tt>, and is complementary to the atom type which can be provided
+during the setup of the query.
+
+<p>The <tt>opt</tt> parameter is reserved for future use.
+
+<p>The atoms referred to by <tt>akeys</tt> must have a reasonable 3D structure.
+If the bond lengths and bond angles are far from expected values (e.g. if the
+layout is that of a 2D sketch, or has been generated from random coordinates
+without any form of embedding), then the search may incur false negatives.
+
+<!-- ...................................................................... -->
+
+<p><a name="mdlq3D_FindNext"></a>
+</p><hr noshade="noshade" />
+
+<pre>
+idx = <span class="fcndef">mdlq3D_FindNext</span> ctx
+</pre>
+
+<p>Searches for the next match between the query CTAB and the current atom keys.
+The indices mapping the query atoms to the search atoms are returned. If there
+are no further matches, returns a null vector. This function must only be called
+after <tt>mdlq3D_Start</tt> has been appropriately configured.
+
+
+<h2>See Also</h2>
+
+<p>
+<a class="svl" href="ctabfcn.htm">CTAB Functions</a><br />
+<a class="svl" href="mdlq.htm">MDL Query Functions</a><br />
+<a class="svl" href="smartsfcn.htm">SMARTS Functions</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<html><head>
+<title></title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style type="text/css">
+<!--
+
+p {
+	font-family: "Times New Roman", Times, serif;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+}
+
+div#tipDiv {
+    padding:4px;
+    color:#000; font-size:11px; line-height:1.2;
+    background-color:#CCCCFF; border:1px solid #0000FF;
+    width:250px;
+}
+-->
+</style>
+<script src="dw_event.js" type="text/javascript"></script>
+<script src="dw_viewport.js" type="text/javascript"></script>
+<script src="dw_tooltip.js" type="text/javascript"></script>
+<script src="dw_tooltip_aux.js" type="text/javascript"></script>
+<script src="refs_inc.js" type="text/javascript"></script>
+</head><body>
+<h2>Site Customization: The Default.Route File</h2>
+<p>Depending on the characteristics of a particular computer system, it is sometimes necessary for performance reasons to override some of the defaults built into the program. This can be done by creating a site customization file. On Unix systems, this file is named <font color="#009933">Default.Route</font>, residing in <font color="#009933">$g09root/g09</font>. Under Windows, the Gaussian defaults file is <font color="#009933">Default.Rou</font>, and it is located in the Gaussian 09W scratch subdirectory (e.g., <font color="#009933">C:\G09W\scratch</font>). The format of the file is the same on all computer systems.</p>
+<p>The following subsections describe the types of information which can be supplied in the defaults file.</p>
+<h3>Route Defaults</h3>
+<p>These parameters are introduced by <tt><font color="#0000FF">-#-</font></tt> and have the same form as normal route section commands. For example, this line will set the default SCF algorithm to the conventional (non-direct) algorithm:</p>
+<pre>-#- SCF=Conventional</pre>
+<p>There may be more than one <tt><font color="#0000FF">-#-</font></tt> line in the file.</p>
+<p>Commands listed in <font color="#009933">Default.Route</font> change only the defaults; they are overridden by anything specified in the route section of an input file. Thus, if the <font color="#009933">Default.Route</font> contains:</p>
+<pre>-#- MP2=NoDirect</pre>
+<p>and the route section contains the <b><font color="#0000FF">MP2</font></b> keyword, then the conventional MP2 algorithm will be used. However, if the route section contains the <b><font color="#0000FF">MP2=Direct</font></b> keyword, then the direct algorithm will be used.</p>
+<p>All sites will want to specify the amount of scratch disk space available via the <b><font color="#0000FF">MaxDisk</font></b> keyword in the <font color="#009933">Default.Route</font> file. For example, the following line sets <b><font color="#0000FF">MaxDisk</font></b> to 800 MB:</p>
+<pre>-#- MaxDisk=800MB</pre>
+<p>The amount of available disk space is given in 8-byte words (default); this value may also be followed by <b><font color="#0000FF">KB</font></b>, <b><font color="#0000FF">MB</font></b>, <b><font color="#0000FF">GB</font></b>, <b><font color="#0000FF">KW</font></b>, <b><font color="#0000FF">MW</font></b> or <b><font color="#0000FF">GW</font></b> (without intervening spaces) to specify units of kilo-, mega- or giga- bytes or words. The scratch disk space is set unlimited (<b><font color="#0000FF">-1</font></b>) by default, i.e. it is assumed that enough disk space is available to perform a given calculation with no redundant work. Thus, specifying the amount of available memory and disk is by far the most important way of optimizing performance for your calculations. Doing so allows the program to decide between the various available algorithms, selecting the optimal one for your particular system configuration. Keep in mind that the more disk space available, the faster the evaluation, especially for MP2.</p>
+<h3>Default.Route Limitations</h3>
+<p>Not all route section keywords are honored in the <font color="#009933">Default.Route</font> file. In general, the rule is that only options which do not affect the outcome of a calculation (i.e., do not change the values of any predicted quantities) are allowed in the file. Thus, <b><font color="#0000FF">SCF=Conven</font></b>, which changes only the integral storage algorithm, will be honored, while <b><font color="#0000FF">Int(Grid=3)</font></b>, which affects the results of many kinds of calculations, will be ignored.</p>
+<h3>Memory Defaults</h3>
+<p>Gaussian jobs which unwisely use excessive memory can cause severe difficulties on the system. The memory directory <b><font color="#0000FF">-M-</font></b> enforces a default dynamic memory limit. For example, the following line sets default memory use to 32 MB:</p>
+<pre>-M- 4000000</pre>
+<p>The amount of available memory is given in 8-byte words (default); this value may also be followed by <b><font color="#0000FF">KB</font></b>, <b><font color="#0000FF">MB</font></b>, <b><font color="#0000FF">GB</font></b>, <b><font color="#0000FF">KW</font></b>, <b><font color="#0000FF">MW</font></b> or <b><font color="#0000FF">GW</font></b> (without intervening spaces) to specify units of kilo-, mega- or giga- bytes or words. The default memory size is 256 MB. Note that this limit can be bypassed with the <b><font color="#0000FF">%Mem</font></b> Link 0 command.</p>
+<h3>Parallel Execution on Shared Memory Multiprocessors</h3>
+<p>If your computer system has multiple processors, and parallel processing is supported in your version of Gaussian, you may specify the default number of processors to use in the <font color="#009933">Default.Route</font> file. For example, the following command sets the default number of processors to 4:</p>
+<pre>-P- 4</pre>
+<p>Normally, the program defaults to execution on only a single processor. The <b><font color="#0000FF">%NProcShared</font></b> Link 0 command can be used to override the default for a specific job. Clearly, the number of processors requested should not exceed the number of processors available, or a substantial decrease in performance will result.</p>
+<h3>Network/Cluster Parallel Execution</h3>
+<p>You can specify the list of Linda workers in <font color="#009933">Default.Route</font> via the <b><font color="#0000FF">-W-</font></b> directive:</p>
+<pre>
+-W- dalton,lavoisier:2,priestley,agassiz:3,curie 
+</pre>
+<p>This example will use the specified five nodes for parallel execution, placing 2 worker processes on <font face="Times New Roman, Times, serif" size="3"><i>lavoisier</i></font>, 3 workers on <font face="Times New Roman, Times, serif" size="3"><i>agassiz</i></font>, and one worker on each of the other systems. If the master node&mdash;the node where the job is started&mdash;is not one of these systems, a worker will also run on that system (making a total of six nodes).</p>
+<p>This directive corresponds to&mdash;and can be overridden by&mdash;the Link 0 command <font color="#009933">%LindaWorkers</font>.</p>
+<p>With respect to use of <font color="#009933">Default.Route</font> with Linda, if you have different batch queues on a cluster which correspond to different sets of nodes and each batch job executes in its own temporary default directory, the best approach is to create a script that copies a standardized <font color="#009933">Default.Route</font> appropriate to the particular queue to the current default directory.</p>
+<p>When <b><font color="#0000FF">-W-</font></b> is combined with <b><font color="#0000FF">-P-</font></b> <font face="Times New Roman, Times, serif" size="3"><i>n</i></font>, then an <font face="Times New Roman, Times, serif" size="3"><i>n</i></font>-way SMP parallel worker process is started on each node in the node list (or more than one such process when more workers are specified for that node in <b><font color="#0000FF">-W-</font></b>).</p>
+<p>The <b><font color="#0000FF">-L-</font></b> directive used in earlier versions of the program is obsolete and should not be combined with <b><font color="#0000FF">-W-</font></b>.</p>
+<h3>Site Name</h3>
+<p>The site name may be set with <b><font color="#0000FF">-S-</font></b>, whose value specifies the site name to be used in archive entries generated by Gaussian. The default site name is GINC. For example, the following line sets the site name to EXPCONS:</p>
+<pre>-S- EXPCONS</pre>
+<h3>Host Name</h3>
+<p>The host name may be set with <b><font color="#0000FF">-H-</font></b>; the value specifies the host name to be used in archive entries generated by Gaussian. The default is the current hostname.</p>
+<h3>Typical Default Settings</h3>
+<p>Here are reasonable default settings for various machine configurations:</p>
+<ul>
+<li>
+<p>For a small workstation with 512 MB memory and 80 GB of disk, the default algorithms and memory allocation are fine. <b><font color="#0000FF">MaxDisk</font></b> is all that need be specified.</p>
+<pre>
+ -#- MaxDisk=15GB
+</pre>
+</li>
+<li>
+<p>On a powerful workstation with 8 processors and 8 GB of memory, being used for large jobs, all 8 processors should be used by default. Also, more memory should be given to each job:</p>
+<pre>
+ -M- 512MB
+ -P- 8
+ -#- MaxDisk=100GB
+</pre>
+</li></ul>
+<h3>User Defaults Files</h3>
+<p>Gaussian users may set their own defaults by creating their own <font color="#009933">Default.Route</font> file. Gaussian checks the current working directory for a file of this name when a job is initiated. Settings in the local file take precedence over those in the site-wide file, and options specified in the route section of the job take precedence over both of them.</p>
+<hr><p><font face="Times New Roman, Times, serif" size="-1"><i>Last updated on: 9 Jun 2009</i></font></p>
+</body></html>

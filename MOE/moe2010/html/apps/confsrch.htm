@@ -1,0 +1,1084 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<title>Generating and Analyzing Conformations</title>
+
+<meta panel Conformational Search>
+<meta panel Conformation Geometries>
+
+<meta main_keywords conformations />
+<meta main_keywords systematic, stochastic, low-mode, search, LowModeMD />
+<meta main_keywords superpose />
+
+<meta keywords hybrid monte carlo, minimization, MM />
+<meta keywords duplicate, property, descriptor />
+<meta keywords rotatable bond, distance, angle, dihedral />
+<meta keywords frequency, vibrational, forcefield, amide />
+<meta keywords RMSD, measure, iteration, gradient, limit, strain, stereo />
+
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Generating and Analyzing Conformations</h2>
+<hr noshade="noshade" />
+<ul>
+<li><a href="#Introduction">Introduction</a>
+<li><a href="#Methods">Theory and Methods</a>
+    <ul>
+    <li><a href="#Systematic">Systematic Search</a>
+    <li><a href="#Stochastic">Stochastic Search</a>
+    <li><a href="#LowModeMD">LowModeMD Search</a>
+    <li><a href="#Descriptors">Descriptors</a>
+    </ul>
+<li><a href="#Run">Running Conformational Search</a>
+<li><a href="#ConfGeometries">Analyzing Conformation Geometries</a>
+    <ul>
+    <li><a href="#Measuring">Measuring Structural Properties</a>
+    <li><a href="#Superposing">Superposing Conformations</a>
+    <li><a href="#ConfPanel">Conformation Geometries Panel</a>
+    </ul>
+<li><a href="#References">References</a>
+</ul>
+
+<a name="Introduction"><h2>Introduction</h2></a>
+
+<p>
+The conformations available to a molecule dramatically affect
+activity, reactivity or other properties.  Conformations responsible for
+a particular property may not always correspond to the global minimum, and,
+in some cases, an ensemble of conformations may be responsible for an observed
+behavior.  Thus, a single, minimum energy conformation may be insufficient
+for representing a molecule.
+The purpose of the Conformational Search application is to generate
+energetically reasonable 3D atomic configurations of molecular
+systems comprising small molecules, multiple molecules, macrocycles, and
+protein loops, with or without geometric constraints or fixed atoms.
+</p>
+
+<p>
+The conformation space of a molecular system is continuous and cannot
+be represented easily.  Fine discrete conformational samples, say of the
+rotatable bonds, are impractical for all but the smallest of systems, and
+systematically generating such &quot;coverage collections&quot; for large
+complex systems is an unsolved problem.
+Conformational Search produces a discrete sampling of the
+space confined to local minima of the potential energy function.
+For many properties, a collection of low energy local minima is often a
+good representative of the entire conformation space.
+</p>
+<p>
+The Conformational Search application contains three methods for
+generating conformations, the output of each of which is subjected
+to energy minimization:
+</p>
+
+<ol>
+<li><i>Systematic Search</i>. Systematic generation of rotatable bond
+dihedral angle combinations.
+<li><i>Stochastic Search</i>. Random assignment of dihedral angle
+combinations, even for rings, and stereochemistry inversions, where permitted.
+<li><i>LowModeMD Search</i>. A short molecular dynamics simulation using
+velocities with little kinetic energy on the high-frequency vibrational
+modes.
+</ol>
+
+<p>
+Each method has its advantages, disadvantages, and unique
+capabilities, as summarized in the following table.
+In the table, a &quot;Y&quot;
+value indicates that the method is good at dealing with the condition
+while an &quot;N&quot; indicates that the method is not particularly good
+(although it may work formally).
+</p>
+<blockquote>
+<center><table class="titlebar">
+<tr>
+<th>Property</th>
+<th>Systematic</th>
+<th>Stochastic</th>
+<th>LowModeMD</th>
+</tr>
+<tr><td>Systematic Sampling</td>	<td>Y</td><td>N</td><td>N</td></tr>
+<tr><td>Single Bond Rotation</td>	<td>Y</td><td>Y</td><td>Y</td></tr>
+<tr><td>Amide Bond Rotation</td>	<td>Y</td><td>Y</td><td>N</td></tr>
+<tr><td>Double Bond Rotation</td>	<td>Y</td><td>Y</td><td>N</td></tr>
+<tr><td>Chiral Center Inversion</td>	<td>N</td><td>Y</td><td>N</td></tr>
+<tr><td>Small Ring Conformations</td>	<td>N</td><td>Y</td><td>Y</td></tr>
+<tr><td>Macrocycle Conformations</td>	<td>N</td><td>N</td><td>Y</td></tr>
+<tr><td>Protein Loop Conformations</td>	<td>N</td><td>N</td><td>Y</td></tr>
+<tr><td>Disconnected Systems</td>	<td>N</td><td>N</td><td>Y</td></tr>
+<tr><td>Restraints and Tethers</td>	<td>N</td><td>N</td><td>Y</td></tr>
+<tr><td>Complex Nonbonded Networks</td>	<td>N</td><td>N</td><td>Y</td></tr>
+</table></center></p></blockquote>
+<p>
+Because of its generality and efficiency, LowModeMD Search is the
+default and recommended method for conformation generation.
+
+<!-- THEORY AND METHODS -->
+<a name="Methods"><h2>Theory and Methods</h2></a>
+
+<p>
+In all methods, a Stochastic Sampling protocol is applied to
+each molecule under consideration and proceeds as follows:
+</p>
+
+<ol>
+<li>[Initialize]
+Set the conformer list <i>C</i> to empty.
+For the Systematic Search, identify all rotation bonds excluding rings and
+determine a collection of dihedral angles for each rotation bond.
+For Stochastic Search, identify all rotation bonds including rings
+and invertible stereo centers.
+Energy minimize the system until the RMSD gradient falls below the
+RMS Gradient test parameter.
+
+<p><li>[Generate]
+Each particular method generates a single conformation in its own way;
+
+<ul>
+<li><i>Systematic Search</i>. 
+For a randomly chosen dihedral angle,
+systematically rotate about that bond in discrete angular
+increments and perform an energy minimization of the
+system.  
+<!--
+Generate the
+next combination of dihedral angles and
+energy minimize the system briefly in dihedral coordinates.</li>
+-->
+<li><i>Stochastic Search</i>. Randomly rotate all bonds (including ring
+bonds) and randomly invert invertible stereochemistry centers.</li>
+<li><i>LowModeMD Search</i>. Perform a brief molecular dynamics simulation
+with velocities initialized to low-frequency vibrational modes.</li>
+</ul>
+</li></p>
+
+<p><li>[Minimize]
+Energy minimize the system in Cartesian coordinates until the RMS gradient
+falls below the MSD Gradient test parameter.
+</li></p>
+
+<p><li>[Save]
+If the current conformation has a strain energy greater than the
+Strain Cutoff parameter, discard the conformation.  Otherwise,
+check for duplicates in the conformer list, <i>C</i>.  Two conformations
+are considered duplicates if the root mean square distance between them
+(taking molecular symmetry into account) is less than the RMSD Limit
+parameter.  Discard the current conformation if it is already in <i>C</i>.
+A separate conformer list is maintained for each stereochemistry configuration.
+</li></p>
+
+<p><li>[Termination]
+Terminate the algorithm if the total number of iterations exceeds the
+Iteration Limit parameter.
+For the Stochastic and LowModeMD methods, terminate the algorithm if
+no novel conformation was observed in Rejection Limit parameter 
+consecutive iterations.
+Otherwise, go to Step&nbsp;2.
+</li></p>
+
+<p><li>[Descriptors]
+Sort the conformation list <i>C</i> by strain energy and calculate
+energetic and shape based descriptors for each conformation.
+</li></p>
+</ol>
+
+<p>
+We now describe each of the three methods in more detail.
+</p>
+
+<a name="Systematic"></a>
+<p><b>Systematic Search</b>.
+The Systematic Search method generates molecular conformations by rotating
+non-ring bonds in a molecule by discrete dihedral increments (see below).
+All possible combinations of the dihedral increments are produced.
+Each such dihedral angle combination is subjected to dihedral angle energy
+minimization to relieve gross strain due to atom overlap,
+followed by an all-atom energy minimization.
+The resulting conformation is saved to the output database provided 
+it meets the energetic and geometric criteria.
+<b>Note!</b> Systematic Search is intended for relatively small connected
+molecules with few rotatable bonds (due to the exponential number of
+configurations that will be generated); it is not suitable for macrocycles or
+large systems with complex nonbonded interaction networks.
+</p>
+<p>
+In a given molecule, all bonds except ring bonds and bonds to terminal
+atoms are candidates for rotation.  For each such bond, a list of possible
+relative dihedral angles is determined according to topological rules that
+take into account hybridization and chemical type.  For example, a CH3-OH
+bond might be assigned three dihedral angles {180,60,-60} degrees.
+Because only dihedral rotations are used to generate conformations,
+Systematic Search cannot perform non-planar (chiral) inversions;
+however, double bonds and amide bonds can be optionally rotated.  The
+following table summarizes the dihedral angle rules:
+</p>
+
+<p>
+<center><table class="titlebar">
+<tr>
+<th>Bond</th>
+<th>Description</th>
+<th>Angles</th>
+</tr><tr>
+<td valign="top">&ndash;X
+<td valign="top">Terminal atom
+<td valign="top">{0}
+</tr><tr>
+<td valign="top">X=X
+<td valign="top">Double bond
+<td valign="top">{0,180}
+</tr><tr>
+<td valign="top">X#X &nbsp;&nbsp; X=X=X
+<td valign="top">Triple bond / Allene
+<td valign="top">{0}
+</tr><tr>
+<td valign="top">N&ndash;C=O &nbsp;&nbsp; N&ndash;C=S &nbsp;&nbsp; N&ndash;C=N+
+<td valign="top">Amide / CNN resonance
+<td valign="top">{0,180}
+</tr><tr>
+<td valign="top">&ndash;O&ndash;O&ndash; &nbsp;&nbsp; &ndash;S&ndash;S&ndash;
+<td valign="top">Peroxide / Disulfide
+<td valign="top">{90,-90}
+</tr><tr>
+<td valign="top">sp3-sp3
+<td valign="top">E.g. &ndash;CH2&ndash;CH2&ndash;
+<td valign="top">{180,60,-60}
+</tr><tr>
+<td valign="top">aro*&ndash;X
+<td valign="top">Ortho substituted
+<td valign="top">{45,-45,135,-135}
+</tr><tr>
+<td valign="top">aro&ndash;CO2 &nbsp;&nbsp;
+	       aro&ndash;OMe &nbsp;&nbsp; aro&ndash;NH2
+<td valign="top">No ortho substituents
+<td valign="top">{0,180}
+</tr><tr>
+<td valign="top">aro&ndash;X
+<td valign="top">No ortho substituents
+<td valign="top">{45,-45,135,-135}
+</tr><tr>
+<td valign="top">X&ndash;X
+<td valign="top">E.g. sp2&ndash;sp3
+<td valign="top">{0,60,120,180,-60,-120}
+</tr>
+</table></center>
+
+<p>
+It should be kept in mind that the listed angles are merely starting
+points for subsequent energy minimizations.  Consequently, precise angles
+are not required since the conformation will be refined with the forcefield
+to the nearest local minimum.  Typically, most (or all) of the local
+minima can be identified (for small molecules not affected by restraints
+or tethers); however, different starting conformations may produce slightly
+different results (due to variations in bond lengths and angles).
+</p>
+<p>
+Despite the systematic nature of the method, Systematic Search is generally
+not the best method for generating conformations.  This is due to the fact
+that there is inherent bias in the dihedral angle lists and no guarantee
+that all local minima will be identified.  A finer set of angle increments
+could be used in principle, however, fine lists quickly become impracticable
+because of the exponential growth of the number of generated configurations.
+Even with the coarse lists actually used, Systematic Search will spend
+most of its time refining conformations that are far from the global minimum
+and that will ultimately be rejected.
+</p>
+
+<a name="Stochastic"></a>
+<p><b>Stochastic Search</b>.
+The Stochastic Search method generates conformations by randomly rotating
+all bonds (including ring bonds) and randomly inverting tetrahedral
+centers followed by an all-atom energy minimization.
+The resulting conformation is saved to the output database provided 
+it meets the energetic and geometric criteria.
+This method is superior to the RIPS method [Ferguson&nbsp;1989] which
+generates new molecular conformations by randomly perturbing the Cartesian
+coordinates of each atom by some small amount.
+<b>Note!</b> Stochastic Search is intended for moderately sized connected
+molecules; it is not suitable for macrocycles or large systems with
+complex nonbonded interaction networks.  However, the Stochastic Search
+method is capable of generating enantiomers (unlike the Systematic and
+LowModeMD methods).
+</p>
+<p>
+Typically, Stochastic Search is good at locating most of the local minima
+of flexible (small) molecules, including ring conformations and invertible
+tetrahedral centers (like tertiary nitrogens).  It does not suffer from the
+biases of Systematic Search since continuous dihedral angle sampling is
+used nor is it sensitive to the starting conformation.  However, a large
+number of samples may be required to adequately search the conformation
+space of flexible molecules.  Stochastic Search is generally not the most
+efficient method for generating conformations because, like Systematic Search,
+it spends most of its time refining conformations that are far from the
+global minimum and that will ultimately be rejected.
+</p>
+
+<a name="LowModeMD"></a>
+<p><b>LowModeMD Search</b>.
+The LowModeMD Search method [Labute&nbsp;2010] generates conformations
+using a short ~1&nbsp;ps run of Molecular Dynamics (MD) at constant
+temperature [Allen&nbsp;1987] followed by an all-atom energy minimization.
+The resulting conformation is saved to the output database provided 
+it meets the energetic and geometric criteria.
+<b>Note!</b> LowModeMD Search is intended for large, possibly disconnected,
+and complex structures like macrocycles and protein loops but it is also
+very efficient for detailed small molecule analysis.  However, chiral
+inversions as well as amide and double bond rotations will very rarely
+result.
+</p>
+<p>
+The key to the success and efficiency of the LowModeMD method lies
+in the nature of the initial MD velocities: randomly directed kinetic energy
+is given mainly on the <i>low-frequency vibrational modes</i> of the
+molecular system causing rapid and more realistic conformational transitions.
+The second derivative matrix <b>G</b> of the potential energy function
+of the system is evaluated at the current set of coordinates (presumed to
+be near a local energy minimum).  Let <b>M</b> be a diagonal matrix of
+atomic masses in which fixed atoms are taken to have infinite mass.
+Diagonalize the mass-weighted second derivative matrix
+</p>
+<p align=center>
+<b>M</b><sup>-1/2</sup> <b>G</b> <b>M</b><sup>-1/2</sup>
+    = <b>Q</b><sup>T</sup> <b>D</b> <b>Q</b>
+</p>
+<p>
+where <b>Q</b> is the orthogonal matrix of vibrational modes and
+<b>D</b> is the diagonal matrix of force constants.  A filter function,
+<i>f</i>, is applied to <b>D</b> which maps low-frequency force constants
+to near unit values and high-frequency force constants to near-zero
+values.
+For a given velocity vector <i>v</i>, the velocity filter transformation
+</p>
+<p align=center>
+<b>Q</b><sup>T</sup> <i>f</i>(<b>D</b>) <b>Q</b> <i>v</i>
+</p>
+will heavily dampen kinetic energy along
+the high-frequency vibrational
+modes.  Randomly generated Maxwell-Boltzmann velocities,
+scaled to 300&nbsp;K and thusly transformed,
+are used in the subsequent MD simulation.
+</p>
+
+<p>
+LowModeMD Search is similar in spirit to the Stochastic Search and the Hybrid
+Monte Carlo methods except that detailed information about
+the possibly complex nonbonded interaction network, forcefield
+restraints/tethers, macrocyclic structure and concerted motions are taken
+into account.
+LowModeMD Search is most similar to the LMOD method [Kolossvary&nbsp;1996]
+with some important differences:
+<ol>
+<li>
+LMOD made linear coordinate perturbations along eigenvectors
+causing unrealistic distortions that prevented proper modeling of concerted
+motions.  LowModeMD Search uses MD for the perturbation.
+</li>
+<p><li>
+LMOD originally attempted to systematically search along all 2<sup>k</sup>
+combinations of low-mode eigenvectors which rapidly became impracticable
+necessitating the introduction of a stochastic sampling.
+LowModeMD Search is designed to be stochastic with no partial
+or incomplete enumeration attempt (this allows for much greater efficiency).
+</li></p>
+<p><li>
+LMOD used large-scale iterative eigensystem calculations which
+can be slow to converge and/or memory intensive.
+LowModeMD Search uses an entirely implicit Chebyshev filtering
+technique directly on the velocity vector thus eliminating the need for
+any explicit eigensystem determination.
+</li></p>
+</ol>
+
+<p>
+Typically, LowModeMD Search is very good at locating most of the local minima
+of arbitrarily complex multicomponent systems (provided sufficient sampling
+is conducted).  This is because LowModeMD Search spends most of its time
+on conformations near the relevant and realistic low energy states or
+transitions between them.  There are no rule-based biases; however, it
+is assumed that the conformations of interest are connected by
+low-frequency vibrational mode transitions.  This assumption prevents
+stereochemistry inversions and other stiff interconversions, but in most
+applications this assumption is quite desirable.
+For these reasons, LowModeMD Search is the recommended method for most
+conformational search applications.
+</p>
+
+<p>
+<a name="Descriptors"></a>
+<b>Descriptors</b>.  
+A number of descriptors are saved along with each conformation as it is
+generated.  These descriptors are useful for analysis of the results.
+</p>
+
+<table align="center" class="titlebar" width="90%">
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="baseline"><tt>E</tt></td>
+<td valign="baseline">  The value of the potential energy of the conformation.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>dE</tt></td>
+<td valign="baseline">  The strain energy of the conformation relative to the
+lowest energy conformation with the same stereochemistry configuration.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>chi</tt></td>
+<td valign="baseline">An integer encoding the stereochemistry configuration
+of the conformation; identical <tt>chi</tt> values imply identical
+stereochemistry configurations.
+</td>
+</tr>
+<tr>
+<td><tt>rgyr</tt></td>
+<td>The radius of gyration of the conformation.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>glob</tt></td>
+<td valign="baseline">The globularity of the conformation: the
+ratio of the smallest principal moment of inertia to the largest.
+Values near zero indicate extended conformations.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>ecc</tt></td>
+<td valign="baseline">The eccentricity of the conformation: the
+ratio of the second smallest principal moment of inertia to the largest.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>mseq</tt></td>
+<td valign="baseline">An integer encoding the input molecule number
+(which is useful when more than one molecule is subjected to conformational
+search).
+</td>
+
+</table>
+
+<p>
+If there are fixed atoms in the system then the value of <tt>E</tt> and
+<tt>dE</tt> may be different from the energy without fixed atoms.
+The values of <tt>rgyr</tt>, <tt>glob</tt> and <tt>ecc</tt> may be
+calculated on the entire system or on just the free (unfixed) atoms
+depending on a configurable option.
+
+<!-- RUNNING CONFORMATIONAL SEARCH -->
+<a name="Run"><h2>Running Conformational Search</h2></a>
+
+<p>
+To run Conformational Search, perform the following.
+If multiple molecules are to be subjected to Conformational Search, then
+prepare a Molecular Database containing a reasonable 3D conformation
+of each molecule.  Otherwise, if the contents of the MOE Window
+are to be used as input data then:
+
+<ol>
+<li>
+Make sure that the MOE Window contains no data other than the molecular
+system under study.  The data must be a reasonable 3D starting
+conformation</li>
+<li>
+Select and/or configure the
+<a href="../moe/pot.htm">forcefield and the electrostatic model</a>
+(implicit solvent, gas phase, etc.).</li>
+<li>
+Decide which atoms are to be fixed, restrained or tethered using
+<a href="../moe/pot.htm#Atom_Restraints_and_Tethers">forcefield restraints</a>.
+</li>
+<li>
+Make sure that atom- and bond-stereochemistry is correctly assigned
+using the <a href="../moe/molsystems/build.html">Builder</a>.</li>
+<li>
+Choose
+<span class="nobr"><b>MOE | Compute | Conformations | Conformational Search</b></span>.
+</li>
+</ol>
+
+<p align="center">
+<img SRC="confsrch/csearch.png" alt="Conformation Search Panel">
+</p>
+
+<p><table cellspacing="5" cellpadding="5" width="100%">
+<tr>
+<td valign="top"><b>Output&nbsp;Database</b>
+<td valign="top">
+The name of the molecular database file that will contain the generated
+conformations, energies and descriptors.  This can either be a new database or
+an existing one in which case the contents will be overwritten.  If <b>Open
+Database Viewer</b> is on then the output database will be displayed in a
+Database Viewer when the search begins.
+
+The following fields will be written
+to the database:
+<p><center><table class="titlebar">
+<tr>
+<th>Field</th>
+<th>Description</th>
+<tr>
+<td valign="baseline"><b><tt>mol</tt></b></td>
+<td valign="baseline">A molecular conformation.
+<tr>
+<td valign="baseline"><b><tt>E</tt></b></td>
+<td valign="baseline">The potential energy of the conformation
+(in kcal/mol) determined
+by the <a href="../moe/pot.htm">Potential Setup</a> window.
+<tr>
+<td valign="baseline"><b><tt>dE</tt></b></td>
+<td valign="baseline">The strain energy of the conformation (in kcal/mol).
+This is defined to
+be the energy of the conformation minus the smallest conformational energy seen
+within the stereochemistry class annotated in the <tt>chi</tt> field.
+<tr valign="baseline">
+<td valign="baseline"><b><tt>chi</tt></b></td>
+<td valign="baseline">An integer indicating the stereochemistry class of
+the conformation.
+<tr valign="baseline">
+<td valign="baseline"><b><tt>rgyr</tt></b></td>
+<td valign="baseline">The radius of gyration of the conformation in &Aring;.
+<tr valign="baseline">
+<td valign="baseline"><b><tt>glob</tt></b></td>
+<td valign="baseline">The globularity of the conformation between 0
+(extended) and 1 (globular).
+<tr valign="baseline">
+<td valign="baseline"><b><tt>ecc</tt></b></td>
+<td valign="baseline">The eccentricity of the conformation in [0,1].
+</table></center>
+</tr>
+
+<tr>
+<td valign="top"><b>Input&nbsp;Data</b>
+<td valign="top">
+The source of the molecular data for Conformational Search.
+<b>MOE</b> means that the current molecular data in the MOE window
+will be used; this option must be used if fixed atoms and tethers are
+required.
+<b>MDB File</b> means that each entry in the file specified to the
+right is to be interpreted as a 3D conformation of a molecular system
+for conformational search.
+
+<p><b>Note:</b> LowModeMD accepts multiple fragments as input.
+In some input data, e.g. SD files, multiple components can be
+found.  It is recommended to
+<a href="../mdb/wash.htm">wash</a> structures first before
+performing conformational analysis and otherwise ensure that
+a single fragment is present (unless it is truly intended
+to perform conformational search on several structures
+concurrently).
+</p>
+
+<p>
+If <b>Selected entries only</b> is on then only selected entries from the
+specified MDB File will be processed.
+<p>
+If <b>Copy input data fields to output conformations</b> is on
+then the data fields from the specified MDB File will be copied to each
+conformation in the Output Database.  This option does not apply to 
+data from the MOE Window.
+<p>
+If <b>Calculate forcefield partial charges</b> is on then
+partial charges will be automatically calculated for the molecular system
+(overriding any partial charges associated with the atoms); otherwise,
+the existing partial charges will be used.
+</tr>
+
+<tr>
+<td valign="top"><b>Method</b>
+<td valign="top">
+Determines the method to use to generate conformations:
+<b>Systematic</b>, <b>Stochastic</b>, or <b>LowModeMD</b>.
+Use LowModeMD for large or complex systems and the others for small
+molecules; use Systematic only for molecules with few rotatable bonds.
+<p>
+If <b>Allow amide bond rotation</b> is on, amide bonds and other
+conjugated bonds will be rotated during the search.  This does not apply
+to the LowModeMD method.
+Press the <b>?</b> button to select in the MOE Window the atoms to which this
+option will apply.
+</p><p>
+If <b>Allow unconstrained double rotation</b> is on, double bonds
+with no stereochemistry constraints will be rotated during the search.
+This option does not apply to the LowModeMD method.
+Press the <b>?</b> button to select in the MOE Window the atoms to which this
+option will apply.
+Note that unconstrained bonds involving 2-coordinated atoms
+(e.g. nitrogen atoms)
+are always rotated, independent of the setting of this option.
+</p><p>
+If <b>Invert unconstrained sp3 stereo centers</b> is on, chiral
+centers with no stereochemistry constraints will be inverted
+during the search.  This does not apply to the Systematic and LowModeMD methods.
+Press the <b>?</b> button to select in the MOE Window the atoms to which this
+option will apply.
+</p><p>
+If <b>Enforce chair conformations</b> is on, those only conformations
+whose rings containing only single bonds are all in a chair conformation
+will be retained.  This does not apply to the Systematic method.
+Press the <b>?</b> button to select in the MOE Window the atoms to which this
+option will apply.
+</p>
+</tr>
+
+<tr>
+<td valign="top"><b>Rejection Limit</b>
+<td valign="top">
+Specifies how many contiguous attempts should be made to generate a new
+conformation prior to terminating the search.   If a value <i>k</i> is
+specified, then if <i>k</i> contiguous attempts at generating a new
+conformation result in no new novel conformations, then the search
+will terminate.  This option does not apply to Systematic Search.
+</tr>
+
+<tr>
+<td valign="top"><b>Iteration Limit</b>
+<td valign="top">
+Specifies the maximum number of attempts to generate a new conformation
+(independent of the novelty of each generated conformation).
+</tr>
+
+<tr>
+<td valign="top"><b>RMS Gradient</b>
+<td valign="top">
+Energy minimization will terminate when the root mean square gradient
+falls below the specified value.
+</tr>
+
+<tr>
+<td valign="top"><b>MM&nbsp;Iteration&nbsp;Limit</b>
+<td valign="top">
+Sets the maximum number of energy minimization steps performed for each
+conformer energy minimization
+(see <a href="emin.htm">Energy Minimization</a>).
+</tr>
+
+<tr>
+<td valign="top"><b>RMSD Limit</b>
+<td valign="top">
+If two conformations have a root mean square distance less
+than the specified value,
+they are considered duplicates.  Molecular symmetry is taken into
+account.  If there are no fixed atoms in the system the RMSD value is
+measured after optimal rigid body superposition.
+If <b>Include hydrogens in RMSD calculation</b> is on then hydrogen
+atoms will be included, otherwise only heavy atoms will be included.
+</tr>
+
+<tr>
+<td valign="top"><b>Strain&nbsp;Cutoff</b>
+<td valign="top">
+Energy minimized conformations will be discarded if their potential energy
+is greater than
+<span class="nobr"><i>E</i><sub>min</sub> + <i>s</i></span>,
+where <i>E</i><sub>min</sub>
+is the lowest energy among the minimized conformations and <i>s</i> is the
+value specified for Strain Cutoff (in kcal/mol).
+If <b>Separate strain energy by stereo class</b> is on then strain
+energies are measured within each stereochemistry class separately; otherwise
+strain energy will be measured over all stereochemistry classes.
+</tr>
+
+<tr>
+<td valign="top"><b>Conformation&nbsp;Limit</b>
+<td valign="top">
+Specifies the limit on the resulting number of conformations.  If a value
+<i>k</i> is specified then only the <i>k</i> lowest energy conformations
+will be retained (within each stereochemistry class) and the rest discarded.
+<p>
+If <b>Exclude fixed atoms from shape descriptors</b> is on then
+only free (unfixed) atoms will be included in the radius of gyration,
+globularity and eccentricity descriptors; otherwise all atoms will be
+used.
+</tr>
+</table>
+
+<p>
+Once the panel values have been set, press <b>OK</b> to begin the
+calculation.  Typically, the output will be saved into a molecular
+database (named <tt>csearch.mdb</tt> by default) and the generated
+conformation with the lowest energy will be loaded into the MOE Window
+(provided that the Input Data was set to the MOE Window).  Depending
+on the size of the molecular system, the search may take some time.
+
+<a name="ConfGeometries"></a><h2>Analyzing Conformation Geometries</h2>
+
+<p>
+The Conformation Geometries panel lets you analyze conformations that have been
+generated by any of the methods available in MOE
+and saved into a database.
+After loading a sample conformation into MOE, you can use the panel to
+conduct the following operations on the conformers in the database:
+<p>
+<ul>
+<li>Measure distances, angles and dihedrals between selected atoms.
+<li>Superpose conformations with the sample conformation and evaluate the RMSD.
+<li>Label atoms in the database and MOE Window for calculation purposes.
+</ul>
+
+<p>The results of the measurements are saved back into the database.  Note
+that the database <b>must</b> contain conformational data, i.e.
+all molecules in the field used for the calculations must be the same
+molecule; otherwise, incorrect values and error messages may result.
+If the conformations of more than one molecule
+are saved in the database, entry selection can be used to specify
+the conformations of a single distinct molecule.
+</p>
+
+<p>To open the Conformation Geometry panel choose
+<span class="nobr"><b>DBV | Compute | Molecule | Conformation Geometry</b></span>
+in the database containing the conformational data to measure.
+
+<a name="Measuring"></a><h3>Measuring Structural Properties</h3>
+
+<ol>
+
+<p><li><a href="../mdb/dbedit.htm">Load the sample conformation</a>
+from the database into MOE and select the
+appropriate number of atoms depending on whether you wish to measure distance,
+angle or dihedral angle:
+
+<ul>
+
+<p><li>To measure the <b>distance</b> between two atoms, simply select the
+two atoms. Any two atoms may have the distance between them measured.
+
+<p><li>To measure an <b>angle</b>, select three atoms: a vertex atom and
+two other atoms bonded to it (but not forming a three-membered ring).
+
+<p><li>To measure <b>dihedrals</b>, select four atoms which define a
+proper dihedral angle.  MOE calculates a dihedral angle with respect to a
+plane containing the first, second and third atoms and a plane containing
+the second, third and fourth atoms.  The third and fourth atoms are
+understood to be the atoms the farthest away from the viewer.
+
+</ul>
+
+<p><li>If the selected atoms define a distance, angle or dihedral angle
+measurement, then the name of each selected atom will appear in the text area
+next to the corresponding <b>Field</b> (Distance, Angle or Dihedral) in the
+Conformation Geometries panel. This text string will be used as the name of the
+field in the database, and may be modified if desired.
+
+<p>For example, if a carbon and an oxygen are selected, the string <tt>C-O</tt>
+will appear in the Distance Field and will be used as the database field
+name. (This is assuming that atoms are named according to their element.)
+
+
+<p><li>
+To provide more precision as to which atoms are involved in the selected
+measurement, use the <b>Auto Label</b> button to rename all atoms so that
+their element name is followed by a number. Each atom is given a
+distinct name in the molecular structure. This is done for all
+conformations in the database so that corresponding atoms have
+corresponding names.  Note, however, that although the atom names are
+saved in the database, they are not displayed in the Database Viewer.
+
+<p>Given the example above, where a carbon and oxygen are selected,
+<tt>C1-O4</tt> might now appear in the Distance Field, where <tt>C1</tt> is the
+first of <i>n<sub>c</sub></i> carbons in the system, and <tt>O4</tt> is the
+fourth of <i>n<sub>o</sub></i> oxygens (<i>n<sub>c</sub></i> is the total
+number of carbon atoms in the system and <i>n<sub>o</sub></i> is the total
+number of oxygen atoms in the system).
+
+
+<p><li>Click on the <b>Measure</b> button.  MOE performs the measurement for
+each entry in the specified Molecule Field and saves the values to the database
+in a field whose name is specified in the Measurement section of the panel.
+
+</ol>
+
+<a name="Superposing"></a><h3>Superposing Conformations</h3>
+
+<ol>
+
+<p><li>Copy the sample molecular structure from the conformational
+database to MOE.  This molecule will be used as the
+template structure onto which the other conformations will be superposed.
+</li>
+
+<p><li>For the superposition, you have the choice of aligning all atoms or
+selected atoms only.  An additional option allows you to superpose
+only the heavy atoms in either of these sets.
+</li>
+
+<p><li>
+If you wish to record only the RMSD results in the database, and not the
+molecular structures resulting from the superposition, choose <b>Output No
+Structures</b> from the <b>Molecule Field</b> option menu.  For the
+RMSD results to be written, a name must be provided for the <b>RMSD Field</b>.
+</li>
+
+<p><li>
+If you wish to overwrite the current contents of the molecule field with
+the superposed structures, choose <b>Overwrite Current Field</b> from the
+<b>Molecule Field</b> option menu.
+</li>
+
+<p><li>
+If you wish to save the superposed structures in a new molecule field,
+choose <b>Create New Field</b> from the <b>Molecule Field</b> option menu.
+Enter the name of the new field in the adjoining text area.
+</li>
+
+<p><li>Remove the name in the text area beside <b>RMSD Field</b> if you do
+not want MOE to calculate the RMSD values.
+</li>
+
+<p><li>Press the <b>Superpose</b> button.  MOE performs the superposition
+based on the options selected in the panel.
+</li>
+
+</ol>
+
+<a name="ConfPanel"></a>
+<h3>Conformation Geometries Panel</h3>
+
+This section describes the various options in the Conformation Geometries
+panel.  To open this panel, choose:
+<b><span class="nobr">DBV | Compute | Molecule | Conformation Geometry</b></span>.
+
+
+<p>
+<center>
+<img src="confsrch/confgeom.png" alt="Conformation Geometries Panel">
+</center>
+
+<p><table cellpadding=5 width="100%">
+<tr>
+<td valign="top"><b>Database</b>
+<td valign="top">Path and filename of the database containing the
+conformations to be analyzed.
+
+</tr>
+<tr>
+<td valign="top"><b>Molecule Field</b>
+<td valign="top">Option menu containing the list of all the molecule fields
+in the database.  Select the molecule field on
+which to perform calculations.
+
+<p>If <b>Selected Entries Only</b> is turned on, only selected entries in
+the Database Viewer are used (the rest are ignored).
+
+</tr>
+<tr>
+<td valign="top"><b>Measurement</b>
+<td valign="top">The Measurement section of the panel is used to measure
+structural features between selected atoms. Results are written to the database.
+</tr>
+
+<tr>
+<td valign="top"><b>Distance Field</b>
+<td valign="top">If two atoms are selected, this field shows the names of the
+selected atoms. If Measure is pressed, this becomes the name of the database
+field that will contain the measured distances between two selected atoms.
+
+<p>Any two atoms may have the distance between them measured.
+</tr>
+
+<tr>
+<td valign="top"><b>Angle Field</b>
+<td valign="top">If three atoms are selected (a vertex atom and two other
+atoms bonded to it, but not forming a three-membered ring), this field
+shows the names of the selected atoms.  The vertex atom will be
+the second atom listed. If Measure is pressed, this becomes the name of
+the database field that will contain the measured angles between the
+selected atoms.
+
+</tr>
+
+<tr>
+<td valign="top"><b>Dihedral Field</b>
+<td valign="top">If four atoms defining a proper dihedral angle are selected,
+this field shows the names of the selected atoms. If Measure is pressed, this
+becomes the name of the database field that will contain the measured dihedrals
+between the selected atoms.
+
+<p>The dihedral
+angle will be measured with respect to a plane containing the first, second
+and third atoms and a plane containing the second, third and fourth atoms.
+The third and fourth atoms are understood to be the atoms the farthest away
+from the viewer.
+</tr>
+
+<tr>
+<td valign="top"><b>Measure</b>
+<td valign="top">Measures the currently selected structural property and
+saves the results in the indicated database field.
+</tr>
+
+<tr>
+<td valign="top"><b>Superposition</b>
+<td valign="top">The Superposition section of the panel controls the
+superposition of conformations in the database with the sample conformation
+currently loaded in MOE.
+
+</tr>
+
+<tr>
+<td valign="top"><b>Align</b>
+<td valign="top">Specifies which atoms to use in the superposition:
+
+<ul>
+<li><b>All Atoms:</b> Use all atoms in the loaded conformation.
+
+<p><li><b>Selected Atoms:</b> Use selected atoms only.
+</ul>
+
+</tr>
+
+<tr>
+<td valign="top"><b>Heavy Atoms</b>
+<td valign="top">If on, superposition is with respect to heavy atoms only.
+</tr>
+<tr>
+<td valign="top"><b>Molecule Field</b>
+<td valign="top">
+Determines how the results of the superposition are written to the database
+with respect to the Molecule Field specified in the upper section of the panel:
+
+<ul>
+<li><b>Output No Structures:</b>
+Saves only the RMSD results in the database, not the molecular structures
+resulting from the superposition. For the RMSD results to be written,
+a name must be provided for the <b>RMSD Field</b>.
+</li>
+
+<p><li><b>Overwrite Current Field:</b>
+Overwrites the current contents of the Molecule Field with the superposed
+structures.
+</li>
+
+<p><li><b>Create New Field:</b>
+Creates a new molecule field in which to save the superposed structures.  Enter
+the name of the new field in the adjoining text area.
+</li>
+
+</ul>
+
+</tr>
+<tr>
+<td valign="top"><b>RMSD Field</b>
+<td valign="top">Name of the database field which will contain the measured
+RMSD value between each aligned structure and the sample conformation.
+<b>Note:</b> If the RMSD field is left blank, the RMSD values will not be output
+to the database.
+
+</tr>
+
+<tr>
+<td valign="top"><b>Superpose</b>
+<td valign="top">
+MOE superposes each structure in the specified Molecule Field of the
+database with the atoms in the sample conformation.  The resulting structures
+and RMSD
+values (calculated on all heavy atoms) are written to the database.
+
+</tr>
+
+<tr>
+<td valign="top"><b>Auto Label</b>
+<td valign="top">
+Alters the names of atoms for each molecule in the database. Atoms will be
+labeled according to their element name followed by an integer from 1 to
+<i>n<sub>e</sub></i>, where <i>n<sub>e</sub></i> is the total number of atoms
+of element type <i>e</i> in the system.  For example, if the molecule were
+dimethyl ether CH3OCH3, atoms would be named as follows: C1, C2, H1, H2, H3,
+H4, H5, H6, O1.  Labels are displayed in the MOE Window. Note that atom names
+do not appear in the Database Viewer.
+
+
+<p>Before doing so, MOE displays the message: <tt>Database atoms will be
+renamed. Continue?</tt> If you answer <b>Yes</b>, the atom names for each
+molecule in the database will be altered. Answering <b>No</b>
+cancels the operation.
+
+</tr>
+<tr>
+<td valign="top"><b>Show Labels</b>
+<td valign="top">Shows in the MOE Window the atom name labels of atoms.
+If any atoms are selected,
+the name labels display of only selected atoms only is changed
+(labels on unselected atoms are unaffected).
+
+</tr>
+<tr>
+<td valign="top"><b>Hide Labels</b>
+<td valign="top">Hides in the MOE Window the name labels on all atoms.
+</tr>
+</table>
+
+<a name="References"></a>
+<h2>References</h2>
+
+<p><table width=100% cellpadding="5">
+<tr>
+<td valign="top">[Allen&nbsp;1987]
+<td valign="top">
+Allen, M.P., Tildesley, D.J.;
+<i>Computer Simulation of Liquids</i> (<b>1987</b>) 231&ndash;232;
+Oxford University Press, Oxford.
+</tr><tr>
+<td valign="top">[Ferguson&nbsp;1989]
+<td valign="top">
+Ferguson, D.M., Raber, D.J.;
+A New Approach to Probing Conformational Space with
+Molecular Mechanics: Random Incremental Pulse Search;
+<i>J. Am. Chem. Soc. 111</i> (<b>1989</b>) 4371&ndash;4378.
+</tr><tr>
+<td valign="top">[Kolossvary&nbsp;1996]
+<td valign="top">
+Kolossvary, I., Guida, W.C.; Low Mode Search. An Efficient, Automated
+Computational Method for Conformational Analysis: Application to Cyclic
+and Acyclic Alkanes and Cyclic Peptides;
+<i>J. Am. Chem. Soc. 118</i> (<b>1996</b>) 5011&ndash;5019.
+</tr>
+</tr><tr>
+<td valign="top">[Labute&nbsp;2010]
+<td valign="top">
+Labute, P.; LowModeMD - Implicit Low Mode Velocity Filtering Applied to
+Conformational Search of Macrocycles and Protein Loops;
+<i>J.&nbsp;Chem. Inf. Model. 50</i> (<b>2010</b>) 792&ndash;800.
+</tr>
+</table>
+
+<h2>See Also</h2>
+
+<a href="../moe/gui/mainwin.htm">MOE Window</a><br>
+<a href="../moe/molsystems/build.html">Building and Editing Molecules</a><br>
+<a href="../moe/pot.htm">Potential Energy Selection and Configuration</a><br>
+<a href="emin.htm">Energy Minimization</a><br>
+<a href="../mdb/db.htm">Molecular Database Viewer</a><br>
+<a href="confgui.htm">High Throughput Conformational Analysis</a><br>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

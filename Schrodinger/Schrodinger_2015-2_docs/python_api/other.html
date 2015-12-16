@@ -1,0 +1,489 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Other Modules &mdash; Schrödinger Python Suite 2015-2 Documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '4.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Schrödinger Python Suite 2015-2 Documentation" href="index.html" />
+    <link rel="next" title="Changelog" href="changelog.html" />
+    <link rel="prev" title="Canvas 1.4 Python API" href="canvas.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="changelog.html" title="Changelog"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="canvas.html" title="Canvas 1.4 Python API"
+             accesskey="P">previous</a> |</li>
+        <li><a href="overview.html">Schrödinger Python Suite 2015-2 Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="other-modules">
+<h1>Other Modules<a class="headerlink" href="#other-modules" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="pipelined-workflows">
+<h2>Pipelined Workflows<a class="headerlink" href="#pipelined-workflows" title="Permalink to this headline">¶</a></h2>
+<p>A Python pipeline workflow consists of multiple stages that are run in
+serial or parallel manner (or a mixture of both). Each stage performs one
+specific operation on one or more input sets and returns one or more output
+sets. Each set is file-based and has one of the following types:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Structures - a set of one or more structure file paths.</li>
+<li>Grid - a path to a grid file.</li>
+<li>Text - a path to one or more text files.</li>
+<li>PhaseDB - a path to a Phase database.</li>
+</ol>
+</div></blockquote>
+<p>You can also define custom set types by overwriting the <a class="reference external" href="api/schrodinger.pipeline.pipeio.PipeIO-class.html">PipeIO</a> class.</p>
+<p>Examples of operations that can be performed by a stage:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Filtering of ligands.</li>
+<li>Running a program (like LigPrep or Glide) on ligands.</li>
+<li>Modifying a Phase database.</li>
+<li>Converting ligands from one file format to another.</li>
+</ol>
+</div></blockquote>
+<p>Each stage can optionally accept keywords. Keywords are based on the
+<a class="reference external" href="http://www.voidspace.org.uk/python/configobj.html">ConfigObj</a> format but differ in that equals signs are not used to separate
+keyword-value pairs. Values can be of type integer, float, boolean, or string.
+More complicated value types are also supported. See existing stages for
+examples and the <a class="reference external" href="http://www.voidspace.org.uk/python/validate.html#the-standard-functions">ConfigObj validation functions</a> for details.</p>
+<p>There are many stages already written for tasks that are run by VSW, QPLD,
+CovalentDocking, and GeneratePhaseDB workflows. These can be found in the
+API documentation for the <a class="reference external" href="api/schrodinger.pipeline.stages-module.html">Pipeline stages package</a>.</p>
+<p>You can also write your own stage. The best way to get started is to read
+this manual and to look at some existing stages.</p>
+<p>A stage can optionally have these features:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>The ability to run simultaneous subjobs. This will make your stage
+more complex, and requires the use of <a href="#id2"><span class="problematic" id="id3">JobDJ_</span></a>.</li>
+<li>Restartability. Adding this feature will allow the stage to restart
+from the middle in case the user’s job fails.</li>
+</ol>
+</div></blockquote>
+<p>However, we don&#8217;t recommend adding these features until the stage is
+functioning properly without parallelization and restartability.</p>
+<p>Here is an example of a basic stage class:</p>
+<div class="highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40</pre></div></td><td class="code"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">schrodinger.pipeline</span> <span class="kn">import</span> <span class="n">pipeio</span><span class="p">,</span> <span class="n">stage</span>
+<span class="kn">from</span> <span class="nn">schrodinger</span> <span class="kn">import</span> <span class="n">structure</span>       <span class="c"># for StructureWriter class</span>
+<span class="kn">from</span> <span class="nn">schrodinger.structutils</span> <span class="kn">import</span> <span class="n">io</span>  <span class="c"># for MultiFileReader class</span>
+
+<span class="k">class</span> <span class="nc">ExampleStage</span><span class="p">(</span><span class="n">stage</span><span class="o">.</span><span class="n">Stage</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">stage</span><span class="o">.</span><span class="n">Stage</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">specs</span><span class="o">=</span><span class="s">&quot;&quot;&quot;</span>
+<span class="s">        KEEP_STS = integer(default=10)</span>
+<span class="s">        &quot;&quot;&quot;</span>
+        <span class="n">stage</span><span class="o">.</span><span class="n">Stage</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">specs</span><span class="o">=</span><span class="n">specs</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">addExpectedInput</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&quot;structures&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">addExpectedOutput</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s">&quot;structures&quot;</span><span class="p">,</span> <span class="n">always</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">operate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">keep_sts</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="s">&#39;KEEP_STS&#39;</span><span class="p">]</span>
+
+        <span class="c"># Read the input set:</span>
+        <span class="n">input_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getInput</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">getFiles</span><span class="p">()</span>
+
+        <span class="c"># Prepare the output writer:</span>
+        <span class="n">out_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getOutputName</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;.maegz&quot;</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">structure</span><span class="o">.</span><span class="n">StructureWriter</span><span class="p">(</span><span class="n">out_file</span><span class="p">)</span>
+
+        <span class="n">st_num</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">io</span><span class="o">.</span><span class="n">MultiFileReader</span><span class="p">(</span><span class="n">input_files</span><span class="p">):</span>
+            <span class="n">writer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+            <span class="n">st_num</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">st_num</span> <span class="o">==</span> <span class="n">keep_sts</span><span class="p">:</span>
+                <span class="k">break</span>
+
+        <span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> <span class="c"># close the structure writer</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Total </span><span class="si">%i</span><span class="s"> structures kept&quot;</span> <span class="o">%</span> <span class="n">st_num</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">setOutput</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">pipeio</span><span class="o">.</span><span class="n">Structures</span><span class="p">([</span><span class="n">out_file</span><span class="p">],</span> <span class="n">st_num</span><span class="p">))</span>
+</pre></div>
+</td></tr></table></div>
+<p>This stage keeps the first <tt class="docutils literal"><span class="pre">KEEP_STS</span></tt> structures it reads, passing them on
+to the next stage or output file.</p>
+<p>Going through this example by line number:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Line 1: General imports for all stage modules.</li>
+<li>Lines 9-12: Define the keywords for the stage, following <a class="reference external" href="http://www.voidspace.org.uk/python/configobj.html#configspec">ConfigObj
+specification</a>.</li>
+<li>Line 14: Define the only supported input set. This is input set number 1,
+of type “structures”, and is required.</li>
+<li>Line 15: Define the only output set. This is output set number 1, of type
+“structures,” and is always generated.</li>
+<li>Line 18: <tt class="docutils literal"><span class="pre">operate</span></tt> is the entry point into the stage’s code and is a
+required method for all stages.</li>
+<li>Line 19: Access the value for the keyword. This is defined in the pipeline
+input file.</li>
+<li>Line 22: Get the list of file paths from the input set. These files are
+either specified in the pipeline input files, or are passed from a
+preceding stage.</li>
+<li>Line 25: Determine what the user would like to call the output files (from
+the pipeline input file).</li>
+<li>Line 26: Open a structure writer for writing the output file.</li>
+<li>Line 29: Read the input files (there may be more than one)</li>
+<li>Line 38: Each stage has self.info(), self.warning(), self.error(), and
+self.debug() methods for printing various messages to the log files.</li>
+<li>Line 40: Set the output set to a list of output files (in this case only
+one file). Optionally the number of items in this set can be specified
+(in this case, the number of structures).</li>
+</ul>
+</div></blockquote>
+<p>Here is a sample input file that shows how the stage can be used:</p>
+<div class="highlight-python"><div class="highlight"><pre>[ SET:ORIGINAL_LIGANDS ]
+    VARCLASS    Structures
+    FILES       /Users/adzhigir/50ligs.maegz
+
+[ STAGE:EXAMPLE_STAGE ]
+    STAGECLASS  example.ExampleStage
+    INPUTS      ORIGINAL_LIGANDS
+    OUTPUTS     FILTERED_LIGANDS
+    KEEP_STS    20
+
+[ USEROUTS ]
+    USEROUTS    FILTERED_LIGANDS
+    STRUCTOUT   FILTERED_LIGANDS
+</pre></div>
+</div>
+<p>See the Python Pipeline Manual for more info on the workflow input file format.</p>
+<p>Here is a sample log file from this stage:</p>
+<div class="highlight-python"><div class="highlight"><pre>Stage test-example-EXAMPLE_STAGE initializing...
+
+Running stage: test-example-EXAMPLE_STAGE
+SCHRODINGER: /software/schro2012
+PYTHONPATH: None
+Job ID: pc-16-21-111-0-4ed6bf94
+Time: Wed Nov 30 15:43:17 2011
+Stage started successfully
+
+Python version: 0
+Total 20 structures kept
+
+STAGE COMPLETED. Elapsed time: 0 seconds
+
+    Output #1 (test-example-FILTERED_LIGANDS) [structures(20)]:
+       test-example-EXAMPLE_STAGE/test-example-FILTERED_LIGANDS.maegz
+</pre></div>
+</div>
+<span class="target" id="job-control"></span><p id="index-0">Job Control</p>
+<p>The <a class="reference external" href="api/schrodinger.job.jobcontrol-module.html">jobcontrol module</a> contains four major sections:</p>
+<ol class="arabic simple">
+<li>Job data interaction - Deals with getting information about existing
+jobs.</li>
+<li>Job launching - Deals with starting a subjob.</li>
+<li>Job backend interaction - Provides utilities for a Python script running
+as a job.</li>
+<li>Job Hosts.</li>
+</ol>
+<p>To run a LigPrep job to convert a SMILES input file to 3D:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">schrodinger.job.jobcontrol</span> <span class="kn">as</span> <span class="nn">jc</span>
+<span class="n">ligprep_output</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">jobname</span><span class="o">+</span><span class="s">&quot;.mae&quot;</span>
+<span class="n">run_ligprep</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&#39;SCHRODINGER&#39;</span><span class="p">],</span> <span class="s">&#39;ligprep&#39;</span><span class="p">)]</span>
+<span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;-i&quot;</span><span class="p">,</span> <span class="n">input_smiles_file</span><span class="p">,</span> <span class="s">&quot;-o&quot;</span><span class="p">,</span> <span class="n">output_3d_mae_file</span><span class="p">]</span>
+<span class="n">command</span> <span class="o">=</span> <span class="n">run_ligprep</span> <span class="o">+</span> <span class="n">options</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">jc</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+<span class="k">print</span> <span class="p">(</span><span class="s">&quot;LigPrep job status: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">job</span><span class="o">.</span><span class="n">Status</span><span class="p">)</span>
+<span class="n">job</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+<span class="k">print</span> <span class="p">(</span><span class="s">&quot;LigPrep job status: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">job</span><span class="o">.</span><span class="n">Status</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="introduction-to-jobdj">
+<h2>Introduction to JobDJ<a class="headerlink" href="#introduction-to-jobdj" title="Permalink to this headline">¶</a></h2>
+<p>The <a href="#id4"><span class="problematic" id="id5">JobDJ_</span></a> class is used to write driver scripts for “distributed
+jobs”, which involve one or more subjobs independently carrying out
+different parts of a larger computation, in parallel.  JobDJ can submit
+individual jobs to a queueing system (like LSF or SGE) or an explicit
+list of compute machines.</p>
+<p>JobDJ is primarily used to run programs under job control, but can also be
+used to manage simple local tasks, executed as subprocesses of the driver.
+It can be asked to retry failed jobs, which is often necessary to
+get large distributed jobs to complete successfully.  It also provides
+a mechanism for enforcing dependencies between jobs.</p>
+<p>This document will only describe the most common use case for JobDJ,
+which is to run a number of independent subjobs under job control.</p>
+<div class="section" id="usage">
+<h3>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h3>
+<p>Logically, there are three steps to running a distributed job with <a href="#id6"><span class="problematic" id="id7">JobDJ_</span></a>:</p>
+<ol class="arabic simple">
+<li>specify the list of hosts on which subjobs will be run (normally handled automatically),</li>
+<li>define the subjobs, by specifying the command to use to start each one, and,</li>
+<li>let JobDJ run the jobs.</li>
+</ol>
+<dl class="docutils">
+<dt>The Host List</dt>
+<dd>The host list is defined when you create a JobDJ instance. If your
+script is running under job control, JobDJ will automatically use
+the host list specified on the commandline, unless you override that
+with an explicit host list, specified as a list of (host, max_jobs)
+tuples, where max_jobs is the maximum number of jobs to run at a time
+on each host.</dd>
+<dt>The Subjobs</dt>
+<dd>Add jobs to the JobDJ instance using the addJob() method.  Jobs are
+defined as an instances of a BaseJob subclass, such as JobControlJob
+or SubprocessJob.  If you’re running job control jobs, you can just
+specify the command to start the job and a JobControlJob instance
+will be created for you.</dd>
+<dt>Running the Subjobs</dt>
+<dd>Run all jobs defined on a JobDJ instance using its run() method.
+This will then block until all subjobs have completed.  If you want
+to take some action whenever a subjob’s status changes, you can
+loop over the updatedJobs() generator; this yields a job every time
+its status changes.</dd>
+</dl>
+</div>
+<div class="section" id="examples">
+<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<p>In all of the following examples, the schrodinger.job.jobcontrol and
+schrodinger.job.queue modules are assumed to have been imported under
+the aliases <em>jobcontrol</em>  and <em>jobqueue</em>.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">schrodinger.job.jobcontrol</span> <span class="kn">as</span> <span class="nn">jobcontrol</span>
+<span class="kn">import</span> <span class="nn">schrodinger.job.queue</span> <span class="kn">as</span> <span class="nn">jobqueue</span>
+</pre></div>
+</div>
+<div class="section" id="basic-usage">
+<h4>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h4>
+<p>In the simplest case, a driver script running under jobcontrol just needs
+to define one or more subjobs and call the JobDJ object’s <em>run()</em> method.
+JobDJ will run the jobs on the hosts specified on the command line.
+For example, you might write a driver script driver.py for running a set
+of Jaguar jobs like this,:</p>
+<div class="highlight-python"><div class="highlight"><pre>jobdj = jobqueue.JobDJ()
+for infile in inputfiles:
+    cmd = [‘jaguar’, ‘run’, infile]
+    jobdj.addJob(cmd)
+jobdj.run()
+</pre></div>
+</div>
+<p>If you run this script with the command,:</p>
+<div class="highlight-python"><div class="highlight"><pre>$SCHRODINGER/run -HOST host1,host2 driver.py
+</pre></div>
+</div>
+<p>... JobDJ will automatically pick up the host list <em>“host1, host2”</em>
+through the job control system and run your jobs on those machines (one
+job on each machine at a time.)  If the <em>-HOST</em> argument is a queueing
+system, then your jobs will all be submitted to that queueing system.</p>
+</div>
+<div class="section" id="explicit-host-list">
+<h4>Explicit Host List<a class="headerlink" href="#explicit-host-list" title="Permalink to this headline">¶</a></h4>
+<p>If you want JobDJ to run your subjobs on some particular
+set of hosts, you can specify that list when you create the JobDJ instance.
+For example,:</p>
+<div class="highlight-python"><div class="highlight"><pre>hostlist = [‘host1’, ‘host2’]
+jobdj = jobqueue.JobDJ(hostlist)
+...
+jobdj.run()
+</pre></div>
+</div>
+<p>You can get the host list that’s passed on from the command line from the
+<em>getbackend_host_list()</em> functionin in the jobcontrol module.  Using this,
+the first example above  could have been written:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">hostlist</span> <span class="o">=</span> <span class="n">jobcontrol</span><span class="o">.</span><span class="n">get_backend_host_list</span><span class="p">()</span>
+<span class="n">jobdj</span> <span class="o">=</span> <span class="n">jobqueue</span><span class="o">.</span><span class="n">JobDJ</span><span class="p">(</span><span class="n">hostlist</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">jobdj</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="retrying-failed-jobs">
+<h4>Retrying Failed Jobs<a class="headerlink" href="#retrying-failed-jobs" title="Permalink to this headline">¶</a></h4>
+<p>If you don&#8217;t do anything special, jobs run under JobDJ will not be
+retried if they fail.  If you’d like failed subjobs to be run again,
+up to a fixed number of times, use the <em>max_retries</em> parameter in the
+JobControlJob constructor.  For example,:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">jobdj</span> <span class="o">=</span> <span class="n">jobqueue</span><span class="o">.</span><span class="n">JobDJ</span><span class="p">(</span><span class="n">hostlist</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">jobqueue</span><span class="o">.</span><span class="n">JobControlJob</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">max_retries</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">jobdj</span><span class="o">.</span><span class="n">addJob</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">jobdj</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The older method for setting a nonzero number of retries was to specify
+a <em>max_retries</em> argument in the JobDJ constructor; this still works, but
+is now deprecated.</p>
+</div>
+<div class="section" id="retrying-failed-jobs-selectively">
+<h4>Retrying Failed Jobs Selectively<a class="headerlink" href="#retrying-failed-jobs-selectively" title="Permalink to this headline">¶</a></h4>
+<p>If you&#8217;d like launch failures to be retried, but not failures of your
+computational code, you need to override the <em>JobControlJob.retryFailure()</em>
+method.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">MyJob</span><span class="p">(</span><span class="n">jobqueue</span><span class="o">.</span><span class="n">JobControlJob</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">retryFailure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_retries</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getJob</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">and</span> <span class="n">obj</span><span class="o">.</span><span class="n">ExitStatus</span> <span class="o">==</span> <span class="s">&quot;died&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>  <span class="c"># don&#39;t retry the job</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">MyJob</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">retryFailure</span><span class="p">(</span><span class="n">max_retries</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">jobdj</span> <span class="o">=</span> <span class="n">jobqueue</span><span class="o">.</span><span class="n">JobDJ</span><span class="p">(</span><span class="n">hostlist</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">MyJob</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">max_retries</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">jobdj</span><span class="o">.</span><span class="n">addJob</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+<span class="o">...</span>
+<span class="n">jobdj</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>This code uses the fact that an ExitStatus of &#8220;died&#8221; signals that the
+backend exited with a nonzero exit code.  The <em>retryFailure()</em> method
+is passed a single argument (<em>max_retries</em>) from JobDJ. This is a value
+specified when constructing the JobDJ object, and it defaults to zero. The
+number of retries can also be specified on a per-job basis.</p>
+<span class="target" id="jobdj"></span><span class="target" id="index-1"></span></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="overview.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Other Modules</a><ul>
+<li><a class="reference internal" href="#pipelined-workflows">Pipelined Workflows</a></li>
+<li><a class="reference internal" href="#introduction-to-jobdj">Introduction to JobDJ</a><ul>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#basic-usage">Basic Usage</a></li>
+<li><a class="reference internal" href="#explicit-host-list">Explicit Host List</a></li>
+<li><a class="reference internal" href="#retrying-failed-jobs">Retrying Failed Jobs</a></li>
+<li><a class="reference internal" href="#retrying-failed-jobs-selectively">Retrying Failed Jobs Selectively</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="canvas.html"
+                        title="previous chapter">Canvas 1.4 Python API</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="changelog.html"
+                        title="next chapter">Changelog</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="changelog.html" title="Changelog"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="canvas.html" title="Canvas 1.4 Python API"
+             >previous</a> |</li>
+        <li><a href="overview.html">Schrödinger Python Suite 2015-2 Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2011 Schrödinger, LLC.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

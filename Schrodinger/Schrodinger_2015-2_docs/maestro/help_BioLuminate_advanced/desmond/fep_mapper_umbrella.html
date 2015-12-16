@@ -1,0 +1,72 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<link rel="stylesheet" href="../support/help.css" charset="ISO-8859-1" type="text/css" />
+<title>Running FEP Mapper jobs in umbrella mode</title>
+</head>
+<body>
+<table bgcolor="#dcdcdc" border="0" cellspacing="0" width="100%">
+<tr><td>
+<p><img src="../images/common/schrodinger_logo.png" align="left" alt=""
+ border="0" hspace="5" vspace="5" /></p>
+</td></tr>
+<tr><td>
+<h1 class="title">Running FEP Mapper jobs in umbrella mode</h1>
+</td></tr>
+</table>
+
+<p>Can I run FEP Mapper Jobs in Umbrella Mode so that the GPU resources for each
+leg are only requested once?</p>
+
+<p>Yes: As of the 2014-1 release this is the default behaviour.<br/>
+<b>FEP Mapper Panel - Job Settings</b><br/>
+<b>Master Job</b> </p>
+<ul>
+	<li>'Host:' needs to be a CPU resource - this is automatically assigned to run on 1CPU.</li>
+	<li>'Maximum simultaneous subjobs:' - this is the number of FEP subjobs allowed to run concurrently. A value of '0' gives no limit. Each leg has two FEP subjobs (complex and solvent) so in total a mapper job will spawn 2*'number of legs' subjobs</li>
+</ul>
+
+
+<p><b>Subjob</b></p>
+<ul>
+	<li>'Host:' - should be a GPU host entry where we run the individual FEP subjobs.</li>
+	<li>'Total: "N" processors' - Each FEP Subjob will request N GPUs and hold onto them until the perturbation has completed.<br/>
+N should be a factor of 12 (the number of lambda windows) with N=4 being recommended.</li>
+</ul>
+
+
+<p>If you want to launch the job from the command line you can write out the files and use the command at the bottom of the <tt>&lt;YourJobName&gt;.msj</tt> file.</p>
+
+<p>In the 13-3 release this functionality is only available via the command line:<br/>
+After setting up the mapper job in the mapper job settings GUI as above write out the input files. </p>
+
+<p>Then edit the <tt>&lt;YourJobName&gt;.msj</tt> file so that the multisim section looks like this:</p>
+<div class="preformatted panel" style="border-width: 1px;"><div class="preformattedContent panelContent">
+<pre>multisim {
+  jlaunch_opt = ["-set" "stage[1].set_family.md.jlaunch_opt=[\"-gpu\"]" ]
+  job = [
+     ["-m" "&lt;YourJobName&gt;_complex.msj" "-cpu" 1 "-o" "$MASTERJOBNAME_$JOBTAG_complex-out.mae" "-JOBNAME" "$MASTERJOBNAME_$JOBTAG_complex" "-HOST" "$SUBHOST:N" "-mode" "umbrella" "-maxjob" N ]
+     ["-m" "&lt;YourJobName&gt;_solvent.msj" "-cpu" 1 "-o" "$MASTERJOBNAME_$JOBTAG_solvent-out.mae" "-JOBNAME" "$MASTERJOBNAME_$JOBTAG_solvent" "-HOST" "$SUBHOST:N" "-mode" "umbrella" "-maxjob" N ]
+  ]
+}
+</pre>
+</div></div>
+
+<p>Replacing N with the value you chose in the GUI panel for 'Total: "N" processors'</p>
+
+<hr />
+<table width="100%">
+<tr><td><p class="small"><a href="../support/legal_notice.html" target="LegalNoticeWindow">Legal Notice</a></p></td>
+<td>
+<table align="right">
+<tr><td><p class="small">
+File: desmond/fep_mapper_umbrella.html<br />
+Last updated: 12 Feb 2015
+</p></td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

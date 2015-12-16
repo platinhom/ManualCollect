@@ -1,0 +1,465 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	sitefind.htm
+!!  
+!!	30-aug-2010 (kk) screenshots, (Alpha) Site
+!!	09-oct-2008 (kk) References really completed
+!!	06-oct-2008 (kk) References completed
+!!  	29-jul-2005 (pl) updated for new options and panel look
+!!
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+
+<title>Site Finder</title>
+<meta panel Site Finder>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Site Finder</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Overview">Overview</a>
+<li><a href="#Running">Running the Site Finder</a>
+<li><a class="example" href="#WorkedExample">Example: Streptavidin</a>
+<li><a href="#References">References</a>
+<li><a href="#SeeAlso">See Also</a>
+</ul>
+
+<!-- OVERVIEW -->
+
+<a name="Overview"></a>
+<h2>Overview</h2>
+
+<p>
+The purpose of Site Finder is to calculate possible active sites in
+a receptor from the 3D atomic coordinates of the receptor.  Such a
+calculation is useful for site-directed
+mutagenesis experiments to help determine potential sites for ligand
+binding docking calculations or for calculating restriction sets for
+rendering partial molecular surfaces or for MultiFragment Search.
+</p>
+
+<p>
+Methods such as
+[Goodford&nbsp;1985] or [Miranker&nbsp;1991] use interaction energies between
+the receptor and different probes in an attempt to locate energetically
+favorable sites.
+While van der Waals energies can indicate sterically available
+regions, the long-range nature of electrostatic potentials make the
+interpretation of energy levels difficult (e.g. a carboxylate in an active
+site will emphasize positively charged probes even though negatively charged
+probes like carbonyl oxygen may be part of the bound ligand).
+Alternatively, purely geometric methods seek to locate "pockets" without
+the use of energy models.  This is advantageous since proton locations are
+not required.  LigSite [Hendlich&nbsp;1997] uses a grid representation of the
+molecular volume and computes exterior site scores by projecting rays from
+the receptor exterior to the surface.  The deeper and more surrounded a
+site is, the higher its score.  [DelCarpio&nbsp;1993] uses an analytical
+geometric algorithm to compute pocket sites.
+
+<p>
+MOE's Site Finder falls into the category of geometric methods since
+no energy models are used.  Instead, the relative positions and accessibility
+of the receptor atoms are considered along with a rough classification of
+chemical type.
+The Site Finder methodology is based upon Alpha Shapes [AlphaShapes] which are
+a generalization of convex hulls developed in [Edelsbrunner&nbsp;1995].
+In brief, the method is as follows:
+
+<ol>
+<li>
+Identify regions of tight atomic packing. This is not the same as locating
+pockets, since surface sites may still be regions of tight packing.
+</li>
+
+<p>
+<li>
+Filter out sites that are &quot;too exposed&quot; to solvent.  In other
+words, sites that are on protrusions are unlikely to be good active sites.
+</li>
+
+<p>
+<li>
+Classify the sites as either hydrophobic or hydrophilic.
+This coarse classification of
+chemical type is used to separate water sites from the more likely
+hydrophobic sites.  
+Use a definition of hydrophilic that is invariant to protonation state and
+tautomer state (this means no distinction between donor and acceptor atoms).
+Use a definition of hydrophobic that is invariant to tautomer state
+(this means that aromaticity cannot be used).
+</li>
+
+<p>
+<li>
+Calculate alpha spheres on the sites as follows:
+Collections of 3D points in the site
+are triangulated
+using a modified Delaunay
+triangulation.  For each resulting simplex (collection of four points)
+there is an associated sphere called an <i>alpha sphere</i>.  These
+spheres have differing radii including infinite radii (corresponding to the
+planes of the convex hull of the point set).
+
+<p>
+<li>
+The collection of alpha spheres is pruned by eliminating
+those that
+correspond to inaccessible regions of the receptor as well as those that
+are too exposed to solvent.
+In addition, only the small alpha spheres
+are retained since these correspond to locations of tight atomic packing
+in the receptor.
+
+<p>
+<li>
+Classify the alpha spheres as either "hydrophobic"
+or "hydrophilic" depending on whether the sphere is in a good hydrogen bonding
+spot in the receptor.  Hydrophilic spheres not near a hydrophobic sphere
+are eliminated (since these generally correspond to water sites).
+
+<p>
+<li>
+Cluster the alpha spheres
+using a single-linkage clustering
+algorithm to produce a collection of sites.  Each site consists of one or
+more alpha spheres at least one of which is hydrophobic.
+</li>
+
+</ol>
+
+<!-- RUNNING -->
+
+<a name="Running"></a>
+<h2>Running the Site Finder</h2>
+
+<p>
+To use the Site Finder, perform the following steps:
+
+<ol>
+<li>Load a receptor molecule into MOE.  The Site Finder uses only
+heavy atoms so there is no need to add
+hydrogens nor is there a need to set protonation states.
+<p>
+<li>Choose <nobr><b>MOE | Compute | Site Finder</b></nobr> to open the
+Site Finder panel.
+<p>
+<li>Configure the options in the <b>Atoms</b> section of the panel
+(see below) and press <b>Apply</b>.
+</ol>
+
+<p>The following panel will appear (although the list body will be empty
+until <b>Apply</b> is pressed).
+
+<p><center>
+<img src="sitefind/panel.png" alt="Site Finder Panel">
+</center>
+
+<p><table width=100% cellpadding=5>
+<tr>
+<td valign="top"><b>Atoms</b>
+<td valign="top">
+The Atoms options control the interpretation of the atoms currently
+loaded in MOE.  Select the appropriate collection of atoms from the list.
+If <b>Solvent</b> is on, water molecules, salt ions, and common
+solvents will be included, otherwise they will be ignored.  If
+<b>Visible Only</b> is on then hidden atoms will be ignored, otherwise they
+will be included.  In all cases, atoms with the Inert attribute set will be
+ignored as will all Dummy atoms (LP atoms with no bonded neighbors).
+
+</tr><tr>
+<td valign="top"><b>Site List</b>
+<td valign="top">
+When <b>Apply</b> is pressed, the calculated sites will be summarized in
+the list.  Each site is numbered (starting from 1).  The Size column
+indicates the number of contact atoms in the receptor.  The Hyd column
+indicates the number of hydrophobic contact atoms in the receptor.  The Side
+column indicates the number of sidechain contact atoms in the receptor.
+The Residues column indicates the residues that make up the calculated site
+in the format <i>chain</i>:<i>residue-name</i>.  The list is sorted by
+the Hyd column (descending order).
+
+</tr><tr>
+<td valign="top"><b>Render</b>
+<td valign="top">
+The Render options control the way alpha spheres in selected sites are
+displayed in the MOE window:
+<ol>
+<li><b>No Centers</b> does not display the alpha spheres.
+<li><b>Alpha Centers</b> draws a small sphere at each alpha sphere center.
+<li><b>Alpha Spheres</b> draws a sphere of radius alpha at each center.
+</ol>
+<p>
+Red spheres indicate hydrophilic atoms, white spheres, hydrophobic.
+
+</tr><tr>
+<td valign="top"><b>Isolate</b>
+<td valign="top">
+Controls how atoms will be displayed and the backbone rendered
+when sites are selected:
+
+<ol>
+<li><b>None</b> means no action will be taken.
+<li><b>Atoms</b> means that the atoms of residues of the selected sites 
+will be shown and all other atoms will be hidden.
+<li><b>Backbone</b> means that only the backbone cartoon of residues of the 
+selected sites will be shown.
+<li><b>Atoms and Backbone</b> means that both the Atoms and Backbone rendering
+will be performed.
+</ol>
+
+</tr><tr>
+<td valign="top"><b>Options</b>
+<td valign="top">
+
+<p>
+If <b>Select Contact Atoms</b> is on then atoms within 4.5 &Aring; of 
+the selected sites will be selected and all other atoms deselected.
+
+<p>
+If <b>Select Residues in SE</b> is on then the residues in the selected 
+site(s) will be selected and all other residues deselected.
+
+<p>
+If <b>Show Ligands</b> is on then the ligand in the selected sites will
+be displayed, otherwise it will not be displayed.
+
+<p>
+If <b>Show Solvent</b> is on then solvent atoms in the selected sites will
+be displayed, otherwise they will not be displayed.
+
+</tr><tr>
+<td valign="top"><b>Dummies...</b>
+<td valign="top">
+When Dummies is pressed, a dummy atom will be created for each alpha
+sphere in the sites selected in the list.  The dummy atoms will have element
+LP and will be named either HYD (for hydrophobic) or LPA (for lone pair
+active; i.e. hydrophilic).  In addition, the temperature factor of the
+dummy atom will be set to the alpha sphere radius.
+The spheres for a particular site will be collected in a single residue that
+is named according to the site number.
+All of the site residues will be collected into a single new chain.
+
+</table>
+
+<p>
+Press the <b>Apply</b> button to begin the Site Finder calculation (which
+requires a few seconds to complete). It needs to be pressed only when the
+Receptor options are changed or the molecular system is changed.  It does
+not need to be pressed when list items are selected or the Highlight
+options are changed.
+
+<p>
+The Settings panel controls various parameters used in the Site Finder
+calculation.  It is opened by pressing the <b>Settings</b> button:
+
+<p><center>
+<img src="sitefind/settings.png" alt="Settings Panel">
+</center>
+
+<p><table width=100% cellpadding=5>
+<tr>
+<td valign="top" width=25%><b>Probe Radius 1</b>
+<td valign="top">
+The radius (in angstroms) of a hypothetical hydrophilic hydrogen bonding atom
+(such as N or O).
+<tr>
+<td valign="top" width=25%><b>Probe Radius 2</b>
+<td valign="top">
+The radius (in angstroms) of a hypothetical hydrophobic atom (such as C).
+<tr>
+<td valign="top" width=25%><b>Isolated Donor/Acceptor</b>
+<td valign="top">
+If a hydrophilic alpha sphere has no hydrophobic alpha sphere within the
+specified distance (in angstroms) then the hydrophilic alpha sphere is
+discarded.  Set this value to a large number (e.g. 1000) if water sites
+are of interest.
+<tr>
+<td valign="top" width=25%><b>Connection Distance</b>
+<td valign="top">
+Individual alpha spheres are collected into separate sites by a single-linkage
+clustering algorithm.  Two clusters are merged if there is a pair of spheres
+(one from each cluster) within the specified Connection Distance (in
+angstroms).
+<tr>
+<td valign="top" width=25%><b>Minimum Site Size<br>Radius</b>
+<td valign="top">
+After clustering, sites with fewer than the specified number of alpha
+spheres are discarded.  Sites with a bounding sphere smaller than the Radius
+(in angstroms) are also discarded.  Set both of these values to 0 if water
+sites are of interest.
+</table>
+
+<p>
+The <b>Apply</b> button in the Settings panel needs to be pressed for changes
+to take effect.  Once the settings are changed, press Apply in the Site
+Finder panel for the changes to be used in the alpha site calculations.
+
+<!-- A WORKED EXAMPLE -->
+
+<a name="WorkedExample"></a>
+<div class="example">
+<h2>Example: Streptavidin</h2>
+
+We shall demonstrate a use of the Site Finder with streptavidin,
+the biotin receptor.  Close the current molecular system in MOE and open
+<tt>$MOE/sample/mol/biotin_rec.moe</tt>.  Choose
+<nobr><b>MOE | Compute | Site Finder</b></nobr> and press the <b>Apply</b>
+button.
+
+<p>
+<div class="floatright">
+<img src="sitefind/biotin1.gif" alt="Biotin" />
+</div>
+
+By default, all calculated sites are selected in the list and the Draw
+Alpha Centers option is selected.  Thus, each of the calculated sites
+is displayed in the MOE Window as a collection of colored spheres: red
+for hydrophilic and white for hydrophobic.  In the case of
+the biotin receptor, 5 sites result from the calculation.
+<p>
+If individual sites are selected in the list, those sites will
+be rendered with alpha spheres.  Use <tt>Shift</tt>-click to select a range of
+sites and use <tt>Ctrl</tt>-click to toggle individual sites in the list.
+<p>
+<p>
+In the case of streptavidin, the first site in the list is the active site.
+In general, active sites of receptors will appear near the top of the
+list.  Some sites may appear lower in the list (such as surface binding
+sites).  Dimer interfaces can also push the active site lower in the list.
+
+<p>
+Set <b>Isolate</b> to <b>Atoms and Backbone</b> in the Site Finder panel.
+Select only the first site in the list.  It should now be possible to
+manipulate the MOE view to obtain an image similar to the one below.
+
+<p><center>
+<img src="sitefind/biotin_site.png" alt="Biotin Active Site" />
+</center>
+
+<p>This depiction of the active site of streptavidin clearly shows the
+contact residues (along with the local backbone and secondary structure).
+In addition, each of the alpha spheres indicates the type of atom
+(red=hydrophilic, white=hydrophobic) preferred by the atoms of the site.
+
+<p>
+Hide all of the receptor atoms with
+<nobr><b>MOE | Render | Hide | Receptor</b></nobr> and open
+<tt>$MOE/sample/mol/biotin.moe</tt> (the ligand co-crystallized with
+streptavidin).  It is now possible to compare the locations of the alpha
+spheres and the locations of the ligand nuclei:
+
+<p><center>
+<img src="sitefind/biotin_ligand.png" alt="Ligand in Biotin Active Site" />
+</center>
+
+<p>Note the good correspondence between the hydrophobic alpha spheres and
+the hydrophobic groups of the ligand.  The urea carbonyl group is also
+well-matched, by hydrophilic alpha spheres.  Finally, the shape of the
+alpha sphere collection is reasonably close to the shape of the ligand.
+
+<p>
+Press the <b>Dummies</b> button to create dummy atoms
+for each alpha sphere in the active site and press the <b>Close</b> button
+in the Site Finder panel.  The dummy atoms can now be used as
+superposition targets for docking calculations
+or as restriction sets for
+rendering partial molecular surfaces.
+
+</div>
+
+<!-- REFERENCES -->
+
+<a name="References"></a>
+<h2>References</h2>
+
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="top">[AlphaShapes]
+<td valign="top">
+Edelsbrunner, H.;
+Weighted Alpha Shapes;
+<i>Technical Paper of the Department of Computer Science of
+the University of Illinois at Urbana-Champaign</i>; Urbana, Illinois 61810.
+
+<tr>
+<td valign="top">[DelCarpio&nbsp;1993]
+<td valign="top">
+Del Carpio, C.A., Takahashi, Y., Sasaki, S.;
+A New Approach to the Automatic Identification of Candidates for Ligand
+Receptor Sites in Proteins: (I) Search for Pocket Regions;
+<i>J. Mol. Graph. 11</i> (<b>1993</b>) 23&ndash;42. 
+
+<tr>
+<td valign="top">[Edelsbrunner&nbsp;1995]
+<td valign="top">
+Edelsbrunner, H., Facello, M., Fu, R., Liang, J.;
+Measuring Proteins and Voids in Proteins;
+<i>Proceedings of the 28th Hawaii International Conference on
+Systems Science</i> (<b>1995</b>) 256&ndash;264.
+
+<tr>
+<td valign="top">[Goodford&nbsp;1985]
+<td valign="top">
+Goodford, P.J.;
+A Computational Procedure for Determining Energetically Favorable Binding
+Sites on Biologically Important Macromolecules;
+<i>J. Med. Chem. 28</i> (<b>1985</b>) 849&ndash;856.
+
+<tr>
+<td valign="top">[Hendlich&nbsp;1997]
+<td valign="top">
+Hendlich, M., Rippman, F., Barnickel, G.;
+LIGSITE: Automatic and Efficient
+Detection of Potential Small Molecule-binding Sites in Proteins;
+<i>J. Mol. Graph. 15</i> (<b>1997</b>) 359&ndash;363.
+
+<tr>
+<td valign="top">[Miranker&nbsp;1991]
+<td valign="top">
+Miranker, A., Karplus, M.;
+Functionality Maps of Binding Sites: A Multiple Copy Simultaneous Search Method;
+<i>Proteins 11</i> (<b>1991</b>) 29-34.
+
+</table>
+
+<a name="SeeAlso"></a>
+<h2>See Also</h2>
+<p>
+<a href="mfss.htm">MultiFragment Search</a><br>
+<a href="docking.htm">Molecular Docking</a><br>
+
+</font>
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

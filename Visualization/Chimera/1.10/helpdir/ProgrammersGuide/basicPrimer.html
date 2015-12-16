@@ -1,0 +1,146 @@
+<!doctype html public "-//W3C//DTD HTML 4.0//EN">
+<html>
+<!--
+>>> UCSF Chimera Copyright
+Copyright (c) 2010 Regents of the University of California.
+All rights reserved.  This software provided pursuant to a
+license agreement containing restrictions on its disclosure,
+duplication and use.  This notice must be embedded in or
+attached to all copies, including partial copies, of the
+software or any revisions or derivations thereof.
+<<< UCSF Chimera Copyright
+-->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<link rel="icon" href="../chimera16.png" type="image/png">
+<title>Very Basic Chimera Programming Primer</title>
+</head>
+
+<body>
+
+<h1>
+Looping Through Data Files and Running Chimera Commands on Them
+</h1>
+<h3>
+<i>...and not much else</i>
+</h3>
+
+<h4>
+Scenario
+</h4>
+<p>
+This primer covers the scenario where you have a set of data files in
+a folder and want to perform a series of Chimera commands on each one
+in turn, writing out some kind of results file (<i>e.g.</i> image;
+structure measurements; modified data file) for each.
+Though this primer provides all the Python code needed to carry out
+the scenario tasks, it would still be beneficial (though not strictly
+necessary) for you to read the
+<a href="http://docs.python.org/tutorial/index.html"
+target="_blank">Python Tutorial</a>
+(at least the first few sections)
+in order to understand the code better and to be able to modify it
+if needed in ways this primer doesn't cover.
+</p>
+<h4>
+Broad Outline
+</h4>
+<p>
+You will take the code below, modified for your needs, and place it in a
+file ending with a '.py' suffix.  The '.py' suffix will indicate to Chimera
+that the file should be interpreted as Python code.  You could then run
+the Python code by opening the file with Chimera's
+<a href="../UsersGuide/opensave.html#opendialog"><b>File&rarr;Open</b> dialog</a>
+or with the
+<a href="../UsersGuide/midas/open.html"><kbd>open</kbd> command</a>.
+If you want to suppress the Chimera interface from appearing during your
+script processing, you can
+<a href="../UsersGuide/startup.html">start Chimera</a>
+using the
+<a href="../UsersGuide/options.html#nogui">--nogui option</a>
+(<i>e.g.</i> <kbd>chimera --nogui processData.py</kbd>).
+Note that if your script creates images then you <i>must</i> start
+the Chimera interface unless you've downloaded the &quot;headless&quot;
+version of Chimera (see the
+<a href="http://www.cgl.ucsf.edu/chimera/download.html">download page</a>).
+</p>
+<p>
+An important fact to know is that any
+<a href="../UsersGuide/framecommand.html">Chimera command</a>
+can be executed in Python using the <code>runCommand()</code> call.
+For instance, to color all models red and surface them:
+<pre>
+<samp>
+from chimera import runCommand
+runCommand("color red")
+runCommand("surf")
+</samp>
+</pre>
+This makes it simple to perform actions in your Python script as long as
+you know the equivalent Chimera command.
+</p>
+<h4>
+Scripting Approach
+</h4>
+<p>
+The general scheme used in the script will be to enter the folder
+containing your data files, gather the names of the files, and then
+loop through them one by one, performing a series of commands on each.
+In the example below the data files are PDB files (suffix: .pdb),
+each of which has a ligand and a receptor.  The script focuses on the
+ligand, attempts to ensure that the receptor isn't obscuring the ligand,
+surfaces the receptor, and saves an image.
+</p>
+<h4>
+The Script
+</h4>
+<p>
+There are a lot of comments in the script describing the code.
+Python comments are introduced by the <b>#</b> character
+(as long as it's not inside a quoted string of course).
+</p>
+<pre>
+<code>
+import os
+from chimera import runCommand as rc # use 'rc' as shorthand for runCommand
+from chimera import replyobj # for emitting status messages
+
+# change to folder with data files
+os.chdir("/Users/pett/data")
+
+# gather the names of .pdb files in the folder
+file_names = [fn for fn in os.listdir(".") if fn.endswith(".pdb")]
+
+# loop through the files, opening, processing, and closing each in turn
+for fn in file_names:
+	replyobj.status("Processing " + fn) # show what file we're working on
+	rc("<a href="../UsersGuide/midas/open.html">open</a> " + fn)
+	rc("<a href="../UsersGuide/midas/align.html">align</a> ligand ~ligand") # put ligand in front of remainder of molecule
+	rc("<a href="../UsersGuide/midas/focus.html">focus</a> ligand") # center/zoom ligand
+	rc("<a href="../UsersGuide/midas/surface.html">surf</a>") # surface receptor
+	rc("<a href="../UsersGuide/midas/preset.html">preset</a> apply publication 1") # make everything look nice
+	rc("<a href="../UsersGuide/midas/surftransparency.html">surftransp</a> 15") # make the surface a little bit see-through
+	# save image to a file that ends in .png rather than .pdb
+	png_name = fn[:-3] + "png"
+	rc("<a href="../UsersGuide/midas/copy.html">copy</a> file " + png_name + " supersample 3")
+	rc("<a href="../UsersGuide/midas/close.html">close</a> all")
+# uncommenting the line below will cause Chimera to exit when the script is done
+#rc("<a href="../UsersGuide/midas/stop.html">stop</a> now")
+# note that indentation is significant in Python; the fact that
+# the above command is exdented means that it is executed after
+# the loop completes, whereas the indented commands that 
+# preceded it are executed as part of the loop.
+</code>
+</pre>
+<h4>
+Actual Script File
+</h4>
+<p>
+Here is a
+<a href="processData.py">link</a>
+to an actual file containing the script so that you can download it and
+use it as a starting point for your own script &mdash; and save yourself
+some typing.
+</p>
+</body>
+</html>

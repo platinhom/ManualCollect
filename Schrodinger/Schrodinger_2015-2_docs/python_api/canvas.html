@@ -1,0 +1,3290 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Canvas 1.4 Python API &mdash; Schrödinger Python Suite 2015-2 Documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '4.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Schrödinger Python Suite 2015-2 Documentation" href="index.html" />
+    <link rel="next" title="Other Modules" href="other.html" />
+    <link rel="prev" title="Product Specific Modules" href="product_specific.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="other.html" title="Other Modules"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="product_specific.html" title="Product Specific Modules"
+             accesskey="P">previous</a> |</li>
+        <li><a href="overview.html">Schrödinger Python Suite 2015-2 Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <span class="target" id="module-schrodinger.application.canvas.base"></span><div class="section" id="canvas-1-4-python-api">
+<span id="canvas-api"></span><span id="index-0"></span><h1>Canvas 1.4 Python API<a class="headerlink" href="#canvas-1-4-python-api" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This section describes the Python application programming interface that
+accompanies Canvas version 1.5, which is part of the Schrödinger Suite 2012
+release.</p>
+<p>The Canvas Python API consists of a rich library of object‑oriented tools
+for developing custom cheminformatics applications with a range of
+functionality, including:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference internal" href="#file-io"><em>Chemical structure storage and I/O</em></a></li>
+<li><a class="reference internal" href="#substructure-matching"><em>Substructure matching</em></a></li>
+<li><a class="reference internal" href="#fingerprint-apis"><em>Fingerprinting creation and I/O</em></a></li>
+<li><a class="reference internal" href="#fp-bitmapping"><em>Fingerprint bit mapping</em></a></li>
+<li><a class="reference internal" href="#similarity-distance-measures"><em>Similarity/distance calculations</em></a></li>
+<li><a class="reference internal" href="#hierarchical-clustering"><em>Hierarchical clustering</em></a></li>
+</ul>
+</div></blockquote>
+<p>Each Python application you create must import the canvas module:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">schrodinger.application.canvas.base</span> <span class="kn">as</span> <span class="nn">canvas</span>
+</pre></div>
+</div>
+<p>If you wish to use <a class="reference internal" href="structure_overview.html#structure-class"><em>Structure objects</em></a> (sometimes
+also referred to as &#8220;mmct&#8221; objects, for the underlying C library
+implementation) and convert back and forth between Canvas <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>
+objects, you will need additional imports:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">schrodinger</span> <span class="kn">import</span> <span class="n">structure</span>
+<span class="kn">from</span> <span class="nn">schrodinger.infra.canvas</span> <span class="kn">import</span> <span class="n">ChmMmctAdaptor</span>
+</pre></div>
+</div>
+<p>Furthermore, you must have a valid CANVAS_FULL license, and the application
+must successfully checkout that license before the Canvas APIs can be used.
+The following checkout procedure is recommended:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">try</span><span class="p">:</span>
+    <span class="n">lic</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ChmLicenseFull</span><span class="p">()</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;Unable to checkout CANVAS_FULL license</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="ow">not</span> <span class="n">lic</span><span class="o">.</span><span class="n">isValid</span><span class="p">():</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;CANVAS_FULL license is not valid</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To ensure that all environment variables and paths are set correctly, a
+Canvas Python application should be invoked as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre>$SCHRODINGER/run &lt;app_name&gt; [options]
+</pre></div>
+</div>
+<p>Where $SCHRODINGER points to the directory in which the 2010 Schrodinger
+software is installed.</p>
+<div class="section" id="constructors-and-static-methods">
+<h3>Constructors and Static Methods<a class="headerlink" href="#constructors-and-static-methods" title="Permalink to this headline">¶</a></h3>
+<p>Most Canvas objects are created automatically as a returned value from a
+member function invoked on another object. For example, if mol is a
+<a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a> object, mol.getAtom(i) returns a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmAtom" title="schrodinger.application.canvas.base.ChmAtom"><tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt></a> object.
+However, there are certain objects that you will create explicitly through a
+constructor. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">query</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ChmQuery</span><span class="p">(</span><span class="s">&quot;c1nc[c,n]cc1&quot;</span><span class="p">)</span>
+
+<span class="n">bitset</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ChmBitset</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>There are also cases where you will create an object through a static method
+of that class, such as:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">mol</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ChmMol</span><span class="o">.</span><span class="n">fromSMILES</span><span class="p">(</span><span class="s">&quot;Nc1ccccc1&quot;</span><span class="p">)</span>
+
+<span class="n">query</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ChmQuery</span><span class="o">.</span><span class="n">fromMDLFile</span><span class="p">(</span><span class="s">&quot;query.mol&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In the material that follows, any applicable constructors are documented
+before other methods of the class, and all static methods are noted as such.</p>
+</div>
+<div class="section" id="iterable-lists">
+<h3>Iterable Lists<a class="headerlink" href="#iterable-lists" title="Permalink to this headline">¶</a></h3>
+<p>Lists returned by Canvas APIs behave much like ordinary Python lists, but
+they are not entirely equivalent, nor can you supply an ordinary Python list
+as an argument in an API that calls for a Canvas-style list. Another
+important difference is that after iterating through a Canvas list, you must
+rewind it before you can iterate through it again. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">atoms</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">getAtoms</span><span class="p">()</span>
+
+<span class="k">print</span> <span class="s">&quot;First pass...&quot;</span>
+<span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">atoms</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&quot;Label =&quot;</span><span class="p">,</span> <span class="n">atom</span><span class="o">.</span><span class="n">getLabel</span><span class="p">()</span>
+
+<span class="k">print</span> <span class="s">&quot;Second pass...&quot;</span>
+<span class="n">atoms</span><span class="o">.</span><span class="n">rewind</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">atoms</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&quot;Label =&quot;</span><span class="p">,</span> <span class="n">atom</span><span class="o">.</span><span class="n">getLabel</span><span class="p">()</span>
+
+<span class="c"># Note that the &quot;for&quot; loops above are equivalent to the following:</span>
+
+<span class="k">while</span> <span class="n">atoms</span><span class="o">.</span><span class="n">hasNext</span><span class="p">():</span>
+    <span class="n">atom</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+    <span class="k">print</span> <span class="s">&quot;Label =&quot;</span><span class="p">,</span> <span class="n">atom</span><span class="o">.</span><span class="n">getLabel</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="section" id="iterator-methods">
+<h4>Iterator Methods<a class="headerlink" href="#iterator-methods" title="Permalink to this headline">¶</a></h4>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmIterator">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmIterator</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmIterator" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt>
+<tt class="descname">__getitem__</tt><big>(</big><em>i</em><big>)</big></dt>
+<dd><p>The ith item in the list, where i runs from 0 to size()-1. The
+legality of i is not checked, so if the supplied value is out of
+range, a segmentation fault can occur.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">at</tt><big>(</big><em>i</em><big>)</big></dt>
+<dd><p>The ith item in the list, where i runs from 0 to size()-1. If an
+illegal value is supplied, an exception is thrown.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">hasNext</tt><big>(</big><big>)</big></dt>
+<dd><p>True if more items remain in the list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">next</tt><big>(</big><big>)</big></dt>
+<dd><p>The next item in the list</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">rewind</tt><big>(</big><big>)</big></dt>
+<dd><p>Rewinds to the beginning of the list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">size</tt><big>(</big><big>)</big></dt>
+<dd><p>The total number of items in the list.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="input-output-streams">
+<h3>Input/Output Streams<a class="headerlink" href="#input-output-streams" title="Permalink to this headline">¶</a></h3>
+<p>Certain Canvas APIs operate on an input or output stream that’s attached to
+file. If the input and output file names are <tt class="docutils literal"><span class="pre">inFile</span></tt> and <tt class="docutils literal"><span class="pre">outFile</span></tt>,
+respectively, the input/output stream objects may be created as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">inStream</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ifstream</span><span class="p">(</span><span class="n">inFile</span><span class="p">)</span>
+<span class="n">outStream</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ofstream</span><span class="p">(</span><span class="n">outFile</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="exceptions">
+<h3>Exceptions<a class="headerlink" href="#exceptions" title="Permalink to this headline">¶</a></h3>
+<p>When an error occurs within a Canvas constructor or method, a RuntimeError
+exception with an informative error message is normally thrown. To handle
+the exception and display the error message, the following approach may be
+used:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">try</span><span class="p">:</span>
+    <span class="k">pass</span> <span class="c"># call some Canvas function here</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">canvasErr</span><span class="p">:</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">canvasErr</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="chemical-structure-apis">
+<h2>Chemical Structure APIs<a class="headerlink" href="#chemical-structure-apis" title="Permalink to this headline">¶</a></h2>
+<p>The classes and methods in this section support chemical structure storage
+and I/O.</p>
+<div class="section" id="atoms">
+<h3>Atoms<a class="headerlink" href="#atoms" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmAtom">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmAtom</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmAtom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes a single atom in a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>.</p>
+<dl class="method">
+<dt>
+<tt class="descname">findNeighbor</tt><big>(</big><em>otherAtom</em><big>)</big></dt>
+<dd><p>Loops over the bonds to the current <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>, and returns
+the position (0, 1,...) at which the bond to the supplied
+<tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt> is found.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">firstNeighbor</tt><big>(</big><big>)</big></dt>
+<dd><p>The first <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt> bonded to the current <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getAtomicNumber</tt><big>(</big><big>)</big></dt>
+<dd><p>Atomic number.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getBond</tt><big>(</big><em>otherAtom</em><big>)</big></dt>
+<dd><p>The <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBond" title="schrodinger.application.canvas.base.ChmBond"><tt class="xref py py-class docutils literal"><span class="pre">ChmBond</span></tt></a> between the current <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt> and the
+supplied <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getBond</tt><big>(</big><em>i</em><big>)</big></dt>
+<dd><p>The <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBond" title="schrodinger.application.canvas.base.ChmBond"><tt class="xref py py-class docutils literal"><span class="pre">ChmBond</span></tt></a> between the current <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt> and the
+ith <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt> to which it is bonded. All atoms (explicit +
+implicit) are considered, so i ranges from 0 to
+<tt class="docutils literal"><span class="pre">mol.getBondCount(True)-1</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getBondCount</tt><big>(</big><em>wantImplicitHydrogens=False</em><big>)</big></dt>
+<dd><p>Number of atoms bonded to the current <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>. The Boolean
+wantImplicitHydrogens is False by default and determines whether
+bonds to implicit hydrogens should be counted.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getBonds</tt><big>(</big><em>wantImplicitHydrogens=False</em><big>)</big></dt>
+<dd><p>Iterable list of bonds (as <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBond" title="schrodinger.application.canvas.base.ChmBond"><tt class="xref py py-class docutils literal"><span class="pre">ChmBond</span></tt></a> objects) made by the
+current <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>. The Boolean wantImplictHydrogens is False
+by default and determines whether bonds to implicit hydrogens will
+not be included.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getFormalCharge</tt><big>(</big><big>)</big></dt>
+<dd><p>Integer formal charge.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getHeavyBondCount</tt><big>(</big><big>)</big></dt>
+<dd><p>Number of heavy atoms bonded to the current <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getHeavyBonds</tt><big>(</big><big>)</big></dt>
+<dd><p>Iterable list of bonds (as <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBond" title="schrodinger.application.canvas.base.ChmBond"><tt class="xref py py-class docutils literal"><span class="pre">ChmBond</span></tt></a> objects) made to heavy
+atoms.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getHeavyNeighbors</tt><big>(</big><big>)</big></dt>
+<dd><p>Iterable list of heavy atoms (as <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt> objects) bonded
+to the current <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getHybridization</tt><big>(</big><big>)</big></dt>
+<dd><p>Hybridization as an integer: 0 → unknown, 1 → sp, 2
+→ sp<sup>2</sup>, 3 → sp<sup>3</sup> , 4 →
+sp<sup>3</sup>d, 5 → sp<sup>3</sup>d<sup>2</sup>. The return
+values are also available as symbolic constants in
+<a class="reference internal" href="#module-schrodinger.application.canvas.base" title="schrodinger.application.canvas.base"><tt class="xref py py-obj docutils literal"><span class="pre">schrodinger.application.canvas.base</span></tt></a>: <tt class="xref py py-obj docutils literal"><span class="pre">HybridizationUnknown</span></tt>
+→ 0, <tt class="xref py py-obj docutils literal"><span class="pre">Sp</span></tt> → 1, <tt class="xref py py-obj docutils literal"><span class="pre">Sp2</span></tt> → 2, <tt class="xref py py-obj docutils literal"><span class="pre">Sp3</span></tt> → 3, <tt class="xref py py-obj docutils literal"><span class="pre">Sp3d</span></tt>
+→ 4, and <tt class="xref py py-obj docutils literal"><span class="pre">Sp3d2</span></tt> → 5.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getHydrogenCount</tt><big>(</big><big>)</big></dt>
+<dd><p>Number of hydrogens (explicit + implicit) bonded to the current
+<tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getImplicitHydrogenCount</tt><big>(</big><big>)</big></dt>
+<dd><p>Number of implicit hydrogens bonded to the current
+<tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getImplicitNeighbors</tt><big>(</big><big>)</big></dt>
+<dd><p>Iterable list of bonds (as <a class="reference internal" href="#schrodinger.application.canvas.base.ChmAtom" title="schrodinger.application.canvas.base.ChmAtom"><tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt></a> objects) to implicit
+hydrogens.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getLabel</tt><big>(</big><big>)</big></dt>
+<dd><p>A string that contains a label of the form <em>&lt;symbol&gt;&lt;number&gt;</em>, where
+<em>&lt;symbol&gt;</em> is the elemental symbol, and <em>&lt;number&gt;</em> is the zero‑based
+atom number (0, 1,...).</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getMolIndex</tt><big>(</big><big>)</big></dt>
+<dd><p>Index (0, 1,...) of the current <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt> in its parent
+<a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getNeighbors</tt><big>(</big><em>wantImplicitHydrogens=False</em>, <em>wantExplicitHydrogens=True</em><big>)</big></dt>
+<dd><p>Iterable list of atoms (as <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt> objects) bonded to the
+current <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>. The Boolean wantImplicitHydrogens is
+False by default and determines whether implicit hydrogens should be
+included. The Boolean wantExlicitHydrogens is True by default and
+determines whether explicit hydrogens should be included.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getRingSize</tt><big>(</big><big>)</big></dt>
+<dd><p>Size of the smallest ring that contains the current
+<tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getSymbol</tt><big>(</big><big>)</big></dt>
+<dd><p>Elemental symbol.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getTotalValence</tt><big>(</big><big>)</big></dt>
+<dd><p>Total valence, which is the sum of the bond orders over all bonds
+made by the current <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>. For this computation, single
+→ 1, double → 2, triple → 3, aromatic → 1.5.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getUserData</tt><big>(</big><big>)</big></dt>
+<dd><p>An integer-valued piece of data associated with the atom.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getX</tt><big>(</big><big>)</big></dt>
+<dd><p>X coordinate.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getY</tt><big>(</big><big>)</big></dt>
+<dd><p>Y coordinate.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getZ</tt><big>(</big><big>)</big></dt>
+<dd><p>Z coordinate.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">hasCoords</tt><big>(</big><big>)</big></dt>
+<dd><p>True if the <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt> has coordinates.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isAromatic</tt><big>(</big><big>)</big></dt>
+<dd><p>True if in aromatic ring.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isBondedTo</tt><big>(</big><em>otherAtom</em><big>)</big></dt>
+<dd><p>True if bonded to the supplied <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isCarbon</tt><big>(</big><big>)</big></dt>
+<dd><p>True if carbon.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isHalogen</tt><big>(</big><big>)</big></dt>
+<dd><p>True if F, Cl, Br or I.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isHeavy</tt><big>(</big><big>)</big></dt>
+<dd><p>True if not hydrogen.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isHydrogen</tt><big>(</big><big>)</big></dt>
+<dd><p>True if hydrogen.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isInRing</tt><big>(</big><big>)</big></dt>
+<dd><p>True if in ring.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isNitrogen</tt><big>(</big><big>)</big></dt>
+<dd><p>True if nitrogen.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isOxygen</tt><big>(</big><big>)</big></dt>
+<dd><p>True if oxygen.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isSulfur</tt><big>(</big><big>)</big></dt>
+<dd><p>True if sulfur.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isTerminal</tt><big>(</big><big>)</big></dt>
+<dd><p>True if terminal.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setPartialCharge</tt><big>(</big><em>q</em><big>)</big></dt>
+<dd><p>Sets the partial charge.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setUserData</tt><big>(</big><em>value</em><big>)</big></dt>
+<dd><p>Sets an integer-valued piece of data to associate with the atom.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setX</tt><big>(</big><em>x</em><big>)</big></dt>
+<dd><p>Sets the X coordinate.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setY</tt><big>(</big><em>y</em><big>)</big></dt>
+<dd><p>Sets the Y coordinate.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setZ</tt><big>(</big><em>z</em><big>)</big></dt>
+<dd><p>Sets the Z coordinate.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="bonds">
+<h3>Bonds<a class="headerlink" href="#bonds" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmBond">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmBond</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmBond" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes a bond between two <a class="reference internal" href="#schrodinger.application.canvas.base.ChmAtom" title="schrodinger.application.canvas.base.ChmAtom"><tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt></a> objects.</p>
+<dl class="method">
+<dt>
+<tt class="descname">atom1</tt><big>(</big><big>)</big></dt>
+<dd><p>First <a class="reference internal" href="#schrodinger.application.canvas.base.ChmAtom" title="schrodinger.application.canvas.base.ChmAtom"><tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt></a> in the <tt class="xref py py-class docutils literal"><span class="pre">ChmBond</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">atom2</tt><big>(</big><big>)</big></dt>
+<dd><p>Second <a class="reference internal" href="#schrodinger.application.canvas.base.ChmAtom" title="schrodinger.application.canvas.base.ChmAtom"><tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt></a> in the <tt class="xref py py-class docutils literal"><span class="pre">ChmBond</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getBondLength</tt><big>(</big><big>)</big></dt>
+<dd><p>Bond length in angstroms.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getMolIndex</tt><big>(</big><big>)</big></dt>
+<dd><p>Index (0, 1,...) of the current <tt class="xref py py-class docutils literal"><span class="pre">ChmBond</span></tt> in its parent
+<a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getOrder</tt><big>(</big><big>)</big></dt>
+<dd><p>Bond order. 0 → unknown, 1 → single, 2 → double,
+3 → triple, 4 → aromatic, 5 → Kekulized single, 6
+→ Kekulized double. The return values are also available as
+symbolic constants in <a class="reference internal" href="#module-schrodinger.application.canvas.base" title="schrodinger.application.canvas.base"><tt class="xref py py-obj docutils literal"><span class="pre">schrodinger.application.canvas.base</span></tt></a>:
+<tt class="xref py py-obj docutils literal"><span class="pre">OrderUnknown</span></tt> → 0, <tt class="xref py py-obj docutils literal"><span class="pre">Single</span></tt> → 1, <tt class="xref py py-obj docutils literal"><span class="pre">Double</span></tt> → 2,
+<tt class="xref py py-obj docutils literal"><span class="pre">Triple</span></tt> → 3, <tt class="xref py py-obj docutils literal"><span class="pre">Aromatic</span></tt> → 4, <tt class="xref py py-obj docutils literal"><span class="pre">KekulizedSingle</span></tt> →
+5, and <tt class="xref py py-obj docutils literal"><span class="pre">KekulizedDouble</span></tt> → 6.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getRingSize</tt><big>(</big><big>)</big></dt>
+<dd><p>Size of the smallest ring that contains the current
+<tt class="xref py py-class docutils literal"><span class="pre">ChmBond</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getUserCode</tt><big>(</big><big>)</big></dt>
+<dd><p>A non-negative integer-valued code associated with the bond.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isAromatic</tt><big>(</big><big>)</big></dt>
+<dd><p>True if in aromatic ring.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isInRing</tt><big>(</big><big>)</big></dt>
+<dd><p>True if in ring.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isTerminal</tt><big>(</big><big>)</big></dt>
+<dd><p>True if terminal.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">mate</tt><big>(</big><em>atom</em><big>)</big></dt>
+<dd><p>Given one <a class="reference internal" href="#schrodinger.application.canvas.base.ChmAtom" title="schrodinger.application.canvas.base.ChmAtom"><tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt></a> in the current <tt class="xref py py-class docutils literal"><span class="pre">ChmBond</span></tt>, this
+function returns the other <tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setUserCode</tt><big>(</big><em>code</em><big>)</big></dt>
+<dd><p>Sets a non-negative integer-valued code to associate with the bond.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="molecule-conversion">
+<h3>Molecule Conversion<a class="headerlink" href="#molecule-conversion" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmMmctAdaptor">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmMmctAdaptor</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmMmctAdaptor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts between <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a> and mmct (<a class="reference internal" href="structure_overview.html#structure-class"><em>Structure</em></a>) objects.</p>
+<dl class="method">
+<dt>
+<tt class="descname">create</tt><big>(</big><em>ctHandle</em><span class="optional">[</span>, <em>stereoTreatment</em><span class="optional">[</span>, <em>allHydrogensAsImplicit</em><span class="optional">[</span>, <em>wantProperties</em><span class="optional">]</span><span class="optional">]</span><span class="optional">]</span><big>)</big></dt>
+<dd><p>Converts an mmct handle to a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>, returning a new
+<tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt> object. The ctHandle argument can be accessed via
+the <tt class="docutils literal"><span class="pre">handle</span></tt> attribute of a <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stereoTreatment</strong> (<em>int</em>) &#8211; Controls how stereochemistry is transferred.
+Default is <tt class="docutils literal"><span class="pre">ChmMmctAdaptor.NoStereo</span></tt>. See
+<a class="reference internal" href="#stereochemistry-constants"><em>Stereochemistry Constants</em></a> for other legal values.</li>
+<li><strong>allHydrogensAsImplicit</strong> (<em>bool</em>) &#8211; Determines whether all hydrogens
+should be stored as implicit hydrogens. Default is False.</li>
+<li><strong>wantProperties</strong> (<em>bool</em>) &#8211; Determines whether properties should be
+copied. Default is True.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">create</tt><big>(</big><em>mol</em><span class="optional">[</span>, <em>wantProperties</em><span class="optional">]</span><big>)</big></dt>
+<dd><p>Converts <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a> to an mmct handle. Returns an integer
+handle, which can be passed to the <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> constructor to create
+a <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wantProperties</strong> (<em>bool</em>) &#8211; Determines whether properties should be
+copied. Default is True.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<div class="section" id="stereochemistry-constants">
+<span id="id1"></span><h4>Stereochemistry Constants<a class="headerlink" href="#stereochemistry-constants" title="Permalink to this headline">¶</a></h4>
+<dl class="classvar">
+<dt>
+<tt class="descname">ChmMmctAdaptor.NoStereo</tt></dt>
+<dd><p>Ignore stereochemistry (0).</p>
+</dd></dl>
+
+<dl class="classvar">
+<dt>
+<tt class="descname">ChmMmctAdaptor.StereoFromGeometry</tt></dt>
+<dd><p>Use mmstereo library to assign stereochemistry from 3D structure
+(1).</p>
+</dd></dl>
+
+<dl class="classvar">
+<dt>
+<tt class="descname">ChmMmctAdaptor.StereoFromGeometry_Safe</tt></dt>
+<dd><p>As above, but ignore mmstereo assignments that Canvas doesn’t agree
+with (2).</p>
+</dd></dl>
+
+<dl class="classvar">
+<dt>
+<tt class="descname">ChmMmctAdaptor.StereoFromAnnotation</tt></dt>
+<dd><p>Use existing mmstero annotations (3).</p>
+</dd></dl>
+
+<dl class="classvar">
+<dt>
+<tt class="descname">ChmMmctAdaptor.StereoFromAnnotation_Safe</tt></dt>
+<dd><p>As above, but ignore annotations that Canvas doesn’t agree with (4).</p>
+</dd></dl>
+
+<dl class="classvar">
+<dt>
+<tt class="descname">ChmMmctAdaptor.StereoFromAnnotationAndGeometry</tt></dt>
+<dd><p>Use existing mmstero annotations, with assignment from 3D structure
+as a backup for unspecified stereochemistry (5).</p>
+</dd></dl>
+
+<dl class="classvar">
+<dt>
+<tt class="descname">ChmMmctAdaptor.StereoFromAnnotationAndGeometry_Safe</tt></dt>
+<dd><p>As above, but ignore annotations/assignments that Canvas doesn’t
+agree with (6).</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="molecules">
+<h3>Molecules<a class="headerlink" href="#molecules" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmMol">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmMol</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmMol" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes a chemical structure.</p>
+<dl class="staticmethod">
+<dt>
+<em class="property">static </em><tt class="descname">fromMDL</tt><big>(</big><em>molString</em><span class="optional">[</span>, <em>autoName</em><span class="optional">]</span><big>)</big></dt>
+<dd><p>Static method that creates a <tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt> from a MOL file string
+or a single-structure SD file string.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>autoName</strong> (<em>bool</em>) &#8211; Determines whether a name is generated
+automatically with each call to this function (&#8220;Molecule1&#8221;,
+&#8220;Molecule2&#8221;, etc.). Default is False.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt>
+<em class="property">static </em><tt class="descname">fromSMILES</tt><big>(</big><em>smiles</em><span class="optional">[</span>, <em>autoName</em><span class="optional">]</span><big>)</big></dt>
+<dd><p>Static method that creates a <tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt> from a SMILES string.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>autoName</strong> (<em>bool</em>) &#8211; Determines whether a name is generated
+automatically with each call to this function (&#8220;Molecule1&#8221;,
+&#8220;Molecule2&#8221;, etc.). Default is False.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getAtom</tt><big>(</big><em>i</em><big>)</big></dt>
+<dd><p>The ith <a class="reference internal" href="#schrodinger.application.canvas.base.ChmAtom" title="schrodinger.application.canvas.base.ChmAtom"><tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt></a> in the <tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt>. All atoms
+(explicit and implicit) are considered, so i ranges from 0 to
+getAtomCount(True)-1.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getAtomCount</tt><big>(</big><em>wantImplicitHydrogens=False</em><big>)</big></dt>
+<dd><p>Number of atoms in the <tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt>. The Boolean
+wantImplicitHydrogens is False by default and determines whether
+implicit hydrogens should be counted.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getAtoms</tt><big>(</big><em>wantImplicitHydrogens=False</em><big>)</big></dt>
+<dd><p>Iterable list of atoms (as <a class="reference internal" href="#schrodinger.application.canvas.base.ChmAtom" title="schrodinger.application.canvas.base.ChmAtom"><tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt></a> objects) in the
+<tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt>.  The Boolean wantImplicitHydrogens is False by
+default and determines whether implicit hydrogens should be
+included.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getAtoms</tt><big>(</big><em>mask</em><big>)</big></dt>
+<dd><p>Iterable list of a subset of atoms in the <tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt>. The
+argument mask is a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitset" title="schrodinger.application.canvas.base.ChmBitset"><tt class="xref py py-obj docutils literal"><span class="pre">ChmBitset</span></tt></a> object, with &#8220;on&#8221; bits for the subset
+of atoms in question. The length of mask should be
+getAtomCount(False).</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getBond</tt><big>(</big><em>i</em><big>)</big></dt>
+<dd><p>The ith <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBond" title="schrodinger.application.canvas.base.ChmBond"><tt class="xref py py-class docutils literal"><span class="pre">ChmBond</span></tt></a> in the <tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt>. All atoms
+(explicit and implicit) are considered, so i ranges from 0 to
+<tt class="docutils literal"><span class="pre">mol.getBondCount(True)-1</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getBondCount</tt><big>(</big><em>wantImplicitHydrogens=False</em><big>)</big></dt>
+<dd><p>Number of bonds in the <tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt>. The Boolean
+wantImplicitHydrogens is False by default and determines whether
+bonds to implicit hydrogens should be counted.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getBonds</tt><big>(</big><em>wantImplicitHydrogens=False</em><big>)</big></dt>
+<dd><p>Iterable list of bonds (as <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBond" title="schrodinger.application.canvas.base.ChmBond"><tt class="xref py py-class docutils literal"><span class="pre">ChmBond</span></tt></a> objects) in the
+<tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt>.  The Boolean wantImplicitHydrogens is False by
+default and determines whether bonds to implicit hydrogens should be
+included.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getBonds</tt><big>(</big><em>bondMask</em><big>)</big></dt>
+<dd><p>Iterable list of a subset of bonds in the <tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt>. The
+argument bondMask is a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitset" title="schrodinger.application.canvas.base.ChmBitset"><tt class="xref py py-obj docutils literal"><span class="pre">ChmBitset</span></tt></a> object, with &#8220;on&#8221; bits for the
+subset of bonds in question.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getBondsForAtoms</tt><big>(</big><em>atomMask</em><big>)</big></dt>
+<dd><p>Iterable list of bonds that connect a subset of atoms. The argument
+atomMask is a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitset" title="schrodinger.application.canvas.base.ChmBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt></a> with &#8220;on&#8221; bits for a subset of
+atoms in the structure. The atoms need not form a contiguous
+substructure.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getConnectionTable</tt><big>(</big><em>wantImplicitHydrogens=False</em><big>)</big></dt>
+<dd><p>Connection table: 1 → bonded, 0 → not bonded. The
+Boolean wantImplicitHydrogens is False by default and determines
+whether implicit hydrogens should be included. This method returns a
+<tt class="xref py py-obj docutils literal"><span class="pre">ChmSymmetricMatrix</span></tt>. Use <tt class="docutils literal"><span class="pre">matrix.getItem(i,</span> <span class="pre">j)</span></tt> on the returned
+matrix to get the connectivity between atoms i and j. Atom numbers i
+and j run from 0 to <tt class="docutils literal"><span class="pre">mol.getAtomCount(wantImplicitHydrogens)-1</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getConnectionTableWithBondOrders</tt><big>(</big><em>wantImplicitHydrogens=False</em><big>)</big></dt>
+<dd><p>Analogous to getConnectionTable, except that <tt class="docutils literal"><span class="pre">matrix.getItem(i,</span>
+<span class="pre">j)</span></tt> returns the bond order if atoms i and j are bonded.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getDistanceMatrix</tt><big>(</big><em>wantImplicitHydrogens=False</em><big>)</big></dt>
+<dd><p>Shortest path distance matrix. The Boolean wantImplicitHydrogens is
+False by default and determines whether implicit hydrogens should be
+included. This method returns a <tt class="xref py py-obj docutils literal"><span class="pre">ChmSymmetricMatrix</span></tt>. Use
+<tt class="docutils literal"><span class="pre">matrix.getItem(i,&nbsp;j)</span></tt> on the returned matrix to get the distance
+between atoms i and j. Atom numbers i and j run from 0 to
+<tt class="docutils literal"><span class="pre">mol.getAtomCount(wantImplicitHydrogens)-1</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getDistanceMatrix3D</tt><big>(</big><em>wantImplicitHydrogens=False</em><big>)</big></dt>
+<dd><p>Three-dimensional distance matrix. The Boolean wantImplicitHydrogens
+is False by default and determines whether implicit hydrogens should
+be included. This method returns a <tt class="xref py py-obj docutils literal"><span class="pre">ChmSymmetricMatrix`</span></tt>. Use
+<tt class="docutils literal"><span class="pre">matrix.getItem(i,&nbsp;j)</span></tt> on the returned matrix to get the distance
+between atoms i and j. Atom numbers i and j run from 0 to
+<tt class="docutils literal"><span class="pre">mol.getAtomCount(wantImplicitHydrogens)-1</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getHeavyAtomCount</tt><big>(</big><big>)</big></dt>
+<dd><p>Number of heavy atoms.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getMW</tt><big>(</big><big>)</big></dt>
+<dd><p>Molecular weight.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getName</tt><big>(</big><big>)</big></dt>
+<dd><p>Structure name.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getNetCharge</tt><big>(</big><big>)</big></dt>
+<dd><p>Net charge on structure.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getProperties</tt><big>(</big><big>)</big></dt>
+<dd><p>Name → value mappings of all stored properties. May be
+coerced into an ordinary Python dictionary as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">props</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">mol</span><span class="o">.</span><span class="n">getProperties</span><span class="p">())</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getProperty</tt><big>(</big><em>propName</em><big>)</big></dt>
+<dd><p>The value of a stored property, cast as a string.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getPropertyCount</tt><big>(</big><big>)</big></dt>
+<dd><p>The number of stored properties.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">has2DCoords</tt><big>(</big><big>)</big></dt>
+<dd><p>True if structure has X and Y coordinates only.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">has3DCoords</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<p>True if structure has X, Y and Z coordinates.</p>
+<dl class="method">
+<dt>
+<tt class="descname">hasCoords</tt><big>(</big><big>)</big></dt>
+<dd><p>True if structure has 2D or 3D coordinates.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">hasProperty</tt><big>(</big><em>propertyName</em><big>)</big></dt>
+<dd><p>True if propertyName is one of the stored properties.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setName</tt><big>(</big><em>name</em><big>)</big></dt>
+<dd><p>Sets structure name.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setProperty</tt><big>(</big><em>propertyName</em>, <em>propertyValue</em><big>)</big></dt>
+<dd><p>Sets/adds a property, where propertyValue is a string.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">toCanonicalSMILES</tt><big>(</big><big>)</big></dt>
+<dd><p>Creates a canonical SMILES string from the structure.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">toMDL</tt><big>(</big><span class="optional">[</span><em>withHydrogens</em><span class="optional">[</span>, <em>withProps</em><span class="optional">[</span>, <em>withCoords</em><span class="optional">[</span>, <em>name</em><span class="optional">]</span><span class="optional">]</span><span class="optional">]</span><span class="optional">]</span><big>)</big></dt>
+<dd><p>Creates an SD file string from the structure.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>withHydrogens</strong> (<em>int</em>) &#8211; Determines whether hydrogens should be
+included. Choices are 0 (None), 1 (AsWritten), 2 (Polar), 3
+(All), 4 (Chiral). Default is 0.</li>
+<li><strong>withProps</strong> (<em>bool</em>) &#8211; Determines whether stored properties should be
+output. Default is True.</li>
+<li><strong>withCoords</strong> (<em>bool</em>) &#8211; Determines whether the existing coordinates
+should be retained (zeros are written if False). Default is
+True.</li>
+<li><strong>name</strong> (<em>string</em>) &#8211; Used to override automatic name assignment
+(&#8220;Molecule1&#8221;, &#8220;Molecule2&#8221;, etc.).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">toSMILES</tt><big>(</big><em>wantKekulized=False</em><big>)</big></dt>
+<dd><p>Creates an ordinary SMILES string from the structure. The Boolean
+wantKekulized is False by default and determines whether aromatic
+rings should be represented using alternating single/double bonds.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="file-i-o">
+<span id="file-io"></span><h3>File I/O<a class="headerlink" href="#file-i-o" title="Permalink to this headline">¶</a></h3>
+<p>File I/O is covered by two classes, <a class="reference internal" href="#schrodinger.application.canvas.base.ChmSDReader" title="schrodinger.application.canvas.base.ChmSDReader"><tt class="xref py py-class docutils literal"><span class="pre">ChmSDReader</span></tt></a> and
+<a class="reference internal" href="#schrodinger.application.canvas.base.ChmSmilesFileReader" title="schrodinger.application.canvas.base.ChmSmilesFileReader"><tt class="xref py py-class docutils literal"><span class="pre">ChmSmilesFileReader</span></tt></a>. For additional file I/O, see the
+<a class="reference internal" href="structure_overview.html#structure-file-io"><em>Structure-class-based I/O</em></a> documentation.</p>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmSDReader">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmSDReader</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmSDReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterable SD file reader. Note that the following two methods for
+reading a file are equivalent:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># 1</span>
+<span class="n">sdr</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ChmSDReader</span><span class="p">(</span><span class="s">&quot;file.sdf&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">mol</span> <span class="ow">in</span> <span class="n">sdr</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&quot;Structure name =&quot;</span><span class="p">,</span><span class="n">mol</span><span class="o">.</span><span class="n">getName</span><span class="p">()</span>
+
+<span class="c"># 2</span>
+<span class="n">sdr</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ChmSDReader</span><span class="p">(</span><span class="s">&quot;file.sdf&quot;</span><span class="p">)</span>
+<span class="k">while</span> <span class="n">sdr</span><span class="o">.</span><span class="n">hasNext</span><span class="p">():</span>
+    <span class="n">mol</span> <span class="o">=</span> <span class="n">sdr</span><span class="o">.</span><span class="n">_next</span><span class="p">()</span>
+    <span class="k">print</span> <span class="s">&quot;Structure name =&quot;</span><span class="p">,</span><span class="n">mol</span><span class="o">.</span><span class="n">getName</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>sdFile</em><big>)</big></dt>
+<dd><p>Creates an SD file reader object and opens it on the specified file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">_next</tt><big>(</big><big>)</big></dt>
+<dd><p>The next <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a> in the file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getError</tt><big>(</big><big>)</big></dt>
+<dd><p>Description of most recent error.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">hasError</tt><big>(</big><big>)</big></dt>
+<dd><p>True if the most recent attempt to read produced an error.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">hasNext</tt><big>(</big><big>)</big></dt>
+<dd><p>True if more structures remain in the file.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmSmilesFileReader">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmSmilesFileReader</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmSmilesFileReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a file containing SMILES strings, one per line. If a SMILES
+string is followed by a space and a second field, that field will be
+stored as the structure name. A typical workflow to read a file is as
+follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">smi</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ChmSmilesFileReader</span><span class="p">(</span><span class="s">&quot;file.smi&quot;</span><span class="p">)</span>
+<span class="k">while</span> <span class="n">smi</span><span class="o">.</span><span class="n">hasNextMol</span><span class="p">():</span>
+    <span class="n">mol</span> <span class="o">=</span> <span class="n">smi</span><span class="o">.</span><span class="n">nextMol</span><span class="p">()</span>
+    <span class="k">print</span> <span class="s">&quot;Structure name =&quot;</span><span class="p">,</span><span class="n">mol</span><span class="o">.</span><span class="n">getName</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>smilesFile</em><big>)</big></dt>
+<dd><p>Creates a SMILES file reader object and opens it on the specified
+file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getError</tt><big>(</big><big>)</big></dt>
+<dd><p>Description of most recent error.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getFailureCount</tt><big>(</big><big>)</big></dt>
+<dd><p>Total number of errors.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getLastName</tt><big>(</big><big>)</big></dt>
+<dd><p>The most recent structure name. If no name was found in the file,
+it’s generated automatically as MoleculeN, where N is the structure
+count (1, 2,...).</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getLastSMILES</tt><big>(</big><big>)</big></dt>
+<dd><p>The most recent SMILES string read.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getSuccessCount</tt><big>(</big><big>)</big></dt>
+<dd><p>Total number of SMILES successfully read.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">hasError</tt><big>(</big><big>)</big></dt>
+<dd><p>True if the most recent attempt to read produced an error.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">hasNextMol</tt><big>(</big><big>)</big></dt>
+<dd><p>True if more SMILES strings remain in the file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">nextMol</tt><big>(</big><big>)</big></dt>
+<dd><p><a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a> generated from the next SMILES string in the file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">skip</tt><big>(</big><big>)</big></dt>
+<dd><p>Skip over the next SMILES string.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="substructure-matching">
+<span id="id2"></span><h3>Substructure Matching<a class="headerlink" href="#substructure-matching" title="Permalink to this headline">¶</a></h3>
+<p>The classes in this section support the creation and execution of 2D
+chemical queries. The <a class="reference internal" href="#schrodinger.application.canvas.base.ChmQueryMatcher" title="schrodinger.application.canvas.base.ChmQueryMatcher"><tt class="xref py py-class docutils literal"><span class="pre">ChmQueryMatcher</span></tt></a> matches a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmQuery" title="schrodinger.application.canvas.base.ChmQuery"><tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt></a>
+to a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>, and returns an iterable list of <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMatch" title="schrodinger.application.canvas.base.ChmMatch"><tt class="xref py py-class docutils literal"><span class="pre">ChmMatch</span></tt></a>
+objects.</p>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmMatch">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmMatch</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmMatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Describes a 2D match.</p>
+<dl class="method">
+<dt>
+<tt class="descname">getMatchedAtoms</tt><big>(</big><big>)</big></dt>
+<dd><p>Iterable list of the atoms (as <a class="reference internal" href="#schrodinger.application.canvas.base.ChmAtom" title="schrodinger.application.canvas.base.ChmAtom"><tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt></a> objects) matched by
+the query.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmQuery">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmQuery</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmQuery" title="Permalink to this definition">¶</a></dt>
+<dd><p>A 2D chemical query. Used in conjunction with <a class="reference internal" href="#schrodinger.application.canvas.base.ChmQueryMatcher" title="schrodinger.application.canvas.base.ChmQueryMatcher"><tt class="xref py py-class docutils literal"><span class="pre">ChmQueryMatcher</span></tt></a>.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>smarts</em><big>)</big></dt>
+<dd><p>Creates a <tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt> from a SMARTS string.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>mol</em><big>)</big></dt>
+<dd><p>Creates a <tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt> from a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getAtomCount</tt><big>(</big><big>)</big></dt>
+<dd><p>The number of atoms in the <tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getSource</tt><big>(</big><big>)</big></dt>
+<dd><p>The SMARTS representation of the query. This is a valid method even
+if the <tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt> was created from a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt>
+<em class="property">static </em><tt class="descname">fromMDL</tt><big>(</big><em>molString</em><big>)</big></dt>
+<dd><p>Static method that creates a <tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt> from a MOL file
+string or a single-structure SD file string.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt>
+<em class="property">static </em><tt class="descname">fromMDLFile</tt><big>(</big><em>fileName</em><big>)</big></dt>
+<dd><p>Static method that creates a <tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt> from a MOL file or a
+single-structure SD file.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmQueryMatcher">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmQueryMatcher</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmQueryMatcher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Matches a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmQuery" title="schrodinger.application.canvas.base.ChmQuery"><tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt></a> to a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>uniqueFilter=True</em><big>)</big></dt>
+<dd><p>The Boolean uniqueFilter is True by default and determines whether
+only a single mapping should be returned when the query can be
+mapped to a set of atoms in more than one way (e.g., the query
+&#8220;c1ccccc1&#8221; can be mapped to a phenyl ring in 12 ways).</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getUniqueFilter</tt><big>(</big><big>)</big></dt>
+<dd><p>True if only one mapping per match should be returned.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">hasExactMatch</tt><big>(</big><em>query</em>, <em>mol</em><big>)</big></dt>
+<dd><p>True if the supplied <a class="reference internal" href="#schrodinger.application.canvas.base.ChmQuery" title="schrodinger.application.canvas.base.ChmQuery"><tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt></a> produces an exact match to
+the supplied <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">hasMatch</tt><big>(</big><em>query</em>, <em>mol</em><big>)</big></dt>
+<dd><p>True if the supplied <a class="reference internal" href="#schrodinger.application.canvas.base.ChmQuery" title="schrodinger.application.canvas.base.ChmQuery"><tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt></a> produces at least one match
+to the supplied <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">match</tt><big>(</big><em>query</em>, <em>mol</em><big>)</big></dt>
+<dd><p>Matches a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmQuery" title="schrodinger.application.canvas.base.ChmQuery"><tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt></a> to a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a> and returns an
+iterable list of <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMatch" title="schrodinger.application.canvas.base.ChmMatch"><tt class="xref py py-class docutils literal"><span class="pre">ChmMatch</span></tt></a> objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">matchCount</tt><big>(</big><em>query</em>, <em>mol</em><big>)</big></dt>
+<dd><p>The number of times a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmQuery" title="schrodinger.application.canvas.base.ChmQuery"><tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt></a> matches a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">matchMask</tt><big>(</big><em>query</em>, <em>mol</em><big>)</big></dt>
+<dd><p>Matches a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmQuery" title="schrodinger.application.canvas.base.ChmQuery"><tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt></a> to a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a> and returns an
+iterable list of matches as <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitset" title="schrodinger.application.canvas.base.ChmBitset"><tt class="xref py py-obj docutils literal"><span class="pre">ChmBitset</span></tt></a> objects.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">matchMaskSubset</tt><big>(</big><em>query</em>, <em>mol</em>, <em>bitset</em><big>)</big></dt>
+<dd><p>Matches a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmQuery" title="schrodinger.application.canvas.base.ChmQuery"><tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt></a> to a subset of atoms in a
+<a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>. The argument bitset is a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitset" title="schrodinger.application.canvas.base.ChmBitset"><tt class="xref py py-obj docutils literal"><span class="pre">ChmBitset</span></tt></a> object, with
+&#8220;on&#8221; bits for the subset of atoms in question. The length of bitset
+must be mol.getAtomCount(False) or mol.getAtomCount(True).</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">matchSubset</tt><big>(</big><em>query</em>, <em>mol</em>, <em>atoms</em><big>)</big></dt>
+<dd><p>Matches a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmQuery" title="schrodinger.application.canvas.base.ChmQuery"><tt class="xref py py-class docutils literal"><span class="pre">ChmQuery</span></tt></a> to a subset of atoms in a
+<a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>. The argument atoms is a list of <a class="reference internal" href="#schrodinger.application.canvas.base.ChmAtom" title="schrodinger.application.canvas.base.ChmAtom"><tt class="xref py py-class docutils literal"><span class="pre">ChmAtom</span></tt></a>
+objects returned by another Canvas API, such as
+mol.getAtoms(bitset). It cannot be an ordinary Python list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setUniqueFilter</tt><big>(</big><em>uniqueFilter</em><big>)</big></dt>
+<dd><p>Turns unique filtering on/off according to the value of the Boolean
+uniqueFilter.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="bitset-apis">
+<span id="id3"></span><h3>Bitset APIs<a class="headerlink" href="#bitset-apis" title="Permalink to this headline">¶</a></h3>
+<p>The classes and methods in this section support the storage, manipulation
+and comparison of fingerprint data. See <a class="reference internal" href="#id5">Fingerprint APIs</a> for the
+actual creation of fingerprints from chemical structures.</p>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmBitset">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmBitset</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmBitset" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Subclass of</em> <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitComparable" title="schrodinger.application.canvas.base.ChmBitComparable"><tt class="xref py py-class docutils literal"><span class="pre">ChmBitComparable</span></tt></a>.</p>
+<p>A fixed length bit string with explicit on/off values (compare
+<a class="reference internal" href="#schrodinger.application.canvas.base.ChmSparseBitset" title="schrodinger.application.canvas.base.ChmSparseBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt></a>). For the sake of clarity in describing certain
+APIs, the example bitset &#8220;1,0,0,1,1&#8221; will be used. This bitset has a
+length of 5 with &#8220;on&#8221; bits at positions 0, 3, and 4.</p>
+<p>See the <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitComparable" title="schrodinger.application.canvas.base.ChmBitComparable"><tt class="xref py py-class docutils literal"><span class="pre">ChmBitComparable</span></tt></a> base class for methods common to this
+class and <a class="reference internal" href="#schrodinger.application.canvas.base.ChmSparseBitset" title="schrodinger.application.canvas.base.ChmSparseBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt></a>, including distance and similarity
+measures.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>n</em><big>)</big></dt>
+<dd><p>Creates a bitset of length n with all bits off. The length
+automatically increases if bits higher than n - 1 are turned on.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>onBits</em>, <em>n</em><big>)</big></dt>
+<dd><p>Creates a bitset of length n with a specific collection of bits
+turned on. The argument onBits is an ordinary Python list or tuple,
+containing the positions of the on bits. The example bitset
+&#8220;1,0,0,1,1&#8221; could be created using either of the following
+statements:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">bitset</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ChmBitset</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="mi">5</span><span class="p">)</span>
+<span class="n">bitset</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ChmBitset</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The length automatically increases if bits higher than n - 1 are
+turned on, including bits in onBits.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">all</tt><big>(</big><big>)</big></dt>
+<dd><p>True if all bits are on.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">any</tt><big>(</big><big>)</big></dt>
+<dd><p>True if any bits are on.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">clear</tt><big>(</big><big>)</big></dt>
+<dd><p>Turns off all bits.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">clear</tt><big>(</big><em>i</em><big>)</big></dt>
+<dd><p>Turns off bit i. i runs from 0 to size()-1.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">compare</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Compares the current <tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt> to the supplied one in a
+bitwise numeric fashion. Returns 1, 0, or -1, which correspond,
+respectively, to the current bitset being greater than, equal to, or
+less than the supplied bitset.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">contains</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>True if all the on bits in the supplied <tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt>
+are also on in the current <tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt>. The two
+bitsets must have the same length.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">empty</tt><big>(</big><big>)</big></dt>
+<dd><p>True if all bits are off.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">flip</tt><big>(</big><big>)</big></dt>
+<dd><p>Flips all bits.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">flip</tt><big>(</big><em>i</em><big>)</big></dt>
+<dd><p>Flips bit i. If i is greater than size(), the length of the bitset
+is automatically increased.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">get</tt><big>(</big><em>i</em><big>)</big></dt>
+<dd><p>True if bit i is on. Returns False if i is larger than size()-1.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">hasDifference</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>True if any bit in the current <tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt> differs from the
+corresponding bit in the supplied <tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt>. The two
+bitsets must have the same length.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">intersects</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>True if the current <tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt> and the supplied
+<tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt> share at least one on bit. The two bitsets must
+have the same length.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isSubsetOf</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>True if all the on bits in the current <tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt> are also
+on in the supplied <tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt>. The two bitsets must have
+the same length.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">resize</tt><big>(</big><em>n</em><big>)</big></dt>
+<dd><p>Changes the length of the bitset. If shorter, bits are removed from
+the end; if longer, off bits are appended.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">set</tt><big>(</big><big>)</big></dt>
+<dd><p>Turns on all bits.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">set</tt><big>(</big><em>i</em><big>)</big></dt>
+<dd><p>Turns on bit i. If i is greater than size(), the length of the
+bitset is automatically increased.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">size</tt><big>(</big><big>)</big></dt>
+<dd><p>The length of the bitset.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">to_bitstring</tt><big>(</big><big>)</big></dt>
+<dd><p>A comma-delimited string that represents all bit values. The
+example bitset would return &#8220;1,0,0,1,1&#8221;.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">toString</tt><big>(</big><big>)</big></dt>
+<dd><p>A comma-delimited string that contains the on bit positions. The
+example bitset would return &#8220;0,3,4&#8221;.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">toVector</tt><big>(</big><big>)</big></dt>
+<dd><p>An ordinary Python tuple of the on bit positions. The example
+bitset would return (0, 3, 4).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmSparseBitset">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmSparseBitset</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmSparseBitset" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Subclass of</em> <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitComparable" title="schrodinger.application.canvas.base.ChmBitComparable"><tt class="xref py py-class docutils literal"><span class="pre">ChmBitComparable</span></tt></a>.</p>
+<p>A bitset of theoretical length 2<sup>32</sup>, which stores only
+positions of the &#8220;on&#8221; bits.</p>
+<p>See the <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitComparable" title="schrodinger.application.canvas.base.ChmBitComparable"><tt class="xref py py-class docutils literal"><span class="pre">ChmBitComparable</span></tt></a> base class for methods common to this
+class and <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitset" title="schrodinger.application.canvas.base.ChmBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt></a>, including distance and similarity
+measures.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><big>)</big></dt>
+<dd><p>Creates a sparse bitset with no on bits.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>onBits</em><big>)</big></dt>
+<dd><p>Creates a sparse bitset with a specific collection of bits turned
+on. The argument onBits is an ordinary Python list or tuple,
+containing the positions of the on bits. The example bitset above
+could be created using either of the following statements:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">bitset</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ChmSparseBitset</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="n">bitset</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ChmSparseBitset</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">contains</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>True if all the on bits in the supplied <tt class="xref py py-obj docutils literal"><span class="pre">ChmSparseBitset</span></tt> are also on
+in the current <tt class="xref py py-obj docutils literal"><span class="pre">ChmSparseBitset</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">density</tt><big>(</big><big>)</big></dt>
+<dd><p>The fraction of bits that are on, i.e., count()/size().</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">empty</tt><big>(</big><big>)</big></dt>
+<dd><p>True if no bits are on.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">hasDifference</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>True any bit in the current <tt class="xref py py-obj docutils literal"><span class="pre">ChmSparseBitset</span></tt> differs from the
+corresponding bit in the supplied <tt class="xref py py-obj docutils literal"><span class="pre">ChmSparseBitset</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isSubsetOf</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>True if all the on bits in the current <tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt> are
+also on in the supplied <tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">intersects</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>True if the current <tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt> and the supplied
+<tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt> share at least one on bit.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">positionOf</tt><big>(</big><em>i</em><big>)</big></dt>
+<dd><p>If bit i is on, its relative position in the list of on bits is
+returned. If bit i is off, -1 is returned. Note that legal values of
+i lie on the interval [-21474836748, 21474836747], so the following
+correction should be made before calling this function:</p>
+<div class="highlight-python"><div class="highlight"><pre>if i &gt; 2147483647:
+    i = i – 4294967296
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">reduceToBitset</tt><big>(</big><em>n</em><big>)</big></dt>
+<dd><p>Returns a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitset" title="schrodinger.application.canvas.base.ChmBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt></a> of length n, which approximates the
+current <tt class="xref py py-obj docutils literal"><span class="pre">ChmSparseBitset</span></tt>. The reduction is done by dividing the
+coordinate <img class="math" src="_images/math/a8a39f10b046e08ae08c56b846bd7ff21a49acf2.png" alt="[0, 2^{32} - 1]"/> into n ranges of equal width, and
+mapping all sparse bits in a given range to a single bit in the
+<tt class="xref py py-obj docutils literal"><span class="pre">ChmBitset</span></tt> object. For example, if n = 1024, the width of each range
+is <img class="math" src="_images/math/92b322761e7189c3c3b4f86e6d80ccf30c48d373.png" alt="2^{32}/1024 = 4194304"/>, so sparse bits on the interval
+<img class="math" src="_images/math/6458ee2bf19bee6fb49e8fa413b3665a87987947.png" alt="[k \cdot 4194304, (k+1) \cdot 4194304 - 1]"/> are mapped to bit
+k in the returned <tt class="xref py py-obj docutils literal"><span class="pre">ChmBitset</span></tt>. Thus if any sparse bit in that
+range is on, bit k will be on in the <tt class="xref py py-obj docutils literal"><span class="pre">ChmBitset</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">size</tt><big>(</big><big>)</big></dt>
+<dd><p>The length of the bitset, i.e. 2<sup>32</sup>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">toVector</tt><big>(</big><big>)</big></dt>
+<dd><p>Returns a wrapped std::vector of the on bit positions. Note that the
+return type differs from ChmBitset::toVector (which returns a
+standard Python tuple) but that behavior should be largely
+equivalent.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmBitComparable">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmBitComparable</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmBitComparable" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="xref py py-obj docutils literal"><span class="pre">ChmBitComparable</span></tt> class is a base class of <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitset" title="schrodinger.application.canvas.base.ChmBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt></a> and
+<a class="reference internal" href="#schrodinger.application.canvas.base.ChmSparseBitset" title="schrodinger.application.canvas.base.ChmSparseBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt></a>, but is not directly instantiable.</p>
+<p>Methods provided by the base class that can be called with any other
+<tt class="xref py py-obj docutils literal"><span class="pre">ChmBitComparable</span></tt> are documented here. Methods that require bitsets of
+a specific type are documented with the appropriate subclass.</p>
+<p>See <a class="reference internal" href="#similarity-distance-measures"><em>Similarity/Distance Measures</em></a> for definitions of the distance
+and similarity measures.</p>
+<dl class="method">
+<dt>
+<tt class="descname">count</tt><big>(</big><big>)</big></dt>
+<dd><p>The number of on bits.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">countCommonOff</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>The number of off bits shared by the current
+<tt class="xref py py-class docutils literal"><span class="pre">ChmBitComparable</span></tt> and the supplied
+<tt class="xref py py-class docutils literal"><span class="pre">ChmBitComparable</span></tt>. The two bitsets must have the same
+length.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">countCommonOn</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>The number of on bits shared by the current
+<tt class="xref py py-class docutils literal"><span class="pre">ChmBitComparable</span></tt> and the supplied
+<tt class="xref py py-class docutils literal"><span class="pre">ChmBitComparable</span></tt>. The two bitsets must have the same
+length.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">countDifference</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>The number of bit differences between the current
+<tt class="xref py py-class docutils literal"><span class="pre">ChmBitComparable</span></tt> and the supplied
+<tt class="xref py py-class docutils literal"><span class="pre">ChmBitComparable</span></tt>. The two bitsets must have the same
+length.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">distDixon</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Dixon distance between the current <tt class="xref py py-class docutils literal"><span class="pre">ChmBitComparable</span></tt> and
+the supplied one.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">distEuclidean</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Euclidean distance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">distHamming</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Hamming distance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">distPatternDifference</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Pattern difference distance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">distShape</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Shape distance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">distSize</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Size distance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">distSoergel</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Soergel distance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">distSquaredEuclidean</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Squared Euclidean distance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">distVariance</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Variance distance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simBuser</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Buser similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simCosine</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Cosine similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simDice</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Dice similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simHamann</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Hamann similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simKulczynski</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Kulczynski similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simMatching</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Matching similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simMcConnaughey</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>McConnaughey similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simMinMax</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>MinMax similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simModifiedTanimoto</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Modified Tanimoto similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simPearson</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Pearson similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simPetke</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Petke similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simRogersTanimoto</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Rogers Tanimoto.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simSimpson</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Simpson similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simTanimoto</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Tanimoto similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simTversky</tt><big>(</big><em>bitset</em>, <em>alpha</em>, <em>beta</em><big>)</big></dt>
+<dd><p>Tversky similarity.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">simYule</tt><big>(</big><em>bitset</em><big>)</big></dt>
+<dd><p>Yule similarity.</p>
+</dd></dl>
+
+</dd></dl>
+
+<div class="section" id="similarity-distance-measures">
+<span id="id4"></span><h4>Similarity/Distance Measures<a class="headerlink" href="#similarity-distance-measures" title="Permalink to this headline">¶</a></h4>
+<p>A large number of methods are available for computing the similarity or
+distance between two <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitComparable" title="schrodinger.application.canvas.base.ChmBitComparable"><tt class="xref py py-class docutils literal"><span class="pre">ChmBitComparable</span></tt></a> objects <tt class="xref py py-obj docutils literal"><span class="pre">bitset1</span></tt> and
+<tt class="xref py py-obj docutils literal"><span class="pre">bitset2</span></tt>. Some of these methods will not be familiar to most users, so
+precise definitions are supplied here.</p>
+<dl class="docutils">
+<dt>Let:</dt>
+<dd><ul class="first last simple">
+<li><img class="math" src="_images/math/7000f97dcad3fa862d8a87bff15f4d9c596a6971.png" alt="a \equiv"/> Count of &#8220;on&#8221; bits in bitset1.</li>
+<li><img class="math" src="_images/math/e6f19e58d7b8a0cfc037f6049fecc820ebc3643c.png" alt="b \equiv"/> Count of &#8220;on&#8221; bits in bitset2.</li>
+<li><img class="math" src="_images/math/cc5f95dfabf65ddf5d902957aba140362c830b90.png" alt="c \equiv"/> Count of bits that are &#8220;on&#8221; in both bitset1 and bitset2.</li>
+<li><img class="math" src="_images/math/e1feb27929d68bbdf636ec64a5ea9a3d337a1abe.png" alt="d \equiv"/> Count of bits that are &#8220;off&#8221; in both bitset1 and bitset2.</li>
+<li><img class="math" src="_images/math/c346415fbe91fd5ba3d094c8f15488edb2106211.png" alt="A \equiv a - c"/> = count of bits that are exclusively &#8220;on&#8221; bits in bitset1.</li>
+<li><img class="math" src="_images/math/8a90bcb0890b0bee5ba3a500d8fe92c6ceb7129e.png" alt="B \equiv b - c"/> = count of bits that are exclusively &#8220;on&#8221; bits in bitset2.</li>
+<li><img class="math" src="_images/math/0c107b8af3e87821aa3faaff0b7b281af425fda3.png" alt="s \equiv"/> length of bitset.</li>
+</ul>
+</dd>
+</dl>
+<p>Buser similarity</p>
+<blockquote>
+<div><img class="math" src="_images/math/53ca46b702453048ed1eefb6c47c6dd608cefa4a.png" alt="(\sqrt{c d} + c)/(\sqrt{c d} + a + b - c)"/></div></blockquote>
+<p>Cosine similarity</p>
+<blockquote>
+<div><img class="math" src="_images/math/db6da81906cca5a8aca3064891e0d51a9dff3db1.png" alt="c/\sqrt{a b}"/></div></blockquote>
+<dl class="docutils">
+<dt>Dice similarity</dt>
+<dd><img class="math" src="_images/math/c13f0f39ed9fc34d4635f40d15079cf203e87761.png" alt="c/(0.5(a+b))"/></dd>
+<dt>Dixon distance</dt>
+<dd><img class="math" src="_images/math/618385f4bc47991bea914b472cebaa661760a4de.png" alt="(1.0 - \mathsf{Tanimoto}) \cdot \mathsf{Hamming}"/></dd>
+<dt>Euclidean distance</dt>
+<dd><img class="math" src="_images/math/12aaff985d5b666fe36c69cdf719896433802bd5.png" alt="\sqrt{A+B}"/></dd>
+<dt>Hamann similarity</dt>
+<dd><img class="math" src="_images/math/08f67963be1e84b2394c0ed8370092fd946a0e4b.png" alt="(c+d-A-B)/(A+B+c+d)"/></dd>
+<dt>Hamming distance</dt>
+<dd><img class="math" src="_images/math/34788e9306b53f8e752d1c80a9811fb9708fd742.png" alt="A+B"/></dd>
+<dt>Kulczynski similarity</dt>
+<dd><img class="math" src="_images/math/21064937413ec1ebcfbf39c9cd8976646bc5dc2d.png" alt="0.5 (c/a + c/b)"/></dd>
+<dt>Matching similarity</dt>
+<dd><img class="math" src="_images/math/e1e574812a458e6470838e6967964b5671be014a.png" alt="(c+d)/s"/></dd>
+<dt>McConnaughey similarity</dt>
+<dd><img class="math" src="_images/math/84ec81924db9ad61001e12084dda3383bae900a6.png" alt="(c^2 - (a-c)(b-c))/(ab)"/></dd>
+<dt>MinMax similarity</dt>
+<dd><img class="math" src="_images/math/bb16611d09dd16d124d4222de1eb01518ce62dc7.png" alt="\sum_i{\min[\mathsf{bitset1}(i), \mathsf{bitset2}(i)]/\max[\mathsf{bitset1}(i), \mathsf{bitset2}(i)]}"/></dd>
+</dl>
+<p>Modified Tanimoto similarity</p>
+<blockquote>
+<div><img class="math" src="_images/math/9fe3eb81e12067b6d309be572fafae35345d5686.png" alt="\alpha \mathsf{Tanimoto} + (1-\alpha))T_0"/> where <img class="math" src="_images/math/5832ccdf981ba2a66e987a5369e9b2545b17ed9c.png" alt="\alpha
+\equiv 2/3 - (a+b)/[6 \cdot \min(d, 10000)]"/> and <img class="math" src="_images/math/8ee71137fe7cffe47c785af3b607c76fe5503c8d.png" alt="T_0 \equiv
+d/(a+b-2c+d)"/> = Tanimoto of &#8220;off&#8221; bits</div></blockquote>
+<dl class="docutils">
+<dt>Pattern difference distance</dt>
+<dd><img class="math" src="_images/math/06f2c9ea7f8856547bae76af75fcd89281665063.png" alt="(AB)/(A+B+c+d)^2"/></dd>
+<dt>Pearson similarity</dt>
+<dd><img class="math" src="_images/math/9dfe0e0a804af02d95d73d4fa0f3b47a1291f4ee.png" alt="(cd - AB)/\sqrt{ab(A+d)(B+d)}"/></dd>
+<dt>Petke similarity</dt>
+<dd><img class="math" src="_images/math/b44eeedc8590106ce341773235afcf10656de5c5.png" alt="c/\max(a,b)"/></dd>
+<dt>Rogers Tanimoto similarity</dt>
+<dd><img class="math" src="_images/math/c5d87d9fe411464bfc6d7be50a520105c37908e4.png" alt="(c+d)/(2(a+b) - 3c+d)"/></dd>
+<dt>Shape distance</dt>
+<dd><img class="math" src="_images/math/d210f3309d7acc8cef42e72f42655004c608e4c4.png" alt="(A-B)/(A+B+c+d) - ((A-B)/(A+B+c+d))^2"/></dd>
+<dt>Simpson similarity</dt>
+<dd><img class="math" src="_images/math/7da131ab940c2827e9664e81d9c316be01e32f10.png" alt="c/\min(a,b)"/></dd>
+<dt>Size distance</dt>
+<dd><img class="math" src="_images/math/e8c541dadfe38cfedeefbd2045379f4636c151f0.png" alt="(A-B)^2/(A+B+c+d)^2"/></dd>
+<dt>Soergel distance</dt>
+<dd><img class="math" src="_images/math/01da6c69d4e7314cdcd2c1215099e238500445f6.png" alt="(A+B)/(A+B+c)"/></dd>
+<dt>Tanimoto similarity</dt>
+<dd><img class="math" src="_images/math/d7fa5efe4e9f5d1da6f30a077d8d13f3a5bb3cb0.png" alt="c/(a+b-c)"/></dd>
+<dt>Tversky <img class="math" src="_images/math/bc6d8a7754610965800fb2a0ea52b99a281ab347.png" alt="(\alpha,\beta)"/> similarity</dt>
+<dd><img class="math" src="_images/math/ab65b92cff84822a86232334da87b65861eefa47.png" alt="c/(\alpha(a-c) + \beta(b-c)+c)"/></dd>
+<dt>Variance distance</dt>
+<dd><img class="math" src="_images/math/55e25df26b6c14e9be4b667c440a1609c2c8b64e.png" alt="(A+B)/(4(A+B+c+d))"/></dd>
+<dt>Yule similarity</dt>
+<dd><img class="math" src="_images/math/515e84c79eb5a421d1e0596f2415a6aaf1208347.png" alt="(cd-A-B)/(cd+AB)"/></dd>
+</dl>
+</div>
+</div>
+<div class="section" id="fingerprint-apis">
+<span id="id5"></span><h3>Fingerprint APIs<a class="headerlink" href="#fingerprint-apis" title="Permalink to this headline">¶</a></h3>
+<p>The classes and methods in this section support the creation and I/O of binary fingerprints from chemical structures.</p>
+<div class="section" id="atom-typing-schemes">
+<span id="atomtyping-schemes"></span><h4>Atom Typing Schemes<a class="headerlink" href="#atom-typing-schemes" title="Permalink to this headline">¶</a></h4>
+<p>A Canvas fingerprint is generated by applying a set of rules that decompose
+a structure into a set of fragments/features, each of which is hashed to a
+32-bit integer code that turns on a bit in an underlying
+<a class="reference internal" href="#schrodinger.application.canvas.base.ChmSparseBitset" title="schrodinger.application.canvas.base.ChmSparseBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt></a> object. The integer code that’s generated depends
+upon the way in which atoms and bonds are distinguished, and the available
+schemes are summarized below.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="6%" />
+<col width="94%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Scheme</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>1</td>
+<td>All atoms and bonds are equivalent.</td>
+</tr>
+<tr class="row-odd"><td>2</td>
+<td>Atoms are distinguished by whether they are hydrogen bond (HB) acceptors or donors; all bonds are equivalent.</td>
+</tr>
+<tr class="row-even"><td>3</td>
+<td>Atoms are distinguished by hybridization state; all bonds are equivalent.</td>
+</tr>
+<tr class="row-odd"><td>4</td>
+<td>Atoms are distinguished by functional type: {H}, {C}, {F,Cl}, {Br,I}, {N,O}, {S}, {other}. All bonds are equivalent.</td>
+</tr>
+<tr class="row-even"><td>5</td>
+<td>Sybyl Mol2 atom types; all bonds are equivalent.</td>
+</tr>
+<tr class="row-odd"><td>6</td>
+<td>Atoms are distinguished by whether they are terminal, halogen, HB acceptor/donor; all bonds are equivalent.</td>
+</tr>
+<tr class="row-even"><td>7</td>
+<td>Atomic number and bond order.</td>
+</tr>
+<tr class="row-odd"><td>8</td>
+<td>Atoms are distinguished by ring size, aromaticity, HB acceptor/donor, whether terminal, whether halogen; bonds are distinguished by bond order.</td>
+</tr>
+<tr class="row-even"><td>9</td>
+<td>Carhart atom types (atom-pairs approach); all bonds are equivalent.</td>
+</tr>
+<tr class="row-odd"><td>10</td>
+<td>Daylight invariant atom types; bonds are distinguished by bond order.</td>
+</tr>
+<tr class="row-even"><td>11</td>
+<td>Same as 7, but distinguishing aromatic from non-aromatic.</td>
+</tr>
+<tr class="row-odd"><td>12</td>
+<td>Same as 10, but distinguishing cyclic aliphatic from acyclic aliphatic.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="base-fingerprint-classes">
+<h4>Base Fingerprint Classes<a class="headerlink" href="#base-fingerprint-classes" title="Permalink to this headline">¶</a></h4>
+<p>All output fingerprint classes <a class="reference internal" href="#fp-output-classes"><em>listed below</em></a> are
+subclasses of <tt class="xref py py-obj docutils literal"><span class="pre">ChmFPOut32</span></tt> (which can&#8217;t be directly instantiated) and are
+responsible for both the creation of fingerprints and writing them to files.</p>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmFPOut32">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmFPOut32</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmFPOut32" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt>
+<tt class="descname">close</tt><big>(</big><big>)</big></dt>
+<dd><p>Closes the binary file on which the object is opened.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">close</tt><big>(</big><em>minOnFreq</em>, <em>maxOffFreq</em>, <em>maxBits</em><span class="optional">[</span>, <em>reduceBits</em><span class="optional">]</span><big>)</big></dt>
+<dd><p>Filters the bits according to their statistics across all
+fingerprints in the file, then closes the file. A bit will be
+eliminated unless the fraction of the time it is on is at least
+minOnFreq and the fraction of the time it is off is no more than
+maxOffFreq. These two parameters work as described only when
+maxBits is 0 and reduceBits is 0 or omitted. To keep only the
+maxBits most statistically significant bits, set minOnFreq to 0.0,
+set maxOffFreq to 1.0, set maxBits to the desired value, and set
+reduceBits to 0, or omit it. To reduce the length of the
+fingerprint from 2<sup>32</sup> to 2<sup>32-reduceBits</sup>, set minOnFreq to 0.0, set maxOffFreq
+to 1.0, set maxBits to 0, and set reduceBits to the desired value.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">generate</tt><big>(</big><em>mol</em><big>)</big></dt>
+<dd><p>Generates a fingerprint from a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a> and returns it as a
+<a class="reference internal" href="#schrodinger.application.canvas.base.ChmSparseBitset" title="schrodinger.application.canvas.base.ChmSparseBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">generateMap</tt><big>(</big><em>mol</em><big>)</big></dt>
+<dd><p>Generates a fingerprint from a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmMol" title="schrodinger.application.canvas.base.ChmMol"><tt class="xref py py-class docutils literal"><span class="pre">ChmMol</span></tt></a>, maps the bits back
+to the atoms and bonds in the structure, and returns the mappings as
+a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmFPMap32" title="schrodinger.application.canvas.base.ChmFPMap32"><tt class="xref py py-class docutils literal"><span class="pre">ChmFPMap32</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getCurrentRowCount</tt><big>(</big><big>)</big></dt>
+<dd><p>The number of fingerprints written to the binary file on which the
+object is opened.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getTypeInfo</tt><big>(</big><big>)</big></dt>
+<dd><p>A textual summary of the fingerprint settings.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">open</tt><big>(</big><em>fileName</em><big>)</big></dt>
+<dd><p>Opens a binary file to which fingerprints may be written.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">write</tt><big>(</big><em>mol</em><span class="optional">[</span>, <em>extraData</em><span class="optional">]</span><big>)</big></dt>
+<dd><p>Writes the fingerprint for the provided molecule to a previously
+opened file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>extraData</strong> (<em>dict</em>) &#8211; Allows recording of extra information with a given
+fingerprint. This must be a dictionary with string keys and
+values.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">write</tt><big>(</big><em>bitset</em>, <em>id</em><big>)</big></dt>
+<dd><div class="deprecated">
+<p><span class="versionmodified">Deprecated since version 2011: </span>Use write(mol) or the <a class="reference internal" href="#schrodinger.application.canvas.base.ChmCustomOut32" title="schrodinger.application.canvas.base.ChmCustomOut32"><tt class="xref py py-class docutils literal"><span class="pre">ChmCustomOut32</span></tt></a>
+write(sparse_bitset, id) method instead.</p>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="fingerprint-output-classes">
+<span id="fp-output-classes"></span><h4>Fingerprint/Output Classes<a class="headerlink" href="#fingerprint-output-classes" title="Permalink to this headline">¶</a></h4>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmCustomOut32">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmCustomOut32</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmCustomOut32" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Subclass of</em> <a class="reference internal" href="#schrodinger.application.canvas.base.ChmFPOut32" title="schrodinger.application.canvas.base.ChmFPOut32"><tt class="xref py py-class docutils literal"><span class="pre">ChmFPOut32</span></tt></a>.</p>
+<p>This class writes custom (user-defined) fingerprints to a file.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>type_info</em><big>)</big></dt>
+<dd><p>The type_info argument is a string describing the type.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">write</tt><big>(</big><em>sparse_bitset</em>, <em>id</em>, <em>extraData=None</em><big>)</big></dt>
+<dd><p>Write the fingerprint provided in sparse_bitset to the fingerprint
+output file. (The file must first be opened wiht the open method.)</p>
+<p>The id argument must be a string. If provided, extraData should be a
+dictionary with string keys and values.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmDendriticOut32">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmDendriticOut32</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmDendriticOut32" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Subclass of</em> <a class="reference internal" href="#schrodinger.application.canvas.base.ChmFPOut32" title="schrodinger.application.canvas.base.ChmFPOut32"><tt class="xref py py-class docutils literal"><span class="pre">ChmFPOut32</span></tt></a>.</p>
+<p>Creates and outputs a dendritic fingerprint of theoretical length
+2<sup>32</sup>. Dendritic fingerprints encode linear and branched
+paths, where a branched path consists of two or more intersecting linear
+paths.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><span class="optional">[</span><em>atomTypingScheme</em><span class="optional">]</span><big>)</big></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>atomTypingScheme</strong> (<em>int</em>) &#8211; Default is 10. Value must be in the range
+1-12. See <a class="reference internal" href="#atomtyping-schemes"><em>Atom Typing Schemes</em></a> for details.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getMaxPath</tt><big>(</big><big>)</big></dt>
+<dd><p>The maximum number of bonds in linear paths</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getMinPath</tt><big>(</big><big>)</big></dt>
+<dd><p>The minimum number of bonds in linear paths.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setMaxPath</tt><big>(</big><em>max</em><big>)</big></dt>
+<dd><p>Sets the maximum number of bonds in linear paths. The default is 5.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setMinPath</tt><big>(</big><em>min</em><big>)</big></dt>
+<dd><p>Sets the minimum number of bonds in linear paths. The default is 0.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmLinearOut32">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmLinearOut32</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmLinearOut32" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Subclass of</em> <a class="reference internal" href="#schrodinger.application.canvas.base.ChmFPOut32" title="schrodinger.application.canvas.base.ChmFPOut32"><tt class="xref py py-class docutils literal"><span class="pre">ChmFPOut32</span></tt></a>.</p>
+<p>Creates and outputs a linear fingerprint of theoretical length
+2<sup>32</sup>. Linear fingerprints encode linear paths and ring
+closure.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><span class="optional">[</span><em>atomTypingScheme</em><span class="optional">]</span><big>)</big></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>atomTypingScheme</strong> (<em>int</em>) &#8211; Default is 10. Value must be in the range
+1-12. See <a class="reference internal" href="#atomtyping-schemes"><em>Atom Typing Schemes</em></a> for details.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getHalfStep</tt><big>(</big><big>)</big></dt>
+<dd><p>True if fragments can end with a bond.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getMaxPath</tt><big>(</big><big>)</big></dt>
+<dd><p>The maximum number of bonds in linear paths.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getMaxRingPath</tt><big>(</big><big>)</big></dt>
+<dd><p>The maximum number of bonds that will be traversed in order to close
+a ring.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getMinPath</tt><big>(</big><big>)</big></dt>
+<dd><p>The minimum number of bonds in linear paths.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setHalfStep</tt><big>(</big><em>doHalf</em><big>)</big></dt>
+<dd><p>Controls whether linear fragments can start/end at a bond. If
+False, all linear fragments will start and end at an atom, which is
+the default treatment.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setMaxPath</tt><big>(</big><em>max</em><big>)</big></dt>
+<dd><p>Sets the maximum number of bonds in linear paths. The default is 7.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setMaxRingPath</tt><big>(</big><em>max</em><big>)</big></dt>
+<dd><p>Sets the maximum number of bonds that will be traversed in order to
+close a ring. The default is 14. If 0, all paths encoded in the
+fingerprint will be self-avoiding.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setMinPath</tt><big>(</big><em>min</em><big>)</big></dt>
+<dd><p>Sets the minimum number of bonds in linear paths. The default is 0.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmMolprint2D32">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmMolprint2D32</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmMolprint2D32" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Subclass of</em> <a class="reference internal" href="#schrodinger.application.canvas.base.ChmFPOut32" title="schrodinger.application.canvas.base.ChmFPOut32"><tt class="xref py py-class docutils literal"><span class="pre">ChmFPOut32</span></tt></a>.</p>
+<p>Creates and outputs MOLPRINT 2D fingerprints of theoretical length 2<sup>32</sup>.  MOLPRINT 2D fingerprints encode atom environments
+using lists of atom types located at topological distances of 0 to 2
+bonds from each heavy atom.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><span class="optional">[</span><em>atomTypingScheme</em><span class="optional">]</span><big>)</big></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>atomTypingScheme</strong> (<em>int</em>) &#8211; Default is 5. Value must be in the range
+1-12. See <a class="reference internal" href="#atomtyping-schemes"><em>Atom Typing Schemes</em></a> for details.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmPairwiseOut32">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmPairwiseOut32</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmPairwiseOut32" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Subclass of</em> <a class="reference internal" href="#schrodinger.application.canvas.base.ChmFPOut32" title="schrodinger.application.canvas.base.ChmFPOut32"><tt class="xref py py-class docutils literal"><span class="pre">ChmFPOut32</span></tt></a>.</p>
+<p>Creates and outputs a pairwise fingerprint of theoretical length 2<sup>32</sup>.  Pairwise fingerprints encode pairs of atoms,
+differentiated by type, and the distance separating them: Type<sub>i</sub>-Type<sub>j</sub>-d<sub>ij</sub>.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><span class="optional">[</span><em>atomTypingScheme</em><span class="optional">]</span><big>)</big></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>atomTypingScheme</strong> (<em>int</em>) &#8211; Default is 9. Value must be in the range
+1-12. See <a class="reference internal" href="#atomtyping-schemes"><em>Atom Typing Schemes</em></a> for details.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">set3D</tt><big>(</big><em>use3D</em><big>)</big></dt>
+<dd><p>Controls whether 3D distances will be used. If False, all distances
+will be 2D, which is the default treatment. If True, setBinWidth
+must also be called.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setBinWidth</tt><big>(</big><em>dbin</em><big>)</big></dt>
+<dd><p>Sets the bin width for 2D/3D distances. The default for 2D
+distances is 1. There is no default for 3D distances, so this
+function must be called if using 3D distances.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setFuzzyDistance</tt><big>(</big><em>dfuzz</em><big>)</big></dt>
+<dd><p>If a 2D or 3D distance is within dfuzz of a boundary, turn on the
+bit corresponding to the neighboring bin.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setMaxDistance</tt><big>(</big><em>dmax</em><big>)</big></dt>
+<dd><p>Sets the maximum 2D/3D distance to consider. The default is no
+limit.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setMinDistance</tt><big>(</big><em>dmin</em><big>)</big></dt>
+<dd><p>Sets the minimum 2D/3D distance to consider. The default is 0.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmRadialOut32">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmRadialOut32</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmRadialOut32" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Subclass of</em> <a class="reference internal" href="#schrodinger.application.canvas.base.ChmFPOut32" title="schrodinger.application.canvas.base.ChmFPOut32"><tt class="xref py py-class docutils literal"><span class="pre">ChmFPOut32</span></tt></a>.</p>
+<p>Creates and outputs a radial fingerprint of theoretical length 2<sup>32</sup>.  Radial fingerprints (also known as extended
+connectivity fingerprints) encode fragments that grow radially from each
+heavy atom.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><span class="optional">[</span><em>atomTypingScheme</em><span class="optional">]</span><big>)</big></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>atomTypingScheme</strong> (<em>int</em>) &#8211; Default is 4. Value must be in the range
+1-12. See <a class="reference internal" href="#atomtyping-schemes"><em>Atom Typing Schemes</em></a> for details.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getIterations</tt><big>(</big><big>)</big></dt>
+<dd><p>The number of iterations of radial growth, which is also the radial
+size of the largest fragments.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getMinSize</tt><big>(</big><big>)</big></dt>
+<dd><p>The minimum radial size of fragments that will be retained.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setIterations</tt><big>(</big><em>iter</em><big>)</big></dt>
+<dd><p>Sets the number of iterations of radial growth, which is also the
+radial size of the largest fragments in the fingerprint. The
+default is 4.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setMinSize</tt><big>(</big><em>min</em><big>)</big></dt>
+<dd><p>Sets the minimum radial size of fragments to retain. All fragments
+generated prior to iteration min will be discarded. The default is
+0.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmSMARTSOut32">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmSMARTSOut32</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmSMARTSOut32" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Subclass of</em> <a class="reference internal" href="#schrodinger.application.canvas.base.ChmFPOut32" title="schrodinger.application.canvas.base.ChmFPOut32"><tt class="xref py py-class docutils literal"><span class="pre">ChmFPOut32</span></tt></a>.</p>
+<p>Creates and outputs a custom fingerprint whose bits are defined by a
+series of SMARTS patterns in a text file:</p>
+<div class="highlight-python"><div class="highlight"><pre>SMARTS1 bitName1
+SMARTS2 bitName2
+etc.
+</pre></div>
+</div>
+<p>Each SMARTS pattern and bit name must be separated by one or more spaces.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>smartsFile</em>, <em>wantCSV=False</em><big>)</big></dt>
+<dd><p>The Boolean wantCSV is False by default and determines whether the
+output fingerprint file should be a CSV file.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmToplogicalTorsionOut32">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmToplogicalTorsionOut32</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmToplogicalTorsionOut32" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Subclass of</em> <a class="reference internal" href="#schrodinger.application.canvas.base.ChmFPOut32" title="schrodinger.application.canvas.base.ChmFPOut32"><tt class="xref py py-class docutils literal"><span class="pre">ChmFPOut32</span></tt></a>.</p>
+<p>Creates and outputs a topological torsion fingerprint of theoretical
+length 2<sup>32</sup>. Topological torsion fingerprints encode
+linear paths of 4 atoms, differentiated by type: Type<sub>i</sub>-Type<sub>j</sub>-Type<sub>k</sub>-Type<sub>l</sub>.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><span class="optional">[</span><em>atomTypingScheme</em><span class="optional">]</span><big>)</big></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>atomTypingScheme</strong> (<em>int</em>) &#8211; Default is 10. Value must be in the range
+1-12. See <a class="reference internal" href="#atomtyping-schemes"><em>Atom Typing Schemes</em></a> for details.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmTripletOut32">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmTripletOut32</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmTripletOut32" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Subclass of</em> <a class="reference internal" href="#schrodinger.application.canvas.base.ChmFPOut32" title="schrodinger.application.canvas.base.ChmFPOut32"><tt class="xref py py-class docutils literal"><span class="pre">ChmFPOut32</span></tt></a>.</p>
+<p>Creates and outputs a triplet fingerprint of theoretical length 2<sup>32</sup>.  Triplet fingerprints encode triplets of atoms,
+differentiated by type, and the distances separating them: Type<sub>i</sub>-d<sub>ij</sub>-Type<sub>j</sub>-d<sub>jk</sub>-Type<sub>k</sub>-d<sub>ki</sub>.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><span class="optional">[</span><em>atomTypingScheme</em><span class="optional">]</span><big>)</big></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>atomTypingScheme</strong> (<em>int</em>) &#8211; Default is 10. Value must be in the range
+1-12. See <a class="reference internal" href="#atomtyping-schemes"><em>Atom Typing Schemes</em></a> for details.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">set3D</tt><big>(</big><em>use3D</em><big>)</big></dt>
+<dd><p>Controls whether 3D distances will be used. If False, all distances
+will be 2D, which is the default treatment. If True, setBinWidth
+must also be called.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setBinWidth</tt><big>(</big><em>dbin</em><big>)</big></dt>
+<dd><p>Sets the bin width for 2D/3D distances. There is no default for 3D
+distances, so this function must be called if using 3D distances.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setFuzzyDistance</tt><big>(</big><em>dfuzz</em><big>)</big></dt>
+<dd><p>If a 2D or 3D distance is within dfuzz of a boundary, turn on the
+bit corresponding to the neighboring bin.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setMaxDistance</tt><big>(</big><em>dmax</em><big>)</big></dt>
+<dd><p>Sets the maximum 2D/3D distance to consider. The default is no
+limit.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setMinDistance</tt><big>(</big><em>dmin</em><big>)</big></dt>
+<dd><p>Sets the minimum 2D/3D distance to consider. The default is 0.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="input">
+<h4>Input<a class="headerlink" href="#input" title="Permalink to this headline">¶</a></h4>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmFPIn32">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmFPIn32</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmFPIn32" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a binary fingerprint file created by <a class="reference internal" href="#schrodinger.application.canvas.base.ChmFPOut32" title="schrodinger.application.canvas.base.ChmFPOut32"><tt class="xref py py-obj docutils literal"><span class="pre">ChmFPOut32</span></tt></a> subclasses, and
+extracts each fingerprint as a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmSparseBitset" title="schrodinger.application.canvas.base.ChmSparseBitset"><tt class="xref py py-obj docutils literal"><span class="pre">ChmSparseBitset</span></tt></a>. A typical workflow to
+read a file is as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">fpIn</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="n">ChmFPIn32</span><span class="p">(</span><span class="s">&quot;linear.fp&quot;</span><span class="p">)</span>
+<span class="k">while</span> <span class="n">fpIn</span><span class="o">.</span><span class="n">hasNext</span><span class="p">():</span>
+    <span class="n">fp</span> <span class="o">=</span> <span class="n">fpIn</span><span class="o">.</span><span class="n">next</span> <span class="c"># A ChmSparseBitset</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>fileName</em><big>)</big></dt>
+<dd><p>Creates the object and opens a binary fingerprint file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">__iter__</tt><big>(</big><big>)</big></dt>
+<dd><p>The ChmFPIn32 object can be used as an iterator. Values yielded are
+the next fingerprint in the file, as a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmSparseBitset" title="schrodinger.application.canvas.base.ChmSparseBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt></a> of
+length 2<sup>32</sup>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">extraIterator</tt><big>(</big><big>)</big></dt>
+<dd><p>The extraIterator yields a tuple of (bitset, id, extraData) (as
+opposed to the bitset only behavior of the default iterator). The id
+is a string, and extraData is a dictionary of extra data as written
+to the file with <tt class="xref py py-meth docutils literal"><span class="pre">ChmFPOut32.write()</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">filter</tt><big>(</big><em>minOnFreq</em>, <em>maxOffFreq</em>, <em>maxBits</em>, <em>reduceBits</em><big>)</big></dt>
+<dd><p>Filters the bits according to their statistics across all
+fingerprints in the file, then rewrites the file. A bit will be
+eliminated unless the fraction of the time it is on is at least
+minOnFreq.and the fraction of the time it is off is no more than
+maxOffFreq. These two parameters work as described only when
+maxBits is 0 and reduceBits is 0. To keep only the maxBits most
+statistically significant bits, set minOnFreq to 0.0, set maxOffFreq
+to 1.0, set maxBits to the desired value, and set reduceBits to 0.
+To reduce the length of the fingerprint from 2<sup>32</sup> to
+2<sup>32‑reduceBits</sup>, set minOnFreq to 0.0, set
+maxOffFreq to 1.0, set maxBits to 0, and set reduceBits to the
+desired value. If reduceBits is applied to the same file repeatedly,
+the fingerprint will become progressively shorter, until it contains
+only one bit.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getFileName</tt><big>(</big><big>)</big></dt>
+<dd><p>The name of the binary fingerprint file on which the object is
+opened.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getOnBits</tt><big>(</big><big>)</big></dt>
+<dd><p>A <a class="reference internal" href="#schrodinger.application.canvas.base.ChmSparseBitset" title="schrodinger.application.canvas.base.ChmSparseBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt></a> that contains the union of on bits in the
+fingerprint file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getPos</tt><big>(</big><big>)</big></dt>
+<dd><p>The number of fingerprints that have been read from the file on
+which the object is opened.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getRowCount</tt><big>(</big><big>)</big></dt>
+<dd><p>The number of fingerprints contained in the file on which the object
+is opened.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getTypeInfo</tt><big>(</big><big>)</big></dt>
+<dd><p>A textual summary of the fingerprint settings.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getUnionCount</tt><big>(</big><big>)</big></dt>
+<dd><p>Equivalent to getOnBits().count().</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">hasNext</tt><big>(</big><big>)</big></dt>
+<dd><p>True if more fingerprints remain in the file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">next</tt><big>(</big><big>)</big></dt>
+<dd><p>The next fingerprint in the file, as a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmSparseBitset" title="schrodinger.application.canvas.base.ChmSparseBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt></a> of
+length 2<sup>32</sup>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">nextReduced</tt><big>(</big><big>)</big></dt>
+<dd><p>The next fingerprint in the file, as a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitset" title="schrodinger.application.canvas.base.ChmBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt></a> of length
+getUnionCount().</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">rewind</tt><big>(</big><big>)</big></dt>
+<dd><p>Rewinds the file to the beginning.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="bit-mapping">
+<span id="fp-bitmapping"></span><h4>Bit Mapping<a class="headerlink" href="#bit-mapping" title="Permalink to this headline">¶</a></h4>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmFPMap32">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmFPMap32</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmFPMap32" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides a mapping of each fingerprint bit back to the atoms and bonds
+that are responsible for setting that bit. A <tt class="xref py py-class docutils literal"><span class="pre">ChmFPMap32</span></tt> object
+is obtained by calling the generateMap method of a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmFPOut32" title="schrodinger.application.canvas.base.ChmFPOut32"><tt class="xref py py-obj docutils literal"><span class="pre">ChmFPOut32</span></tt></a>
+subclass.</p>
+<dl class="method">
+<dt>
+<tt class="descname">getCode</tt><big>(</big><em>i</em><big>)</big></dt>
+<dd><p>The 32-bit integer code for the ith on bit, where i runs from 0 to
+getCodeCount()-1. This is the position of the on bit in an
+underlying <a class="reference internal" href="#schrodinger.application.canvas.base.ChmSparseBitset" title="schrodinger.application.canvas.base.ChmSparseBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt></a> object. Note that if the
+underlying unsigned value is larger than 2147483647, a negative
+value will be returned. In other words, if <tt class="samp docutils literal"><em><span class="pre">code</span></em> <span class="pre">&gt;</span>
+<span class="pre">2147483647</span></tt>, <tt class="samp docutils literal"><em><span class="pre">code</span></em></tt> is mapped to <tt class="samp docutils literal"><em><span class="pre">code</span></em> <span class="pre">–</span>
+<span class="pre">4294967296</span></tt>. The returned value can be safely used in all subsequent
+APIs that accept a code.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getCodeCount</tt><big>(</big><big>)</big></dt>
+<dd><p>The number of unique codes in the fingerprint, i.e., the number of
+on bits.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getAtomsMaskForCode</tt><big>(</big><em>code</em><big>)</big></dt>
+<dd><p>Iterable list of <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitset" title="schrodinger.application.canvas.base.ChmBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt></a> objects, each of which encodes a
+set of atoms that are associated with the bit. If the length of the
+list is greater than one, the bit maps to more than one set of
+atoms.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getBondsMaskForCode</tt><big>(</big><em>code</em><big>)</big></dt>
+<dd><p>Iterable list of <a class="reference internal" href="#schrodinger.application.canvas.base.ChmBitset" title="schrodinger.application.canvas.base.ChmBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmBitset</span></tt></a> objects, each of which encodes a
+set of bonds that are associated with the bit. If the length of the
+list is greater than one, the bit maps to more than one set of
+bonds.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getOnBits</tt><big>(</big><big>)</big></dt>
+<dd><p>Returns the underlying <a class="reference internal" href="#schrodinger.application.canvas.base.ChmSparseBitset" title="schrodinger.application.canvas.base.ChmSparseBitset"><tt class="xref py py-class docutils literal"><span class="pre">ChmSparseBitset</span></tt></a> object that holds
+the fingerprint.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">hasCode</tt><big>(</big><em>code</em><big>)</big></dt>
+<dd><p>True if code is the position of an on bit.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="pairwise-i-o">
+<h4>Pairwise I/O<a class="headerlink" href="#pairwise-i-o" title="Permalink to this headline">¶</a></h4>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmPairwiseFPIn">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmPairwiseFPIn</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmPairwiseFPIn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads and stores a matrix of similarities supplied in binary or CSV
+format.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>inFile</em>, <em>matrixFormat</em><span class="optional">[</span>, <em>forceSquare</em><span class="optional">]</span><big>)</big></dt>
+<dd><p>Reads a similarity/distance matrix from the file inFile. The integer
+matrixFormat must be one of the <a class="reference internal" href="#matrix-file-formats"><em>matrix file format constants</em></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>forceSquare</strong> (<em>int</em>) &#8211; Controls whether the matrix must be square.
+Default is False.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>inStream</em>, <em>matrixFormat</em><span class="optional">[</span>, <em>forceSquare</em><span class="optional">]</span><big>)</big></dt>
+<dd><p>Reads a similarity/distance matrix from an input stream. Use
+<tt class="docutils literal"><span class="pre">canvas.ifstream(inFile)</span></tt> to create an input stream on a file named
+inFile.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>forceSquare</strong> (<em>int</em>) &#8211; Controls whether the matrix must be square.
+Default is False.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">cols</tt><big>(</big><big>)</big></dt>
+<dd><p>The number of columns in the matrix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getColumnName</tt><big>(</big><em>i</em><big>)</big></dt>
+<dd><p>The ith column name. i runs from 0 to cols()-1.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getRowName</tt><big>(</big><em>i</em><big>)</big></dt>
+<dd><p>The ith row name. i runs from 0 to rows()-1.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isDistanceMatrix</tt><big>(</big><big>)</big></dt>
+<dd><p>True if the matrix is square and the diagonals are 0.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isSimilarityMatrix</tt><big>(</big><big>)</big></dt>
+<dd><p>True if the matrix is square and the diagonals are 1.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isSquare</tt><big>(</big><big>)</big></dt>
+<dd><p>True if the matrix is square.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isSymmetric</tt><big>(</big><big>)</big></dt>
+<dd><p>True if the matrix is symmetric.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">isValid</tt><big>(</big><big>)</big></dt>
+<dd><p>True if the matrix is square and the diagonals are 1 or 0.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">rows</tt><big>(</big><big>)</big></dt>
+<dd><p>The number of rows in the matrix.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmPairwiseFPOut32">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmPairwiseFPOut32</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmPairwiseFPOut32" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given one or two fingerprint files created by a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmFPOut32" title="schrodinger.application.canvas.base.ChmFPOut32"><tt class="xref py py-class docutils literal"><span class="pre">ChmFPOut32</span></tt></a>
+subclass, this class computes and outputs a similarity or distance
+matrix in binary or CSV format. Not to be confused with
+<a class="reference internal" href="#schrodinger.application.canvas.base.ChmPairwiseOut32" title="schrodinger.application.canvas.base.ChmPairwiseOut32"><tt class="xref py py-class docutils literal"><span class="pre">ChmPairwiseOut32</span></tt></a>, which computes and outputs a pairwise
+fingerprint.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><em>outFile</em>, <em>forceBinary</em>, <em>alpha</em>, <em>beta</em>, <em>useUnionCount</em><big>)</big></dt>
+<dd><p>The matrix file outFile is binary by default, but it may be changed
+to CSV by calling setHumanReadable(True). The Boolean forceBinary
+controls whether fingerprints with scaled bit values are treated as
+ordinary 0/1 values. This parameter is relevant only when
+processing fingerprints created canvasFPGen with the –scaling
+option, and it should normally be set to True. The floating point
+parameters alpha and beta are applied only when Tversky similarities
+are computed, and they may be set to 0 otherwise. The useUnionCount
+parameter is a boolean that should generally be set to False. If
+True, the union of the count of on bits is used in computing the
+similarity metrics instead of the count of common off bits. (This
+helps with numerical accuracy when you are using a metric that
+considers common off bits, such as Buser, Hamann, matching, pattern
+difference, Pearson, Rogers Tanimoto, shape, size, variance, and
+Yule. However, it does mean that scale of the values can be affected
+by the addition or subtraction of fingerprints from the set.)</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getFlattening</tt><big>(</big><big>)</big></dt>
+<dd><p>True if similarities will be flattened through an exponential
+transformation.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getHumanReadable</tt><big>(</big><big>)</big></dt>
+<dd><p>True if the matrix file will be written in CSV format.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getMetric</tt><big>(</big><big>)</big></dt>
+<dd><p>The integer-valued similarity/distance method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">process</tt><big>(</big><em>fpFile</em><span class="optional">[</span>, <em>blockSize</em><span class="optional">]</span><big>)</big></dt>
+<dd><p>Computes and outputs a symmetric matrix of
+self-similarities/distances for the fingerprints in fpFile, which
+must be a binary file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>blockSize</strong> (<em>int</em>) &#8211; Determines how many fingerprints will be held in
+memory at one time. Default is 100.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">process</tt><big>(</big><em>fpFile</em>, <em>start</em>, <em>stop</em><span class="optional">[</span>, <em>blockSize</em><span class="optional">]</span><big>)</big></dt>
+<dd><p>Computes and outputs a symmetric matrix of
+self-similarities/distances for a subset of the fingerprints in
+fpFile. The integers start and stop are zero-based indices. If
+stop is greater than or equal to the number of fingerprints in the
+file, the matrix will be padded with zeros.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">process</tt><big>(</big><em>fpFile1</em>, <em>fpFile2</em><span class="optional">[</span>, <em>blockSize</em><span class="optional">]</span><big>)</big></dt>
+<dd><p>Computes and outputs a rectangular matrix of similarities/distances
+for two fingerprint files. Rows are spanned by fpFile1 and columns
+are spanned by fpFile2. The two files must contain the same type of
+fingerprint.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">process</tt><big>(</big><em>fpFile1</em>, <em>start1</em>, <em>stop1</em>, <em>fpFile2</em>, <em>start2</em>, <em>stop2</em><span class="optional">[</span>, <em>blockSize</em><span class="optional">]</span><big>)</big></dt>
+<dd><p>Computes and outputs a rectangular matrix of similarities/distances
+for subsets of fingerprints in two files.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setFlattening</tt><big>(</big><em>coeff</em><big>)</big></dt>
+<dd><p>Subject similarities to the following exponential transformation
+that drives smaller values toward zero: <img class="math" src="_images/math/744a6d8337927e2c653459fd778ba77612e8ca5a.png" alt="\mathrm{sim }
+\rightarrow \exp[-\mathrm{coeff}\cdot (1-\mathrm{ sim})^2]"/>. A
+reasonable value of coeff is 25. Not applied when computing
+distances.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setHumanReadable</tt><big>(</big><em>writeCSV</em><big>)</big></dt>
+<dd><p>The Boolean writeCSV controls whether similarities/distances will be
+written in CSV format. The default format is binary.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">setMetric</tt><big>(</big><em>code</em><big>)</big></dt>
+<dd><p>The integer code controls how similarities/distances will be
+computed and it must lie in the range 1-24. See
+<a class="reference internal" href="#similarity-distance-measures-constants"><em>Similarity/Distance Method Constants</em></a> for definitions and
+symbolic constants. The default is 21 (Tanimoto similarity).</p>
+</dd></dl>
+
+</dd></dl>
+
+<div class="section" id="matrix-file-formats">
+<span id="id6"></span><h5>Matrix File Formats<a class="headerlink" href="#matrix-file-formats" title="Permalink to this headline">¶</a></h5>
+<p>Matrix file format constants are scoped at the canvas module level. The
+available formats are <tt class="xref py py-obj docutils literal"><span class="pre">Binary</span></tt>, <tt class="xref py py-obj docutils literal"><span class="pre">CSV</span></tt>, <tt class="xref py py-obj docutils literal"><span class="pre">CSV_NoColHeader</span></tt>, <tt class="xref py py-obj docutils literal"><span class="pre">CSV_NoRowHeader</span></tt>,
+<tt class="xref py py-obj docutils literal"><span class="pre">CSV_NoRowOrColHeader</span></tt>, and <a class="reference internal" href="#schrodinger.application.canvas.base.ChmPairwiseFPIn" title="schrodinger.application.canvas.base.ChmPairwiseFPIn"><tt class="xref py py-obj docutils literal"><span class="pre">ChmPairwiseFPIn</span></tt></a>.</p>
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">Binary</tt></dt>
+<dd><p>Binary format (0).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">CSV</tt></dt>
+<dd><p>Comma-separated values, with column and row headers (1).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">CSV_NoColHeader</tt></dt>
+<dd><p>CSV file does not contain column names on first line (2).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">CSV_NoRowHeader</tt></dt>
+<dd><p>CSV file does not contain row names in the first column (3).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">CSV_NoRowOrColHeader</tt></dt>
+<dd><p>CSV file does not contain row names or column names (4).</p>
+</dd></dl>
+
+</div>
+<div class="section" id="similarity-distance-method-constants">
+<span id="similarity-distance-measures-constants"></span><h5>Similarity/Distance Method Constants<a class="headerlink" href="#similarity-distance-method-constants" title="Permalink to this headline">¶</a></h5>
+<p>One of these integer codes must be supplied when calling the
+<tt class="xref py py-obj docutils literal"><span class="pre">ChmPairwiseOut32.setMetric</span></tt> method.</p>
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">buser</tt></dt>
+<dd><p>Buser similarity (1)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">cosine</tt></dt>
+<dd><p>Cosine similarity (2)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">dice</tt></dt>
+<dd><p>Dice similarity (3)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">dixon</tt></dt>
+<dd><p>Dixon distance (4)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">euclidean</tt></dt>
+<dd><p>Euclidean distance (5)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">hamann</tt></dt>
+<dd><p>Hamann similarity (6)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">hamming</tt></dt>
+<dd><p>Hamming distance (7)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">kulczynski</tt></dt>
+<dd><p>Kulczynski similarity (8)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">matching</tt></dt>
+<dd><p>Matching similarity (9)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">mcConnaughey</tt></dt>
+<dd><p>McConnaughey similarity (10)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">minmax</tt></dt>
+<dd><p>MinMax (11)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">modifiedTanimoto</tt></dt>
+<dd><p>Modified Tanimoto (12)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">patternDifference</tt></dt>
+<dd><p>Pattern difference distance (13)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">pearson</tt></dt>
+<dd><p>Pearson similarity (14)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">petke</tt></dt>
+<dd><p>Petke similarity (15)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">rogersTanimoto</tt></dt>
+<dd><p>Rogers Tanimoto similarity (16)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">shape</tt></dt>
+<dd><p>Shape distance (17)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">simpson</tt></dt>
+<dd><p>Simpson similarity (18)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">size</tt></dt>
+<dd><p>Size distance (19)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">soergel</tt></dt>
+<dd><p>Soergel distance (20)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">tanimoto</tt></dt>
+<dd><p>Tanimoto similarity (21) (default)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">tversky</tt></dt>
+<dd><p>Tversky similarity (22)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">variance</tt></dt>
+<dd><p>Variance similarity (23)</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">yule</tt></dt>
+<dd><p>Yule similarity (24)</p>
+</dd></dl>
+
+</div>
+</div>
+</div>
+<div class="section" id="hierarchical-clustering-apis">
+<span id="hierarchical-clustering"></span><h3>Hierarchical Clustering APIs<a class="headerlink" href="#hierarchical-clustering-apis" title="Permalink to this headline">¶</a></h3>
+<p>The classes and methods in this section support hierarchical agglomerative clustering on a matrix of similarities or distances.</p>
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmHierarchicalClustering">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmHierarchicalClustering</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmHierarchicalClustering" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a full hierarchical, agglomerative clustering procedure,
+merging n objects into n–1 clusters, n–2 clusters, ..., 1 cluster.</p>
+<p>The following linkage method constants determine how the distance
+between two clusters is computed.</p>
+<dl class="data">
+<dt>
+<tt class="descname">SingleLinkage</tt></dt>
+<dd><p>Closest inter-cluster pair (1).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descname">CompleteLinkage</tt></dt>
+<dd><p>Farthest inter-cluster pair (2).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descname">GroupAverageLinkage</tt></dt>
+<dd><p>Average distance between all inter-cluster pairs (3).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descname">UnweightedCentroidLinkage</tt></dt>
+<dd><p>Euclidean distance between cluster centroids (4).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descname">WeightedAverageLinkage</tt></dt>
+<dd><p>Average distance to the two clusters merged in forming a given
+cluster (5).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descname">WardsMinimumVarianceLinkage</tt></dt>
+<dd><p>Sum of squared distances to merged cluster centroid (6).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descname">WeightedCentroidLinkage</tt></dt>
+<dd><p>Weighted center of mass distance, aka median (7).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descname">FlexibleBetaLinkage</tt></dt>
+<dd><p>Weighted average intra-cluster and inter-cluster distances, aka
+Lance-Williams (8).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descname">SchrodingerLinkage</tt></dt>
+<dd><p>Closest distance between terminal (<img class="math" src="_images/math/7c9816ddba06d5abe7cbdf601325367255321bad.png" alt="R \leftrightarrow L"/>) points
+in 1D cluster orderings (9).</p>
+</dd></dl>
+
+<p id="pairwise-selection-constants">The following pairwise selection constants indicate the preference for
+using the upper or lower triangle of the similarity/distance matrix M in
+case it’s not symmetric.</p>
+<dl class="data">
+<dt>
+<tt class="descname">UseEither</tt></dt>
+<dd><p>No preference; matrix is symmetric (0).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descname">UseMinAB</tt></dt>
+<dd><p>Use min{M(i, j), M(j, i)} (1).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descname">UseMaxAB</tt></dt>
+<dd><p>Use max{M(i, j), M(j, i)} (2).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descname">UseUpper</tt></dt>
+<dd><p>Use M(i, j), where i &lt; j (3).</p>
+</dd></dl>
+
+<dl class="data">
+<dt>
+<tt class="descname">UseLower</tt></dt>
+<dd><p>Use M(i, j), where i &gt; j (4).</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><span class="optional">[</span><em>linkageMethod</em><span class="optional">[</span>, <em>autoScale</em><span class="optional">]</span><span class="optional">]</span><big>)</big></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>linkageMethod</strong> (<em>int</em>) &#8211; Default is
+<tt class="xref py py-obj docutils literal"><span class="pre">ChmHierarchicalClustering.GroupAverageLinkage</span></tt>.</li>
+<li><strong>autoScale</strong> (<em>bool</em>) &#8211; Affects only the stress value reported by the
+cluster methods, not how the actual clustering is done. Default
+is True.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">cluster</tt><big>(</big><em>pairwiseIn</em>, <em>treeStreamOut</em>, <em>selectionType</em><big>)</big></dt>
+<dd><p>Performs clustering on a <tt class="xref py py-class docutils literal"><span class="pre">ChmPairwiseIn</span></tt> object and returns a
+value that measures the level of stress in the 1D ordering.
+Information required to create a dendrogram is written to the output
+stream treeStreamOut, which can be created using
+canvas.ofstream(treeFile), where treeFile is name of the destination
+file. treeFile can be supplied to the canvas utility canvasTreeDraw
+to create a PostScript dendrogram. selectionType must be one of the
+<a class="reference internal" href="#pairwise-selection-constants"><em>pairwise selection constants</em></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">cluster</tt><big>(</big><em>pairwiseIn</em>, <em>treeStreamOut</em>, <em>baseStreamOut</em>, <em>selectionType</em><big>)</big></dt>
+<dd><p>Writes a summary of the clustering process to the output stream
+baseStreamOut. See <a class="reference internal" href="#schrodinger.application.canvas.base.ChmClusterGrouper" title="schrodinger.application.canvas.base.ChmClusterGrouper"><tt class="xref py py-obj docutils literal"><span class="pre">ChmClusterGrouper</span></tt></a> for subsequent usage of the
+baseFile associated with baseStreamOut. The return value and other
+parameters are as described previously.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">cluster</tt><big>(</big><em>pairwiseIn</em>, <em>treeStreamOut</em>, <em>baseStreamOut</em>, <em>statsStreamOut</em>, <em>selectionType</em>, <em>allowTies</em><big>)</big></dt>
+<dd><p>Writes statistics at each clustering level to the CSV output stream
+statsStreamOut. The Boolean allowTies controls whether more than
+one cluster member can be flagged as nearest to centroid or farthest
+from centroid if those members are equidistant to the centroid.
+This parameter has no effect on clustering and is actually relevant
+only when groupings are output (see next method). The return value
+and other parameters are as described previously.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">cluster</tt><big>(</big><em>pairwiseIn</em>, <em>treeStreamOut</em>, <em>groupStreamOut</em>, <em>n</em>, <em>selectionType</em>, <em>noSingletons</em>, <em>allowTies</em><big>)</big></dt>
+<dd><p>Writes groupings for the formation of n clusters to the CSV output
+stream groupStreamOut. If the Boolean noSingletons is True,
+groupings will be reported only if there are at least n
+non‑singleton clusters. Otherwise, groupStreamOut will contain only
+singletons (i.e., no groupings). The return value and other
+parameters are as described previously.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">cluster</tt><big>(</big><em>pairwiseIn</em>, <em>treeStreamOut</em>, <em>groupStreamOut</em>, <em>d</em>, <em>selectionType</em>, <em>noSingletons</em>, <em>allowTies</em><big>)</big></dt>
+<dd><p>Directly analogous to the previous method except that d is a
+threshold on the merging distance. All clusters formed at or below
+this distance will be written to groupStreamOut.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="schrodinger.application.canvas.base.ChmClusterGrouper">
+<em class="property">class </em><tt class="descclassname">schrodinger.application.canvas.base.</tt><tt class="descname">ChmClusterGrouper</tt><a class="headerlink" href="#schrodinger.application.canvas.base.ChmClusterGrouper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates cluster groupings from the baseFile created by a
+<a class="reference internal" href="#schrodinger.application.canvas.base.ChmHierarchicalClustering" title="schrodinger.application.canvas.base.ChmHierarchicalClustering"><tt class="xref py py-class docutils literal"><span class="pre">ChmHierarchicalClustering</span></tt></a> object, or by the utilities canvasHC
+and canvasHCBuild.</p>
+<dl class="method">
+<dt>
+<tt class="descname">__init__</tt><big>(</big><big>)</big></dt>
+<dd><p>Instantiates a <tt class="xref py py-class docutils literal"><span class="pre">ChmClusterGrouper</span></tt> object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">group</tt><big>(</big><em>pairwiseIn</em>, <em>baseStreamIn</em>, <em>groupStreamOut</em>, <em>n</em>, <em>noSingletons</em>, <em>allowTies</em><big>)</big></dt>
+<dd><p>Given a <a class="reference internal" href="#schrodinger.application.canvas.base.ChmPairwiseFPIn" title="schrodinger.application.canvas.base.ChmPairwiseFPIn"><tt class="xref py py-class docutils literal"><span class="pre">ChmPairwiseFPIn</span></tt></a> object pairwiseIn and an associated
+input stream baseStreamIn that’s opened on a baseFile, this function
+writes groupings for the formation of n clusters to the CSV output
+stream groupStreamOut. If the Boolean noSingletons is True,
+groupings will be reported only if there are at least n
+non‑singleton clusters. Otherwise, groupStreamOut will contain only
+singletons (i.e., no groupings). The Boolean allowTies controls
+whether more than one cluster member can be flagged as nearest to
+centroid or farthest from centroid if those members are equidistant
+to the centroid.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">groupByThreshold</tt><big>(</big><em>pairwiseIn</em>, <em>baseStreamIn</em>, <em>groupStreamOut</em>, <em>d</em>, <em>allowTies</em><big>)</big></dt>
+<dd><p>Analogous to the previous method except that d is a threshold on the
+merging distance. All clusters formed at or below this distance
+will be written to groupStreamOut.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getDforN</tt><big>(</big><em>pairwiseIn</em>, <em>baseStreamIn</em>, <em>n</em><big>)</big></dt>
+<dd><p>Returns the merging distance for the formation of n clusters.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<tt class="descname">getNforD</tt><big>(</big><em>pairwiseIn</em>, <em>baseStreamIn</em>, <em>d</em><big>)</big></dt>
+<dd><p>Returns the number of clusters formed at below the merging distance
+d.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="overview.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Canvas 1.4 Python API</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a><ul>
+<li><a class="reference internal" href="#constructors-and-static-methods">Constructors and Static Methods</a></li>
+<li><a class="reference internal" href="#iterable-lists">Iterable Lists</a><ul>
+<li><a class="reference internal" href="#iterator-methods">Iterator Methods</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#input-output-streams">Input/Output Streams</a></li>
+<li><a class="reference internal" href="#exceptions">Exceptions</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#chemical-structure-apis">Chemical Structure APIs</a><ul>
+<li><a class="reference internal" href="#atoms">Atoms</a></li>
+<li><a class="reference internal" href="#bonds">Bonds</a></li>
+<li><a class="reference internal" href="#molecule-conversion">Molecule Conversion</a><ul>
+<li><a class="reference internal" href="#stereochemistry-constants">Stereochemistry Constants</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#molecules">Molecules</a></li>
+<li><a class="reference internal" href="#file-i-o">File I/O</a></li>
+<li><a class="reference internal" href="#substructure-matching">Substructure Matching</a></li>
+<li><a class="reference internal" href="#bitset-apis">Bitset APIs</a><ul>
+<li><a class="reference internal" href="#similarity-distance-measures">Similarity/Distance Measures</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#fingerprint-apis">Fingerprint APIs</a><ul>
+<li><a class="reference internal" href="#atom-typing-schemes">Atom Typing Schemes</a></li>
+<li><a class="reference internal" href="#base-fingerprint-classes">Base Fingerprint Classes</a></li>
+<li><a class="reference internal" href="#fingerprint-output-classes">Fingerprint/Output Classes</a></li>
+<li><a class="reference internal" href="#input">Input</a></li>
+<li><a class="reference internal" href="#bit-mapping">Bit Mapping</a></li>
+<li><a class="reference internal" href="#pairwise-i-o">Pairwise I/O</a><ul>
+<li><a class="reference internal" href="#matrix-file-formats">Matrix File Formats</a></li>
+<li><a class="reference internal" href="#similarity-distance-method-constants">Similarity/Distance Method Constants</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#hierarchical-clustering-apis">Hierarchical Clustering APIs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="product_specific.html"
+                        title="previous chapter">Product Specific Modules</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="other.html"
+                        title="next chapter">Other Modules</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="other.html" title="Other Modules"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="product_specific.html" title="Product Specific Modules"
+             >previous</a> |</li>
+        <li><a href="overview.html">Schrödinger Python Suite 2015-2 Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2011 Schrödinger, LLC.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

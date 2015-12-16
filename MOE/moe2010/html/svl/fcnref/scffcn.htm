@@ -1,0 +1,817 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	scffcn.htm
+!!
+!!	13-jun-2006 (ac) created
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions scf_Capabilities, scf_DefineWavefunction>
+<meta functions scf_RunCalculation, scf_ObtainProperties>
+<meta functions scf_SaveWavefunction, scf_LoadWavefunction>
+<title>SCF Functions</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>SCF Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    engines = <a class="fcnlink" href="#scf_Capabilities">scf_Capabilities</a> []
+    cap = <a class="fcnlink" href="#scf_Capabilities">scf_Capabilities</a> engine
+
+    cfg = <a class="fcnlink" href="#scf_DefineWavefunction">scf_DefineWavefunction</a> [ cfg, data ]
+
+    cfg = <a class="fcnlink" href="#scf_RunCalculation">scf_RunCalculation</a> [ cfg, cmd, act ]
+
+    values = <a class="fcnlink" href="#scf_ObtainProperties">scf_ObtainProperties</a> [ cfg, props ]
+
+    <a class="fcnlink" href="#scf_SaveWavefunction">scf_SaveWavefunction</a> [ cfg, fn ]
+    cfg = <a class="fcnlink" href="#scf_LoadWavefunction">scf_LoadWavefunction</a> fn
+</pre>
+
+<h2>Description</h2>
+
+<p>SVL functions provide programmatic access to the SCF capabilities of MOE. The
+wavefunction datastructure mediates between a variety of different computational
+engines, encapsulating the common features in a consistent form, and describing
+the necessary parameters for each. These precepts, and the graphical interface,
+are described in the <a href="../../apps/scf.htm">SCF Wavefunctions</a> manual.
+
+<p>Most of the SCF functions accept and return a wavefunction configuration
+variable, <a class="svl" href="#cfg">cfg</a>,
+which is a tagged vector that holds all of the
+information to date regarding the calculation. When starting a new calculation,
+the wavefunction configuration will be the null vector, <tt>[]</tt>, which is
+subsequently built up by adding input parameters such as atoms, charge and spin,
+then further defined by specifying the SCF engine and parameters such as the
+basis set and whether or not to use density functionals.
+
+<p>If the engine is implemented internally, the parameters will be further
+expanded into basis functions, and results will be populated as they are
+calculated. If the engine is an external program, the parameter expansion and
+results will be populated when the program finishes execution. The wavefunction
+configuration can be reused indefinitely, and parameters may be changed freely
+between calculations.
+
+<p><a name="scf_Capabilities"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+engines = <span class="fcndef">scf_Capabilities</span> []
+cap = <span class="fcndef">scf_Capabilities</span> engine
+</pre>
+
+<p>This function returns either a list of available SCF engines, or the
+capabilities for a particular engine. The capabilities of an engine is a tagged
+vector which describes the form of the data that a calculation will return, the
+features which it supports, and the available parameters which must be chosen by
+the operator.
+
+<blockquote><pre>svl&gt; scf_Capabilities []
+['ADF','GAMESS','Gaussian','MOPAC']
+
+svl&gt; scf_Capabilities 'GAMESS'
+[ wavefn:1, geomopt:1, molorb:1, eldens:1, basis:[ 'STO-2G', 'STO-3G', ...], 
+  basfunc:'Gaussian', bascoord:'Bohr', uhf:1, dft:1, 
+  dft_types: ['B3LYP','PBEVWN', ...], vibfreq:0, keywords:1, 
+  maxatoms:[200,300], available:1 ]
+</pre></blockquote>
+
+<p>The meaning of each of the capabilities is as follows:
+
+<blockquote><dl>
+
+<dt><p><tt>wavefn</tt>
+
+<dd><p>A flag denoting whether or not the engine can be expected to return basis
+functions and eigenvectors which define the wavefunction.
+
+<dt><p><tt>geomopt</tt>
+
+<dd><p>A flag for whether the engine is capable of performing geometry
+optimization. If the result is false, the engine can only perform single point
+calculations based on the input geometry.
+
+<dt><p><tt>molorb</tt>
+
+<dd><p>A flag for whether the engine can be expected to return sufficient
+information to plot a spatial depiction of molecular orbitals.
+
+<dt><p><tt>eldens</tt>
+
+<dd><p>A flag for whether the engine can be expected to return sufficient
+information to plot the electron density of the wavefunction on a grid.
+
+<dt><p><tt>vibfreq</tt>
+
+<dd><p>A flag for whether the engine can perform vibrational frequency
+calculations.
+
+<dt><p><tt>basis</tt>
+
+<dd><p>A list of tokens containing all of the basis sets which the engine may
+use. The definition of the term "basis set" varies depending on the engine. For
+semi-empirical calculations it is the Hamiltonian (e.g. AM1, PM3 etc.) which
+corresponds to a variety of parameters; for ab initio Hartree-Fock calculations
+it is typically a list of Gaussian basis sets using conventional names (e.g.
+STO-3G, 3-21G, etc.). Other engines, such as <tt>ADF</tt>, may use different
+conventions altogether. It is usual for the list to be ordered either to place
+the most popular basis sets first, or to arrange them in roughly increasing
+level of computational complexity.
+
+<dt><p><tt>basfunc</tt>
+
+<dd><p>A token to indicate the style of the basis functions. There are two
+possible values: <tt>'Gaussian'</tt> and <tt>'Slater'</tt>. Gaussian basis
+functions are composed of some number (usually between 3 and 6) of additive
+gaussian functions, whereas Slater functions contain just one term each.
+
+<dt><p><tt>bascoord</tt>
+
+<dd><p>The unit of coordinates used by the basis functions. Values are either
+<tt>'Bohr'</tt> or <tt>'Angstrom'</tt>. Atomic units are used throughout the SCF
+functions, so no conversion is required if the basis functions are for Bohr
+units.
+
+<dt><p><tt>uhf</tt>
+
+<dd><p>It is assumed that all SCF engines can perform an RHF-style calculation
+(Restricted Hartree Fock), which is generally suitable for closed-shell
+molecules. This flag will be true if the engine is capable of UHF (Unrestricted
+Hartree Fock) calculations, which is driven by the indicated number of unpaired
+electrons being non-zero.
+
+<dt><p><tt>dft</tt>
+
+<dd><p>A numeric value to indicate the status of density functionals. A value of
+0 means that the engine has no such capability, 1 that the engine can perform an
+analogous calculation with or without density functionals, and 2 that the engine
+only performs density functional calculations.
+
+<dt><p><tt>dft_types</tt>
+
+<dd><p>If there are multiple types of density functionals available, they will
+be listed as tokens in this field.
+
+<dt><p><tt>chgmodels</tt>
+
+<dd><p>A list of tokens representing the available charge models, used for
+assigning partial charges to atoms. Computational engines typically have several
+to choose from.
+
+<dt><p><tt>solvmodels</tt>
+
+<dd><p>A list of tokens representing the available solvent models. 
+
+<dt><p><tt>keywords</tt>
+
+<dd><p>A flag which denotes whether the engine accepts short keywords which may
+influence the calculation in ways not covered by the default feature set
+described by MOE. This is generally true of external programs which have a line
+in the input format devoted to the purpose (e.g. <tt>MOPAC</tt>,
+<tt>GAMESS</tt>, <tt>Gaussian</tt>). The format is not checked by the SCF
+functions, and may produce errors or unexpected behavior.
+
+<dt><p><tt>maxatoms</tt>
+
+<dd><p>A vector of two integers, <tt>[heavy, hydrogen]</tt>, which represent the
+maximum number of heavy and hydrogen atoms the engine accepts. The field may be
+null if there is no such limit.
+
+<dt><p><tt>available</tt>
+
+<dd><p>A flag to indicate whether the engine is actually available. Internally
+implemented engines are always available, whereas external programs may or may
+not be installed and configured. In the latter case, the value is true only if
+the appropriate environment or RC entries exist and point to an executable file.
+It is still possible to read and write output and input files for an engine
+which is not currently "available".
+
+</dl></blockquote>
+
+<p><a name="scf_DefineWavefunction"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+cfg = <span class="fcndef">scf_DefineWavefunction</span> [ cfg, data ]
+</pre>
+
+<p>Given some number of parameter modifications, this function returns a new
+wavefunction configuration which has these changes applied. In almost all cases,
+applications making use of the SCF functions should never modify the
+configuration directly, but instead use this function.
+
+<p>The <tt>data</tt> parameter is a tagged vector, containing a sequential list
+of modifications to make. In some cases the modifications are interpreted,
+other times they are injected directly into the wavefunction configuration. 
+
+<p>In general this function performs no validation, which allows modifications
+to be made in any particular order. For instance, specifying a basis set which
+is not valid for the previously defined engine will not cause an error. If it is
+still invalid when the calculation is run, an error will be generated then.
+
+<blockquote><dl>
+
+<dt><p><tt>engine</tt>
+
+<dd><p>Changes the SCF engine to be used. The return value will have the
+<tt>engine</tt> value updated, as well as <tt>basfunc</tt> and
+<tt>bascoord</tt>. Unlike most other parameters, specifying an engine which does
+not have an installed SVL wrapper will result in an error which will stop the
+task.
+
+<dt><p><tt>filename</tt>
+
+<dd><p>Changes the main filename in the wavefunction configuration, and derived
+filenames used for holding other properties (such as input and output files).
+Filenames are stored within the datastructure for the benefit of the internal
+workings of the SCF engines, and for the user interface. The value passed should
+be the wavefunction file, and have the extension <tt>.wfn</tt>. Other filenames
+are automatically derived and entered into the wavefunction configuration: the
+root stem of the filename, the input file and the output file. In total, four
+values will be set: <tt>filename</tt>, <tt>filename_root</tt>,
+<tt>filename_input</tt> and <tt>filename_output</tt>.
+
+<dt><p><tt>atoms</tt>
+
+<dd><p>Defines the atoms and their coordinates. The parameter must be a
+laminated vector of the form <span class="nobr"><tt>[el, x, y, z]</tt></span>, where each
+element is a token corresponding to a legitimate member of the periodic table,
+for example: <tt>[['H','O','H'], [-2,0,2], [1,0,1], [0,0,0]]</tt>. Note that
+atomic units are used; most molecular models use Angstroms for atom positions,
+which must be converted into Bohr (e.g. by dividing by the built in constant
+<tt>BOHR</tt>).
+
+<dt><p><tt>charge</tt>
+
+<dd><p>Sets the total charge of the system under study. Must be a numeric scalar.
+The behavior of non-integer values is dependent on the engine.
+
+<dt><p><tt>unpaired</tt>
+
+<dd><p>Sets the number of unpaired electrons. Not to be confused with spin
+multiplicity. A closed-shell species has 0 unpaired electrons, a radical has 1,
+a diradical has 2, etc. Non-zero values have the effect of forcing the engine to
+use the UHF density mode, rather than the usual default of RHF.
+
+<dt><p><tt>basisname</tt>
+
+<dd><p>Sets the label of the basis set, which must be a token.
+
+<dt><p><tt>use_dft</tt>
+
+<dd><p>Sets the flag specifying whether density functionals should be used.
+
+<dt><p><tt>dft_type</tt>
+
+<dd><p>Sets the specific type of density functional, for engines which have
+multiple choices.
+
+<dt><p><tt>solvent_model</tt>
+
+<dd><p>Specifies the solvent model to use during the calculation. A value of
+null (default) means that none should be used. A solvent model is specified by a
+vector of the form <span class="nobr"><tt>[model, eps]</tt></span>, where <tt>model</tt> is
+one of the tokens advertised by the engine capabilities, and <tt>eps</tt> is the
+dielectric (for which <tt>78.4</tt> is usually an appropriate value for water).
+
+<dt><p><tt>verbose</tt>
+
+<dd><p>Sets the verbosity flag. If the value is 1, some amount of information about
+the calculation will be written to the console. This is largely dependent on the
+engine. For externally implemented engines, no information will be available
+during the calculation itself.
+
+<dt><p><tt>extra_keywords</tt>
+
+<dd><p>Set the additional keywords to be used. For this field, there is no
+commonality between different engines.
+
+<dt><p><tt>jobtitle</tt>
+
+<dd><p>Specify the title of the job, which will be stored in the wavefunction file,
+as well as written to any external input files, if there is an appropriate
+location.
+
+<dt><p><tt>input_notes</tt><br />
+<tt>output_notes</tt><br />
+<tt>error_notes</tt>
+
+<dd><p>Overwrite the respective notes fields.
+
+</dl></blockquote>
+
+
+<p><a name="scf_RunCalculation"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+cfg = <span class="fcndef">scf_RunCalculation</span> [ cfg, cmd, act ]
+</pre>
+
+<p>Performing a computational action is always mediated by the
+<tt>scf_RunCalculation</tt> command. Execution of this command may be quick or
+may take a considerable length of time to complete, depending on the nature of
+the calculation.
+
+<p>The <tt>cfg</tt> parameter must be a wavefunction configuration variable
+which is sufficiently well-defined to carry out the calculation, i.e. it must
+have definitions for <tt>engine</tt>, <tt>basisname</tt>, <tt>atoms</tt>,
+<tt>charge</tt> and <tt>unpaired</tt>, at the very minimum.
+
+<p>The <tt>cmd</tt> parameter defines how the function behaves, and has several
+possible values:
+
+<blockquote><dl>
+
+<dt><p><tt>'run'</tt>
+
+<dd><p>Perform all necessary initialization, write the input file if necessary,
+run the calculation, read the output file if necessary, and package up the
+results. This is sufficient to perform a complete SCF calculation.
+
+<dt><p><tt>'inp'</tt>
+
+<dd><p>As if a calculation were about to proceed, write the input file suitable
+for reading by the external program. Internal engines convert this request to a
+no-operation. The filename is obtained from <tt>cfg.filename_input</tt>. 
+
+<dt><p><tt>'out'</tt>
+
+<dd><p>As if a calculation had just finished, read the output file generated by
+the external program, or do nothing for internal engines. The filename used is
+<tt>cfg.filename_output</tt>. It is necessary for <tt>cfg.engine</tt> to be
+defined, but for most external engines, it is possible to leave most other data
+out, i.e. <tt>cfg.atoms</tt>, <tt>cfg.charge</tt> etc. will be reconstructed by
+reading the file.
+
+<dt><p><tt>'pre'</tt>
+
+<dd><p>Initialize the configuration data, if at all possible. External engines
+convert this request to a no-operation, whereas internal engines will populate
+the data structures to the extent possible without delving into computationally
+intensive calculations.
+
+</dl></blockquote>
+
+<p>If the value of <tt>cmd</tt> is either <tt>'run'</tt> or <tt>'inp'</tt>, then
+the <tt>act</tt> parameter is parsed. It is expected to be a tagged vector, with
+the following optional flags:
+
+<blockquote><dl>
+
+<dt><p><tt>'optimize'</tt>
+
+<dd><p>If true, a geometry optimization is requested, which will be accomplished
+before any further data is obtained. If the engine does not support geometry
+optimization, this is ignored.
+
+<dt><p><tt>'vibfreq'</tt>
+
+<dd><p>If true and possible, the computational engine will perform a geometry
+optimization then calculate the atomic Hessian, in order to obtain the
+vibrational frequencies.  
+
+<dt><p><tt>'excite'</tt>
+
+<dd><p>If true and possible, then a rigorous analysis of electronic excitation
+transitions is performed.
+
+<dt><p><tt>'circdich'</tt>
+
+<dd><p>If true and possible, the peaks of a circular dichroism spectrum are
+calculated, which is useful for characterizing enantiomers.
+
+</dl></blockquote>
+
+<p>If the value of <tt>act</tt> is null, or defines no flags which match the
+capabilities, then the engine will perform a single-point calculation using the
+given atomic coordinates. Regardless of the requested actions, the calculation
+will always be instructed to generate and output any properties which are always
+available, or require miniscule additional computational effort.
+
+<p><a name="scf_ObtainProperties"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+values = <span class="fcndef">scf_ObtainProperties</span> [ cfg, props ]
+</pre>
+
+<p><tt>cfg</tt> is a wavefunction configuration, and <tt>props</tt> is a list of
+elements denoting the desired properties. If a value of <tt>props</tt> is
+already present in the <tt>cfg</tt> tagged vector, it is returned as-is.
+<!--Otherwise, if it is one of a special set of tokens, a quantity is calculated
+and returned.--> Otherwise, the result is a null vector.
+
+<p>The return value is a vector of elements, where <tt>value(n)</tt> corresponds
+to <tt>props(n)</tt>.
+
+<!-- !!! special elements in props are currently undocumented -->
+
+<p><a name="scf_LoadWavefunction"></a></p>
+<p><a name="scf_SaveWavefunction"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">scf_SaveWavefunction</span> [ cfg, fn ]
+cfg = <span class="fcndef">scf_LoadWavefunction</span> fn
+</pre>
+
+<p>The wavefunction configuration has an associated file format, and can be
+written to and read from files.
+
+<p><tt>scf_SaveWavefunction</tt> takes a wavefunction and a file descriptor and
+outputs the content to a formatted text file. <tt>scf_LoadWavefunction</tt>
+reads an appropriately formatted text file and returns an instantiated
+wavefunction configuration.
+
+<p>Note that the fields which are written to the file are limited to those which
+are specifically recognized as having general meaning within the context of the
+framework. The wavefunction configuration may be used as a placeholder for
+additional temporary data, which will not be recorded when saved.
+
+<p>The filename fields are not written to the file, for obvious reasons. If
+necessary, they must be re-derived when the file is loaded at a later date.
+
+<p><a name="cfg"></a></p>
+<p><hr noshade="noshade" /></p>
+
+<h3>Wavefunction Configuration</h3>
+
+<p>The wavefunction configuration variable, typically abbreviated as
+<tt>cfg</tt>, is a tagged vector which contains information about the SCF
+calculation, at all stages of progress. Most of the SCF functions take
+<tt>cfg</tt> as a parameter and return a possibly-modified instance. The
+lifecycle of a wavefunction configuration variable is typically as follows:
+
+<ol>
+
+<li>Created, input parameters specified.
+
+<li>(a) Internal engine: (i) parameters are interpreted and expanded out;
+(ii) calculation is performed and computed results are inserted.
+
+<br />(b) External engine: (i) external program is run; (ii) the output file is
+read, and is reconciled with the original parameters, in order to derive all the
+result fields.
+
+<li>Wavefunction may be viewed, saved to a file and/or reloaded.
+
+<li>Parameters may be changed, and the calculation resubmitted.
+
+</ol>
+
+<p>Observing current parameters or calculated quantities can be done by
+accessing the tagged vector directly (e.g. <tt>cfg.energy</tt>), or by using the
+<tt>scf_ObtainProperties</tt> function. Setting values directly is usually not
+advisable, and should be done using <tt>scf_DefineWavefunction</tt>.
+
+<p>The following fields are explicitly supported:
+
+<blockquote><dl>
+
+<dt><p><tt>engine</tt>
+
+<dd><p>The SCF engine which will be used to perform any requested calculation.
+
+<dt><p><tt>basfunc</tt>
+
+<dd><p>The type of basis function, either <tt>'Slater'</tt> or
+<tt>'Gaussian'</tt>.
+
+<dt><p><tt>bascoord</tt>
+
+<dd><p>The coordinate units for the basis functions, either <tt>'Bohr'</tt> or
+<tt>'Angstrom'</tt>.
+
+<dt><p><tt>basisname</tt>
+
+<dd><p>The engine-specific name of the basis set, which will be cross referenced
+in order to populate the atomic orbital basis functions.
+
+<dt><p><tt>natoms</tt>
+
+<dd><p>Number of atoms, which is always equal to <tt>l_length atoms</tt>.
+
+<dt><p><tt>nelectrons</tt>
+
+<dd><p>Number of electrons involved in the field calculation. Note that this is
+equal to {protons - charge} in the case of ab initio methods which include the
+core electrons, but is a smaller number for methods which exclude the core
+electrons.
+
+<dt><p><tt>nao</tt>
+
+<dd><p>Number of atomic orbitals that make up the basis functions.
+
+<dt><p><tt>ngauss</tt>
+
+<dd><p>Number of gaussian primitives for each atomic orbital. If the basis
+functions are comprised of Slater orbitals, this number is 0. Some gaussian
+basis sets have nonuniform numbers of primitives per atomic orbital, in which
+case this number is the maximum number of primitives (unused space is denoted by
+zero coefficients).
+
+<dt><p><tt>charge</tt>
+
+<dd><p>The total ionic charge of the species. This is always scalar, as there is
+no method for assigning charge to specific blocks, i.e. a study of "Na+ Cl-"
+will have a total charge of 0.
+
+<dt><p><tt>unpaired</tt>
+
+<dd><p>Number of unpaired electrons. By combining this number with <tt>nao</tt>
+and <tt>nelectrons</tt>, it is possible to derive the number and occupancy of
+molecular orbitals, e.g. if <span class="nobr"><tt>[nao, nelectrons, unpaired] = [6, 5,
+1]</tt></span>, then the molecular orbital occupancy is
+<span class="nobr"><tt>[2,2,1,0,0,0]</tt></span>.
+
+<dt><p><tt>verbose</tt>
+
+<dd><p>Verbosity flag, which indicates that the SCF engine should write status
+information to the console whenever possible.
+
+<dt><p><tt>use_dft</tt>
+
+<dd><p>Density functional flag, indicating whether the engine should use DFT, if
+the alternative would be a Hartree-Fock treatment.
+
+<dt><p><tt>dft_type</tt>
+
+<dd><p>Token indicating the type of density functional, if more than one
+possible.
+
+<dt><p><tt>jobtitle</tt>
+
+<dd><p>The title of the job, which is stored with the wavefunction and appears
+in various places, such as result printouts, generated input files, etc.
+
+<dt><p><tt>atoms</tt>
+
+<dd><p>The atoms which are the subject of the calculation. The format is a
+laminated vector of <span class="nobr"><tt>[el, atno, x, y, z]</tt></span>, where
+<tt>el</tt> is an atomic symbol, <tt>atno</tt> is the atomic number, and
+<tt>x</tt>, <tt>y</tt> and <tt>z</tt> are coordinates in Bohr units.
+
+<dt><p><tt>slater_orbitals</tt>
+
+<dd><p>The fully expanded atomic orbitals, in a Slater basis. Non-null only if
+<tt>basfunc == 'Slater'</tt>. The format is a laminated vector of
+<span class="nobr"><tt>[atidx, atno, px, py, pz, mx, my, mz, mr, zeta, N]</tt></span>.
+Generally there are multiple atomic orbitals for each non-hydrogen atom.
+<tt>atidx</tt> is the index of the atom which gave rise to the orbital,
+<tt>atno</tt> is the atomic number of the respective atom, <tt>px</tt>,
+<tt>py</tt> and <tt>pz</tt> are the position of the center of the atomic orbital
+(usually but not necessarily the same as the atom position), <tt>mx</tt>,
+<tt>my</tt>, <tt>mz</tt> and <tt>mr</tt> are the momentum powers, <tt>zeta</tt>
+is the exponential constant, and <tt>N</tt> the linear constant.
+
+<p>The Slater function is:
+
+<br /><tt><span class="nobr">f(x,y,z;r=norm [x,y,z]) = N x<sup>mx</sup> y<sup>my</sup>
+z<sup>mz</sup> r<sup>mz</sup> exp (-zeta . r)</tt></span>
+
+<br />where <tt>[x, y, z]</tt> are relative to <tt>[px, py, pz]</tt>.
+
+<dt><p><tt>gaussian_orbitals</tt>
+
+<dd><p>The fully expanded atomic orbitals, in a Gaussian basis. Non-null only if
+<tt>basfunc == 'Gaussian'</tt>. The format is a laminated vector of
+<span class="nobr"><tt>[atidx, atno, px, py, pz, mx, my, mz, exp1, ..., expN, coef1, ...,
+coefN]</tt></span>. The first 8 items are the same as for
+<tt>slater_orbitals</tt> (above). Note that there is no <tt>mr</tt> term. The
+number of exponential constants and linear constants are both equal to the value
+of <tt>ngauss</tt>, i.e. <tt>length gaussian_orbitals = 8 + 2 * ngauss</tt>.
+
+<br />The Gaussian function is:
+
+<br /><tt><span class="nobr">f(x,y,z;r=norm [x,y,z]) = sum(i=1,ngauss) c(i) x<sup>mx</sup>
+y<sup>my</sup> z<sup>mz</sup> exp (-k(i) . r<sup>2</sup>)</tt></span>
+
+<br />where <tt>[x, y, z]</tt> are relative to <tt>[px, py, pz]</tt>,
+<tt>c(i)</tt> is the <i>i</i>th linear constant and <tt>k(i)</tt> is the
+<i>i</i>th exponential constant.
+
+<dt><p><tt>energy</tt>
+
+<dd><p>The total SCF energy which resulted from the most recently produced
+wavefunction, in units of Hartrees (multiply by 27.211396 to convert to electron
+volts, or 627.5095 to kcal/mol). Note that although this is commonly a sum of
+the nuclear-nuclear repulsion and electronic energy components, this is not
+guaranteed to be true for all engines.
+
+<dt><p><tt>eigenvalues</tt>
+
+<dd><p>A vector of size equal to the number of molecular orbitals which contains
+the ordered eigenvalues of the wavefunction, in atomic units (Hartrees). These
+can be taken to be molecular orbital energy levels, and correspond directly to
+the primary index of <tt>eigenvectors</tt>.
+
+<dt><p><tt>eigenvectors</tt>
+
+<dd><p>A matrix containing the eigenvectors of the wavefunction, sorted in the
+same order as the eigenvalues. The matrix is referenced by indices
+<tt>eigenvector(mo)(ao)</tt>. Although usually square, it is not safe to assume
+that the number of molecular orbitals is the same as the number of atomic
+orbitals. The spatial shape of molecular orbital <tt>mo</tt> is obtained from
+the row vector <tt>eigenvector(mo)</tt>, which is of length equal to
+<tt>nao</tt>, and holds the coefficient applied to each of the atomic orbital
+basis functions.
+
+<dt><p><tt>density_matrix</tt>
+
+<dd><p>A symmetric square matrix of dimension equal to the number of atomic
+orbitals which contains the density, which is the iterative variable of the
+self-consistent field loop.
+
+<dt><p><tt>overlap_integrals</tt>
+
+<dd><p>A symmetric square matrix of dimension equal to the number of atomic
+orbitals which contains overlap between all pairs of atomic orbitals. The
+diagonal is always 1.
+
+<dt><p><tt>heat_of_formation</tt>
+
+<dd><p>Heat of formation, in units of kcal/mol.
+
+<dt><p><tt>dipole_moment</tt>
+
+<dd><p>Dipole moment according to the electron distribution relative to nuclear
+positions, in atomic units. The property is a 3-length numeric vector.
+
+<dt><p><tt>quadrupole_moment</tt>
+
+<dd><p>Quadrupole moment, as a 3x3 matrix.
+
+<dt><p><tt>frequencies</tt>
+
+<dd><p>Calculated vibrational frequencies, stored as a laminated vector of the
+form <span class="nobr"><tt>[freq, ir, dx1, dy1, dz1, ..., dxN, dyN, dzN]</tt></span>.
+<tt>freq</tt> is an energy in atomic units (multiply by 219474 to convert to
+cm<sup>-1</sup>), <tt>ir</tt> is the relative intensity of infrared absorption,
+and the remaining parameters are the displacements of each atom which correspond
+to the particular vibration. The size of the vector is <tt>length frequencies =
+2 + 3 * natoms</tt>.
+
+<dt><p><tt>hessian</tt>
+
+<dd><p>The nuclear Hessian, which is a square matrix of dimension <tt>3 *
+natoms</tt>, i.e. <span class="nobr"><tt>[x1, y1, z1, ..., xN, yN, zN]</tt></span>.
+
+<dt><p><tt>thermodynamics</tt>
+
+<dd><p>A tagged vector which can be used to store arbitrary thermodynamic data. The
+format is <span class="nobr"><tt>thermodynamics.property = [value, units]</tt></span>. The
+properties which are available are at the discretion of the engine. Units are
+mandatory.
+
+<dt><p><tt>charge_model</tt>
+
+<dd><p>A tagged vector which can contain any number of "charge models". The tag is
+the description of the model (e.g. <tt>'mulliken'</tt>), the value is a
+vector of charges, one number for each atom.
+
+<dt><p><tt>electronic_excitations</tt>
+
+<dd><p>A laminated vector of electronic excitations, of the form <span class="nobr"><tt>[energy,
+intensity]</tt></span>. <tt>energy</tt> is in atomic units, <tt>intensity</tt>
+is arbitrary and has no units.
+
+<dt><p><tt>circular_dichroism</tt>
+
+<dd><p>A laminated vector of circular dichroism absorptions, of the form
+<span class="nobr"><tt>[energy, intensity]</tt></span>. <tt>energy</tt> is in atomic units,
+<tt>intensity</tt> is arbitrary and has no units.
+
+<dt><p><tt>solvent_model</tt>
+
+<dd><p>Records the solvent model that was used during the calculation, in the
+form of <tt>[solvent,&nbsp;eps]</tt>, or null if no solvent model was used.
+
+<dt><p><tt>charge_model</tt>
+
+<dd><p>A tagged vector holding values for all of the atomic charge models that
+the engine was able to calculate. The tags are a subset of those advertised by
+the capabilities, e.g. <span class="nobr"><tt>cfg.charge_model.mulliken == [chg1, chg2, ...,
+chgN]</tt></span>.
+
+
+
+<dt><p><tt>input_notes</tt>
+
+<dd><p>A vector of tokens which contains input information. For external engines,
+this is usually a complete copy of each line of the input file.
+
+<dt><p><tt>output_notes</tt>
+
+<dd><p>A vector of tokens which contains output information. For external engines,
+this is usually the header section of the output file, but with most subsequent
+information removed on account of mitigating excessive storage requirements.
+
+<dt><p><tt>error_notes</tt>
+
+<dd><p>A vector of tokens which contains error messages. The content is not
+automatically interpreted, but usually indicates that the calculation either
+failed entirely, or the results are deemed unreliable.
+
+</dl></blockquote>
+
+<p><a name="scf_RunCalculation"></a></p>
+<p><a name="scf_DefineWavefunction"></a></p>
+<p><hr noshade="noshade" />
+
+<h3>Examples</h3>
+
+<p><b>Example 1</b>: Perform a single point calculation on a single molecule
+(represented with the MOE database molecule format), using the indicated engine
+and basis set, and return the total energy:
+
+<pre>
+    function CalculateSCFEnergy [mol, engine, basis]
+        local cfg = <span class="fcndef">scf_DefineWavefunction</span> [[], [
+            engine: engine,
+            basisname: basis,
+            atoms: [
+                mol(4)(MOL_ATOM_EL),
+                mol(4)(MOL_ATOM_X) * inv BOHR,
+                mol(4)(MOL_ATOM_Y) * inv BOHR,
+                mol(4)(MOL_ATOM_Z) * inv BOHR
+            ],
+            charge: add mol(4)(MOL_ATOM_ION),
+            verbose: 0
+        ]];
+
+        cfg = <span class="fcndef">scf_RunCalculation</span> [cfg, 'run', [optimize: 0]];
+
+        return cfg.energy;
+    endfunction
+</pre>
+
+<p><b>Example 2</b>: Use the atom contents of the MOE main window to write an
+input file for the <tt>GAMESS</tt> engine:
+
+<pre>
+    svl&gt; cfg = scf_DefineWavefunction [[], [
+            engine: 'GAMESS', 
+            basisname: '6-31G*',
+            atoms: cat [[aElement Atoms []], aPos Atoms [] * inv BOHR],
+            charge: add aIon Atoms [],
+            filename: 'filename.wfn'
+        ]];
+    
+    svl&gt; cfg = scf_RunCalculation [cfg, 'inp', [optimize: 1]];
+</pre>
+
+<p>The filename root is used to determine that the external file should be
+<tt>'filename.inp'</tt>, which is created. Note that the code will function in
+the same way regardless of whether <tt>GAMESS</tt> is available.
+
+<p><b>Example 3</b>: Read an output file created by <tt>Gaussian</tt>, and view
+it with the SCF results panel:
+
+<pre>
+    svl&gt; cfg = scf_DefineWavefunction [[], [engine: 'Gaussian']];
+    svl&gt; cfg.filename_output = '~/gaussian/filename.gau';
+    svl&gt; cfg = scf_RunCalculation [cfg, 'out', []];
+    svl&gt; run ['scfpanel.svl', cfg, 'scf_ResultsPanel'];
+</pre>
+
+<h2>See Also</h2>
+
+<a href="../../apps/scf.htm">SCF Wavefunctions</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

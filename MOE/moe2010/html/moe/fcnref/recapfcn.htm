@@ -1,0 +1,393 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	recapfcn.htm			RECAP functions
+!!
+!!	10-oct-2008 (kk) minor edits
+!!	10-sep-2008 (pl) added recap_BondClass
+!!	20-oct-2006 (al+sb) edited, typos, sp, fmt
+!!	06-jul-2006 (pl) created
+!!-->
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions recap_Analysis, recap_Synthesis>
+<meta functions recap_SynthesizeOpen, recap_SynthesizeClose>
+<meta functions recap_SynthesizeRandom>
+<meta functions recap_BondClass>
+
+<title>RECAP Analysis and Synthesis</title>
+</head>
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>RECAP Analysis and Synthesis</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    <a class="fcnlink" href="#recap_Analysis">recap_Analysis</a> ['infile', 'outfile', [
+        afield:       token,
+        acompare:     token,
+        athreshold:   number,
+        esel:         flag,
+        opendbv:      flag,
+        verbose:      flag
+    ]];
+
+    <a class="fcnlink" href="#recap_Synthesis">recap_Synthesis</a> ['outfile', fragfiles, [
+        filter:       token,
+        reactive:     flag,
+        modelfile:    token,
+        modelcmp:     token,
+        modelval:     number,
+        maxmol:       number,
+        maxiter:      number,
+        opendbv:      flag,
+        wash:         flag,
+        Qmean:        number,
+        Qdev:         number,
+        verbose:      flag
+    ]];
+
+    ctx = <a class="fcnlink" href="#recap_SynthesizeOpen">recap_SynthesizeOpen</a> [mdbfile, wfield, pweight, sweight]
+    mol = <a class="fcnlink" href="#recap_SynthesizeRandom">recap_SynthesizeRandom</a> [ctx, options]
+    <a class="fcnlink" href="#recap_SynthesizeClose">recap_SynthesizeClose</a> ctx
+    token = <a class="fcnlink" href="#recap_BondClass">recap_BondClass</a> [atom_keys1, atom_keys2]
+</pre>
+
+<h2>Description</h2>
+<p>
+The RECAP Analysis and RECAP Synthesis functions work in tandem to analyze
+collections of molecules according to simple retrosynthetic rules and to
+randomly generate, <i>de novo</i>, novel chemical structures that have
+a high likelihood of being synthesizable.
+
+<p><a name="recap_Analysis"></a></p><p><hr noshade="noshade" />
+<pre><span class="fcndef">recap_Analysis</span> ['infile', 'outfile', options]
+</pre>
+
+<p>
+The purpose of <tt>recap_Analysis</tt> is to fragment every molecule in a
+database given by <tt>infile</tt> according to simple retrosynthetic analysis
+rules and collect statistics on the resulting fragments and write them to
+an output database given by <tt>outfile</tt>.  The <tt>options</tt> argument
+is a tagged vector containing:
+
+<blockquote>
+<dl>
+<dt><tt>afield</tt> : <i>token</i>
+
+<dd>
+The name of a numeric field in the <tt>infile</tt> database containing
+activity data.  An empty token (<tt>''</tt>), the default, means that no
+activity data is present in the input database and input molecules
+will be deemed to have an activity value of 0.
+
+<p>
+<dt><tt>acompare</tt> : <i>token</i>
+
+<dd>
+The comparison operator to use when determining whether an input molecule
+is considered active.  Legal values are <tt>'&lt;' '&gt;' '&lt;=' '&gt;='
+'==' '=' '<>'</tt>.  The default is <tt>'&gt;'</tt>.
+For example, if <tt>afield</tt> specifies pKi data,
+<tt>acompare</tt> is '&gt;' and <tt>athreshold</tt>  is 6 then input
+molecules will considered active if the pKi value is greater than 6.
+
+<p>
+<dt><tt>athreshold</tt> : <i>number</i>
+
+<dd>
+The threshold value used to determine whether an input molecule is active.
+This value is only used if <tt>afield</tt> specifies a numeric field in
+the <tt>infile</tt> database.  The default is 0.
+
+<p>
+<dt><tt>esel</tt> : <i>flag</i>
+
+<dd>
+If <tt>true</tt> then only entries selected in the Database Viewer opened on
+the <tt>infile</tt> will be used in the calculation; other entries will be
+ignored.  The default is 0.
+
+<p>
+<dt><tt>opendbv</tt> : <i>flag</i>
+
+<dd>
+If <tt>true</tt> then a Database Viewer will be opened on the output database
+given by <tt>outfile</tt>.  The default is 0.
+
+<p>
+<dt><tt>verbose</tt> : <i>flag</i>
+
+<dd>
+If <tt>true</tt> then progress information will be written to the SVL Commands
+window during the calculation.  The default is 1.
+
+</dl>
+</blockquote>
+
+<p>
+As the calculation proceeds, fragment data will be written to the output
+database given by <tt>outfile</tt>.  This database will contain a 
+molecule field, an extended SMILES name field and numeric frequency
+information.
+
+<p><a name="recap_Synthesis"></a></p><p><hr noshade="noshade" />
+<pre><span class="fcndef">recap_Synthesis</span> ['outfile', fragfiles, options]
+</pre>
+<p>
+The purpose of <tt>recap_Synthesis</tt> is to randomly recombine the RECAP
+Analysis fragments given by <tt>fragfiles</tt> in an effort to generate
+synthetically reasonable novel chemical structures which are to be written
+to an output database given by <tt>outfile</tt>.
+Optional property filters and screening predictive models
+(such as QSAR/QSPR models, fingerprint similarity models or pharmacophore
+models) can be applied to the synthesis output.
+<p>
+Molecule generation proceeds by selecting fragments in the databases
+specified in the <tt>fragfiles</tt> argument which must have the form
+<tt>[filename,wfield,P,S]</tt> where
+
+<blockquote><dl>
+<dt><tt>filename(i)</tt>
+
+<dd>is the token name of a molecular database containing (minimally) a
+character field called <tt>'name'</tt> with extended SMILES fragment
+names as written by <tt>recap_Analysis</tt>.
+
+<p>
+<dt><tt>wfield(i)</tt>
+
+<dd>is the token field name in <tt>filename(i)</tt> containing numeric
+data to be interpreted as a random sampling weight for each fragment.
+Fragments will be sampled from <tt>filename(i)</tt> according to the
+distribution induced by the numeric values in <tt>wfield(i)</tt>.  An
+empty token, <tt>''</tt> means uniform sampling (no weights).
+
+<p>
+<dt><tt>P(i)</tt>
+
+<dd>
+is a numeric value used as weight when selecting one of the fragment
+databases for use as the primary or root fragment.
+Molecule generation proceeds by randomly sampling a root fragment followed
+by substituting randomly sampled substituent fragments.
+At each stage, whether root fragment or substituent fragment, one of the
+<tt>fragfiles</tt> databases is chosen randomly according to a distribution
+specified by weights.
+The <tt>P(i)</tt> weight is used as the weight for <tt>filename(i)</tt>
+when a root fragment is generated.
+
+<p>
+<dt><tt>S(i)</tt>
+
+<dd>
+is a numeric value used as weight when selecting one of the fragment
+databases for use as the secondary or substituent fragment.
+Molecule generation proceeds by randomly sampling a root fragment followed
+by substituting randomly sampled substituent fragments.
+At each stage, whether root fragment or substituent fragment, one of the
+<tt>fragfiles</tt> databases is chosen randomly according to a distribution
+specified by weights.
+The <tt>S(i)</tt> weight is used as the weight for <tt>filename(i)</tt>
+when a substituent fragment is generated.
+</dl></blockquote>
+
+<p>
+The <tt>options</tt> argument is a tagged vector that specifies additional
+arguments that affect the calculation:
+
+<blockquote>
+<dl>
+<dt><tt>filter</tt> : <i>value</i>
+
+<dd>
+The <tt>filter</tt> option specifies a first stage acceptance filter on
+generated molecules.  Molecules that do not satisfy the requirements of
+the filter are not written to the output database.  Legal values are
+
+<p>
+<ol>
+<li><tt>'None'</tt> for no filtering (the default).
+<li><tt>'Leadlike'</tt> for Oprea's leadlike test.
+<li><tt>'Druglike'</tt> for Lipinski's leadlike test.
+<li><tt>[MW, logP, donacc]</tt> to output only molecules with a molecular
+weight less than or equal to <tt>MW</tt>
+and a logP(octanol/water) less than or equal to <tt>logP</tt>
+and hydrogen donor + hydrogen acceptor sum less than or equal
+to <tt>donacc</tt>.
+</ol>
+
+<p>
+<dt><tt>reactive</tt> : <i>flag</i>
+
+<dd>If <tt>true</tt> then molecules containing commonly
+reactive groups will be written to the output database; otherwise such
+molecules will be suppressed and not written to the output database.  The
+default is 1.
+
+<p>
+<dt><tt>modelfile</tt> : <i>token</i>
+
+<dd>
+The name of a QSAR <tt>.fit</tt> file or a Model Composer <tt>.mom</tt>
+model file used to further filter the generated molecules.
+This option, together with <tt>modelcmp</tt> and <tt>modelval</tt> specify
+a condition that molecules must satisfy in order to be written to the
+output database.
+
+<p>
+<dt><tt>modelcmp</tt> : <i>token</i>
+
+<dd>
+The comparison operator to use when determining whether a generated molecule
+satisfies the model given by <tt>modelfile</tt>.
+This option, together with <tt>modelfile</tt> and <tt>modelval</tt> specify
+a condition that molecules must satisfy in order to be written to the
+output database.
+Legal values are <tt>'&lt;' '&gt;' '&lt;=' '&gt;='
+'==' '=' '<>'</tt>.  The default is <tt>'&gt;'</tt>.
+
+<p>
+<dt><tt>modelval</tt> : <i>number</i>
+
+<dd>
+The threshold value used to determine whether a generated molecule
+satisfies the model given by <tt>modelfile</tt>.
+This option, together with <tt>modelfile</tt> and <tt>modelcmp</tt> specify
+a condition that molecules must satisfy in order to be written to the
+output database.  The default is 0.
+
+<p>
+<dt><tt>maxmol</tt> : <i>number</i>
+
+<dd>
+Specifies the maximum number of molecules that will be written to the
+output database.  The <tt>recap_Synthesis</tt> function will terminate
+when the output database contains the given number of molecules.
+The default is 1000.
+
+<p>
+<dt><tt>maxiter</tt> : <i>number</i>
+
+<dd>
+Specifies the maximum number of attempts that will be made to generate
+and write a molecule to the output database. 
+The <tt>recap_Synthesis</tt> function will terminate
+when the number of attempts exceeds the given value independent of how
+many molecules have been written to the output database.
+The default is 5,000,000.
+
+<p>
+<dt><tt>wash</tt> : <i>flag</i>
+
+<dd>
+If <tt>true</tt> then generated molecules will be "washed"; that is, acids will
+be deprotonated and bases will be protonated.  The default is 0.
+
+<p>
+<dt><tt>Qmean</tt> : <i>number</i>
+
+<dd>
+The number of heavy atoms per molecule in the output database will be the
+specified number, on average.
+The default is 30 (good for drug-like); use 25 for lead-like.
+
+<p>
+<dt><tt>Qdev</tt> : <i>number</i>
+
+<dd>
+The standard deviation of the number of heavy atoms per molecule in the output
+database will be the specified number, on average. The default is 11.
+
+<p>
+<dt><tt>opendbv</tt> : <i>flag</i>
+
+<dd>
+If <tt>true</tt> then a Database Viewer will be opened on the output database
+given by <tt>outfile</tt>. The default is 0.
+
+<p>
+<dt><tt>verbose</tt> : <i>flag</i>
+
+<dd>
+If <tt>true</tt> then progress information will be written to the SVL Commands
+window during the calculation. The default is 1.
+
+</dl>
+</blockquote>
+
+<p><a name="recap_SynthesizeClose"></a></p>
+<p><a name="recap_SynthesizeRandom"></a></p>
+<p><a name="recap_SynthesizeOpen"></a></p>
+<p><hr noshade="noshade" />
+<pre>ctx = <span class="fcndef">recap_SynthesizeOpen</span> [mdbfile, wfield, pweight, sweight]
+mol = <span class="fcndef">recap_SynthesizeRandom</span> [ctx, options]
+<span class="fcndef">recap_SynthesizeClose</span> ctx;
+</pre>
+
+<p>
+These functions are used to access the lower level RECAP Synthesis
+functionality.  The <tt>[mdbfile,wfield,pweight,sweight]</tt> arguments to
+<tt>recap_SynthesizeOpen</tt> are identical in definition to the
+<tt>fragfiles</tt> argument in <tt>recap_Synthesize</tt> and interpreted in
+exactly the same manner.  The returned <tt>ctx</tt> contains information needed
+to generate molecules.
+
+<p>
+The <tt>recap_SynthesizeClose</tt> function must be used to release any
+resources contained in <tt>ctx</tt>.
+
+<p>
+The <tt>recap_SynthesizeRandom</tt> function generates a random novel chemical
+structure and returns it in the <tt>mol</tt> vector.  The <tt>options</tt>
+argument is a tagged vector containing <tt>Qmean</tt> and <tt>Qdev</tt>
+numbers interpreted exactly as for <tt>recap_Synthesize</tt>.  For this
+function the default <tt>Qmean</tt> is 25 and <tt>Qdev</tt> is 11.
+
+<p><a name="recap_BondClass"></a></p><p><hr noshade="noshade" />
+<pre>token = <span class="fcndef">recap_BondClass</span> [atom_keys1, atom_keys2]
+</pre>
+<p>
+The <tt>recap_BondClass</tt> function provides a means to detect whether
+particular bonds are RECAP bonds.  For each bond specified by two
+atom keys <tt>atom_keys1(i)</tt> and <tt>atom_keys2(i)</tt> a token
+is returned.  The value of <tt>token(i)</tt> is the empty token (<tt>''</tt>)
+if <tt>atom_keys1(i)</tt> and <tt>atom_keys2(i)</tt> are not bonded or
+do not correspond to a RECAP bond; otherwise, the <tt>token(i)</tt>
+is the chemical bond class name of a RECAP cuttable bond.
+
+<h2>See Also</h2>
+
+<a href="../../apps/recap.htm">RECAP Analysis and Synthesis</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

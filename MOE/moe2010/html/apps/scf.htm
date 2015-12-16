@@ -1,0 +1,977 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!-- 
+!!	scf.htm
+!!
+!!	06-jun-2010 (kk) screenshots
+!!  	28-oct-2009 (wl) updated GAMESS link
+!!	23-apr-2008 (ac) added gamess.ericfmt
+!!	13-aug-2007 (ac) updated
+!!	06-jun-2006 (ac) added DBSCF
+!!	14-jun-2005 (ac) updated
+!!	06-apr-2005 (ac) created
+!!-->  
+  
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<meta keywords>
+<meta panel Quantum Chemistry: SCF Setup>
+<meta panel Quantum Chemistry: SCF Results>
+
+<title>SCF Wavefunctions</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>SCF Wavefunctions</h2>
+<hr noshade="noshade" />
+
+<ul>
+  <li><a href="#Background">Background</a></li>
+  <li><a href="#Framework">Framework</a></li>
+  <li><a href="#Panels">Single Structure</a></li>
+  <ul>
+    <li><a href="#Setup">Setup</a></li>
+    <li><a href="#Results">Results</a></li>
+    <li><a href="#Print">Print</a></li>
+  </ul>
+  <li><a href="#Database">Structure Database</a></li>
+  <li><a href="#Configuration">Configuration</a></li>
+  <ul>
+    <li><a href="#MOPAC">MOPAC Engine</a></li>
+    <li><a href="#MOPAC2007">MOPAC2007/2009 Engine</a></li>
+    <li><a href="#ADF">ADF Engine</a></li>
+    <li><a href="#GAMESS">GAMESS Engine</a></li>
+    <li><a href="#Gaussian">Gaussian Engine</a></li>
+  </ul>
+  <li><a href="#Refs">References</a></li>
+</ul>
+
+
+<h2> <a name="Background">Background</a> </h2>
+
+<p>Computational chemistry methods provide two main categories of algorithms for
+describing molecular properties as a function of constituent atoms and their
+Cartesian coordinates. The simpler of the two is the forcefield method, in which
+the "ball &amp; spring" metaphor is applied to atoms and bonds, using parameters
+trained to reproduce quantitative data. The calculation of potential energy and
+gradients is computationally efficient, allowing discovery of  energy minimum
+geometries of huge molecular species such as proteins.
+
+<p>The other main category includes wavefunction-based methods, which begin by
+ascribing to each atom a set of atomic orbitals, described by basis functions,
+and some number of electrons to populate them. The shapes of the orbitals
+defined by the chosen basis set are obtained by various means, such as exact
+solutions to the Schr&ouml;dinger equation for a single electron,
+or higher-level fitting to eventual observables. 
+
+<p>Wavefunction-based methods operate by constructing an initial guess density
+matrix, in terms of the atomic orbital basis functions, then iteratively
+refining it using the self-consistent field (SCF) technique. At each step, the
+kinetic energy, nuclear attraction and electron-electron repulsion terms are
+accounted for, and a correction applied to the density until self-consistency is
+achieved.
+
+<p>While approaches to solving the SCF equation vary in terms of the
+approximations which are used to achieve a realistic answer within a reasonable
+time, all methods have a common set of variables: total energy, eigenvalues,
+eigenvectors, density matrix and basis functions. The principal differences are
+the mathematical forms chosen to describe the basis functions, the means of
+calculating or approximating the electron-electron repulsion integrals, recovery
+of correlation energy, calculation of gradients for geometry optimization, and a
+number of other issues which affect accuracy, speed and reliability. These
+issues aside, the large number of wavefunction-based calculation programs share
+significant overlap in terms of input data, output data and feature set.
+
+<p>Compared to the use of forcefields, calculation of molecular properties using
+wavefunction-based methods is computationally intense, and the necessary
+compromises increase steeply with molecular size. Methods for extending the
+reach of such calculations involve a combination of time-saving approximations
+which may be circumstantially reasonable, improvements in the algorithms of the
+rate-limiting steps, and harnessing increasing computing power.
+
+
+<h2> <a name="Framework">Framework</a> </h2>
+
+<p>MOE provides a framework for making use of quantum chemistry calculations
+which operate by producing a wavefunction using the self-consistent field (SCF)
+method. The SCF features in MOE consist of panels for setting up calculations
+and viewing their results, SVL functions for programmatic control, a plug-in
+mechanism for adding interfaces to new packages, and a file format which
+uniformly spans all packages whether internal or external.
+
+<p>A computational package which has been interfaced to the MOE SCF framework is
+referred to as an <i>SCF engine</i>. Each such engine is incorporated into the
+MOE SCF framework via a single SVL function which controls access to its feature
+set. An SCF engine may be an externally executed program, or a native SVL
+implementation. To be useful, an SCF engine must be able to operate on a
+collection of atoms with starting coordinates (such as can be derived from the
+MOE Window), and should output data such as total energy, eigenvalues,
+basis functions and the wavefunction. Most SCF engines provide structure
+optimization capabilities, and a variety of calculated properties.
+
+<p>The SCF framework and the SVL interface functions handle all of the supported
+commonality between the SCF engines. The functionality exposed by any particular
+SCF engine can be accessed from a common user interface in MOE, and the same set
+of functions in SVL. The data obtained by performing a calculation is stored in
+a consistent format, and can be used in the same way regardless of which package
+was used to generate it.
+
+<p>In addition to recording properties which were calculated by a particular SCF
+engine, the SCF framework also has capabilities for calculating properties which
+are derived from the wavefunction, for example the spatial electron density and
+shapes of molecular orbitals.
+
+
+<h2> <a name="Panels">Single Structure</a> </h2>
+
+<p>The following sections describe the main user interface elements which make
+the SCF Wavefunction capabilities available, using the contents of the MOE main
+window as the structural template.
+
+<h3> <a name="Setup">Setup</a> </h3>
+
+<p>A new SCF calculation can be instantiated by selecting the <nobr><b>MOE |
+Compute | Simulations | SCF Calculation</b></nobr> menu option. The panel shown
+in Figure 1 below will be shown.
+
+<p><table border="0" align="center" cellpadding="5">
+<tr>
+<th><img src="scf/setup1.png">&nbsp;</th>
+<th>&nbsp;<img src="scf/setup2.png"></th>
+</tr>
+<tr>
+<th>Figure 1</th>
+<th>Figure 2</th>
+</tr>
+</table>
+
+<p>In Figure 1, the default engine (<tt>MOPAC</tt>) is selected, with its
+default options. Figure 2 shows a panel which has been configured to run
+with the MOPAC2007/2009 code and
+the PM6 Hamiltonian and COSMO solvent
+models.
+
+<p>The following configuration options are supported. The availability, and in
+some cases the list of choices, depend upon the engine:
+
+<p><table border="0" cellpadding="5">
+
+<tr><th align="left" valign="top">Filename</th><td>
+
+The path to the file to which the calculation data will be saved at periodic
+checkpoint intervals. For new calculations the filename is blank, which means
+that the data will not be saved, unless the user explicitly requests this once
+the calculation is finished. The filename may be changed by clicking on the
+<b>Browse</b> button. If an existing file is selected, the user is prompted as
+to whether the file should be overwritten. SCF wavefunction files should have
+the suffix <tt>.wfn</tt>.
+
+</td></tr><tr><th align="left" valign="top">Engine</th><td>
+
+The SCF implementation which will be used for the calculation. While all
+engines have significant feature overlap, the sets of parameters and individual
+capabilities vary to some extent. Changing the engine will cause some of the
+panel widgets change their sensitivity, or selectable options, in order to
+reflect this.
+
+</td></tr><tr><th align="left" valign="top">Basis&nbsp;Set</th><td>
+
+All computational engines present a variety of basis sets which affect the
+quality and performance of the calculation. This option may be populated with
+Hamiltonians (e.g. the AM1, PM3 and MNDO methods available with <tt>MOPAC</tt>)
+or Gaussian atomic orbital basis sets (e.g. STO-3G, 3-21G*, 6-311+G** etc.).
+
+</td></tr><tr><th align="left" valign="top">Multiplicity</th><td>
+
+Controls the number of unpaired electrons, and whether the calculation is
+performed as a closed shell, open shell or excited state system. Multiplicity is
+defined as <i>2S+1</i> where <i>S</i> is the spin of the system, and each
+electron has a spin of &frac12;. Common multiplicity values are: 1 = closed
+shell system, 2 = radical ground state, 3 = biradical or first excited state of
+an ordinarily closed-shell system, etc. Closed shell calculations are usually
+done with an RHF (Restricted Hartree-Fock) treatment, open shell calculations
+with UHF (Unrestricted Hartree-Fock).
+
+</td></tr><tr><th align="left" valign="top">Geometry&nbsp;Optimization</th><td>
+
+If unchecked, the calculation will be done as a stationary point, i.e. it is
+assumed that the input coordinates are already suitable for calculating the
+wavefunction and any derived properties. If checked, the engine will be
+instructed to iterate using the default gradient/optimization techniques to find
+the lowest energy structure, and the resulting coordinates, wavefunction and
+properties will be based on this result.
+
+</td></tr><tr><th align="left"
+valign="top">Vibrational&nbsp;Frequencies</th><td>
+
+If supported by the computational engine, the calculation of vibrational
+frequencies and their normal modes may be requested. 
+
+</td></tr><tr><th align="left" valign="top">Density&nbsp;Functional</th><td>
+
+If the engine supports this feature, the default density functional method
+will be used instead of the more traditional Hartree-Fock method. If further
+specification of parameters is necessary, they must be given in the keywords
+section. The type of density functional method may be selected; the default is
+generally <tt>B3LYP</tt>.
+
+</td></tr><tr><th align="left" valign="top">Electronic Excitations</th><td>
+
+If supported by the selected engine, the energies and intensities of
+electronic excitation transitions will be calculated. This can be time
+consuming. Typically, only excitations involving frontier orbitals are
+calculated.
+
+</td></tr><tr><th align="left" valign="top">Circular Dichroism</th><td>
+
+If supported by the selected engine, the circular dichroism profile will be
+calculated, which has opposite sign for opposite enantiomers.
+
+</td></tr><tr><th align="left" valign="top">Solvent Model</th><td>
+
+Many computational engines support one or more types of solvent models in
+order to mimic the effect of being in solution. When available, the solvent
+model may be selected from a list, and the dielectric (&epsilon;) parameter may
+be tweaked as necessary.
+
+</td></tr><tr><th align="left" valign="top">Job&nbsp;Title</th><td>
+
+An arbitrary name can be given to the calculation. The name will be shown in
+various panels with MOE, as well as written to input or output files where
+appropriate.
+
+</td></tr><tr><th align="left" valign="top">Keywords</th><td>
+
+Additional configuration keywords can be provided to the underlying engine
+by entering them in this text box. The manner in which they are interpreted is
+entirely dependent on the engine. All engines are designed such that the
+parameters which can be selected in the <b>Setup Panel</b> are generally
+sufficient for routine calculations.
+
+<p>An example of a keyword, for the <tt>MOPAC</tt> engine, would be
+<tt>T=600</tt>, which would ensure that the calculation did not take longer than
+5 minutes.
+
+</td></tr><tr><th align="left"
+valign="top">Selected&nbsp;Atoms&nbsp;Only</th><td>
+
+When a calculation is first created, it has no molecular data (i.e. atoms,
+positions, charges); these will be obtained from the MOE Window immediately
+prior to starting the calculation. This option determines whether all atoms
+within MOE are used, or just the selected subset.
+
+</td></tr><tr><th align="left" valign="top">Verbose&nbsp;Output</th><td>
+
+If checked, additional information is written to the SVL Commands window as
+the calculation proceeds.
+
+</td></tr>
+</table>
+
+<p>To run the calculation, press the <b>Run</b> button. The panel will close,
+and a status indication will be shown on the MOE Window. The level of
+detail of the progress report depends on the engine.
+
+<p>If the calculation is a new one, it will use the atoms from the MOE main
+window as the molecular structure starting point. If the calculation is being
+continued, the already-extant molecular structure will be used, with atomic
+coordinates as-determined at the end of the previous calculation.
+
+<p>Engines which require an external program to perform the calculation generate
+a text file to be used as input to that program. The <b>Inspect...</b> button
+can be used to write the file and open it with a text editor, without actually
+running the calculation. Note that modifications made to this file will
+<i>not</i> be used.
+The <b>Parse</b> button allows for loading 
+accompanying output data file from an external program.
+</p>
+
+<h3> <a name="Results">Results</a> </h3> 
+
+<p>Once a calculation is complete, the <b>SCF Results</b> panel will be shown.
+Alternatively, an existing file can be opened using <nobr><b>MOE |
+File | Open</b></nobr>, which will also lead to this panel being shown.
+
+<p><div align="center"><img src="scf/results.png"></div>
+
+<p>The SCF Results panel is a multi-page panel. The page is controlled by the
+option list at the top of the panel, which defaults to <b>Results</b>. Other
+pages which are available include <b>Atoms</b>, <b>Eigenvalues</b> and
+<b>Notes</b>.
+
+<p>The most prominent information summarizing the calculation is displayed on
+the <b>Results</b> page:
+
+<p><table border="0" cellpadding="5">
+
+<tr><th align="left" valign="top">Summary</th><td>
+
+The top left section of the page shows a 2D chemical diagram representation
+of the structure, and various other statistics including filename, engine, basis
+set, chemical formula, number of atoms, overall charge, number of atomic
+orbitals, number of electrons involved in the calculation, and the total SCF
+energy (in Hartrees).
+
+</td></tr><tr><th align="left" valign="top">Molecular&nbsp;Orbitals</th><td>
+
+The right hand side of the page is taken up by a graphical representation of
+the molecular orbital energy levels (eigenvalues). The levels are arranged in a
+form similar to that displayed in many textbooks, and attempt to capture the
+relative scale of the frontier orbitals, and show any degeneracies. Each
+orbital is marked with the number of electrons with which it is filled. The
+selected orbitals (HOMO and LUMO by default) are highlighted, and the energy gap
+between them is shown.
+
+</td></tr><tr><th align="left" valign="top">
+<img src="scf/mobutt1.gif" alt="Grow & Shrink"></th><td>
+
+Using the Grow and Shrink buttons, the zoom level of the molecular orbital
+display can be adjusted.
+
+</td></tr><tr><th align="left" valign="top">
+<img src="scf/mobutt2.gif" alt="Up & Down"></th><td>
+
+Using the Up and Down buttons, the centroid position of the molecular orbital
+display can be moved.
+
+</td></tr><tr><th align="left" valign="top">To, From</th><td>
+
+At any given time there are two orbital selections. The initial default
+selection is From = HOMO and To = LUMO. Unless they are changed to the same
+orbital, a red arrow is drawn onto the main graphic to illustrate the
+transition.
+
+</td></tr><tr><th align="left" valign="top">Energy</th><td>
+
+The energy values of the two selected molecular orbitals are shown (To and
+From, respectively). By default the energies are given in <tt>au</tt> (atomic
+units, also known as Hartrees). Note the unit selection radio button to the
+right; the energies can also be shown in <tt>eV</tt> (electron volts). Note that
+<tt>nm</tt> (nanometers) is only appropriate for energy transitions, and so is
+not used for the individual energy levels.
+
+</td></tr><tr><th align="left" valign="top">Delta</th><td>
+
+If the To and From selections are not the same, the difference between them
+is shown using the selected units, be they <tt>au</tt>, <tt>eV</tt> or
+<tt>nm</tt>. Note that <tt>nm</tt> (nanometers) is a reciprocal unit and is
+proportional to the inverse of the energy difference.
+
+</td></tr><tr><th align="left" valign="top">Plot&nbsp;Style</th><td>
+
+The manner in which plots are displayed is controlled by this option menu,
+which consists of the following:
+
+<ul>
+
+<li><tt>Solid Surface</tt> (default): Plots are represented as a solid shell
+with a fully reflective surface.
+
+<li><tt>Transparent Surface</tt>: Partial transparency is used in order to allow
+viewing of superimposed portions.
+
+<li><tt>Wireframe Surface</tt>: The surface of the plot is represented with
+lines, which allow interior portions to be seen also.
+
+<li><tt>Point Grid</tt>: Each point within the grid is plotted as a small dot.
+
+</ul>
+
+</td></tr><tr><th align="left" valign="top">Plot&nbsp;Orbitals</th><td>
+
+Plots at least one molecular orbital. The orbitals which are plotted are all
+those which lie within the range From .. To (inclusive). In order for the
+orbital plots to be meaningful, the molecular system must be created within the
+MOE Window, which is done automatically, prompting for permission if
+necessary. The calculation required to generate each molecular orbital as a 3D
+grid is moderately time-consuming, and so a progress indicator is provided.
+Display of the orbitals can be changed using the Graphics Object Manager.
+
+</td></tr><tr><th align="left"
+valign="top">Plot&nbsp;Electron&nbsp;Density</th><td>
+
+Plots the electron density of the molecule, which is derived from the total
+of the occupied wavefunctions. Electron density grids take longer to calculate
+than do individual molecular orbitals.
+
+</td></tr>
+</table>
+
+<p>Two examples of graphical plots are shown below. For both types, the shapes
+are plotted to encapsulate approximately 80% of the integral of the evaluated
+grid points. The spacing of the grid points depends on the dimensions of the
+molecular species, and is automatically adjusted to trade-off between quality
+and time. The plot style shown is <tt>Solid Surface</tt>.
+
+<p><table border="0" align="center" cellpadding="20">
+<tr>
+<th><img src="scf/plot1.jpg"></th>
+<th><img src="scf/plot2.jpg"></th>
+</tr>
+<tr>
+<th>Highest Occupied Molecular Orbital</td>
+<th>Electron Density</td>
+</tr>
+</table>
+
+<p>In many cases, it is useful to plot frontier molecular orbitals using the
+<tt>Transparent&nbsp;Surface</tt> mode, which more readily facilitates
+visualization of the nodal lobes:
+
+<p><div align="center"><img src="scf/plot3.png"></div>
+
+<p>Other pages in the Results panel are specific to particular data categories:
+
+<p><table border="0" cellpadding="5">
+
+<tr><th align="left" valign="top">Atoms</th><td>
+
+Each of the atoms involved in the calculation is displayed, with its index,
+element, atomic number, and coordinates. The coordinates are given in atomic
+units (Bohr), not angstroms. Also for convenience, the 2D diagram is shown,
+alongside a redrawn version which shows the atomic indexes of each atom.
+
+</td></tr><tr><th align="left" valign="top">Eigenvalues</th><td>
+
+Each of the eigenvalues resulting from the calculation is shown, with its
+index, energy in atomic units (Hartrees), occupancy (number of electrons
+attributed to it), label, and energy difference from the appropriate frontier
+orbitals. Energy differences for occupied orbitals are calculated relative to
+the HOMO, unoccupied orbitals relative to the LUMO.
+
+</td></tr><tr><th align="left" valign="top">Notes</th><td>
+
+Textual input relevant to the underlying engine and any unusual conditions is
+shown on this page, which is divided into three sections: Input, Output and
+Errors.
+
+<p>For computational engines which involve executing an external application,
+the typical method of delivering input parameters is by placing them in a single
+text file. For such engines, the entire input file is shown in the Input box,
+since it is generally relatively small. It is on occasion useful to verify the
+exact parameters which were passed to the engine.
+
+<p>Similarly, the Output box contains a portion of the text generated by such
+an external application, though it is generally edited for brevity since such
+documents can be large.
+
+<p>The Errors box shows any problems which were explicitly recognized by the
+engine.
+
+</td></tr>
+</table>
+
+<p>The Results panel has the following command buttons:
+
+<p><table border="0" cellpadding="5">
+
+<tr><th align="left" valign="top">Recompute</th><td>
+
+It is possible and useful to chain together calculations, by restarting a new
+calculation using the molecular system and optimized geometry resulting from a
+previous calculation. For example, it may be desirable to perform a preliminary
+geometry determination using a <tt>MOPAC</tt> semi-empirical Hamiltonian,
+followed by a refinement using an ab initio method. The Recompute button brings
+up the SCF Setup panel, which is pre-filled with the parameters of the current
+system.
+
+</td></tr><tr><th align="left" valign="top">Realize</th><td>
+
+Viewing the geometry resulting from a calculation is most conveniently done
+by creating the molecular system in the MOE Window. The Realize feature
+does this. If MOE already contains the atom keys (which is usually the case when
+a calculation has been run during the same session), only the coordinates are
+updated. Otherwise a dialog box is shown which requests whether to clear various
+data in order to make way for the new atoms. Note that plotting orbitals and
+electron density are preceded by an implied Realize.
+
+</td></tr><tr><th align="left" valign="top">Load...</th><td>
+
+An alternative SCF wavefunction file may be loaded into the current panel.
+
+</td></tr><tr><th align="left" valign="top">Save As...</th><td>
+
+The SCF wavefunction data may be saved to a file of choice. Note that if the
+Results page indicates that there is a known filename, it is correct to assume
+that the file has been saved. Since the SCF Results panel is read-only, and the
+calculation features save their results at any important checkpoint, the only 
+circumstance in which the data is transient is when no filename has been
+provided. If this is the case, the data will be lost after closing all of the
+panels which retain a copy of it.
+
+</td></tr><tr><th align="left" valign="top">Print</th><td>
+
+This button brings up the <b>Print Wavefunction</b> panel, which is described
+below.
+
+</td></tr>
+</table>
+
+<h3> <a name="Print">Print</a> </h3>
+
+<p>SCF wavefunction data can be formatted for printing, and is presented in the
+standard MOE print preview panel:
+
+<p><div align="center"><img src="scf/print.png"></div>
+
+<p>A variety of checkboxes control the content, each of which will cause the
+corresponding data to be arranged on however many pages are deemed necessary:
+
+<p><table border="0" cellpadding="5">
+
+<tr><th align="left" valign="top">Header&nbsp;Page</th><td>
+
+Standard information about the molecule and the calculation is presented,
+which is the same as the summary shown in the SCF Results panel.
+
+</td></tr><tr><th align="left" valign="top">Molecular&nbsp;Orbitals</th><td>
+
+The schematic diagram of the molecular orbital energy levels is drawn below
+the summary.
+
+</td></tr><tr><th align="left" valign="top">Atom&nbsp;Positions</th><td>
+
+A schematic of the atom numbering scheme corresponding to the chemical
+diagram is shown, followed by a table of each of the atoms and their Cartesian
+coordinates. Note that the coordinates are given in atomic units (Bohr), not
+angstroms.
+
+</td></tr><tr><th align="left" valign="top">Basis&nbsp;Functions</th><td>
+
+The data which comprise the basis functions are displayed. The basis
+functions combined with the eigenvalues make up the wavefunction description of
+the molecule. SCF wavefunctions in MOE can be composed of either of two
+different varieties of basis functions: Slater orbitals or Gaussian orbitals.
+The former are typically favored by semi-empirical methods, the latter by ab
+initio methods.
+
+<p>Regardless of type, each basis function has an index, an associated atom, and
+a center position (usually that of the associated atom). Both types have
+momentum terms for each Cartesian coordinate (MX, MY, MZ), which are zero for
+spherical orbitals and non-zero for the degenerate orbitals. Slater functions
+have an additional radial term (MR). 
+
+<p>Slater functions complete their description with the pre-exponential constant
+(zeta) and post-exponential constant (N). Gaussian functions are further divided
+into some number of contractions (usually 6 or less), each of which has a
+pre-exponential coefficient (Exp#) and a post-exponential constant (Coef#).
+
+</td></tr><tr><th align="left" valign="top">Eigenvalues</th><td>
+
+The individual eigenvalues (molecular orbital energy levels) are displayed in
+columns.
+
+</td></tr><tr><th align="left" valign="top">Eigenvectors</th><td>
+
+The list of eigenvectors is displayed as a square matrix, split over as many
+pages as necessary. The atomic orbitals are shown by columns, and the molecular
+orbitals by rows.
+
+</td></tr><tr><th align="left" valign="top">Density&nbsp;Matrix</th><td>
+
+The density matrix, which is the iterative variable during the SCF iteration
+and the precursor to the wavefunction, is displayed as a square matrix. 
+
+</td></tr><tr><th align="left" valign="top">Overlap&nbsp;Matrix</th><td>
+
+The atomic orbital overlap matrix is displayed as a square matrix, if
+available. Not all computational engines make this information available.
+
+</td></tr><tr><th align="left" valign="top">Vibrational&nbsp;Frequencies</th><td>
+
+If available, numerical tables showing the calculated vibrational frequencies
+are shown.
+
+</td></tr><tr><th align="left" valign="top">Font&nbsp;Size</th><td>
+
+The base font size can be adjusted, which is useful for affecting the number
+of pages used by the entire output.
+
+</td></tr>
+</table>
+
+<p>The schematic diagram of the molecular orbital energy levels is drawn below
+the summary.
+
+<h2><a name="Database">Structure Database</a></h2>
+
+<p>Most of the functionality made available for an SCF calculation on a single
+molecular species can also be applied to a database of structures, in which case
+parameters will be sequentially applied to each molecule in the set, and the
+results will be stored in corresponding database fields. It is possible to
+populate some of the scalar fields obtained from the calculation (e.g. total
+energy), as well as to store the wavefunction in its entirety.
+
+<p>To make use of the database SCF functionality, open a MOE database and
+select
+<span class="nobr"><b>DBV | Compute | Molecule | SCF Calculation</b></span>:
+
+<p><div align="center"><img src="scf/dbscf.png"></div>
+
+<p>The presented options should be considered carefully, since the operation may
+well reflect a considerable investment of time and CPU resources.
+
+<p><table border="0" cellpadding="5">
+
+<tr><th align="left" valign="top">Selected&nbsp;Entries&nbsp;Only</th><td>
+
+If checked, then the selection state in the database viewer implies a subset
+of entries which will be operated on. If there are no selected entries, all of
+the entries will be processed.
+
+</td></tr><tr><th align="left" valign="top">Verbose</th><td>
+
+By default the feedback regarding progress is provided by a message in the
+MOE main window, and by updates on the database. If this option is checked, then
+status information will be written to the console.
+
+</td></tr><tr><th align="left" valign="top">Sanity&nbsp;Check</th><td>
+
+Because SCF calculations tend to require a large amount of CPU time per unit,
+it is typically prudent to ensure that the structures in the database are
+suitable starting points. There are two common problems which will cause SCF
+calculations to produce useless results: (1) the structure coordinates are 2D
+diagram-style layout; (2) explicit hydrogen atoms are missing. By default, the
+<nobr><b>Ensure 3D Structures</b></nobr> and <nobr><b>Ensure
+Hydrogens</b></nobr> options are enabled. If either of them is left on, the
+entire database is scanned before any SCF calculations are initiated. If there
+are non-3D structures or missing hydrogens and the appropriate check is enabled,
+a warning popup will be issued before the calculation begins.
+
+<p>If the database has 2D structures, or if for some other reason the geometries
+are not suitable starting points, the <nobr><b>DBV | Compute | Energy
+Minimize</b></nobr> feature can be used to embed and minimize using molecular
+mechanics forcefields. Similarly lack of explicit hydrogen atoms can be fixed
+with <nobr><b>DBV | Compute | Wash</b></nobr>.
+
+</td></tr><tr><th align="left" valign="top">Molecule&nbsp;Source</th><td>
+
+The subject database must contain a molecule-type field with the input
+structure, which may be altered if there is more than one.
+
+</td></tr><tr><th align="left" valign="top">Geometry</th><td>
+
+If the molecular geometry is known to be already at a minimum, and the
+purpose of the calculation is to obtain properties using the existing geometry,
+the <b>Single-Point</b> option should be selected. The <b>Optimize</b> option
+will instruct the engine to minimize the structure prior to calculating the
+desired properties. <b>Opt&amp;Replace</b> does likewise, but also writes the
+resulting coordinates back into the structure field.
+
+</td></tr><tr><th align="left" valign="top">SCF&nbsp;Engine</th><td>
+
+The choice of SCF engine determines which program will perform the
+calculation, and what options are available. In this option widget, the only
+engines shown are those which are configured to be currently available.
+
+</td></tr><tr><th align="left" valign="top">Basis&nbsp;Set</th><td>
+
+The list of basis sets may be selected from. These vary depending on the
+selected engine.
+
+</td></tr><tr><th align="left" valign="top">Charge&nbsp;Model</th><td>
+
+Most computational engines support one or more ways to assign partial charges
+to atoms. Selecting one of the available possibilities will cause the
+appropriate results to be associated with the molecule structure.
+
+</td></tr><tr><th align="left" valign="top">DFT</th><td>
+
+If the engine supports a density functional method, then this checkbox will
+be available. A list of parameters will be presented when this is selected.
+
+</tr></td>
+</table>
+
+<p>The following parts of the panel refer to properties of the SCF wavefunction
+which may be optionally written to fields. Each property has a default field
+name. If that default field already exists in the database, it will be set in
+the panel. Otherwise the widget will be blank. Empty values mean that the
+property will not be recorded. The default field name may be selected from the
+shortcut dropdown, or the field may be entered as desired.
+
+<p><table border="0" cellpadding="5">
+
+</td></tr><tr><th align="left" valign="top">Wavefunction</th><td>
+
+If used, a field will be populated with the wavefunction resulting from the
+calculation. The format is the same as is used to store the wavefunction in a
+file. Also, a special editor is installed for the field, so that when it is
+subsequently double clicked on, the <b>SCF Results</b> panel will be invoked.
+
+</td></tr><tr><th align="left" valign="top">SCF&nbsp;Energy</th><td>
+
+If used, the <tt>energy</tt> value from the calculation will be written to
+this field. Atomic units are used (also known as Hartrees).
+
+</td></tr><tr><th align="left" valign="top">HOMO-LUMO&nbsp;gap</th><td>
+
+If used, the energy gap of the frontier molecular orbitals will be written to
+this field (i.e. difference between HOMO and LUMO). Atomic units are used.
+
+</td></tr><tr><th align="left" valign="top">Heat&nbsp;of&nbsp;formation</th><td>
+
+If used, and if the engine supports it, the heat of formation will be written
+to this field. Atomic units are used (<i>not</i> kcal/mol).
+
+</td></tr><tr><th align="left" valign="top">Dipole&nbsp;Moment</th><td>
+
+If used, then the magnitude of the dipole moment will be written to this
+field. Atomic units are used (<i>not</i> Debye).
+
+</td></tr><tr><th align="left" valign="top">#&nbsp;Atomic&nbsp;Orbitals</th><td>
+
+If used, then the number of atomic orbitals in the wavefunction will be
+written to this field. This is often useful for gauging timing metrics, as the
+orbital count is usually the most relevant indication of the order of the
+calculation.
+
+</td></tr><tr><th align="left" valign="top">Computation&nbsp;Time</th><td>
+
+If used, then the time taken to complete the calculation will be written to
+this field. The time is measured from within MOE, so for engines that correspond
+to external programs, any kind of startup or cleanup overhead is included.
+
+</td></tr><tr><th align="left" valign="top">Error&nbsp;Report</th><td>
+
+If used, then this field holds status information regarding the calculation.
+Immediately prior to the invocation of the calculation, the field is set to "?".
+If the calculation completes without detecting any errors, and produces what
+appears to be a proper wavefunction, the field is set to "OK". Otherwise an
+attempt is made to summarize the nature of the problem encountered.
+
+</td></tr>
+</table>
+
+<p>When the <b>OK</b> button is pressed, the pre-check scan will be conducted,
+if appropriate. Then the panel will then close, and the iteration over the
+database begins. A message in the main MOE window provides an indication of
+progress. If a field was provided for the <b>Error Report</b>, then its value is
+updated as each entry is processed.
+
+<p>There are two circumstances under which more than one CPU may be used for the
+database calculation. Many quantum chemistry packages (e.g. ADF, GAMESS,
+Gaussian) are capable of splitting a single calculation over multiple CPU nodes,
+if configured appropriately. If the current instance of MOE is running in MPU
+mode, then individual structures from the database will automatically be
+parceled out and executed on remote nodes, as configured. The original task
+will continue to request calculations, and record results, until the processing
+of the set of database entries is complete.
+
+<h2> <a name="Configuration">Configuration</a> </h2>
+
+<p>Several SCF engines are included with MOE, each of which provides an
+interface to an external package. Specific configuration, as described below,
+may be required in order to run these applications.
+
+<p>It is still possible to review data which has been calculated using one of
+these engines, even if the application itself is not available on the current
+workstation.
+
+
+<h3> <a name="MOPAC">MOPAC Engine</a> </h3>
+
+<p>The <tt>MOPAC</tt> (v7/v9) application is included with MOE,
+and is generally
+fully functional without any special configuration steps. The SCF framework
+interface is an additional layer based on preexisting SVL functions. See <a
+href="../moe/fcnref/mopacfcn.htm">MOPAC function reference</a> for more
+information.
+
+<h3> <a name="MOPAC2007">MOPAC2007/2009 Engine</a> </h3>
+
+<p><tt>MOPAC2007</tt> is a modern version of MOPAC 7, which is not public domain
+and is not provided as part of the MOE package. It may be obtained from <a
+href="http://openmopac.net">Stewart Computational Chemistry</a>. 
+</p>
+
+<p>When using the <tt>MOPAC2007</tt> engine rather than the default available
+<tt>MOPAC</tt> engine, the most important differences are:
+
+<ul>
+
+<li>PM6 and RM1 Hamiltonians
+
+<li>No 60 heavy atom limit
+
+<li>Drastically improved convergence
+
+<li>Operational COSMO solvent model
+
+</ul>
+
+<p>
+<tt>MOPAC2009</tt> is <tt>MOPAC2007</tt> plus the MOZYME function.
+The most important
+improvements from <tt>MOPAC2007</tt> are:
+
+<ul>
+
+<li>Giant molecule capability
+
+<li>Drastically improved convergence
+
+<li>New PM6 parameterization including a wider range of elements
+
+</ul>
+
+<p><span class="tip">Tip</span> <tt>MOPAC2009</tt> is configured identically
+to <tt>MOPAC2007</tt>.  The RC variables referring to <tt>mopac2007</tt>
+are used for <tt>MOPAC2009</tt> as well.
+</p>
+
+<p><tt>MOPAC2007/2009</tt> is largely keyword-compatible with the earlier
+version, so most optional keywords function in the same way. The output of the
+newer engine is also very similar, but in addition it provides for a structured
+output format, which can be more reliably parsed by software, and is used by the
+MOE wrapper functions.
+
+<p>Because <tt>MOPAC2007/2009</tt> is not a default part of MOE,
+it is necessary to
+specify the location of the executable program, which must be installed
+separately. The executable location is stored in the RC file, and can be
+configured using the <tt>SetRC</tt> command, e.g.:
+
+<pre>    SetRC ['mopac2007.exe', '/opt/mopac/mopac.exe']</pre>
+
+<p>Some editions of <tt>MOPAC2007/2009</tt> require a license file in
+order to run.
+The recommended way to ensure that this file is available is to set the
+corresponding value in the RC file to the directory (no
+trailing '<tt>/</tt>') in which the license
+file is found, e.g.:
+
+<pre>    SetRC ['mopac2007.license', '/opt/mopac']</pre>
+
+<p>If the system environment variable <tt>MOPAC_LICENSE</tt> is set before MOE
+is run, then this step is optional. Similarly it may not be necessary to specify
+the location of the license file if the current working directory is the
+location of the <tt>MOPAC2007/2009</tt> executable.
+
+<h3> <a name="ADF">ADF Engine</a> </h3>
+
+<p>The <tt>ADF</tt> (Amsterdam Density Functional) program is not provided as
+part of the MOE distribution. It may be obtained by license from <a
+href="http://www.scm.com">Scientific Computing &amp; Modelling</a>, and has been
+ported to most modern platforms.
+
+<p>The SCF interface to <tt>ADF</tt> uses several configuration entries in order
+to run the executable files:
+
+<pre>
+    SetRC ['adf.home',      '/opt/adf'];
+    SetRC ['adf.bin',       '/opt/adf/bin'];
+    SetRC ['adf.resources', '/opt/adf/atomicdata'];
+    SetRC ['adf.license',   '/opt/adf/license/license.txt'];
+    SetRC ['adf.nproc',     '1'];
+</pre>
+
+<p>Only the first of these entries is mandatory for a conventional installation
+of <tt>ADF</tt>. The subdirectories default to derivatives
+of <tt>adf.home</tt>, and <tt>adf.nproc</tt>
+(number of simultaneous processors) defaults to 1.
+
+<h3> <a name="GAMESS">GAMESS Engine</a> </h3>
+
+<p>The <tt>GAMESS</tt> (General Atomic and Molecular Electronic Structure
+System) program is not provided as part of the MOE distribution. It must first
+be obtained by requesting permission from <a
+href="http://www.msg.chem.iastate.edu/gamess">Iowa State University</a>,
+then compiled and installed on the appropriate workstation.
+
+<p>The SCF interface to <tt>GAMESS</tt> requires the locations of three files, 
+the main executable, a program called "ddikick", and a file called 
+"ericfmt.dat". These must be specified by setting the corresponding MOE RC
+entries: <tt>gamess.exec</tt>, <tt>gamess.ddikick</tt> and
+<tt>gamess.ericfmt</tt> each of which is a full path to an executable file. For
+example:
+
+<pre>
+    SetRC ['gamess.exec',    '/opt/gamess/gamess.00.x']
+    SetRC ['gamess.ddikick', '/opt/gamess/ddikick.x']
+    SetRC ['gamess.ericfmt', '/opt/gamess/ericfmt.dat']
+</pre>
+
+<p>During the execution of the <tt>GAMESS</tt> application, the SCF engine sets
+up a large number of environment variables to instruct <tt>GAMESS</tt> as to
+where to find its input, output and temporary storage data. These are
+constructed based on the value of the <tt>TMP</tt> constant.
+
+
+<h3> <a name="Gaussian">Gaussian Engine</a> </h3>
+
+<p>The <tt>Gaussian</tt> application is not provided as part of the MOE
+distribution, as it is commercial software distributed by <a
+href="http://www.gaussian.com">Gaussian, Inc</a>. MOE provides the means to
+generate an input file, run the program, and read selected portions of the
+output. A version of <tt>Gaussian</tt> must be purchased and installed on the
+appropriate workstation in order to perform calculations using this engine.
+
+<p>In order to execute <tt>Gaussian</tt> from MOE, two RC entries must be set:
+<tt>gaussian.dir</tt> and <tt>gaussian.exec</tt>, the former being the full path
+of the executable files, and the latter the main entrypoint. For example:
+
+<pre>
+    SetRC ['gaussian.dir',  '/opt/g98']
+    SetRC ['gaussian.exec', 'g98']
+</pre>
+
+
+<h2> <a name="Refs">References</a> </h2>
+
+<ul>
+
+<li><p>Stewart, J.J.P.; <i>MOPAC Manual</i>; Seventh Ed. (1993)
+
+<li><p><a href="http://openmopac.net">Stewart Computational Chemistry</a>. 
+
+<li><p>Amsterdam Density Functional (<a href="http://www.scm.com">ADF</a>), Scientific Computing & Modelling NV
+
+<li><p>General Atomic and Molecular Electronic Structure System (<a
+href="http://www.msg.ameslab.gov/GAMESS/GAMESS.html">GAMESS</a>), Iowa State
+University
+
+<li><p>Szabo, A., Ostlund, N.; <i>Modern Quantum Chemistry: Introduction to
+Advanced Electronic Structure Theory</i>; Dover Publications (1989)
+
+<li><p>Hehre, W.J., Radom, L., Schleyer, P.v.R., Pople, J.A.; <i>Ab Initio
+Molecular Orbital Theory</i>; John Wiley &amp; Sons (1986).
+
+</ul>
+
+<h2>See Also</h2>
+
+<a href="../apps/emin.htm">Energy Minimization</a><br>
+<a href="../moe/gui/gobjman.htm">Graphics Object Manager</a><br>
+<a href="../moe/fcnref/mopacfcn.htm">MOPAC Function Reference</a><br>
+
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

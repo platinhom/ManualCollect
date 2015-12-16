@@ -1,0 +1,813 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+
+<title>MOE Programming Tutorial</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>MOE Programming Tutorial</h2>
+<hr noshade="noshade" />
+
+<p>This tutorial is intended to help you become comfortable with manipulating
+MOE molecular objects and to start writing programs in the Scientific
+Vector Language (SVL).</p>
+
+<ul>
+  <li><a href="#AtomsResiduesAndChains">Atoms, Residues and Chains</a></li>
+  <li><a href="#MolecularObjectProperties">Molecular Object Properties</a></li>
+  <li><a href="#MoleculeDataStructure">
+	    Molecule Data Structure (<tt>mdb</tt> Format)</a></li>
+  <li><a href="#AFirstProgram"> A First Program</a></li>
+  <li><a href="#ModifyingASampleProgram">Modifying a Sample Program</a></li>
+  <li><a href="#WritingAndDebuggingAnSVLProgram">
+	    Writing and Debugging an SVL Program</a></li>
+  <li><a href="#HowToInstallYourOwnFunction">
+	    How To Install Your Own Function</a></li>
+  <li><a href="#HowToRunYourFunction">
+	    How To Run Your Function Without <tt>load</tt></a></li>
+</ul>
+
+
+
+<a name="AtomsResiduesAndChains"></a>
+<h2>Atoms, Residues and Chains</h2>
+
+<p>Molecular systems in MOE are represented as a three-tiered molecular object
+hierarchy: atoms are at the bottom level, residues at the middle, and
+chains at the top. Every molecular object is identified by a unique key. </p>
+
+<p>Start this tutorial by loading an aspirin molecule into MOE. 
+In the MOE Window, choose <b>File&nbsp;|&nbsp;Open</b> and 
+select <tt>asa.mol</tt> in the
+<tt>$MOE/sample/mol</tt> directory.
+</p>
+<p>Next, at the SVL command line, type
+(the use of &quot;<tt>svl&gt;</tt>&quot; is to indicate the CLI):
+</p>
+<pre>
+    svl> Atoms[]
+</pre>
+
+<p>This returns the keys of all atom objects currently in the system. 
+To view return values, open the SVL Commands window.
+Similarly, <tt>Residues[]</tt> and <tt>Chains[]</tt> return the keys of all
+residues and all chains in the system. </p>
+
+<p>Suppose you only wish to operate on some of the objects in the system. In
+the main window, select several atoms by pressing <tt>Shift</tt> as you click the 
+left mouse button on atoms. You can now interrogate the system to find
+out which atoms you selected using the <tt>aSelected</tt> function:</p>
+<pre>
+    svl> aSelected Atoms[]
+</pre>
+
+<p>This returns a mask with as many elements as there are atoms in the
+system. The mask contain <tt>1</tt>'s for selected objects, and
+<tt>0</tt>'s otherwise. <tt>rSelected</tt> and <tt>cSelected</tt> operate
+similarly. Note that functions relating to atoms always begin with  
+lowercase a, those relating to residues with lowercase r, and those relating
+to chains with lowercase c.
+</p>
+<p>To obtain the keys of the selected atoms, use the extraction operator
+<tt>|</tt>:
+</p>
+<pre>
+    svl> Atoms[] | aSelected Atoms[]
+</pre>
+
+<p>Molecular objects can also be added to or removed from the selection set.
+For instance, to set the first and third atoms in the list of atoms to be
+selected and the second to be unselected, do the following:</p>
+
+<pre>
+    svl> a = Atoms[]
+    svl> aSetSelected [[a(1),a(2),a(3)], [1,0,1]]
+</pre>
+
+<p>The return values in the SVL Commands window indicate the modified
+selection states of atoms, as does the MOE Window in which new
+atoms are selected. To clear atom selection, click away from the molecular
+system.
+</p>
+<p>MOE also provides several prompting functions, which are useful for
+allowing you to interactively pick molecule objects and have their keys
+returned to you. At the CLI type:
+</p>
+<pre>
+    svl> AtomPrompt[]
+</pre>
+
+<p>This raises a prompt in the MOE Window exhorting you to pick
+an atom.  Similarly, <tt>ResiduePrompt</tt> and <tt>ChainPrompt</tt> will
+prompt for residue and chain selection in the Sequence Editor. </p>
+
+<p>Atoms, residues, and chains are related by parental-filial ties. Find the
+residues to which two atoms belong by entering:
+</p>
+<pre>
+    svl> oParent [a(1),a(2)]
+</pre>
+
+<p>Now find the child residues of the first chain in the system:</p>
+
+<pre>
+    svl> oChildren first Chains []
+</pre>
+
+<p>To find the chain to which an atom belongs, use: 
+</p>
+<pre>
+    svl> aChain a
+</pre>
+
+<p>Conversely, to find the atoms belonging to a given chain, use
+<tt>cAtoms</tt>. Similar functions exist for exploring atom-residue and
+chain-residue relationships.</p>
+
+<!-- SeeAlso
+<p>Molecular Hierarchy for more on the molecular object hierarchy.</p>
+-->
+
+<a name="MolecularObjectProperties"></a>
+<h2>Molecular Object Properties</h2>
+
+<p>Each molecular object has associated properties that can be retrieved.
+For instance, select any atoms and enter the following commands to find their
+elements and names:
+</p>
+<pre>
+    svl> atoms = Atoms [] | aSelected Atoms []
+    svl> aElement atoms
+    svl> aName atoms
+</pre>
+
+<p>You can easily change atom properties: 
+</p>
+<pre>
+    svl> aSetElement [first atoms, 'N']
+    svl> aSetBackbone [first atoms, 1] // mark as backbone
+    svl> aSetGeometry [first atoms, 'sp2']
+</pre>
+
+<p><b>Note:</b> Text following the two forward slashes (<tt>//</tt>) 
+is entered as a comment.
+</p>
+<p>In addition to fundamental atom properties, you can also examine and
+modify molecular graph (connectivity) properties. For instance, to find the
+atoms bonded to selected atom <tt>a</tt>:
+</p>
+<pre>
+    svl> a = AtomPrompt[]
+    svl> aBonds a
+</pre>
+
+<p>This returns a vector that looks something like this (because atom keys
+are unique, your numbers will be different to those in this example):
+</p>
+<pre>
+    [ [3871768,3872360,3877688] ]
+</pre>
+
+<p>The extra set of brackets indicates that what the return value is itself
+a vector of vectors, i.e. a list of atom lists. 
+This can be better appreciated if you invoke <tt>aBonds</tt>
+to find the atoms bonded to two atoms, <tt>a</tt> and <tt>b</tt>: 
+</p>
+<pre>
+    svl> b = AtomPrompt[]
+    svl> aBonds [a,b]
+</pre>
+
+<p>which returns a result similar to the following: 
+</p>
+<pre>
+    [ [3871768,3872360,3877688], [3871176,3872064] ]
+</pre>
+
+<p>Note, however, that a vector of one number can be written as just that
+number, without brackets, so that if atom <tt>a</tt> is bonded to only one
+atom, <tt>aBonds a </tt>will return a single number. Try it by typing:
+</p>
+<pre>
+    svl> aBonds AtomPrompt[]
+</pre>
+
+<p>and picking a hydrogen atom.</p>
+
+<p>If atom <tt>b</tt> is also bonded to only one atom, then <tt>aBonds
+[a,b]</tt> will return a vector of 2 numbers, e.g.
+</p>
+<pre>
+    [3871768,3871176]
+</pre>
+
+<p>If you care specifically about the order of the bonds from atom
+<tt>a</tt>, use:
+</p>
+<pre>
+    svl> aBondOrder a
+</pre>
+
+<p>This function behaves identically to <tt>aBonds</tt> except that, instead
+of returning the keys of the bonded-to atoms, it returns the bond order of
+the corresponding bonds: 1 (single), 2 (double), or 3 (triple). Note that the
+order in which the atom keys are returned by <tt>aBonds</tt> is exactly the
+same as that in which the bond orders are returned. </p>
+
+<p>A related function is <tt>bOrder</tt>. Just as <tt>a</tt> in
+<tt>aBondOrder</tt> stood for atom, <tt>b</tt> stands for
+bond. The <tt>bXXX</tt> functions operate on pairs of atoms, returning
+information about the bond that connects them (if any). Experiment with the
+following calls:
+</p>
+<pre>
+    svl> bOrder [a,b] // report order of a-b bond
+    1
+
+    svl> bInRing [a,b] // is a-b bond in a ring?
+    1
+
+    svl> bInHRing [a,b] // is a-b bond in an aromatic ring?
+    0
+</pre>
+
+<p>Now we'll look at some functions that change the display attributes of
+atoms, in particular, the atom color commands:
+</p>
+<pre>
+    svl> aColorBy AtomPrompt[]
+    'element'
+</pre>
+
+<p>The default coloring scheme in MOE is by atom element. Let's color the entire
+molecule in rainbow hues. We can accomplish this using the atom
+&quot;scalar&quot; field, a number between <tt>0</tt> and <tt>1</tt>
+associated with each atom.
+</p>
+<pre>
+    svl> scalars = x_id Atoms[] / nAtoms[]
+</pre>
+
+<p>This generates atom indices from <tt>1</tt> to the number of atoms
+(<tt>x_id</tt>), and normalizes them to between <tt>0</tt> and <tt>1</tt>.
+</p>
+<pre>
+    svl> aSetScalar [Atoms[], scalars]
+    svl> aSetColorBy [Atoms[], 'scalar'] // change coloring scheme
+</pre>
+
+<a name="MoleculeDataStructure"></a>
+<h2>Molecule Data Structure (<tt>mdb</tt> Format)</h2>
+
+<p>In MOE, molecules are frequently manipulated in molecular data structure
+representation, also known as <tt>mdb</tt> (molecular database) format. This
+compact representation contains all the information needed to reconstruct a
+molecule, and is how molecules are formatted when reading molecules from or
+writing molecules to databases, for instance. But the usage of this format is
+not limited to database communication. For instance, we can use it to
+duplicate the molecule that is currently loaded in MOE:
+</p>
+<pre>
+    svl> mol = mol_Extract Atoms[]
+</pre>
+
+<p><tt>mol</tt> now contains an <tt>mdb</tt> representation of all the
+molecular data in the system. Type:
+</p>
+<pre>
+    svl> mol
+</pre>
+
+<p>to see the contents of the variable. <tt>mol</tt> is a vector of
+<tt>4</tt> vectors. The last of these contains all the atom data needed to
+reconstruct the atoms of the molecule, including atom positions. When we
+create our copy of the molecule in MOE, we'll shift it slightly (by
+<tt>3</tt>&Aring;) in the <em>Z</em> direction so it doesn't get created
+exactly on top of the original.
+</p>
+<pre>
+    svl> mol(4)(MOL_ATOM_Z) = mol(4)(MOL_ATOM_Z) + 3 // 3 angstrom shift
+    svl> mol_Create mol	// returns key of new chain
+</pre>
+
+<a name="AFirstProgram"></a>
+<h2>A First Program</h2>
+
+<p>Our first program will be a small application to interactively select an
+atom whose chirality is then inverted. Open the SVL Text Editor with
+<span class="nobr"><b>MOE | File | New | TextEditor</b></span>, 
+and enter the following lines of code:
+</p>
+<pre>
+    function MM; // import function MM
+
+    function main []
+	local atom = AtomPrompt[];
+	aSetForceRS [atom, neg aRSChirality atom];
+	MM [gtest:0.5]; // coarse minimization
+    endfunction
+</pre>
+
+<p><tt>aSetForceRS</tt> sets a chirality constraint on an atom, which is used
+in energy minimization (<tt>MM</tt>). </p>
+
+<p>Note that the function <tt>MM</tt> needs to be explicitly imported
+whereas the function <tt>aSetForceRS</tt> is a <tt>built-in</tt> function
+as is thus automatically imported.  For more information on the rules
+of importing functions
+see <a href="../svl/manual/funcs.html">Built-in versus Public Functions</a>
+in the SVL manual.
+</p>
+<p>We can save and run this file in one step with 
+<span class="nobr"><b>TextEditor | SVL | Save and Run</b></span>.
+The first time you do this, a file selection box will appear requesting the
+name of a file into which to save. In the MOE Window, click on a chiral
+atom.</p>
+
+<p>Note that if you want to invert the chirality of all the chiral atoms in a
+molecule, you can use the following trick:
+</p>
+<pre>
+    svl> aSetPos [Atoms[], neg aPos Atoms[]]
+</pre>
+
+<a name="ModifyingASampleProgram"></a>
+<h2>Modifying a Sample Program</h2>
+
+<p>MOE comes with a collection of applications in its <tt>$MOE/sample</tt>
+directory.  These pieces of SVL code are for the most part implementations of
+interesting algorithms found in the literature; there are also some tools. We
+will modify the Velocity Verlet program as an illustration of how to go about
+customizing the source code that is provided with the MOE distribution.</p>
+
+<p>Copy <tt>$MOE/sample/verlet.svl</tt> to your own file, and edit it with
+the SVL Text Editor. </p>
+
+<p>Suppose we want to modify this code to perform Hoover-Nos&eacute;
+constant-temperature equilibrium dynamics. First, we need to calculate the
+instantaneous temperature <tt>iT</tt> with each iteration:
+</p>
+<pre>
+    iT = (2/3) * K / (KBOLTZ * N);
+</pre>
+
+<p>where <tt>N</tt> is the number of atoms (that are free to move), and
+<tt>K</tt> is the kinetic energy <em>&frac12;mv&sup2;</em>:
+</p>
+<pre>
+    K = 0.5 * add (add sqr v * mass)
+</pre>
+
+<p>Then we need to introduce a constant-temperature friction coefficient
+<tt>fT</tt>. The initial value of <tt>fT</tt> is zero, and is updated each
+iteration as follows:
+</p>
+<pre>
+    fT = fT + (iT - T) * dt / QT;
+</pre>
+
+<p>where <tt>iT</tt> is the instantaneous temperature as defined above,
+<tt>T</tt> is the target temperature (entered by the user), and <tt>QT</tt>
+is the temperature response, a constant value which for our purposes will be
+set to 25 (<i>E</i>/ps<sup>2</sup>).
+</p>
+<p>Finally, the acceleration is modified by the friction coefficient:
+</p>
+<pre>
+    a = a + (fT * dt) * v;
+</pre>
+
+<p>Make the appropriate modifications to the file for the code to look like
+this (ignoring the window functions). The modified lines are marked by
+"<span class="nobr"><b><tt>// ***</tt></b></span>":</p>
+
+<pre>
+    local atoms = Atoms [];
+    local mass = aMass atoms;
+    local v = randN rep [T*KBOLTZ/mass, 3]; // initial velocities
+    v = v - app add (v * [mass]) / add mass; // remove lin. momentum
+
+    local p = aPos atoms;
+    local a = (Potential [X:p])(2) / [mass]; // F = ma
+
+    local fT = 0;  	 		<b>// *** friction coefficient</b>
+    const QT = 25; 	 		<b>// *** temperature response</b>
+    local N = nAtoms []; 		<b>// *** assume none fixed</b>
+
+    // velocity verlet integration loop
+
+    loop
+	p = p + v * dt - a * (sqr dt / 2);
+	v = v - a * (dt / 2);
+	a = (Potential [X:p])(2) / [mass];
+	v = v - a * (dt / 2);
+
+	a = a + (fT * dt) * v; 			<b>// ***</b>
+
+	aSetPos [atoms, p]; // update positions
+
+	local K = 0.5 * add (add sqr v * mass); <b>// ***</b>
+	local iT = (2/3) * K / (KBOLTZ * N); 	<b>// *** inst. temp.</b>
+	fT = fT + (iT - T) * dt / QT; 		<b>// ***</b>
+    endloop
+</pre>
+
+<p>Once again, we can save and run directly from the SVL Text Editor (Save
+and Run from the SVL menu). </p>
+
+
+<a name="WritingAndDebuggingAnSVLProgram"></a>
+<h2>Writing and Debugging an SVL Program</h2>
+
+<p>An SVL program is a function or series of functions which are compiled and
+loaded, and thereafter accessible at any time at the command line, or from
+inside another function. A compiled and loaded program is known as an SVL
+<i>module</i>. </p>
+
+<p>An SVL program can be localized in a single ASCII file, or distributed
+over several files, all of which can be edited by any text editor. You can
+use any editor to create and edit an SVL file, but you may find editing in
+the SVL Text Editor convenient for debugging.
+</p>
+<p>When beginning to write SVL programs, it is highly recommended that you
+debug all lines of code at the command line. This will help reduce the number
+of syntactical and logical errors in your code. At runtime, the Crash
+History window is an effective tool for finding errors in your code. We will
+illustrate the use of the Crash History below.  Compilation errors will be
+flagged when loading the module. Modules can be loaded at the command line:
+</p>
+<pre>
+    load 'filename'
+</pre>
+
+<p>where <tt>filename</tt> is supplied with single quotes. </p>
+
+<p>Every SVL module has attributes that can be set with module environment
+variables. The <tt>title</tt> variable specifies the name that appears in
+the Modules and Tasks panel; the default is simply the filename. The
+<tt>class</tt> variable is used to categorize modules. </p>
+
+<p>The auto-import and entry-point variables will be discussed below in the
+section on how to install your function. </p>
+
+<!-- SeeAlso
+<p>ModuleEnv for more on module environment.</p>
+-->
+
+<p>To illustrate the development of a program, we will create a function to
+minimize an arbitrary protein.  We will save the program as an
+SVL file and then debug and run it.
+Open your favorite editor or use the SVL text editor.</p>
+
+<blockquote>
+    <b>Note:</b> We have deliberately introduced several errors in the
+    code to demonstrate how bugs are reported, and how you should go about
+    tracking them down and correcting them.  The lines containing errors
+    are marked with &quot;<tt>!!!</tt>&quot;. See the examples below.
+    Later we will save, debug, and run an SVL file.
+</blockquote>
+
+
+<p>Module environment variables must be set at the top of a file before any
+code. Comments are permitted before environment variable settings. Recall
+that there are two kinds of comments, one for multi-line comments
+&quot;<span class="nobr"><tt>/* */</tt></span>&quot;, and the other for until-end-of-line
+comments &quot;<tt>//</tt>&quot;. See this example:
+</p>
+<pre>
+    // file: protmin.svl
+    // desc: module for protein minimization
+
+    #set title 'Protein Minimizer'
+    #set class 'MOE:user'
+
+    /* comment out a block of code for debugging 
+    */
+</pre>
+
+<p>Some functions, such as <tt>Atoms</tt>
+or <tt>aSetFixed</tt>, do not need to be declared. In general, it is safest
+to declare all functions. If you obtain an error such as:
+</p>
+<pre>
+    load: line n: Undeclared identifier 'function_name'
+</pre>
+
+<p>this indicates that either the function <tt>function_name</tt> is not
+visible, either because it does not exist, or because it was not declared, or
+that the function cannot be invoked without using its return value. For
+instance, the statement:
+</p>
+<pre>
+    1 + 1;
+</pre>
+
+<p>is illegal in an SVL function since it has no effect (it is do-nothing code).
+
+<!-- SeeAlso
+<p>(CompErr for more details.)
+-->
+
+However,
+</p>
+<pre>
+    a = 1 + 1;
+</pre>
+
+<p>is legal. Type the following line to include the function declaration.
+It is not necessary to type the comment (i.e. from <tt>//</tt> onwards).
+</p>
+<pre>
+    function MM:	// import function MM <b>!!!Error 1</b>
+</pre>
+
+<p>Below is a function for calculating and reporting
+the potential energy and gradient of the system. Note that since local
+functions are only visible to functions within the file in which they are
+defined, they are not callable from the command line. Thus, for the purposes
+of debugging, you can make local functions global, and only when they run
+satisfactorily should you assign them to be local (you should not leave them
+as global because they will hog system resources unnecessarily). Note that
+giving a global function the same name as that of one already loaded will
+result in an error.
+</p>
+<pre>
+    // GetPotGrad prints the potential and the
+    // maximum gradient in each of the x,y,z directions.
+    // Returns: all x,y,z gradients
+
+    local function GetPotGrad []
+	local [e,g] = Potential [[dX:1]];	// <b>!!!Error 2</b>
+	write ['potential energy: {}, gradients: {}\n', e, app maxE g];
+	return g;
+    endfunction
+</pre>
+
+<p>Here is another local function for fixing atoms and then performing
+minimization:
+</p>
+<pre>
+    // FixMin fixes specified atoms, minimizes, then unfixes all.
+
+    local function FixMin atomkeys
+	aSetFixed [ atomkeys, 1 ];
+	atomkeys;	// <b>!!!Error 3</b>
+	MM []; // minimize with default parameters
+	aSetFixed [ atomkeys, 0 ];
+    endfunction
+</pre>
+
+<p>Below you will find a module containing the above functions, along
+with the protein minimization function. Paste the contents into a text
+file and save it to <tt>protmin.svl</tt>.
+</p>
+<pre>
+#svl
+//	protmin.svl	Protein Minimization
+//
+//	10-oct-2008 (nt) created
+//
+// Description: Runnable file for minimizing proteins.
+//	Be sure to set appropriate forcefield first.
+
+#set title 'Protein Minimizer'
+#set class 'MOE:user'
+#set main ProteinMinimize
+
+/* This kind of comment is good for commenting out
+** a block of code for debugging purposes.
+**/
+
+function MM:	// !!!Error 1
+
+// GetPotGrad prints the potential and the
+// maximum gradient in each of the x,y,z directions.
+// Returns: all x,y,z gradients
+
+local function GetPotGrad []
+    local [e,g] = Potential [[dX:1]];	// !!!Error 2
+    write ['potential energy: {}, gradients: {}\n', e, app maxE g];
+    return g;
+endfunction
+
+// FixMin fixes specified atoms, minimizes, then unfixes all.
+
+local function FixMin atomkeys
+    aSetFixed [ atomkeys, 1 ];
+    atomkeys;	// !!!Error 3
+    MM []; // minimize with default parameters
+    aSetFixed [ atomkeys, 0 ];
+endfunction
+
+//  ProteinMinimize minimizes in several steps:
+//	1) Fix backbone atoms, minimize
+//	2) Fix aC, minimize
+//	3) Minimize only higher gradient areas
+//	4) Minimize all
+
+global function ProteinMinimize protname
+    Open protname; // protname must be token
+    aSetFixed [ Atoms[], 1 ]; // fix original atoms
+    Add_H Atoms[];
+    write 'Minimize only hydrogens...';
+    MM []; // minimize with default parameters
+    aSetFixed [ Atoms[], 0 ];
+
+    GetPotGrad []; // report energy, gradient
+
+    write 'Minimize with backbone atoms fixed...';
+    FixMin (Atoms[]|aBackbone Atoms[]);
+
+    write 'Minimize with alpha-Carbons fixed...';
+    FixMin (Atoms[]|((aName Atoms[])=='CA'));
+
+    write 'Minimize higher gradient areas...';
+
+    local g = GetPotGrad [];
+    FixMin (Atoms[]|(sqrt add sqr g &gt; 1));	// !!!Error 4
+
+    write 'Minimize all...';
+    MM [ method:'TN', gtest:0.01, maxit:1000 ];
+    GetPotGrad [];
+endfunction
+</pre>
+
+<p>Delete any atoms in MOE (MOE | File | Close) and, from the SVL Text Editor, save and load the module directly with the
+<span class="nobr"><b>SVL | Save and Load</b></span> command. 
+(From the CLI, load modules with the <tt>load</tt> command.) </p>
+
+<p>If the directory in which the file is found is not the same as that from
+which you invoked MOE, and is not included in your <tt>MOE_SVL_LOAD</tt>
+environment variable (see the next section) use the full directory path with
+the file name. </p>
+
+<p><b>Error 1:</b></p>
+
+<p>When you loaded the file, a load time (compiler) error will have been
+raised. The error message in the error box gives the line in the source code
+on which the error occurred. In this case, we have a syntax error. Go back to
+your text editor and on the line marked by <tt>!!!Error 1</tt>, change the colon
+(<tt>:</tt>) following <tt>MM</tt> to a semicolon (<tt>;</tt>) to get:
+</p>
+<pre>
+    function MM;
+</pre>
+
+<p><b>Error 3:</b></p>
+
+<p>Try loading again. This time, we get another error. This one is not
+a syntax error.  Rather, it is caused by an expression, in this case
+<tt>atomkeys</tt>, having no effect. Remove the line marked by <tt>!!!Error
+3</tt>, or comment it out with <tt>//</tt>. Load the module once again. You
+should be successful.  Now run the module on the biotin receptor by entering
+the following at the CLI:
+</p>
+<pre>
+    ProteinMinimize '$MOE/sample/mol/biotin_rec.moe'
+</pre>
+
+<p><b>Error 2:</b></p>
+
+<p>The line marked by <tt>!!!Error 2</tt>, did not generate a compiler error;
+instead, it raises an error here at runtime. Open the Crash History window
+<span class="nobr">(<b>MOE | Window | Crash History</b>)</span>.  
+Observe how the error information is supplied in
+this window - the line containing the error is displayed, its line
+number and calling function is given, along with the function calling
+sequence. Experiment with moving up and down in the function call tree,
+either with the mouse left button or with the keyboard arrow keys, in the
+lower list box.  Note how, at each calling level, the pertinent line of code
+is highlighted. Change the line to read:
+</p>
+<pre>
+    local [e,g] = Potential [ dX:1 ];
+</pre>
+
+<p>Close the file <span class="nobr">(<b>MOE | File | Close</b>)</span> and run the module
+once again.</p>
+
+<p><b>Error 4:</b></p>
+
+<p>The last error we introduced was a logical error. On the line marked by
+<tt>!!!Error 4</tt>, the &gt; symbol should have been a &lt; symbol. Such errors
+can be difficult to spot. In this case, we might be tipped off by
+higher-than-expected gradient values when <tt>MM</tt> begins minimizing.
+Debugging code at the command line before writing it into a program can
+help avoid such errors.</p>
+
+<a name="HowToInstallYourOwnFunction"></a>
+<h2>How To Install Your Own Function</h2>
+
+<p>Functions can be installed in MOE simply by loading them at the command
+line with the load command. However, user functions can also be loaded
+automatically when MOE starts up.  The <tt>MOE_SVL_LOAD</tt> environment
+variable contains a list of directories which are searched for <tt>.svl</tt>
+files. By default, all directories carrying the <tt>.svl</tt> extension
+(e.g. directory <tt>test.svl</tt>) are also searched. Matching files
+are loaded automatically. The directory list is read from left to right, so
+earlier files supersede later ones. Files generating compiler errors or
+conflicts with MOE and SVL built-in functions will not be loaded. </p>
+
+<p>When MOE is already running, files located in a <tt>MOE_SVL_LOAD</tt>
+directory can be loaded without having to include a full directory path. MOE
+will search the current directory (the directory from which MOE was invoked,
+or the directory specified using the change directory command <tt>cd</tt>) 
+for the specified file, and, if the file is not found, it
+will search the <tt>MOE_SVL_LOAD</tt> directories. </p>
+
+<p>Loaded files are managed by an SVL subsystem called the Module Manager for
+which the SVL Modules &amp; Tasks window 
+<span class="nobr">(<b>MOE | Window | Modules &amp; Tasks</b>)</span> is a
+graphical interface. The Modules page of this window lists loaded modules by
+module class (optionally specified in the program file using the
+
+<span class="nobr"><tt>#set class</tt></span>
+
+directive; default class is general). The module <tt>title</tt>
+(set in the program file using the
+
+<span class="nobr"><tt>#set title</tt></span>
+
+directive; default title is the file name) is displayed in the list. Use the
+module title when specifying a module to unload. </p>
+
+<!-- SeeAlso
+<p>Modules in the SVL Primer for more on modules.</p>
+-->
+
+<a name="HowToRunYourFunction"></a>
+<h2>How To Run Your Function Without <tt>load</tt></h2>
+
+<p>You can run your function directly without having to load it first by
+setting an entry point using a module environment variable as follows:
+</p>
+<pre>
+    #set main 'function'
+</pre>
+
+<p>where <tt>function</tt> is the name of the function to execute. This
+variable must be set at the very top of the file; only comments may precede
+it. At the CLI, type:
+</p>
+<pre>
+    run 'filename'
+</pre>
+
+<p>To pass arguments to main, type: </p>
+
+<pre>
+    run [ 'filename.svl', arguments_to_main ]
+</pre>
+
+<p>This will cause the module to load and run. If no
+
+<span class="nobr"><tt>#set main</tt></span>
+
+variable is present in a file, the default entry point is a function called
+<tt>main</tt>.</p>
+
+<p>In the example above, the module has <tt>main</tt> set to
+<tt>ProteinMinimize</tt>.  The file can be run as follows
+(the use of &quot;<tt>svl&gt;</tt>&quot; is to indicate the CLI):
+</p>
+<pre>
+    svl&gt; run ['protmin.svl', '$MOE/sample/mol/biotin_rec.moe']
+</pre>
+
+<h2>See Also</h2>
+
+<a href="../moe/gui/mainwin.htm">MOE Window</a><br />
+<a href="../mdb/db.htm">Database Viewer</a><br />
+<a href="../moe/gui/se.html">Sequence Editor</a>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

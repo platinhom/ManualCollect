@@ -1,0 +1,832 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>schrodinger.application.desmond.antlr3.streams.TokenRewriteStream</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="schrodinger-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >Suite 2012 Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="schrodinger-module.html">Package&nbsp;schrodinger</a> ::
+        <a href="schrodinger.application-module.html">Package&nbsp;application</a> ::
+        <a href="schrodinger.application.desmond-module.html">Package&nbsp;desmond</a> ::
+        <a href="schrodinger.application.desmond.antlr3-module.html">Package&nbsp;antlr3</a> ::
+        <a href="schrodinger.application.desmond.antlr3.streams-module.html">Module&nbsp;streams</a> ::
+        Class&nbsp;TokenRewriteStream
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="schrodinger.application.desmond.antlr3.streams.TokenRewriteStream-class.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== CLASS DESCRIPTION ==================== -->
+<h1 class="epydoc">Class TokenRewriteStream</h1><p class="nomargin-top"></p>
+<pre class="base-tree">
+object --+            
+         |            
+ <a href="schrodinger.application.desmond.antlr3.streams.IntStream-class.html">IntStream</a> --+        
+             |        
+   <a href="schrodinger.application.desmond.antlr3.streams.TokenStream-class.html">TokenStream</a> --+    
+                 |    
+ <a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html">CommonTokenStream</a> --+
+                     |
+                    <strong class="uidshort">TokenRewriteStream</strong>
+</pre>
+
+<hr />
+<pre class="literalblock">
+@brief CommonTokenStream that can be modified.
+
+Useful for dumping out the input stream after doing some
+augmentation or other manipulations.
+
+You can insert stuff, replace, and delete chunks.  Note that the
+operations are done lazily--only if you convert the buffer to a
+String.  This is very efficient because you are not moving data around
+all the time.  As the buffer of tokens is converted to strings, the
+toString() method(s) check to see if there is an operation at the
+current index.  If so, the operation is done and then normal String
+rendering continues on the buffer.  This is like having multiple Turing
+machine instruction streams (programs) operating on a single input tape. :)
+
+Since the operations are done lazily at toString-time, operations do not
+screw up the token index values.  That is, an insert operation at token
+index i does not change the index values for tokens i+1..n-1.
+
+Because operations never actually alter the buffer, you may always get
+the original token stream back without undoing anything.  Since
+the instructions are queued up, you can easily simulate transactions and
+roll back any changes if there is an error just by removing instructions.
+For example,
+
+ CharStream input = new ANTLRFileStream(&quot;input&quot;);
+ TLexer lex = new TLexer(input);
+ TokenRewriteStream tokens = new TokenRewriteStream(lex);
+ T parser = new T(tokens);
+ parser.startRule();
+
+ Then in the rules, you can execute
+    Token t,u;
+    ...
+    input.insertAfter(t, &quot;text to put after t&quot;);}
+    input.insertAfter(u, &quot;text after u&quot;);}
+    System.out.println(tokens.toString());
+
+Actually, you have to cast the 'input' to a TokenRewriteStream. :(
+
+You can also have multiple &quot;instruction streams&quot; and get multiple
+rewrites from a single pass over the input.  Just name the instruction
+streams and use that name again when printing the buffer.  This could be
+useful for generating a C file and also its header file--all from the
+same buffer:
+
+    tokens.insertAfter(&quot;pass1&quot;, t, &quot;text to put after t&quot;);}
+    tokens.insertAfter(&quot;pass2&quot;, u, &quot;text after u&quot;);}
+    System.out.println(tokens.toString(&quot;pass1&quot;));
+    System.out.println(tokens.toString(&quot;pass2&quot;));
+
+If you don't use named rewrite streams, a &quot;default&quot; stream is used as
+the first example shows.
+
+</pre>
+
+<!-- ==================== INSTANCE METHODS ==================== -->
+<a name="section-InstanceMethods"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Instance Methods</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-InstanceMethods"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.desmond.antlr3.streams.TokenRewriteStream-class.html#__init__" class="summary-sig-name">__init__</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">tokenSource</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">channel</span>=<span class="summary-sig-default">0</span>)</span><br />
+      @param tokenSource A TokenSource instance (usually a Lexer) to pull
+    the tokens from.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.desmond.antlr3.streams.TokenRewriteStream-class.html#rollback" class="summary-sig-name">rollback</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">*args</span>)</span><br />
+      Rollback the instruction stream for a program so that the indicated 
+      instruction (via instructionIndex) is no longer in the stream.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="deleteProgram"></a><span class="summary-sig-name">deleteProgram</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">programName</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">default</code><code class="variable-quote">'</code></span>)</span><br />
+      Reset the program so that no instructions exist</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="insertAfter"></a><span class="summary-sig-name">insertAfter</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">*args</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="insertBefore"></a><span class="summary-sig-name">insertBefore</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">*args</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="replace"></a><span class="summary-sig-name">replace</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">*args</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="delete"></a><span class="summary-sig-name">delete</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">*args</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="getLastRewriteTokenIndex"></a><span class="summary-sig-name">getLastRewriteTokenIndex</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">programName</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">default</code><code class="variable-quote">'</code></span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="setLastRewriteTokenIndex"></a><span class="summary-sig-name">setLastRewriteTokenIndex</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">programName</span>,
+        <span class="summary-sig-arg">i</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="getProgram"></a><span class="summary-sig-name">getProgram</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">name</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="initializeProgram"></a><span class="summary-sig-name">initializeProgram</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">name</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="toOriginalString"></a><span class="summary-sig-name">toOriginalString</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">start</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">end</span>=<span class="summary-sig-default">None</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.desmond.antlr3.streams.TokenRewriteStream-class.html#toString" class="summary-sig-name">toString</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">*args</span>)</span><br />
+      Return the text of all tokens from start to stop, inclusive.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.desmond.antlr3.streams.TokenRewriteStream-class.html#__str__" class="summary-sig-name">__str__</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">*args</span>)</span><br />
+      Return the text of all tokens from start to stop, inclusive.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.application.desmond.antlr3.streams.TokenRewriteStream-class.html#reduceToSingleOperationPerIndex" class="summary-sig-name">reduceToSingleOperationPerIndex</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">rewrites</span>)</span><br />
+      We need to combine operations and report invalid operations (like
+overlapping replaces that are not completed nested).</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="catOpText"></a><span class="summary-sig-name">catOpText</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">a</span>,
+        <span class="summary-sig-arg">b</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="getKindOfOps"></a><span class="summary-sig-name">getKindOfOps</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">rewrites</span>,
+        <span class="summary-sig-arg">kind</span>,
+        <span class="summary-sig-arg">before</span>=<span class="summary-sig-default">None</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="toDebugString"></a><span class="summary-sig-name">toDebugString</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">start</span>=<span class="summary-sig-default">None</span>,
+        <span class="summary-sig-arg">end</span>=<span class="summary-sig-default">None</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" class="summary">
+    <p class="indent-wrapped-lines"><b>Inherited from <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html">CommonTokenStream</a></code></b>:
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#LA">LA</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#LB">LB</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#LT">LT</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#consume">consume</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#discardTokenType">discardTokenType</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#fillBuffer">fillBuffer</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#get">get</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#getSourceName">getSourceName</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#getTokenSource">getTokenSource</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#getTokens">getTokens</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#index">index</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#mark">mark</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#release">release</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#reset">reset</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#rewind">rewind</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#seek">seek</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#setTokenSource">setTokenSource</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#setTokenTypeChannel">setTokenTypeChannel</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#size">size</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#skipOffTokenChannels">skipOffTokenChannels</a></code>,
+      <code><a href="schrodinger.application.desmond.antlr3.streams.CommonTokenStream-class.html#skipOffTokenChannelsReverse">skipOffTokenChannelsReverse</a></code>
+      </p>
+    <p class="indent-wrapped-lines"><b>Inherited from <code>object</code></b>:
+      <code>__delattr__</code>,
+      <code>__format__</code>,
+      <code>__getattribute__</code>,
+      <code>__hash__</code>,
+      <code>__new__</code>,
+      <code>__reduce__</code>,
+      <code>__reduce_ex__</code>,
+      <code>__repr__</code>,
+      <code>__setattr__</code>,
+      <code>__sizeof__</code>,
+      <code>__subclasshook__</code>
+      </p>
+    </td>
+  </tr>
+</table>
+<!-- ==================== CLASS VARIABLES ==================== -->
+<a name="section-ClassVariables"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Class Variables</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-ClassVariables"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="DEFAULT_PROGRAM_NAME"></a><span class="summary-name">DEFAULT_PROGRAM_NAME</span> = <code title="'default'"><code class="variable-quote">'</code><code class="variable-string">default</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="MIN_TOKEN_INDEX"></a><span class="summary-name">MIN_TOKEN_INDEX</span> = <code title="0">0</code>
+    </td>
+  </tr>
+</table>
+<!-- ==================== PROPERTIES ==================== -->
+<a name="section-Properties"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Properties</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Properties"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+  <tr>
+    <td colspan="2" class="summary">
+    <p class="indent-wrapped-lines"><b>Inherited from <code>object</code></b>:
+      <code>__class__</code>
+      </p>
+    </td>
+  </tr>
+</table>
+<!-- ==================== METHOD DETAILS ==================== -->
+<a name="section-MethodDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Method Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-MethodDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="__init__"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__init__</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">tokenSource</span>=<span class="sig-default">None</span>,
+        <span class="sig-arg">channel</span>=<span class="sig-default">0</span>)</span>
+    <br /><em class="fname">(Constructor)</em>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <pre class="literalblock">
+
+@param tokenSource A TokenSource instance (usually a Lexer) to pull
+    the tokens from.
+
+@param channel Skip tokens on any channel but this one; this is how we
+    skip whitespace...
+    
+
+</pre>
+  <dl class="fields">
+    <dt>Overrides:
+        object.__init__
+        <dd><em class="note">(inherited documentation)</em></dd>
+    </dt>
+  </dl>
+</td></tr></table>
+</div>
+<a name="rollback"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">rollback</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">*args</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Rollback the instruction stream for a program so that the indicated 
+  instruction (via instructionIndex) is no longer in the stream.  
+  UNTESTED!</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="toString"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">toString</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">*args</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Return the text of all tokens from start to stop, inclusive. If the 
+  stream does not buffer all the tokens then it can just return 
+  &quot;&quot; or null;  Users should not access $ruleLabel.text in an 
+  action of course in that case.</p>
+  <p>Because the user is not required to use a token with an index stored 
+  in it, we must provide a means for two token objects themselves to 
+  indicate the start/end location.  Most often this will just delegate to 
+  the other toString(int,int).  This is also parallel with the 
+  TreeNodeStream.toString(Object,Object).</p>
+  <dl class="fields">
+    <dt>Overrides:
+        <a href="schrodinger.application.desmond.antlr3.streams.TokenStream-class.html#toString">TokenStream.toString</a>
+        <dd><em class="note">(inherited documentation)</em></dd>
+    </dt>
+  </dl>
+</td></tr></table>
+</div>
+<a name="__str__"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__str__</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">*args</span>)</span>
+    <br /><em class="fname">(Informal representation operator)</em>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Return the text of all tokens from start to stop, inclusive. If the 
+  stream does not buffer all the tokens then it can just return 
+  &quot;&quot; or null;  Users should not access $ruleLabel.text in an 
+  action of course in that case.</p>
+  <p>Because the user is not required to use a token with an index stored 
+  in it, we must provide a means for two token objects themselves to 
+  indicate the start/end location.  Most often this will just delegate to 
+  the other toString(int,int).  This is also parallel with the 
+  TreeNodeStream.toString(Object,Object).</p>
+  <dl class="fields">
+    <dt>Overrides:
+        object.__str__
+        <dd><em class="note">(inherited documentation)</em></dd>
+    </dt>
+  </dl>
+</td></tr></table>
+</div>
+<a name="reduceToSingleOperationPerIndex"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">reduceToSingleOperationPerIndex</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">rewrites</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <pre class="literalblock">
+
+We need to combine operations and report invalid operations (like
+overlapping replaces that are not completed nested).  Inserts to
+same index need to be combined etc...   Here are the cases:
+
+I.i.u I.j.v                           leave alone, nonoverlapping
+I.i.u I.i.v                           combine: Iivu
+
+R.i-j.u R.x-y.v | i-j in x-y          delete first R
+R.i-j.u R.i-j.v                       delete first R
+R.i-j.u R.x-y.v | x-y in i-j          ERROR
+R.i-j.u R.x-y.v | boundaries overlap  ERROR
+
+I.i.u R.x-y.v   | i in x-y            delete I
+I.i.u R.x-y.v   | i not in x-y        leave alone, nonoverlapping
+R.x-y.v I.i.u   | i in x-y            ERROR
+R.x-y.v I.x.u                         R.x-y.uv (combine, delete I)
+R.x-y.v I.i.u   | i not in x-y        leave alone, nonoverlapping
+
+I.i.u = insert u before op @ index i
+R.x-y.u = replace x-y indexed tokens with u
+
+First we need to examine replaces.  For any replace op:
+
+  1. wipe out any insertions before op within that range.
+  2. Drop any replace op before that is contained completely within
+     that range.
+  3. Throw exception upon boundary overlap with any previous replace.
+
+Then we can deal with inserts:
+
+  1. for any inserts to same index, combine even if not adjacent.
+  2. for any prior replace with same left boundary, combine this
+     insert with replace and delete this replace.
+  3. throw exception if index in same range as previous replace
+
+Don't actually delete; make op null in list. Easier to walk list.
+Later we can throw as we add to index -&gt; op map.
+
+Note that I.2 R.2-2 will wipe out I.2 even though, technically, the
+inserted stuff would be before the replace range.  But, if you
+add tokens in front of a method body '{' and then delete the method
+body, I think the stuff before the '{' you added should disappear too.
+
+Return a map from token index to operation.
+
+</pre>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+  <!-- Home link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="schrodinger-module.html">Home</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >Suite 2012 Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Tue Sep 25 02:22:57 2012
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

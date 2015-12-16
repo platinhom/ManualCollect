@@ -1,0 +1,507 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!! 	exe_fcn.htm		exe functions man pages
+!!
+!!	
+!!	24-may-2005 (ac) exe_open_shell
+!!	23-sep-2003 (al) fix up exe_close
+!!	12-sep-2003 (jd) exe_getpriority / exe_setpriority
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions exe_open_shell>
+<meta functions exe_open, exe_ropen, exe_stdin, exe_stdout, exe_stderr>
+<meta functions exe_status, exe_exitcode>
+<meta functions exe_getpriority, exe_setpriority>
+<meta functions exe_kill, exe_close>
+
+<title>Exe Functions</title>
+
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Exe Functions</h2>
+<hr noshade="noshade" />
+
+
+<h2>Syntax</h2>
+
+<pre>
+    process_key = <a class="fcnlink" href="#exe_open">exe_open</a> ['cmd', 'work_dir', env, master]
+    process_key = <a class="fcnlink" href="#exe_open">exe_open</a> ['cmd', 'work_dir', env]
+
+    process_key = <a class="fcnlink" href="#exe_open_shell">exe_open_shell</a> ['cmd', 'work_dir', env, master]
+    process_key = <a class="fcnlink" href="#exe_open_shell">exe_open_shell</a> ['cmd', 'work_dir', env]
+
+    process_key = <a class="fcnlink" href="#exe_ropen">exe_ropen</a> ['host', 'user','crypt_passw','cmd',master]
+    process_key = <a class="fcnlink" href="#exe_ropen">exe_ropen</a> ['host', 'user','crypt_passw','cmd']
+    
+    filenums    = <a class="fcnlink" href="#exe_stdin">exe_stdin</a>  process_keys
+    filenums    = <a class="fcnlink" href="#exe_stdout">exe_stdout</a> process_keys
+    filenums    = <a class="fcnlink" href="#exe_stderr">exe_stderr</a> process_keys
+
+    status	= <a class="fcnlink" href="#exe_status">exe_status</a>   process_keys
+    exit_codes	= <a class="fcnlink" href="#exe_exitcode">exe_exitcode</a> process_keys
+
+    prios	= <a class="fcnlink" href="#exe_getpriority">exe_getpriority</a> process_keys
+    <a class="fcnlink" href="#exe_setpriority">exe_setpriority</a> [ process_keys, prios ]
+
+    <a class="fcnlink" href="#exe_kill">exe_kill</a>  [process_key, force]
+    <a class="fcnlink" href="#exe_kill">exe_kill</a>  process_key
+    <a class="fcnlink" href="#exe_close">exe_close</a> process_keys
+
+</pre>
+<h2>Description</h2>
+
+<p>
+Functions <tt>exe_open</tt> and <tt>exe_ropen</tt> are used to create a
+new process that executes the specified command.  Function
+<tt>exe_open</tt> creates a new process on the local machine.  Function
+<tt>exe_ropen</tt> creates a new process on a remote machine.  The
+function requires the <tt>rexec</tt> service to be running on the remote
+machine.  Both functions return a process key used to identify the process
+in subsequent <tt>exe_</tt> calls.
+
+<p>
+The three standard file descriptors of the new process,
+<i>stdin</i>, <i>stdout</i> and <i>stderr</i>,
+are made available by functions <tt>exe_stdin</tt>, <tt>exe_stdout</tt>
+and <tt>exe_stderr</tt>. The returned file descriptors are
+suitable for use with the <tt>fread</tt> and <tt>fwrite</tt>
+family of functions.
+
+<p>
+The priority of a running process can be queried or set using the
+<tt>exe_getpriority</tt> or <tt>exe_setpriority</tt> functions, respectively.
+In general, a higher priority process runs faster than a lower priority
+process.
+
+<p>
+Termination of a process can be tested with the function <tt>exe_status</tt>.
+Once a process has terminated, its exit code can be recovered using
+the function <tt>exe_exitcode</tt>.
+Exit codes are not available for remote processes.
+
+<p>
+Function <tt>exe_kill</tt> terminates the process. When no
+further <tt>exe_</tt> calls need to be issued, <tt>exe_close</tt> should be
+called to free resources used to maintain information about a process.
+Function <tt>exe_close</tt> will <em>not</em> terminate a running process.
+
+<p>
+Care must be taken to distinguish between a <em>process</em> and a
+<em>task</em>.
+"Process" is used to mean a process in the operating system sense.
+"Parent process" is the process that executes SVL programs, including
+the SVL program calling the <tt>exe_</tt> functions.
+"Task" is used to mean an SVL task.
+
+<p><a name="exe_open"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+process_key = <span class="fcndef">exe_open</span> ['cmd', 'work_dir', env, master] 
+process_key = <span class="fcndef">exe_open</span> ['cmd', 'work_dir', env] 
+</pre>
+
+<p>
+
+Function <tt>exe_open</tt> creates a new process on the local machine
+and executes the command <tt>cmd</tt> in that process.
+
+The working directory of
+the new process is specified by <tt>work_dir</tt>.
+If <tt>work_dir</tt> is <tt>''</tt>, the working directory of the
+parent process is used.
+
+<p><b>Note:</b> Every call to <tt>exe_open</tt> should have a matching
+call to <tt>exe_close</tt> to free resources.
+</p>
+
+<p>
+The command, <tt>cmd</tt>, must refer to an executable file, either
+by an absolute filename or by a relative filename.
+On Unix machines, if a relative filename is given,
+the file is expected to reside in the working directory,
+<tt>work_dir</tt>.
+If the file does not reside in the working directory,
+it must reside in one of the directories specified
+by the environment variable <tt>PATH</tt>.
+
+<p>
+Control over the new process environment is provided through the parameter
+<tt>env</tt>. By convention, a process environment consists of strings of form
+<tt>"var_name=var_value"</tt>.  An array of such strings is attached to each
+process. Initially, the new process environment is an exact copy of its parent
+process environment. Additions and changes to environment variable definitions
+are specified in <tt>env</tt> as attribute-value pairs.  Each pair affects one
+environment variable.  The attribute specifies the name of the variable (the
+<tt>var_name</tt> part of the environment string).  The associated value is
+either the new value to which the variable is set (the <tt>var_value</tt> part
+of the environment string) or a mask that specifies whether or not the variable
+should be set.
+
+<p>
+In SVL, the names and values of environment variables are treated as tokens.
+Thus, to set the environment variable <tt>MYVAR</tt> to the value
+<tt>myval</tt>, use <tt>env.MYVAR = 'myval'</tt>.
+
+If a new value is specified for a variable that already exists
+in the environment of the parent process then
+the new value, extracted from parameter <tt>env</tt>, has precedence.
+
+<p>
+If the value part of the attribute-value pair in the parameter <tt>env</tt> is
+numerical, it is treated as a mask that specifies whether or not the
+environment variable should appear in the new process environment. A mask value
+of 0 indicates that the variable should not be present in the new process
+environment.
+
+(If the variable was copied from the parent process environment into the
+new process environment, it will be deleted from the new environment.)
+
+A mask value of 1 indicates that the variable must be present in the new
+process environment.
+
+(If the variable was copied from the parent process environment into the
+new process environment, it will be retain its value in the new
+environment.
+
+If the variable is not
+defined by the parent process environment, it will be defined in the
+new process environment and set to empty string, <tt>""</tt>.)
+
+<p>
+The following table summarizes the rules for setting an arbitrary 
+environment variable <tt>VAR</tt>:
+
+<p><blockquote>
+<p><table class="titlebar" border="1" cellpadding="5">
+
+<tr"#dddddd">
+<th valign="baseline"><tt>env.VAR</tt></th>
+<th valign="baseline"><tt>VAR</tt> in parent process</th>
+<th valign="baseline"><tt>VAR</tt> in new process</th>
+
+<tr>
+<td><tt>[]</tt> or unspecified
+<td><em>not set</em>
+<td><em>not set</em>
+
+<tr>
+<td> <tt>[]</tt> or unspecified
+<td> "abc"
+<td> "abc"
+
+<tr>
+<td> <tt>'xyz'</tt>
+<td> <em>not set</em>
+<td> "xyz" 
+
+<tr>
+<td> <tt>'xyz'</tt>
+<td> "abc"
+<td> "xyz" 
+
+<tr>
+<td> 1
+<td> <em>not set</em>
+<td> "" (empty string)
+
+<tr>
+<td> 1 
+<td> "abc"
+<td> "abc"
+
+<tr>
+<td> 0
+<td> <em>any</em>
+<td> <em>not set</em>
+
+</table>
+</blockquote>
+
+<p>
+The optional parameter <tt>master</tt> specifies the termination condition
+for the newly created child process.  If the value of <tt>master</tt> is
+0, the child process will be automatically killed when the SVL task that
+created the process terminates.  If the value of <tt>master</tt> is 1, the
+child process will be killed when the parent process terminates.
+Otherwise, the child process will not be automatically killed and must be
+killed explicitly.  The default value is 0.
+
+<p>
+<b>Example</b>:
+
+<p>
+The following command will launch the <tt>netscape</tt> web browser using
+<tt>~/browse</tt> as the initial directory.
+
+<pre>
+    pkey = exe_open ['netscape', '~/browse', [], 2]
+</pre>
+
+The following command will launch program <tt>moebatch</tt> in directory
+<tt>~/work</tt>.  The new environment will contain variable
+<tt>MOE_SVL_STARTSCRIPT</tt>, which specifies the name of the SVL script,
+<tt>my_script.svl</tt>, to be executed.  The new environment will
+<i>not</i> include variable <tt>MOE_SVL_LOAD</tt>.
+
+<pre>
+    pkey = exe_open ['moebatch', '~/work', [MOE_SVL_LOAD : 0,
+	MOE_SVL_STARTSCRIPT : 'my_script.svl']]
+</pre>
+
+<p><a name="exe_open_shell"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+process_key = <span class="fcndef">exe_open_shell</span> ['cmd', 'work_dir', env, master] 
+process_key = <span class="fcndef">exe_open_shell</span> ['cmd', 'work_dir', env] 
+</pre>
+
+<p>The <tt>exe_open_shell</tt> function accepts the same parameter format as
+does <tt>exe_open</tt>, but instead of executing the command directly, it is
+executed via the system shell.
+
+<p>On POSIX (Unix, Linux, MacOS) systems, the shell is <tt>/bin/sh -c
+"{cmd}"</tt>.
+On Microsoft Windows systems, the shell is <tt>cmd /c "{cmd}"</tt>.
+
+<p>The main advantage of using <tt>exe_open_shell</tt> is that input/output
+redirection is handled consistently regardless of platform. The following
+would be expected to work in all cases:
+
+<pre>
+    pkey = exe_open_shell ['foo_exe < foo.input > foo.output', cd [], [], 0]
+</pre>
+
+<p><a name="exe_ropen"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+process_key = <span class="fcndef">exe_ropen</span> ['host', 'user', 'crypt_passw', 'cmd', master] 
+process_key = <span class="fcndef">exe_ropen</span> ['host', 'user', 'crypt_passw', 'cmd'] 
+</pre>
+
+Function <tt>exe_ropen</tt> creates a new process on machine <tt>host</tt>
+using the remote execution (<i>rexec</i>) protocol to execute command
+<tt>'cmd'</tt>.  The <i>rexec</i> service must be enabled on machine
+<tt>host</tt> for this function to succeed.
+
+<p>
+Parameters <tt>user</tt> and <tt>crypt_passw</tt> specify a username and a
+password that are transmitted to machine <tt>host</tt> for authentication
+purposes. If the authentication is successful then <tt>cmd</tt> is
+executed in the context of the specified user. This means that on a Unix
+system the command will be executed from the specified user home directory
+using the specified user shell. On the Windows family of operating
+systems, successful authentication ensures that the user profile is
+loaded, if applicable.
+
+<p>
+For security reasons, the password provided in <tt>crypt_passw</tt> must
+be encrypted using function <tt>mpu_password</tt> and must obey the same
+rules. If no password is provided, environment variable
+<tt>SVL_MPU_PASSWORD</tt> is searched.
+
+<p>
+The optional parameter <tt>master</tt> specifies the termination condition
+for the newly created child process.  If the value of <tt>master</tt> is
+0, the child process will be automatically killed when the SVL task that
+created the process terminates.  If the value of <tt>master</tt> is 1, the
+child process will be killed when the parent process terminates.
+Otherwise, the child process will not be automatically killed and must be
+killed explicitly.  The default value is 0.
+
+<p><b>Example</b>:
+
+<pre>
+    pkey = exe_ropen['gandalf', 'usr', mpu_password 'atom', 'hostname']
+</pre>
+
+will launch the command <tt>hostname</tt> on computer <tt>gandalf</tt> if
+<tt>usr</tt> can be successfully authenticated using password
+<tt>atom</tt>.
+
+<p><a name="exe_stdin"></a></p>
+<p><a name="exe_stdout"></a></p>
+<p><a name="exe_stderr"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+filenums = <span class="fcndef">exe_stdin</span>  process_keys
+filenums = <span class="fcndef">exe_stdout</span> process_keys
+filenums = <span class="fcndef">exe_stderr</span> process_keys
+</pre>
+
+<p>
+Functions <tt>exe_stdin</tt>, <tt>exe_stout</tt> and <tt>exe_stderr</tt>
+return the file handles of standard input/output files of the child
+processes for each process specified in <tt>process_keys</tt>. The file
+handles can then be used in <tt>fread</tt> and <tt>fwrite</tt> functions.
+The file handles of the process files have same the functionality as file
+handles returned by <tt>fopen</tt>.  The process files are closed by
+<tt>fclose</tt>.
+
+<p><b>Example</b>:
+<pre>
+    local pkey, out_fno, os_ver;
+
+    pkey = exe_ropen ['gandalf', 'usr', mpu_password 'atom', 'uname'];
+    out_fno = exe_stdout pkey;
+    os_ver = freadb [out_fno, 'line', 1];
+    print os_ver;
+</pre>
+
+will launch the command <tt>uname</tt> on computer <tt>gandalf</tt>, 
+read command output and display the information.
+
+<p><a name="exe_status"></a></p>
+<p><a name="exe_exitcode"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+status	   = <span class="fcndef">exe_status</p>   process_keys
+exit_codes = <span class="fcndef">exe_exitcode</p> process_keys
+</pre>
+
+<p>
+For each process specified in <tt>process_keys</tt>, function
+<tt>exe_status</tt> returns 1 if the process is still running, and 0
+otherwise.
+
+<p>
+For each process specified in <tt>process_keys</tt>, function
+<tt>exe_exitcode</tt> returns its exit code, if the process has
+terminated, and 0 otherwise.  (Note that the <i>rexec</i> protocol does
+not allow an exit code to be retrieved from a remote process.)
+
+<p><b>Example</b>:
+<pre>
+    if exe_status pkey == 0 then
+	local ecode = exe_exitcode pkey;
+	Warning token swrite ['Program exited with value {n:}', ecode];
+    endif
+</pre>
+
+will raise a window displaying the exit code of a process that terminated. 
+
+<p><a name="exe_setpriority"></a></p>
+<p><a name="exe_getpriority"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+prios	= <span class="fcndef">exe_getpriority</span> process_keys
+<span class="fcndef">exe_setpriority</span> [ process_keys, prios ]
+</pre>
+
+<p>
+A process priority level is a value used by the operating system to
+determine how CPU time should be allocated. Functions <tt>exe_getpriority</tt>
+and <tt>exe_setpriority</tt> use priority levels in the range [-1,1]
+(inclusive). Normal priority has value 0. A lower value results in less
+favorable scheduling and hence slower execution. Conversely, a higher value
+results in more favorable scheduling and, as a consequence, faster execution.
+
+<p>
+The number of priority levels available depends on the operating system
+being used. Levels 1, 0.5, 0, -0.5 and -1 are defined for all
+supported operating systems with the exception of Microsoft Windows
+95, 98 and ME, where only 1, 0 and -1 are available.
+
+<p>
+Function <tt>exe_getpriority</tt> returns the priority level of each process
+specified in <tt>process_keys</tt>. Key 0 is used to refer to the
+current process.
+
+<p>
+Function <tt>exe_setpriority</tt> changes the priority level of the
+processes specified in <tt>process_keys</tt> to the priority levels specified
+in <tt>prios</tt>. Key 0 is used to refer to the current process.
+
+<p>
+(Note that the <i>rexec</i> protocol does not allow the priority
+of a remote process to be changed, thus the priority functions do not accept
+remote process keys.)
+
+<p><b>Example</b>:
+<p>
+The following will launch MOPAC and then use <tt>exe_setpriority</tt> to run
+it in the background.
+<pre>
+    pkey = exe_open ['mopac.exe','/works',[]];
+    exe_setpriority [pkey, -1];
+</pre>
+
+<p><a name="exe_close"></a></p>
+<p><a name="exe_kill"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">exe_kill</span>  [process_key, force]
+<span class="fcndef">exe_kill</span>  process_key
+<span class="fcndef">exe_close</span> process_keys
+</pre>
+
+<p>
+Function <tt>exe_kill</tt> terminates the process identified by
+<tt>process_key</tt>.  To accomplish this, the functions sends to the
+process a request to terminate.  The optional argument <tt>force</tt>
+specifies the level of insistence of such a request, depending on the
+operating system.  On some operating systems (Unix), if <tt>force</tt> is
+0 or not used, the functions attempts to terminate the process in a normal
+way, possibly allowing the process to properly close its resources or even
+to reject the request.  Otherwise, the process is terminated regardless
+its state.
+
+<p>Function <tt>exe_close</tt> frees resources used by the parent process
+of each of the processes specified in the argument <tt>process_keys</tt>.
+When the operation is complete, the process keys given in the
+<tt>process_keys</tt> argument are no longer valid.  Note that the
+function affects only the process key and the resources stored with the
+parent process.  The child process itself is <i>not</i> killed or affected
+in any way, i.e. it continues to run independently of the parent.
+
+<h2>See Also</h2>
+
+<p>
+<a class="svl" href="fopenetc.html">fclose</a>
+<a class="svl" href="fopenetc.html">fopen</a>
+<a class="svl" href="freadetc.html">fread</a>
+<a class="svl" href="freadetc.html">fwrite</a><br />
+<a class="svl" href="getenv.html">getenv</a><br />
+<a class="svl" href="svlmpu.htm">mpu_password</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

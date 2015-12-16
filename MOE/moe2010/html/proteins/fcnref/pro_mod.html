@@ -1,0 +1,265 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	pro_mod.html	pro_HomologyModel fcnref
+!!
+!!	11-mar-2009 (kk) updated for name change
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+
+<meta keywords>
+<meta functions pro_HomologyModel, pro_Model_Prompt>
+<meta obsolete pro_Model>
+
+<title>Protein Functions: pro_HomologyModel</title>
+
+</head>
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Protein Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    model_chain_key = <a class="fcnlink" href="#pro_HomologyModel">pro_HomologyModel</a> [ chains, options ]
+    [chains, options] = run ['$MOE/lib/svl/run/promodel_ui.svl', [], '<a class = "fcnlink" href="#pro_Model_Prompt">pro_Model_Prompt</a>'] 
+
+    options = [
+	moe_file		: 'filename',
+	db_file 		: 'db_filename',
+	model			: model_id,
+	template		: template_id,
+	selected_res		: flag,
+	env_atoms		: flag,
+	ignore_outgaps		: flag,
+	sidechain		: 'method_name',
+	sidechain_indel 	: 'method_name',
+	sidechain_outgap	: 'method_name',
+	right_anchor		: n,
+	walk_back		: n,
+	RMSD_cutoff		: cutoff,
+	nModels 		: n,
+	minimize_all		: flag,
+	average_model		: flag,
+	refine			: 'degree_token'
+    ]
+</pre>
+
+<h3 class="obsolete">Obsolete</h3>
+
+<pre>
+    chain_key = <a class="fcnlink" href="#pro_Model">pro_Model</a> [chains, options] 
+    options =  <a class="fcnlink" href="#Xpro_Model_Prompt">pro_Model_Prompt</a> []
+</pre>
+
+<p><tt>pro_Model</tt> has been superseded by <tt>pro_Homology_Model</tt>. <tt>pro_Model_Prompt</tt>
+is now in a run file .
+
+</p>
+
+<p><a name="pro_HomologyModel"></a></p>
+<h2>Description</h2>
+
+<pre>
+model_chain_key = <span class="fcndef">pro_HomologyModel</span> [ chains, options ]
+</pre>
+
+<p>Builds a full atom model of a submitted chain containing only
+residue (sequence) data, no atoms.  The model can be built
+using either a single template chain or selected regions of various
+different template chains.
+
+<p><tt>chains</tt> is a list of chain keys that includes both the 
+chain to be modeled and the template chain(s).
+The chain key of the model is returned. 
+
+<p><tt>options</tt> is an
+optional list of parameters, supplied as a tagged vector:
+
+<p>
+<dl>
+
+<p>
+<dt><tt>moe_file:'filename'</tt>
+<dd>Name of the molecule file in which to save the
+existing molecular system prior to beginning the modeling procedure.  The
+name is supplied as a token.  The default is <tt>'promodel.moe'</tt>.
+
+<p>
+<dt><tt>db_file:'db_filename'</tt>
+<dd>Name of the molecular database in which to save the
+output - including all intermediate models -  of the modeling procedure.
+The name is supplied as a token.  The default is <tt>'promodel.mdb'</tt>.
+
+<p>
+<dt><tt>model:model_id</tt>
+<dd>Index into <tt>chains</tt> specifying which
+chain is to be modeled.  In graphical MOE, the default is the first chain
+containing no atoms.
+
+<p>
+<dt><tt>template:template_id</tt>
+<dd>Index into <tt>chains</tt> specifying which is(are) the
+template chain(s).  In graphical MOE, the default is the first chain
+containing atoms.
+
+<p>
+<dt><tt>selected_res:flag</tt></td>
+<dd>If <tt>flag</tt> is non-zero, the selected residues among
+<tt>chains</tt> are used as templates instead of a full template chain. If more
+than one residue in an alignment column is selected, then the first such
+residue, according to the order of chains in <tt>chains</tt>, will be
+used.  The default is 0.
+
+<p>
+<dt><tt>env_atoms:flag</tt>
+<dd>
+If <tt>flag</tt> is non-zero, any selected atoms in the system will be
+included in the contact test when building loops or sidechains, and will
+also be included in all minimization steps.
+The default is 0.
+
+<p>
+<dt><tt>ignore_outgaps:flag</tt>
+<dd>
+If <tt>flag</tt> is non-zero, any residues in the model sequence aligned
+before the first or after the last template residue will not be modeled.
+The default is 1.
+
+<p>
+<dt>
+<tt>sidechain:'method_name'
+<br />sidechain_indel:'method_name'
+<br />sidechain_outgaps:'method_name'</tt>
+</td>
+<dd>These parameters specify the method by which missing
+sidechain atoms are to be built. The legal token values are:
+
+<blockquote>
+<table>
+<p>
+<tr>
+<td><tt>'none'</tt></td>
+<td>missing sidechains not built</td>
+<p>
+<tr>
+<td><tt>'library'</tt></td>
+<td>sidechains are built from the sidechain library</td>
+<p>
+<tr>
+<td><tt>'model'</tt></td>
+<td>sidechains are built by segment matching</td>
+</table>
+</blockquote>
+
+<p>The default for <tt>sidechain</tt> is <tt>'model'</tt>.  The default
+for both <tt>sidechain_indel</tt> and <tt>sidechain_outgap</tt> is
+<tt>'library'</tt>.
+
+<p>
+<dt><tt>right_anchor:n</tt>
+<dd>Number of residues to the right of a gap to use
+in the dictionary lookup when modeling indels.  The default is 2.
+
+<p>
+<dt><tt>walk_back:n</tt>
+<dd>Distance away from a gap that the loop search routine
+is permitted to retreat.  The default is 2.
+
+<p>
+<dt><tt>RMSD_cutoff:cutoff</tt>
+<dd>Loop search root mean square atom distance termination
+criterion.  The loop search terminates any walk-back from a gap when the
+best candidate from the dictionary lookup superposes to the target atoms
+at better than the cutoff RMSD.  The default is 0.25.
+
+<p>
+<dt><tt>nModels:n</tt>
+<dd>The number of different models that are to be
+built and then averaged by the segment matching modeling procedure.
+The default is 10.
+
+<p>
+<dt><tt>minimize_all:flag</tt>
+<dd>
+If <tt>flag</tt> is non-zero, each intermediate model will undergo
+sufficient energy minimization to relieve bad contacts.
+The default is 1.
+
+
+<p>
+<dt><tt>average_model:flag</tt>
+<dd>
+If <tt>flag</tt> is non-zero, then the final model will be created by
+averaging the coordinates of all the intermediate models.  Otherwise, the
+final model will be chosen from amongst the intermediate models based on
+the packing scores.  The default is 0.
+
+<p>
+<dt><tt>refine:'degree_token'</tt>
+<dd>Degree of energy minimization to be
+performed on the final model. The legal token values are <tt>'none'</tt>,
+<tt>'coarse'</tt>, <tt>'medium'</tt>, and <tt>'fine'</tt>.
+The default is <tt>'coarse'</tt>.
+
+</dl>
+
+<p><a name="pro_Model_Prompt"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[chains, options] = run ['$MOE/lib/svl/run/promodel_ui.svl', [], '<a class = "fcndef" href="#pro_Model_Prompt">pro_Model_Prompt</a>'] 
+</pre>
+
+<p>Displays a panel that allows the user to edit
+the default options for <tt>pro_HomologyModel</tt>.  No calculations are
+performed.  The returned list of options are suitable for passing to
+<tt>pro_HomologyModel</tt>.
+When run in
+<a href="../../install/install.htm#Running_MOE/batch">MOE/batch</a>,
+<tt>pro_Model_Prompt</tt> returns a
+vector containing the default options.
+
+<pre>
+    v = run ['$MOE/lib/svl/run/promodel_ui.svl', [], 'pro_Model_Prompt']
+    pro_Homology_Model v;
+</pre>
+
+<h2>See Also</h2>
+    <a href="intropro.html">Protein Functions</a><br />
+<p>
+    <a class="svl" href="pdb_seg.html">pdb_SegmentMatch</a><br />
+    <a class="svl" href="pro_alig.html">pro_Align</a>
+</p>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

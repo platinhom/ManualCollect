@@ -1,0 +1,403 @@
+<!--
+--- UCSF Chimera Copyright ---
+Copyright (c) 2014 Regents of the University of California.
+All rights reserved.  This software provided pursuant to a
+license agreement containing restrictions on its disclosure,
+duplication and use.  This notice must be embedded in or
+attached to all copies, including partial copies, of the
+software or any revisions or derivations thereof.
+--- UCSF Chimera Copyright ---
+-->
+
+<html><head>
+<title>mda</title>
+<style type="text/css">
+A.nounder:link {text-decoration: none}
+A.nounder:visited {text-decoration: none}
+A.nounder:active {text-decoration: none}
+A.nounder:hover {text-decoration: underline; color: red;}
+table.clright {float: right; clear: right; margin: 4px}
+</style>
+</head><body>
+<font size="-1">
+<a href="../framecommand.html" target="_top">Chimera Commands Index</a>
+</font>
+
+<h3><a href="usageconventions.html">Usage</a>:
+<BR><b>mda</b> &nbsp;&nbsp;<i>input-sequence</i> &nbsp;<i>output-folder</i>
+&nbsp;<a href="#options"><i>options</i></a></h3>
+<p>
+The command <b>mda</b> (for <b>M</b>ulti<b>D</b>omain <b>A</b>ssembler)
+performs several steps toward creating a model of
+a multidomain protein:
+<ol>
+<li>Obtains the protein sequence specified by <i>input-sequence</i>, which
+can be either of the following:
+  <ul>
+  <li>a <a href="http://www.uniprot.org/" target="_blank">UniProt</a>
+  accession number (example: <b>P02751</b>);
+  UniProt's <a href="http://www.uniprot.org/uploadlists/" target="_blank">ID 
+  mapping service</a> can be used to obtain UniProt accession numbers
+  from other sequence database identifiers
+  <li>a pathname to a local file containing the sequence in 
+  <a href="http://www.ncbi.nlm.nih.gov/BLAST/fasta.shtml" 
+  target="_blank">FASTA format</a>
+  (<span style="white-space:nowrap">example: 
+  <b>/Users/miller/Desktop/mybpc3.fa</b></span>);
+  if the file contains multiple sequences, only the first will be used
+  </ul>
+<br>
+<li>With that sequence as the query, searches the 
+<a href="http://www.rcsb.org" target="_blank">Protein Data Bank (PDB)</a>
+sequences to find known structures of similar sequence,
+using a <a href="../blast.html#notes">BLAST</a> web service hosted by the
+<a href="http://www.cgl.ucsf.edu/Overview/index.html" target="_blank">UCSF
+Resource for Biocomputing, Visualization, and Informatics (RBVI)</a>.
+<br><br>
+<table class="clright" cellspacing="0" cellpadding="0">
+<tr><td><a href="mda-layout.png"><img src="mda-layout.png" width="450px"
+title="query Q14896&#13;click for larger image..."</a></td></tr>
+</table>
+<li>Imports the corresponding PDB structures into Chimera and lays them
+out from left to right according to sequence matches along the query 
+from N- to C-terminus.
+Multiple hits to the same or overlapping segments are stacked vertically;
+gaps in structural coverage are shown as transparent dark gray spheres 
+proportional in volume to the number of missing residues.
+See the <a href="#display">display options</a>.
+<p>
+Performance depends on the number of structures imported into Chimera,
+which can be very large especially for runs with low filtering 
+(permissive BLAST score and percent ID cutoffs, little or no winnowing)
+on queries with many known structures.
+Repeated uses of <b>mda</b> will reuse any open models that still
+meet the criteria and close any others.  The command can be aborted 
+during structure import by clicking the red stop icon in the
+<a href="../chimerawindow.html#statusline">status line</a>
+to cancel the foreground task.
+</p><p>
+<a name="layout"></a>
+The <a href="../sideview.html#rotation">center of rotation method</a> is set
+to <b>independent</b> so that models rotate about their individual centers
+rather than a single collective center.
+The initial layout including scale and model orientations is saved as a
+<a href="savepos.html">position</a> named <b>stacked</b>.  Positions can be
+restored from the <a href="../rapid.html"><b>Rapid Access</b></a> interface
+or with the command <a href="reset.html"><b>reset</b></a> (<i>e.g.</i>,
+<b>reset stacked</b>).  Another position named <b>overlay</b>,
+better suited to the modeling step, is also saved.
+</p>
+<a name="output"></a>
+<li>In the specified <i>output-folder</i>, writes output files:
+  <br>
+  <ul>
+  <li>the <a href="../blast.html#notes">pseudo-multiple sequence alignment</a> 
+  from BLAST in
+  <a href="../../ContributedSoftware/multalignviewer/afasta.html">aligned
+  FASTA</a> format
+  <li>a text file containing information from the run
+  </ul>
+<br>
+<li>Opens the <a href="../blast.html#notes">pseudo-multiple 
+sequence alignment</a> from BLAST in 
+<a href="../../ContributedSoftware/multalignviewer/framemav.html" 
+target="_top"><b>Multalign Viewer</b></a>;
+this can be suppressed (along with the 
+<a href="../../ContributedSoftware/multalignviewer/modeller.html#comparative">
+Modeller dialog</a>)
+using <a href="#showAlignment"><b>showAlignment false</b></a>.
+<br><br>
+<li>Opens the interface to
+<a href="../../ContributedSoftware/multalignviewer/modeller.html#comparative">
+Modeller comparative (homology) modeling</a> 
+with the query sequence as the target, all of the imported hit structures
+designated as templates, and other options set as recommended 
+for use with <b>mda</b>, including thorough optimization.
+The <a href="#layout"><b>overlay</b> position</a> should be restored
+before comparative modeling to decrease the likelihood of generating 
+<a href="http://salilab.org/modeller/FAQ.html#14" target="_blank">models
+with knots</a>. Comparative modeling relies on an accurate sequence alignment. 
+If necessary, the sequence alignment can be
+<a href="../../ContributedSoftware/multalignviewer/multalignviewer.html#editing">edited manually</a> or
+<a href="../../ContributedSoftware/multalignviewer/realign.html">realigned</a>
+using <a href="../../ContributedSoftware/multalignviewer/framemav.html" 
+target="_top"><b>Multalign Viewer</b></a>, or the <a href="#output">output</a>
+FASTA file can be edited outside of Chimera and reopened.
+Note that the BLAST alignment may omit parts of the hit chains
+(<a href="../../ContributedSoftware/multalignviewer/multalignviewer.html#blast-caveats">more...</a>).
+<p>
+<a name="dbfiles">
+On first use, <b>mda</b> also generates three database files
+(MDA_seqs.db, MDA_blast.db and MDA_uniprot.db)
+</a>
+to speed up subsequent uses of the command, but these are not human-readable.
+These are placed in the user's
+<a href="../preferences.html#Fetch">Chimera download directory</a>,
+in an MDA subdirectory.
+</p>
+</ol>
+Multidomain assembly is under development;
+please send any comments and suggestions to
+<a href="mailto:chimera-users@cgl.ucsf.edu">chimera-users@cgl.ucsf.edu</a>.
+</p><p>
+See also: 
+<a href="../blast.html"><b>Blast Protein</b></a>, 
+<a href="../fetch.html"><b>Fetch by ID</b></a>,
+the <a href="../../ContributedSoftware/multalignviewer/modeller.html">Chimera-Modeller interface</a>
+</p>
+Examples:
+<blockquote><b>
+<!-- as of Oct 2014 gives 17 models -->
+<span style="white-space:nowrap">mda Q14896 ~/Desktop/MDA percentId 50 showAlignment false coloring blastscore skip 3CX2</span>
+<br>
+<!-- as of Oct 2014 gives 12 models -->
+mda Q14896 ~/Desktop/MDA limit 1,20; reset overlay
+</b></blockquote>
+A smaller example (as of October 2014, imports five structures):
+<blockquote><b>
+mda p45379 ~/Desktop/MDA percent 60 group false color blast
+</b></blockquote>
+
+<a name="options">
+<h3>Options</h3>
+</a><p>
+Option keywords can be truncated to unique strings
+and their case does not matter.
+A vertical bar &ldquo;|&rdquo; designates mutually exclusive options, and
+default values are indicated with <b>bold</b>.
+Synonyms for true: True, 1. Synonyms for false: False, 0.
+</p>
+<ul>
+<li><a href="#initial">Initial search and filtering</a>
+<li><a href="#display">Display</a>
+<li><a href="#nogui">Suppressing dialogs</a>
+<li><a href="#limiting">Further limiting the hits</a>
+</ul>
+<a name="initial"></a>
+<h3><a href="#options" class="nounder" title="back to top">&larr;</a>
+Initial search and filtering</h3>
+<blockquote>
+<a name="winnow"><b>winnow</b> &nbsp;<i>max-per-region</i></a>
+<br>
+Use the BLAST option to winnow the results to no more than
+<i>max-per-region</i> hits per region, as described in
+<a href="http://www.ncbi.nlm.nih.gov/pubmed/10890403" target="_blank">Berman
+<i>et al.</i></a>, <i>J Comput Biol.</i> <b>7</b>:293 (2000).
+Lower values correspond to more aggressive winnowing and fewer hits returned.
+All other filters (options below) are applied after winnowing.
+If the option is not specified or set to zero, no winnowing is done.
+</blockquote>
+<blockquote>
+<b>minScore</b> &nbsp;<i>score</i>
+<br>
+Keep only BLAST hits with scores of at least <i>score</i>
+(default <b>50</b>). The BLOSUM62 scoring matrix is used.
+Lowering the cutoff may increase structural coverage of the query,
+but low-scoring hits may be poorly aligned with the query sequence.
+</blockquote>
+<blockquote>
+<b>percentId</b> &nbsp;<i>percent</i>
+<br>
+Keep only BLAST hits with percent sequence identity (%ID)
+of at least <i>percent</i>.
+%ID is based only on the region of hit-query alignment from BLAST.
+If the option is not specified, no filtering by %ID is done.
+</blockquote>
+<blockquote>
+<b>includeNative</b> <b>true</b>&nbsp;|&nbsp;false
+<br>
+Whether to keep all hits (PDB entries) that are annotated with 
+the same UniProt ID as the query, regardless of
+<b>minScore</b> and <b>percentIdThreshold</b> settings.
+</blockquote>
+<blockquote>
+<b>suppressDoubles</b> <b>true</b>&nbsp;|&nbsp;false
+<br>
+Whether to keep only the highest-scoring hit to a given PDB entry. 
+An entire PDB structure will be imported if any part is kept
+as a hit, but redundant chains will be hidden and its position in the
+<b>mda</b> layout will be based on that match to the query.
+If <b>suppressDoubles</b> is <b>true</b> (default),
+a PDB entry will not be imported more than once.
+If <b>false</b>, it is possible for the same PDB entry to be imported
+more than once and laid out in different places corresponding to 
+different matches along the query.
+Regardless of this setting, however, only the PDB chain with the most
+structure residues will be kept as a hit when BLAST finds 
+multiple identical chains from the same PDB entry.
+</blockquote>
+<blockquote>
+<b>forceBlast</b> <b>true</b>&nbsp;|&nbsp;false
+<br>
+Whether to re-run BLAST instead of using any
+<a href="#dbfiles">previously cached results</a>.
+Even if this option is <b>false</b>,
+previously cached results will only be used when the query
+(the <i>uniprotID</i>) and <a href="#winnow">winnowing</a> level 
+are the same as in an earlier use of <b>mda</b>.
+Whenever <b>mda</b> runs BLAST, the new results will be added to the cache,
+and if there were earlier results for the same query and winnowing level,
+they will be overwritten.
+Using cached results will speed <b>mda</b> execution at the
+possible cost of missing any newer PDB entries added to the
+sequence database since the time of caching.
+</blockquote>
+
+<a name="display"></a>
+<h3><a href="#options" class="nounder" title="back to top">&larr;</a>
+Display</h3>
+<blockquote>
+<b>group</b> <b>true</b>&nbsp;|&nbsp;false
+<br>
+Whether to group sets of structures that cover similar parts of the query.
+A structure will be included in such a set if, in the
+<a href="../blast.html#notes">alignment according to BLAST</a>,
+it overlaps any other member of the set by at least 25 residues, 
+but extends less than 25 residues beyond the alignment region 
+of the member with the longest such region.
+If <b>grouping</b> is <b>true</b> (default), 
+the structures in each set will be superimposed, 
+their models will be <a href="../modelpanel.html#group">grouped</a>
+in the <a href="../modelpanel.html"><b>Model Panel</b></a>,
+and only the representative (the member with the longest region of alignment) 
+will be shown.
+If this option is <b>false</b>, 
+the models in a set will still be laid out in the same &ldquo;column,&rdquo;
+but vertically separated from one another.
+</blockquote>
+<blockquote>
+<b>hideSubmodels</b> <b>true</b>&nbsp;|&nbsp;false
+<br>
+Whether to hide submodels (except for the first) of multi-model PDB entries,
+namely NMR ensembles.
+</blockquote>
+<blockquote>
+<b>hideAltChain</b> <b>true</b>&nbsp;|&nbsp;false
+<br>
+Whether to hide additional chains of a PDB entry that are identical to
+(same molecular entity as) the BLAST hit chain.
+</blockquote>
+<blockquote>
+<b>hideComplex</b> true&nbsp;|&nbsp;<b>false</b>
+<br>
+Whether to hide nearby chains (nonidentical to the BLAST hit)
+and small molecules.
+</blockquote>
+<blockquote>
+<b>deleteHidden</b> <b>true</b>&nbsp;|&nbsp;false
+<br>
+Whether to delete submodels or chains hidden by the three preceding options 
+(improves performance).
+</blockquote>
+<blockquote>
+<a name="coloring"><b>coloring</b> &nbsp;<i>scheme</i></a>
+<br>
+The <i>scheme</i> for coloring the structures can be one of the following:
+<ul>
+<li><b>mutations</b> (default) 
+- residues identical to those in the query sequence <b>gray</b>, 
+residues that differ from the query <b>red</b>, unaligned parts 
+transparent <b>gray</b>, complexed molecules <b>blue</b>
+(see <a href="../colortables.html#allcolors">named colors</a>)
+<li><b>percentid</b> 
+- aligned residues a single color (per model) ranging from <b>gray</b> 
+for the highest %ID to <b>red</b> for the lowest %ID
+(note the highest and lowest values might not be very far apart),
+unaligned residues the same color but transparent, 
+complexed molecules <b>blue</b>
+<li><b>blastscore</b>
+- aligned residues a single color (per model) ranging from <b>gray</b> 
+for the highest BLAST score to <b>red</b> for the lowest BLAST score
+(note the highest and lowest values might not be very far apart),
+unaligned residues the same color but transparent,
+complexed molecules <b>blue</b>
+</ul>
+ <blockquote>
+In addition, three 
+<a href="../../ContributedSoftware/defineattrib/defineattrib.html#attribdef">attributes</a>
+are assigned to residues in the hit structures to allow custom coloring. 
+The first two are quantitative, suitable for showing with
+<a href="../../ContributedSoftware/render/render.html#render"><b>Render 
+by Attribute</b></a> or the <a href="rangecolor.html"><b>rangecolor</b></a>
+command:
+<ul>
+<li><b>mda_blastscore</b> - BLAST score, with the same value
+assigned to all residues in the same model as the BLAST hit
+<li><b>mda_percentid</b> - %ID of BLAST hit, with the same value
+assigned to all residues in the same model as the hit
+</ul>
+Although the third has numerical values, it is a classification rather
+than a continuously varying quantity:
+<ul>
+<li><b>mda_alignment</b>, with values:
+  <ul>
+  <li>1 - in the BLAST-aligned region, same amino acid as as the target
+  <li>2 - in the BLAST-aligned region, different amino acid than the target
+  <li>3 - in the hit chain but not in the BLAST-aligned region
+  <li>4 - in a co-complexed chain (a different chain than the hit)
+  </ul>
+</ul>
+Residues in each class above can be specified directly in commands,
+<i>e.g.</i>:
+<span style="white-space:nowrap"><b>color yellow :/mda_alignment=1</b></span>
+  </blockquote>
+</blockquote>
+
+<a name="nogui"></a>
+<h3><a href="#options" class="nounder" title="back to top">&larr;</a>
+Suppressing dialogs (helpful during scripted or repetitive use)</h3>
+<blockquote>
+<b>noConfirm</b> true&nbsp;|&nbsp;<b>false</b>
+<br>
+Whether to simply import the hit structures (no matter how many) 
+rather than asking the user for permission when more than ten are found.
+</blockquote>
+<blockquote>
+<a name="showAlignment"></a>
+<b>showAlignment</b> <b>true</b>&nbsp;|&nbsp;false
+</a>
+<br>
+Whether to open
+<a href="../../ContributedSoftware/multalignviewer/framemav.html" 
+target="_top"><b>Multalign Viewer</b></a> and the
+<a href="../../ContributedSoftware/multalignviewer/modeller.html#comparative">
+Modeller interface</a>.  Not opening these dialogs allows faster execution.
+</blockquote>
+
+<a name="limiting"></a>
+<h3><a href="#options" class="nounder" title="back to top">&larr;</a>
+Further limiting the hits (structures to be used as templates)</h3>
+<blockquote>
+<a name="limit"></a>
+<b>limit</b> &nbsp;<i>min-per-residue</i>[<i>,max-gap-size</i>]
+<br>
+Limit the number of hits (with priority given to those with higher %ID)
+such that every residue in the target sequence is covered by 
+the smallest number of hits without going below <i>min-per-residue</i>
+and without consecutive stretches of target residues lacking structural coverage
+greater than <i>max-gap-size</i> (default <b>20</b> residues), if possible.
+(It may not be possible, depending on the initial set of hits and 
+other filtering criteria.)
+Exclusions by this option can be overridden with 
+<a href="#keepPDB"><b>keepPDB</b></a>.
+</blockquote>
+<blockquote>
+<a name="keepPDB"></a>
+<b>keepPDB</b> &nbsp;<i>pdb1</i>[<i>,pdb2,...</i>]
+<br>
+Retain hits with the specified PDB IDs even if they would have been removed by
+the <a href="#limit"><b>limit</b></a> option.
+</blockquote>
+<blockquote>
+<b>skipPDB</b> &nbsp;<i>pdb1</i>[<i>,pdb2,...</i>]
+<br>
+Omit hits with the specified PDB IDs.
+</blockquote>
+<blockquote>
+<b>excludeSelected</b> true&nbsp;|&nbsp;<b>false</b>
+<br>
+Whether to omit models with any part currently 
+<a href="../selection.html">selected</a> 
+from the hits in the next <b>mda</b> run.
+</blockquote>
+</body></html>

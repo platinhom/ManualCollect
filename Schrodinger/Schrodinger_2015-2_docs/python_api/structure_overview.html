@@ -1,0 +1,539 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Structures &mdash; Schrödinger Python Suite 2015-2 Documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '4.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Schrödinger Python Suite 2015-2 Documentation" href="index.html" />
+    <link rel="next" title="Interacting with Maestro" href="maestro_overview.html" />
+    <link rel="prev" title="Introduction" href="intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="maestro_overview.html" title="Interacting with Maestro"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="overview.html">Schrödinger Python Suite 2015-2 Documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="structures">
+<span id="structure-class"></span><span id="index-0"></span><h1>Structures<a class="headerlink" href="#structures" title="Permalink to this headline">¶</a></h1>
+<p>The <a class="reference external" href="api/schrodinger.structure.Structure-class.html">Structure</a> class is the fundamental class in our modules, and will
+probably be used in all of the code you write. <tt class="xref py py-obj docutils literal"><span class="pre">Structures</span></tt> can be single
+molecules or groups of molecules. They provide access to atoms, bonds,
+properties, and a number of substructure elements.</p>
+<p>Like any other python object, <tt class="xref py py-obj docutils literal"><span class="pre">Structures</span></tt> can be stored in arrays or
+dictionaries, assigned to variables, and passed between functions. (However,
+they cannot be pickled because they wrap an underlying C library.)</p>
+<p id="index-1">In principle, <tt class="xref py py-obj docutils literal"><span class="pre">Structures</span></tt> can be created programmatically, by <a class="reference external" href="api/schrodinger.structure-module.html#create_new_structure">creating a
+zero-atom structure</a>, <a class="reference external" href="api/schrodinger.structure.Structure-class.html#addAtom">adding the desired atoms</a> and <a class="reference external" href="api/schrodinger.structure.Structure-class.html#addBond">connecting
+them with bonds</a>. However, this usage pattern is atypical. In most cases a
+<tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> will be <a class="reference internal" href="#structure-file-io">loaded from a file</a> or retrieved from the
+<a class="reference internal" href="maestro_overview.html#maestro-workspace"><em>Maestro Workspace</em></a> or the <a class="reference internal" href="maestro_overview.html#maestro-project-table"><em>Maestro Project
+Table</em></a>.</p>
+<p>Most Schrödinger calculations will produce a Maestro-format output file.
+Creating a <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> object from one of these files will allow you to
+investigate the properties and structure of the resulting molecule or
+molecules.</p>
+<div class="section" id="structure-class-organization">
+<h2>Structure Class Organization<a class="headerlink" href="#structure-class-organization" title="Permalink to this headline">¶</a></h2>
+<p><tt class="xref py py-obj docutils literal"><span class="pre">Structures</span></tt> expose many attributes as iterators, including atoms, bonds,
+and substructure elements. <tt class="xref py py-obj docutils literal"><span class="pre">Structures</span></tt>, atoms, and bonds each have general
+dictionary-like <a class="reference internal" href="#property-subsection"><em>property attributes</em></a> that can
+store properties associated with the specific object.</p>
+<p>The <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> class itself doesn&#8217;t have many commonly used attributes
+associated with it. See the API documentation for more detail on its
+<a class="reference external" href="api/schrodinger.structure.Structure-class.html#section-Properties">properties</a> and <a class="reference external" href="api/schrodinger.structure.Structure-class.html#section-InstanceMethods">methods</a>.</p>
+<div class="section" id="atoms-and-bonds">
+<span id="index-2"></span><h3>Atoms and Bonds<a class="headerlink" href="#atoms-and-bonds" title="Permalink to this headline">¶</a></h3>
+<p>All <tt class="xref py py-obj docutils literal"><span class="pre">Structures</span></tt> have a list-like <tt class="xref py py-obj docutils literal"><span class="pre">atom</span></tt> attribute that can be used to
+iterate over all atoms or to access them by index. For example:</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">In this example and those below, we use <tt class="docutils literal"><span class="pre">st</span></tt> as the standard variable
+name for a <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> instance.</p>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># Print the names and atomic numbers of all the atoms in the Structure</span>
+<span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">atom</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">atom</span><span class="o">.</span><span class="n">atomic_number</span><span class="p">)</span>
+
+<span class="c"># Print the name and atomic number of the first atom in the Structure.</span>
+<span class="c"># Indexing starts at 1.</span>
+<span class="k">print</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">: </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">atomic_number</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Each atom is represented by a <a class="reference external" href="api/schrodinger.structure._StructureAtom-class.html">_StructureAtom</a> class. This class is
+&#8220;private&#8221; (i.e. named with a leading underscore) because you won&#8217;t be
+creating it directly.  It isn&#8217;t possible for a <tt class="xref py py-obj docutils literal"><span class="pre">_StructureAtom</span></tt> object to
+exist independently of a <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> object, and so they can only be
+accessed from an existing <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt>.</p>
+<p>Some attributes (actually <a class="reference external" href="http://docs.python.org/howto/descriptor.html#properties">Python properties</a>) of the
+<tt class="xref py py-obj docutils literal"><span class="pre">_StructureAtom</span></tt> objects include <tt class="xref py py-obj docutils literal"><span class="pre">name</span></tt>, <tt class="xref py py-obj docutils literal"><span class="pre">atomic_number</span></tt>, <tt class="xref py py-obj docutils literal"><span class="pre">formal_charge</span></tt>,
+and the Cartesian coordinates in <tt class="xref py py-obj docutils literal"><span class="pre">x</span></tt>, <tt class="xref py py-obj docutils literal"><span class="pre">y</span></tt>, and <tt class="xref py py-obj docutils literal"><span class="pre">z</span></tt>. See the <a class="reference external" href="api/schrodinger.structure._StructureAtom-class.html#section-Properties">_StructureAtom
+properties</a> for a full list.</p>
+<p>Each atom also has a list-like bond attribute:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&quot;atom </span><span class="si">%d</span><span class="s"> is bonded to:&quot;</span> <span class="o">%</span> <span class="n">atom</span><span class="o">.</span><span class="n">index</span>
+    <span class="k">for</span> <span class="n">bond</span> <span class="ow">in</span> <span class="n">atom</span><span class="o">.</span><span class="n">bond</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;  atom </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">bond</span><span class="o">.</span><span class="n">atom2</span><span class="o">.</span><span class="n">index</span>
+</pre></div>
+</div>
+<p>Bonds are represented by the <a class="reference external" href="api/schrodinger.structure._StructureBond-class.html">_StructureBond</a> class. Important attributes
+of the bond class include <tt class="xref py py-obj docutils literal"><span class="pre">order</span></tt>, <tt class="xref py py-obj docutils literal"><span class="pre">atom1</span></tt>, and <tt class="xref py py-obj docutils literal"><span class="pre">atom2</span></tt>. See the
+<a class="reference external" href="api/schrodinger.structure._StructureBond-class.html#section-Properties">_StructureBond properties</a> for full documentation.</p>
+<p>Bonds within the structure are also accessible from a list-like attribute of
+<tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> called <tt class="xref py py-obj docutils literal"><span class="pre">bond</span></tt>. This access is useful for cases where you want to
+iterate over all bonds in a Structure exactly once.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># It&#39;s possible to iterate over all bonds in a structure:</span>
+<span class="k">for</span> <span class="n">bond</span> <span class="ow">in</span> <span class="n">st</span><span class="o">.</span><span class="n">bond</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&quot;Bonded atoms: </span><span class="si">%d</span><span class="s"> and </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">bond</span><span class="o">.</span><span class="n">atom1</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">bond</span><span class="o">.</span><span class="n">atom2</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="properties">
+<span id="property-subsection"></span><span id="index-3"></span><h3>Properties<a class="headerlink" href="#properties" title="Permalink to this headline">¶</a></h3>
+<p>Structures, atoms, and bonds each have the ability to store properties in a
+dictionary-like attribute named <tt class="xref py py-obj docutils literal"><span class="pre">property</span></tt>.</p>
+<p>The property names in this <tt class="xref py py-obj docutils literal"><span class="pre">property</span></tt> object must follow a pattern that is
+required for storage in Maestro-format files. The required naming scheme is
+<tt class="samp docutils literal"><em><span class="pre">type</span></em><span class="pre">_</span><em><span class="pre">author</span></em><span class="pre">_</span><em><span class="pre">property_name</span></em></tt>, where <tt class="samp docutils literal"><em><span class="pre">type</span></em></tt> is a data type
+prefix, <tt class="samp docutils literal"><em><span class="pre">author</span></em></tt> is a source specification, and
+<tt class="samp docutils literal"><em><span class="pre">property_name</span></em></tt> is the actual name of the data. The <tt class="samp docutils literal"><em><span class="pre">type</span></em></tt>
+prefix must be <tt class="docutils literal"><span class="pre">b</span></tt> for boolean, <tt class="docutils literal"><span class="pre">i</span></tt> for integer, <tt class="docutils literal"><span class="pre">r</span></tt> for real, and
+<tt class="docutils literal"><span class="pre">s</span></tt> for string. The source specification is typically a Schrödinger
+program abbreviation (e.g. <tt class="docutils literal"><span class="pre">m</span></tt> for Maestro and <tt class="docutils literal"><span class="pre">j</span></tt> for Jaguar) and the
+appropriate user-level source specification is <tt class="docutils literal"><span class="pre">user</span></tt>. (In Maestro-format
+files, the <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> property names correspond to the properties listed
+under the <tt class="docutils literal"><span class="pre">f_m_ct</span> <span class="pre">{</span></tt> line.)</p>
+<p>This example shows how to access, set, and delete <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> properties:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># &#39;r_j_Gas_Phase_Energy&#39; is a real property set by Jaguar.</span>
+<span class="n">gas_phase_energy</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">property</span><span class="p">[</span><span class="s">&#39;r_j_Gas_Phase_Energy&#39;</span><span class="p">]</span>
+
+<span class="c"># Properties stored by the user should use an &quot;author&quot; of &#39;user&#39;.</span>
+<span class="n">st</span><span class="o">.</span><span class="n">property</span><span class="p">[</span><span class="s">&#39;r_user_Energy_Plus_Two&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gas_phase_energy</span> <span class="o">+</span> <span class="mf">2.0</span>
+
+<span class="c"># Delete the new &#39;r_user_Energy_Plus_Two&#39; property.</span>
+<span class="k">del</span> <span class="n">st</span><span class="o">.</span><span class="n">property</span><span class="p">[</span><span class="s">&#39;r_user_Energy_Plus_Two&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Because the <tt class="xref py py-obj docutils literal"><span class="pre">property</span></tt> objects are dictionary subclasses, the standard
+dictionary methods like <tt class="xref py py-obj docutils literal"><span class="pre">keys</span></tt> and <tt class="xref py py-obj docutils literal"><span class="pre">items</span></tt> also work.</p>
+<p id="index-4">Properties of atoms work the same way. For example, the property
+<tt class="docutils literal"><span class="pre">b_fragmol_attachment</span></tt> is set by <tt class="file docutils literal"><span class="pre">fragment_molecule.py</span></tt> (available
+on the <a class="reference external" href="http://www.schrodinger.com/scripts2015-2.html">Script Center</a>). The property is True for atoms that were bonded in
+the input structure but whose bond is broken in the output structures.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">atom</span><span class="o">.</span><span class="n">property</span><span class="p">[</span><span class="s">&#39;b_fragmol_attachment&#39;</span><span class="p">]:</span>
+        <span class="k">print</span> <span class="s">&quot;Atom </span><span class="si">%s</span><span class="s"> unattached.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">atom</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&quot;Coordinates: </span><span class="si">%f</span><span class="s">, </span><span class="si">%f</span><span class="s">, </span><span class="si">%f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">atom</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">atom</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">atom</span><span class="o">.</span><span class="n">z</span><span class="p">)</span>
+</pre></div>
+</div>
+<p id="index-5">Bonds also have a <tt class="xref py py-obj docutils literal"><span class="pre">property</span></tt> attribute for general property storage and
+retrieval, although they don&#8217;t have commonly-used built-in properties.</p>
+</div>
+<div class="section" id="substructures">
+<h3>Substructures<a class="headerlink" href="#substructures" title="Permalink to this headline">¶</a></h3>
+<p>A number of &#8220;substructure iterators&#8221; are available from each <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt>.
+Each of these iterators returns an instance of a non-public class that is a
+view on the substructure contained within the <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> instance. Each
+substructure class has an <tt class="xref py py-obj docutils literal"><span class="pre">extractStructure</span></tt> method that can be used to
+create a new and independent <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> with the atoms in the substructure.
+The also have <tt class="xref py py-obj docutils literal"><span class="pre">getAtomList</span></tt> methods to return a list of atom indices
+corresponding to the substructure.</p>
+<dl class="docutils">
+<dt>molecule</dt>
+<dd>Iterates over individual molecules. Returns a <a class="reference external" href="api/schrodinger.structure._Molecule-class.html">_Molecule</a> instance.</dd>
+<dt>chain</dt>
+<dd>Iterates over protein chains in the <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt>. Returns a <a class="reference external" href="api/schrodinger.structure._Chain-class.html">_Chain</a>
+instance.</dd>
+<dt>residue</dt>
+<dd>Iterates over protein residues in the <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt>. Returns a <a class="reference external" href="api/schrodinger.structure._Residue-class.html">_Residue</a>
+instance.</dd>
+<dt>ring</dt>
+<dd>Iterates over all rings in the <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt>, as found by <abbr title="Smallest Set of Smallest Rings">SSSR</abbr>. Returns a <a class="reference external" href="api/schrodinger.structure._Ring-class.html">_Ring</a> instance. (The
+<a class="reference external" href="api/schrodinger.structure.Structure-class.html#find_rings">Structure.find_rings</a> method implements similar functionality but
+returns a list of lists of ints to identify the rings, with each int
+being an atom index.)</dd>
+</dl>
+<p>For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">print</span> <span class="s">&quot;The structure has </span><span class="si">%d</span><span class="s"> molecules.&quot;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">molecule</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">mol</span> <span class="ow">in</span> <span class="n">st</span><span class="o">.</span><span class="n">molecule</span><span class="p">:</span>
+    <span class="k">print</span> <span class="s">&quot;Molecule </span><span class="si">%d</span><span class="s"> has </span><span class="si">%d</span><span class="s"> atoms.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">mol</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">mol</span><span class="o">.</span><span class="n">atom</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The <tt class="xref py py-obj docutils literal"><span class="pre">_Molecule</span></tt> and <tt class="xref py py-obj docutils literal"><span class="pre">_Chain</span></tt> instances also support their own residue
+iterators. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">for</span> <span class="n">chain</span> <span class="ow">in</span> <span class="n">st</span><span class="o">.</span><span class="n">chain</span><span class="p">:</span>
+    <span class="n">residues</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">residue</span> <span class="ow">in</span> <span class="n">chain</span><span class="o">.</span><span class="n">residue</span><span class="p">:</span>
+        <span class="n">residues</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">residue</span><span class="o">.</span><span class="n">getCode</span><span class="p">())</span>
+    <span class="k">print</span> <span class="s">&quot;chain </span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">residues</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="structure-i-o">
+<span id="structure-file-io"></span><span id="index-6"></span><h2>Structure I/O<a class="headerlink" href="#structure-i-o" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="reading-a-structure-from-a-file">
+<h3>Reading a Structure from a File<a class="headerlink" href="#reading-a-structure-from-a-file" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="api/schrodinger.structure.StructureReader-class.html">schrodinger.structure.StructureReader</a> class creates
+<tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> objects from molecular data stored in a number of standard file
+formats. Supported file types are Maestro, MDL SD, PDB, and Sybyl Mol2.
+Because these files may contain multiple molecules, the <tt class="xref py py-obj docutils literal"><span class="pre">StructureReader</span></tt> is
+an iterator, and molecule files are presented as a sequence of <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt>
+objects.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">schrodinger</span> <span class="kn">import</span> <span class="n">structure</span>
+
+<span class="c">#Input can be a .mae, .sdf, .sd, .pdb, or .mol2 file.</span>
+<span class="n">input_file</span> <span class="o">=</span> <span class="s">&quot;input.mae&quot;</span>
+
+<span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">structure</span><span class="o">.</span><span class="n">StructureReader</span><span class="p">(</span><span class="n">input_file</span><span class="p">):</span>
+    <span class="c"># Do something with the Structure...</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">process_structure</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+
+<span class="c"># To read only the first structure from a file, use the next() method.</span>
+<span class="n">st</span> <span class="o">=</span> <span class="n">structure</span><span class="o">.</span><span class="n">StructureReader</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><abbr title="Simplified Molecular Input Line Entry Specification">SMILES</abbr> format
+files and CSV files with <abbr>SMILES</abbr> data are also supported, but because
+these have no structural data, resulting structures are <a class="reference external" href="api/schrodinger.structure.SmilesStructure-class.html">SmilesStructures</a>,
+which have less functionality than standard <tt class="xref py py-obj docutils literal"><span class="pre">Structures</span></tt>. See the
+<a class="reference external" href="api/schrodinger.structure.SmilesReader-class.html">SmilesReader</a> and <a class="reference external" href="api/schrodinger.structure.SmilesCsvReader-class.html">SmilesCsvReader</a> documentation.</p>
+</div>
+<div class="section" id="saving-a-structure-to-a-file">
+<h3>Saving a Structure to a File<a class="headerlink" href="#saving-a-structure-to-a-file" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="api/schrodinger.structure.StructureWriter-class.html">StructureWriter</a> class is the counterpart to the <tt class="xref py py-obj docutils literal"><span class="pre">StructureReader</span></tt>.</p>
+<p>This is an example of a typical read, process, and write script:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">schrodinger</span> <span class="kn">import</span> <span class="n">structure</span>
+
+<span class="c"># Open the input file with a StructureReader.</span>
+<span class="n">reader</span> <span class="o">=</span> <span class="n">structure</span><span class="o">.</span><span class="n">StructureReader</span><span class="p">(</span><span class="s">&quot;input.mae&quot;</span><span class="p">)</span>
+
+<span class="c"># Open the output file with a StructureWriter.</span>
+<span class="n">writer</span> <span class="o">=</span> <span class="n">structure</span><span class="o">.</span><span class="n">StructureWriter</span><span class="p">(</span><span class="s">&quot;output.mae&quot;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+    <span class="c"># Do the required processing.</span>
+    <span class="n">result_structure</span> <span class="o">=</span> <span class="n">do_processing</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+
+    <span class="c"># Save the result to the output file.</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_structure</span><span class="p">)</span>
+
+<span class="c"># The files associated with the reader and writer will be closed</span>
+<span class="c"># automatically when they are garbage collected, but it is good practice</span>
+<span class="c"># to close them explicitly.</span>
+<span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">reader</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Alternatively, if only a single structure is being written to a file, you
+can use the <a class="reference external" href="api/schrodinger.structure.Structure-class.html#write">Structure.write</a> method:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">st</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;output.mae&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="structure-operations">
+<h2>Structure Operations<a class="headerlink" href="#structure-operations" title="Permalink to this headline">¶</a></h2>
+<p>In addition to the functionality provided in the <a class="reference external" href="api/schrodinger.structure-module.html">schrodinger.structure</a>
+module itself, much is provided in the <a class="reference external" href="api/schrodinger.structutils-module.html">schrodinger.structutils</a> package.</p>
+<p>This section lists some additional <tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt> features and a few highlights
+of the <tt class="xref py py-obj docutils literal"><span class="pre">structutils</span></tt> package.</p>
+<div class="section" id="structure-minimization">
+<span id="index-7"></span><h3>Structure Minimization<a class="headerlink" href="#structure-minimization" title="Permalink to this headline">¶</a></h3>
+<p>Structures can be minimized using one of the OPLS_2005, PFF_2005, or
+OPLS_2001 force fields by using the <a class="reference external" href="api/schrodinger.structutils.minimize-module.html#minimize_structure">minimize_structure</a> function. This
+operation requires a valid product license from MacroModel, GLIDE, Impact,
+or PLOP. Note that minimization will not hold on to a license; a license is
+checked out to ensure that one is available, then immediately checked back
+in.</p>
+<p>For example, to compare the energy of a molecule before and after
+minimization:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">schrodinger.structutils.minimize</span> <span class="kn">import</span> <span class="n">minimize_structure</span>
+
+<span class="c"># Set the energy property name</span>
+<span class="n">energy_name</span> <span class="o">=</span> <span class="s">&#39;r_ff_Potential_Energy-OPLS_2005&#39;</span>
+
+<span class="c"># Do a 0-step &quot;minimization&quot; to get the initial energy.</span>
+<span class="n">minimize_structure</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">original_energy</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">property</span><span class="p">[</span><span class="n">energy_name</span><span class="p">]</span>
+
+<span class="n">minimize_structure</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+<span class="n">minimized_energy</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">property</span><span class="p">[</span><span class="n">energy_name</span><span class="p">]</span>
+
+<span class="k">print</span> <span class="s">&quot;The minimized energy is </span><span class="si">%f</span><span class="s"> kcal/mol lower than the original.&quot;</span> <span class="o">%</span> <span class="p">(</span>
+    <span class="n">original_energy</span> <span class="o">-</span> <span class="n">minimized_energy</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="substructure-searching-or-specification">
+<span id="index-8"></span><h3>Substructure Searching or Specification<a class="headerlink" href="#substructure-searching-or-specification" title="Permalink to this headline">¶</a></h3>
+<p>Generate
+<abbr title="Simplified Molecular Input Line Entry Specification">SMILES</abbr>,
+<abbr title="Smiles ARbitrary Target Specification">SMARTS</abbr>, or
+<abbr title="Atom Specification Language">ASL</abbr> strings based on a set of atom
+indices via the <a class="reference external" href="api/schrodinger.structutils.analyze-module.html#generate_smiles">generate_smiles</a>, <a class="reference external" href="api/schrodinger.structutils.analyze-module.html#generate_smarts">generate_smarts</a>, and <a class="reference external" href="api/schrodinger.structutils.analyze-module.html#generate_asl">generate_asl</a>
+functions. Documentation on <abbr>ASL</abbr> can be found in the Maestro Command
+Reference Manual.</p>
+<p>Evaluate <abbr>SMARTS</abbr> or <abbr>ASL</abbr> strings and return a list of matching
+atom indices via the <a class="reference external" href="api/schrodinger.structutils.analyze-module.html#evaluate_smarts">evaluate_smarts</a> and <a class="reference external" href="api/schrodinger.structutils.analyze-module.html#evaluate_asl">evaluate_asl</a> functions.</p>
+<p>This example finds the set of unique SMILES strings in a structure file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">schrodinger.structutils.analyze</span> <span class="kn">import</span> <span class="n">generate_smiles</span>
+<span class="n">unique_smiles</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="n">generate_smiles</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pattern</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">unique_smiles</span><span class="p">:</span>
+        <span class="n">unique_smiles</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="structure-measurement">
+<span id="index-9"></span><h3>Structure Measurement<a class="headerlink" href="#structure-measurement" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="api/schrodinger.structutils.measure-module.html">schrodinger.structutils.measure</a> module provides functions for
+measuring distances, angles, dihedral angles, and plane angles. It also
+offers the <a class="reference external" href="api/schrodinger.structutils.measure-module.html#get_close_atoms">get_close_atoms</a> method to find all pairs of atoms within a
+specified distance in less than O(N <sup>2</sup>) time.</p>
+</div>
+<div class="section" id="structure-superimposition-or-comparison">
+<span id="index-10"></span><h3>Structure Superimposition or Comparison<a class="headerlink" href="#structure-superimposition-or-comparison" title="Permalink to this headline">¶</a></h3>
+<p>The in-place <abbr title="Root Mean Square Deviation">RMSD</abbr> of two structures can
+be determined via the <a class="reference external" href="api/schrodinger.structutils.rmsd-module.html#calculate_in_place_rmsd">calculate_in_place_rmsd</a> function. The <a class="reference external" href="api/schrodinger.structutils.rmsd.ConformerRmsd-class.html">ConformerRmsd</a>
+class offers more complete <abbr>RMSD</abbr> comparison tools for conformers.</p>
+<p>Two structures can be superimposed based on all atoms or a subset of atoms
+with the <a class="reference external" href="api/schrodinger.structutils.rmsd-module.html#superimpose">superimpose</a> function.</p>
+</div>
+<div class="section" id="conversion-between-1d-2d-and-3d-structures">
+<h3>Conversion Between 1D/2D and 3D Structures<a class="headerlink" href="#conversion-between-1d-2d-and-3d-structures" title="Permalink to this headline">¶</a></h3>
+<p>To convert a 3D structure to a 1D structure (SMILES or SMARTS), use the
+appropriate function from <a class="reference external" href="api/schrodinger.structutils.analyze-module.html">schrodinger.structutils.analyze</a>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">schrodinger.structutils</span> <span class="kn">import</span> <span class="n">analyze</span>
+<span class="n">smiles_list</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">smarts_list</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+    <span class="n">smiles_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analyze</span><span class="o">.</span><span class="n">generate_smiles</span><span class="p">(</span><span class="n">st</span><span class="p">))</span>
+    <span class="n">smarts_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">analyze</span><span class="o">.</span><span class="n">generate_smarts</span><span class="p">(</span><span class="n">st</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>To convert a file of 1D SMILES strings to 3D structures, use LigPrep.  The
+following example also uses <a class="reference internal" href="other.html#job-control"><em>job control</em></a> in order to
+ensure that the job fully completes before the code continues:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">schrodinger.job.jobcontrol</span> <span class="kn">as</span> <span class="nn">jc</span>
+<span class="kn">from</span> <span class="nn">schrodinger</span> <span class="kn">import</span> <span class="n">structure</span>
+
+<span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="s">&quot;ligprep&quot;</span><span class="p">,</span> <span class="s">&quot;-ismi&quot;</span><span class="p">,</span> <span class="n">smiles_input</span><span class="p">,</span> <span class="s">&quot;-omae&quot;</span><span class="p">,</span> <span class="n">ligprep_output</span><span class="p">]</span>
+<span class="n">job</span> <span class="o">=</span> <span class="n">jc</span><span class="o">.</span><span class="n">launch_job</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+<span class="k">print</span> <span class="p">(</span><span class="s">&quot;LigPrep job status: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">job</span><span class="o">.</span><span class="n">Status</span><span class="p">)</span>
+<span class="n">job</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+<span class="k">print</span> <span class="p">(</span><span class="s">&quot;LigPrep job status: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">job</span><span class="o">.</span><span class="n">Status</span><span class="p">)</span>
+<span class="n">reader</span> <span class="o">=</span> <span class="n">structure</span><span class="o">.</span><span class="n">StructureReader</span><span class="p">(</span><span class="n">ligprep_output</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">st</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+    <span class="n">process</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To convert a 3D structure to a 2D structure, use the <tt class="file docutils literal"><span class="pre">canvasConvert</span></tt>
+utility from the command line:</p>
+<div class="highlight-python"><div class="highlight"><pre>$SCHRODINGER/utilities/canvasConvert -imae input.mae -2D -osd output.sd
+</pre></div>
+</div>
+<p>The resulting SD file can then be read back in with the <a class="reference external" href="api/schrodinger.structure.StructureReader-class.html">StructureReader</a>
+class.</p>
+</div>
+<div class="section" id="modifying-a-structure">
+<span id="index-11"></span><h3>Modifying a Structure<a class="headerlink" href="#modifying-a-structure" title="Permalink to this headline">¶</a></h3>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The <tt class="docutils literal"><span class="pre">&gt;&gt;&gt;</span></tt> prefix in the examples that follow is the <a class="reference internal" href="intro.html#interactive-prompt"><em>interactive
+prompt</em></a>. Examples without the prompt are snippets
+of scripts.</p>
+</div>
+<p>Atoms can be added via the <a class="reference external" href="api/schrodinger.structure.Structure-class.html#addAtoms">Structure.addAtoms</a> method.</p>
+<p>Individual atoms can be deleted with standard python list syntax:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">st_copy</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">)</span>
+<span class="go">5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">del</span> <span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">)</span>
+<span class="go">4</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Deleting atoms changes the indices of the atoms remaining in the
+<tt class="xref py py-obj docutils literal"><span class="pre">Structure</span></tt>.</p>
+</div>
+<p>Because deleting atoms renumbers the remaining atoms, multiple atoms should
+be deleted via the <a class="reference external" href="api/schrodinger.structure.Structure-class.html#deleteAtoms">Structure.deleteAtoms</a> method.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">)</span>
+<span class="go">14</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">st</span><span class="o">.</span><span class="n">deleteAtoms</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="nb">len</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">)</span>
+<span class="go">10</span>
+</pre></div>
+</div>
+<p>Charges and atom identity can be modified by making assignments to the
+proper <tt class="xref py py-obj docutils literal"><span class="pre">_StructureAtom</span></tt> attributes:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">element</span>
+<span class="go">&#39;C&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">atomic_number</span>
+<span class="go">6</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">formal_charge</span>
+<span class="go">0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">element</span> <span class="o">=</span> <span class="s">&#39;N&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">formal_charge</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">formal_charge</span>
+<span class="go">1</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">atomic_number</span>
+<span class="go">7</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">atomic_number</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">element</span>
+<span class="go">&#39;C&#39;</span>
+</pre></div>
+</div>
+<p>As can be seen from the above examples, changing the <tt class="docutils literal"><span class="pre">atomic_number</span></tt> or
+<tt class="docutils literal"><span class="pre">element</span></tt> attributes automatically updates the associated value.</p>
+<p>Bonds can be broken or created. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># To avoid modifying the original structure, make a copy.</span>
+<span class="n">st</span> <span class="o">=</span> <span class="n">st_orig</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+<span class="c"># Break and re-join the first bond on the first atom.</span>
+<span class="n">bond</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">atom</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">bond</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="n">atom1</span> <span class="o">=</span> <span class="n">bond</span><span class="o">.</span><span class="n">atom1</span><span class="o">.</span><span class="n">index</span>
+<span class="n">atom2</span> <span class="o">=</span> <span class="n">bond</span><span class="o">.</span><span class="n">atom2</span><span class="o">.</span><span class="n">index</span>
+<span class="n">order</span> <span class="o">=</span> <span class="n">bond</span><span class="o">.</span><span class="n">order</span>
+
+<span class="n">st</span><span class="o">.</span><span class="n">deleteBond</span><span class="p">(</span><span class="n">atom1</span><span class="p">,</span> <span class="n">atom2</span><span class="p">)</span>     <span class="c"># Delete the bond.</span>
+<span class="n">st</span><span class="o">.</span><span class="n">addBond</span><span class="p">(</span><span class="n">atom1</span><span class="p">,</span> <span class="n">atom2</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span> <span class="c"># Recreate bond with same bond order.</span>
+</pre></div>
+</div>
+<p>Hydrogens can be added via the <a class="reference external" href="api/schrodinger.structutils.build-module.html#add_hydrogens">add_hydrogens</a> function, or deleted via the
+<a class="reference external" href="api/schrodinger.structutils.build-module.html#delete_hydrogens">delete_hydrogens</a> function.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Changing formal charge, atomic identity (via <tt class="docutils literal"><span class="pre">element</span></tt>,
+<tt class="docutils literal"><span class="pre">atomic_number</span></tt>, or <tt class="docutils literal"><span class="pre">atom_type</span></tt>), breaking or forming bonds, or
+changing bond orders all require retyping the atoms involved.  This can
+be accomplished via the <a class="reference external" href="api/schrodinger.structure.Structure-class.html#retype">Structure.retype</a> method. This can be an
+expensive operation, so is not automatically invoked.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="overview.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Structures</a><ul>
+<li><a class="reference internal" href="#structure-class-organization">Structure Class Organization</a><ul>
+<li><a class="reference internal" href="#atoms-and-bonds">Atoms and Bonds</a></li>
+<li><a class="reference internal" href="#properties">Properties</a></li>
+<li><a class="reference internal" href="#substructures">Substructures</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#structure-i-o">Structure I/O</a><ul>
+<li><a class="reference internal" href="#reading-a-structure-from-a-file">Reading a Structure from a File</a></li>
+<li><a class="reference internal" href="#saving-a-structure-to-a-file">Saving a Structure to a File</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#structure-operations">Structure Operations</a><ul>
+<li><a class="reference internal" href="#structure-minimization">Structure Minimization</a></li>
+<li><a class="reference internal" href="#substructure-searching-or-specification">Substructure Searching or Specification</a></li>
+<li><a class="reference internal" href="#structure-measurement">Structure Measurement</a></li>
+<li><a class="reference internal" href="#structure-superimposition-or-comparison">Structure Superimposition or Comparison</a></li>
+<li><a class="reference internal" href="#conversion-between-1d-2d-and-3d-structures">Conversion Between 1D/2D and 3D Structures</a></li>
+<li><a class="reference internal" href="#modifying-a-structure">Modifying a Structure</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="intro.html"
+                        title="previous chapter">Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="maestro_overview.html"
+                        title="next chapter">Interacting with Maestro</a></p>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="maestro_overview.html" title="Interacting with Maestro"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction"
+             >previous</a> |</li>
+        <li><a href="overview.html">Schrödinger Python Suite 2015-2 Documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2011 Schrödinger, LLC.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

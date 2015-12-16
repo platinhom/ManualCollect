@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta keywords svlApiFuncInfo>
+
+<meta functions svl_InstallApi, svl_Must, svl_MustAddApiFunc>
+<meta functions svl_MustAddApiFuncTbl, SVL_F_DECL>
+
+
+<title>API Initialization Functions: svl_InstallAPI, ...</title>
+
+</head>
+<body  bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>API Initialization Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    void <a class="fcnlink" href="#svl_InstallApi">svl_InstallApi</a>(int (*api_init)(int argc,char **argv));
+
+    void <a class="fcnlink" href="#svl_Must">svl_Must</a>(svl_error e);
+
+    void <a class="fcnlink" href="#svl_MustAddApiFunc">svl_MustAddApiFunc</a>(
+       char *fname,			/* SVL function name */
+       svl_error (*fptr)(svl_task),	/* C function name */
+       int fbits			/* function type */
+    );
+
+    void <a class="fcnlink" href="#svl_MustAddApiFuncTbl">svl_MustAddApiFuncTbl</a>(svlApiFuncInfo *tbl);
+</pre>
+
+<p><a name="svl_InstallApi"></a></p>
+<h2>Description</h2>
+
+<pre>
+void <span class="fcndef">svl_InstallApi</span>(int (*api_init)(int argc,char **argv));
+</pre>
+
+<p>Installs the API initialization 
+function <tt>api_init</tt>. This function will be
+called upon initialization. The initialization
+function is where global constants and user built-ins should be 
+registered. <tt>svl_InstallApi</tt> must be called from <tt>main</tt>.</p>
+
+<p><a name="svl_Must"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+void <span class="fcndef">svl_Must</span>(svl_error e);
+</pre>
+
+<p>Used in the API initialization routine to trap
+errors as there is no error path during the initialization phase.
+The use of this is to pass as an argument a function call which in
+itself returns an <tt>svl_error</tt>.  If the error is non-<tt>NULL</tt>, 
+<tt>svl_Must</tt> will terminate the application. 
+
+<p>For example:
+
+<pre>
+    svl_Must(svl_ReallocTokE(&amp;tokens, n));
+</pre>
+
+In this case, if the allocation of memory fails then <tt>svl_ReallocTokE</tt>
+will return an error and the application will terminate.  If all goes
+well with the memory allocation then <tt>svl_ReallocTokE</tt> will return
+<tt>NULL</tt> and <tt>svl_Must</tt> will ignore the call.
+
+
+<p><a name="svl_MustAddApiFunc"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+void <span class="fcndef">svl_MustAddApiFunc</span>(char *fname, svl_error (*fptr)(svl_task), int fbits);
+</pre>
+
+<p>Bind the symbol <tt>fname</tt> 
+to the user built-in function pointed to by <tt>fptr</tt>. 
+<tt>fname</tt> can then be used to invoke the function from SVL.
+The C built-in function accepts a single argument, a task. <tt>fbits</tt> 
+determines the auto-import status of the new SVL
+function. Valid values are:
+<ul>
+<li> <tt>0</tt>: the function will be auto-imported, i.e. it will be 
+accessible to any module without requiring an explicit import declaration. 
+</li>
+<li>
+<tt>SVL_F_DECL</tt>: each SVL module must explicitly declare 
+the function for import before using it.
+</li>
+</ul>
+</p>
+
+<p><a name="svl_MustAddApiFuncTbl"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+void <span class="fcndef">svl_MustAddApiFuncTbl</span>(svlApiFuncInfo *tbl);
+</pre>
+
+<p>Similar to <tt>svl_MustAddApiFunc</tt>,
+except that it allows any number of user built-ins to be bound to their
+corresponding SVL symbols in one call. The SVL symbols, the associated C
+functions, and the function bits (for determining auto-importability) are
+defined in a table of C structures of type <tt>svlApiFuncInfo</tt>.  The
+table must be terminated with a <tt>NULL</tt>-record, i.e.
+<tt>{0}</tt>.  The <tt>svlApiFuncInfo</tt> structure contains the same
+information as is passed to <tt>svl_MustAddApiFunc</tt>:</p>
+
+<pre>
+    typedef struct { 
+        char *apifname;		    /* SVL function symbol */ 
+        svl_error(*fptr)(svl_task); /* C function name */ 
+        int fbits;	    	    /* function type */ 
+        unsigned char null_pad;	    /* must always be 0 */ 
+    } svlApiFuncInfo;
+</pre>
+
+<h2>See Also</h2>
+<p>
+    <a class="svl" href="api_constants.html">svl_MustMakeConst_I</a><br />
+    <a class="svl" href="api_constants.html">svl_MustMakeConst_R</a><br />
+    <a class="svl" href="api_constants.html">svl_MustMakeConst_string</a><br />
+    <a class="svl" href="api_constants.html">svl_MustMakeConst_strings</a><br />
+    <a class="svl" href="api_constants.html">svl_MustMakeConst_V</a>
+</p>
+
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../apifcnindex.html">API Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

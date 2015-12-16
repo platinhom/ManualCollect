@@ -1,0 +1,1287 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	mdfcn.htm			dynamics function reference
+!!
+!!	08-feb-2008 (pl) add MD_ etc. functions
+!!	15-jan-2007 (pl) added new functions
+!!	30-jun-2003 (pl) created
+!!-->
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<title>Molecular Dynamics Functions</title>
+<meta functions MD, MD_Initialize, MD_Import>
+<meta functions NAMD_Initialize, NAMD_Import>
+<meta functions md_ParseProtocol, md_CheckProtocol, md_FormatProtocol>
+<meta functions Dynamics, DynamicsInit, DynamicsReload, DynamicsLoadFrame>
+
+<meta keywords molecular dynamics, protocol, trajectory />
+</head>
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Molecular Dynamics Functions</h2>
+<hr noshade="noshade" />
+<h2>Syntax</h2>
+
+<pre>
+    md_opt = [
+        dt:               num_ps,
+        startTime:        num_ps,
+        checkpointTime:   num_ps,
+        sample:           num_ps,
+        wrapWater:        flag
+        savePosition:     flag,
+        saveVelocity:     flag,
+	bondConstraints:  'mode',
+        constraintTol:    num,
+	rigidWater:       flag,
+	verbose:          flag
+        algorithm:        'method',     // [MOE ]
+        opendbv:          flag,         // [MOE ]
+	PME:              flag          // [NAMD]
+    ];
+
+    <a class="fcnlink" href="#MD_Initialize">MD_Initialize</a>   [ 'root', protocol, md_opt ]
+    <a class="fcnlink" href="#MD">MD</a>              [ 'root', protocol, md_opt ]
+    <a class="fcnlink" href="#MD_Import">MD_Import</a>       [ dstmdb, 'root'  , opt    ]
+
+    <a class="fcnlink" href="#NAMD_Initialize">NAMD_Initialize</a> [ 'root', protocol, md_opt ]
+    <a class="fcnlink" href="#NAMD_Import">NAMD_Import</a>     [ 'root', protocol, opt    ]
+
+    prot    = <a class="fcnlink" href="#md_ParseProtocol">md_ParseProtocol</a>  str
+    errtok  = <a class="fcnlink" href="#md_CheckProtocol">md_CheckProtocol</a>  str
+    str     = <a class="fcnlink" href="#md_FormatProtocol">md_FormatProtocol</a> prot
+
+        <a class="fcnlink" href="#DynamicsInit">DynamicsInit</a>      ['mdbfile', opt]
+    t = <a class="fcnlink" href="#Dynamics">Dynamics</a>          ['mdbfile', duration, T, P, opt]
+        <a class="fcnlink" href="#DynamicsReload">DynamicsReload</a>    'mdbfile'
+	<a class="fcnlink" href="#DynamicsLoadFrame">DynamicsLoadFrame</a> ['mdbfile', entkey]
+</pre>
+
+<h2>Description</h2>
+
+<p>
+The Molecular Dynamics functions solve the equations of motion for a
+molecular system and store the resulting trajectory information into one or
+more databases.  These functions depend on the current state of the system,
+in particular, the forcefield, the potential setup and the current restraint
+configuration.  MOE has the following general molecular dynamics capabilities:
+<ul>
+<li>NVE, NVT, NPH, NPT simulations using the MOE or NAMD (external)
+dynamics engines.
+<li>Specify simulation protocols with a simple protocol language 
+that works with both MOE and NAMD.
+<li>Automatically generate batch/restart SVL, BAT or Bourne Shell scripts
+to run/restart a simulation in batch mode.
+</ul>
+<p>
+<b>Protocols</b>.
+Molecular dynamics simulations are often a sequence of simulation <i>stages</i>
+each of which is run under different temperature or pressure conditions,
+e.g. for heating or cooling a system.  These sequences of stages are called
+<i>protocols</i> and are specified with a special protocol language.
+The protocol language is a sequence of stages, each with a name and
+parameters enclosed in braces.  Parameters are of the form
+<i>name</i>&nbsp;=&nbsp;<i>value</i> where the <i>value</i> is either
+a number or a range interval, depending on the particular parameter.
+For example, a common molecular dynamics protocol that heats the system
+from 0 to 300&nbsp;K followed by equilibration, production for 500&nbsp;ps and
+cooling to 0&nbsp;K can be encoded with the protocol
+
+<blockquote><pre>
+heat  { ps=100 T=(0,300) }
+equil { ps=100 T=300     }
+prod  { ps=500 T=300     }
+cool  { ps=100 T=(300,0) }
+</pre></blockquote>
+
+<p>
+The formal grammar of the protocol language is:
+
+<blockquote><table>
+<tr>
+<td><i>stage</i> <td>:
+<td><i>name</i> <tt><b>{</b></tt> <i>item</i>* <tt><b>}</b></tt>
+<tr>
+<td><i>item</i> <td>:
+<td>
+<i>name</i><tt><b>=</b></tt><i>number</i>
+&nbsp;|&nbsp; <tt><b>T=</b></tt> <i>range</i>
+&nbsp;|&nbsp; <tt><b>P=</b></tt> <i>range</i>
+&nbsp;|&nbsp; <tt><b>r=</b></tt> <i>range</i>
+<tr>
+<td><i>name</i> <td>:
+<td>[<tt><b>A-Za-z_</b>][<b>A-Za-z_0-9</b></tt>]*
+<tr>
+<td><i>range</i> <td>:
+<td><i>number</i>
+&nbsp;|&nbsp;
+<tt><b>(</b></tt> <i>number</i>
+<tt><b>,</b></tt>
+<i>number</i> <tt><b>)</b></tt>
+&nbsp;|&nbsp; <tt><b>*</b></tt>
+<tr>
+<td><i>number</i> <td>:
+<td><i>digits</i>
+&nbsp;|&nbsp; <i>digits</i><tt><b>%</b></tt>
+&nbsp;|&nbsp; <i>digits</i><tt><b>.</b></tt><i>digits</i>
+&nbsp;|&nbsp; <i>digits</i><tt><b>.</b></tt><i>digits</i><tt><b>%</b></tt>
+<tr>
+<td><i>digits</i> <td>:
+<td><b><tt>[0-9]</tt></b>+
+</table></blockquote>
+
+<p>
+Only the <tt><b>T</b></tt> (temperature),
+<tt><b>P</b></tt> (pressure), and <tt><b>r</b></tt>
+(tether annealing) properties may be specified as ranges.
+A range may be specified as <tt>*</tt>, which is equivalent to not specifying
+the property.  These ranged properties are used to control the ensemble
+for a simulation: if <tt>T</tt> is not specified then the temperature
+will not be controlled; likewise for <tt>P</tt> and <tt>r</tt>.  For example,
+NVT at 300&nbsp;K can be specified by specifying <tt>T=300</tt> and leaving
+out <tt>P</tt> or by specifying <tt>T=300</tt> and <tt>P=*</tt>.
+The <tt>ps</tt> property is treated specially and if not specified
+is assigned a default value of zero, i.e. <tt>ps=0</tt>.
+Other properties are algorithm specific and their interpretation
+depends on the particular methods of conducting dynamics simulations;
+other properties may or may not have default values, depending on the
+simulation algorithm.  The standard simulation stage properties are
+
+<blockquote>
+<dl>
+<dt><tt>ps=</tt><i>number</i>
+<dd>
+The length of time (in picoseconds) of the stage (non-negative).
+<p>
+<dt><tt>T=</tt><i>number</i><br>
+<tt>T=</tt><i>range</i><br>
+<tt>T=*</tt>
+<dd>
+The temperature (in Kelvin) of the stage.  If not specified or if
+<tt>T=*</tt> is specified then no temperature control is applied to
+the system resulting in either the NVE or NPH ensemble.  If a range
+is specified then the temperature will be interpolated between
+the specified values throughout the stage.
+<p>
+<dt><tt>P=</tt><i>number</i><br>
+<tt>P=</tt><i>range</i><br>
+<tt>P=*</tt>
+<dd>
+The pressure (in kPa) of the stage.  If not specified or if
+<tt>P=*</tt> is specified then no pressure control is applied to
+the system resulting in either the NVE or NVT ensemble.  If a range
+is specified then the pressure will be interpolated between
+the specified values throughout the stage.
+<p>
+<dt><tt>r=</tt><i>number</i><br>
+<tt>r=</tt><i>range</i><br>
+<tt>r=*</tt>
+<dd>
+The heavy atom tether standard deviation (in angstroms) of the stage.
+If not specified or if <tt>r=*</tt> is specified then no heavy atom tethers
+are applied.  The value specifies the standard deviation of the distance
+from the starting coordinates at 300&nbsp;K; 0 indicates a fixed atom.
+If a range is specified then the tether weights will be interpolated between
+the specified values throughout the stage.
+</blockquote>
+
+<p>
+The initial velocities are generated at a temperature detected from the first
+stage of the protocol.  If the temperature specification
+is not present, then a default value of
+300&nbsp;K is used.  To perform an NVE simulation with different initial
+velocities, say at 250&nbsp;K, specify a 0&nbsp;ps heat stage prior to the
+simulation, e.g. <tt>init&nbsp;{ps=0&nbsp;T=250}</tt>.
+
+<p>
+<b>Trajectory Files</b>.
+A molecular dynamics simulation will generate one or more output files.
+Typically a set of output files will be generated for each stage
+in a simulation, but others may be generated for restart purposes.
+The trajectory files for a particular simulation are named according
+to the following scheme
+
+<blockquote>
+<i>root</i>.<i>x</i>.<i>ttt</i>.<i>ext</i>
+</blockquote>
+
+<p>
+where <i>root</i> is a base filename, or prefix, <i>ext</i> is an extension
+(e.g. <tt>mdb</tt> or <tt>cord.dcd</tt>), <i>x</i> is a lower case
+letter indicating the number of digits in <i>ttt</i> (<tt>a</tt> is 1,
+<tt>b</tt> is 2, etc.) and <i>ttt</i> is an integer time value in
+picoseconds.  This naming scheme is used so that the file names sort well
+without resorting to encoding the time value with leading zeros.
+The letter code <tt>z</tt> is special and does not have an associated
+time stamp value.  The <tt>z</tt> files are used to name files associated
+with the entire trajectory like SVL, BAT or Bourne Shell scripts.
+A typical simulation with root <tt>mysim</tt> will start at time <i>t</i>=0
+with <tt>.moe</tt> and <tt>.mdb</tt> files and SVL batch script (for restarts)
+named as follows
+
+<blockquote><pre>
+mysim.a.0.moe
+mysim.a.0.mdb
+mysim.z.svl
+</pre></blockquote>
+
+<p>
+If a simulation stage of length 100&nbsp;ps is conducted, the trajectory
+will be stored with a time stamp of 100 indicating that this file contains
+the simulation data up to time 100.  Further stages will be similarly named.
+The example protocol described above would produce the following set of files:
+
+<blockquote><pre>
+mysim.a.0.moe
+mysim.a.0.mdb
+mysim.c.100.mdb
+mysim.c.200.mdb
+mysim.c.700.mdb
+mysim.c.800.mdb
+mysim.z.svl
+</pre></blockquote>
+
+<p>
+with one file for each of the <tt>heat</tt>, <tt>equil</tt>, <tt>prod</tt>
+and <tt>cool</tt> stages.  Other files may be written
+depending on the particular
+dynamics engine that is used; e.g. NAMD will generate PDB, output
+coordinate, velocity, and DCD trajectory files instead of the
+<tt>.mdb</tt> files.
+Once a simulation is complete, the trajectory files
+are typically collated into a single MDB
+file with a special purpose import function (<tt>MD_Import</tt>).
+
+<p>
+<a name="Common_Options"><b>Options</b></a>.
+Configuration options are specified for the molecular dynamics engines
+in the form of a tagged vector.  There are a number of options common
+to all of the engines and a number of options that are specific to
+particular engines.  The common options are as follows:
+
+<blockquote><dl>
+<p>
+<dt><tt>bondConstraints :</tt> <i>token</i>
+<dd>
+The <i>token</i> parameter can be one of <tt>'none'</tt> (to disable
+bond length constraints), <tt>'light'</tt> (to enable bond
+length constraints for bonds involving H or LP) or <tt>'all'</tt> (to
+constrain all bonds to fixed lengths).  The default is <tt>'light'</tt>.
+
+<p>
+<dt><tt>checkpointTime :</tt> <i>num</i>
+<dd>
+The frequency (in picoseconds) at which long simulation stages will be split
+into separate output files.  A value of zero disables the splitting.
+The default is 1000.
+
+<p>
+<dt><tt>constraintTol :</tt> <i>num</i>
+<dd>
+The accuracy to which constraint equations (if any) will be satisfied.
+The supplied number must be positive.  Smaller values will lead to
+stronger enforcement of the constraints.  The default is 1e-6.
+
+<p>
+<dt><tt>dt :</tt> <i>num</i>
+<dd>
+The time step (in picoseconds) of the simulation.  The default value is
+0.002&nbsp;ps.  A value of 0 means that the time step will be determined
+automatically.  <b>Note:</b> If any bond involving a light atom is
+unconstrained then a value less then 0.001&nbsp;ps should be used.
+
+<p>
+<dt><tt>rigidWater :</tt> <i>flag</i>
+<dd>
+If the <i>flag</i> parameter is non-zero then water molecules will be
+constrained to be rigid bodies (independently of the <tt>bondConstraints</tt>
+value).  The default is 1.
+
+<p>
+<dt><tt>sample :</tt> <i>num</i>
+<dd>
+The output sampling period (in picoseconds).  A configuration will be written
+to the output trajectory files every <i>k</i> iterations, where <i>k</i> is
+the smallest integer larger than <tt>sample</tt>&nbsp;/&nbsp;<tt>dt</tt>.
+The default sampling interval is 0.5&nbsp;ps.
+
+<p>
+<dt><tt>savePosition :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero, the position vectors will be saved to the
+trajectory database with each configuration sample.
+A value of 0 will disable coordinate saving (if possible).
+
+<p>
+<dt><tt>saveVelocity :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero, the velocity vectors will be saved to the
+trajectory database with each configuration sample.
+A value of 0 will disable velocity saving (if possible).
+
+<p>
+<dt><tt>startTime :</tt> <i>num</i>
+<dd>
+The starting time value (in picoseconds) of the simulation.  The value
+specifies the base time of the entire simulation and not the start
+time of a particular protocol stage. This parameter is used to continue
+a previous simulation and affects the naming of the trajectory files.
+The default is 0.
+
+<p>
+<dt><tt>verbose :</tt> <i>flag</i>
+<dd>
+If the <i>flag</i> parameter is non-zero then information will be printed
+to the SVL Commands window.  The default is 1.
+
+<p>
+<dt><tt>wrapWater :</tt> <i>flag</i>
+<dd>
+If the <i>flag</i> parameter is non-zero then water molecules, counterions
+and other molecules with at most one heavy atom and no fixed atoms will
+be translated to lie in the periodic cell.  This option has no effect
+for non-periodic simulations.  The default is 1.
+
+</dl></blockquote>
+
+<p><a name="MD_Import"></a></p>
+<p><a name="MD"></a></p>
+<p><a name="MD_Initialize"></a></p>
+<p><hr noshade></p>
+<pre>
+<span class="fcndef">MD_Initialize</span> [ root  , protocol, md_opt ]
+<span class="fcndef">MD</span>            [ root  , protocol, md_opt ]
+<span class="fcndef">MD_Import</span>     [ dstmdb, root    , opt    ]
+</pre>
+
+<p>
+<span class="fcndef">MD_Initialize</span>
+creates initial files for conducting a multi-stage
+simulation using MOE.  The <tt>md_opt.startTime</tt> specifies the time
+value of the start of the simulation; assuming a <tt>startTime</tt> of 0
+the files
+
+<blockquote><pre>
+root.a.0.moe
+root.a.0.mdb
+root.z.svl
+</pre></blockquote>
+
+<p>
+will be created from the currently loaded system, potential setup and
+crystal parameter setup.  The SVL file will contain a script to effect
+the simulation specified by the <tt>protocol</tt> parameter.  The simulation
+can be (re)started with either of
+
+<blockquote><pre>
+svl&gt; MD [ root, protocol, md_opt ]
+svl&gt; run 'root.z.svl'
+unix&gt; $MOE/bin/moebatch -run root.z.svl
+mswin&gt; %MOE%\bin\moebatch -run root.z.svl
+</pre></blockquote>
+
+<p>
+The <span class="fcndef">MD</span>
+function performs the simulation specified by
+the <tt>protocol</tt> argument using the <tt>md_opt</tt> options and
+the file base <tt>root</tt>.  If the simulation was partially complete,
+then <tt>MD</tt> will complete the simulation (restart).
+<tt>MD_Initialize</tt> must have been previously called to prepare the
+appropriate files for simulation.  
+
+<p>
+The <tt>md_opt</tt> for <tt>MD</tt> and <tt>MD_Initialize</tt> may
+contain additional options:
+
+<blockquote><dl>
+<p>
+<dt><tt>algorithm :</tt> <i>token</i>
+<dd>
+The <i>token</i> parameter determines the particular equations of motion
+and integration method used for the simulation.
+<tt>'NPA'</tt> means the Nos&eacute;-Poincar&eacute;-Andersen equations.
+<tt>'NHA'</tt> means the Nos&eacute;-Hoover-Andersen equations.
+<tt>'BER'</tt> means the Berendsen velocity/position scaling methodology.
+The default is <tt>'NPA'</tt>.
+<p>
+<dt><tt>deleteFiles :</tt> <i>flag</i>
+<dd>
+This option applies to <tt>MD_Initialize</tt> only.  If <i>flag</i> is
+non-zero then any existing trajectory files with a time stamp greater
+than or equal to the <tt>startTime</tt> will be deleted.  The default is 0.
+</dl></blockquote>
+
+<p>
+In addition, each protocol stage may specify the thermostat and barostat
+controls:
+<blockquote><dl>
+<dt><tt>QT=</tt><i>number</i>
+<dd>
+The relaxation time (in picoseconds) to enforce constant temperature.
+The default is 0.2&nbsp;ps.  Lower values result in stronger enforcement.
+<p>
+<dt><tt>QP=</tt><i>number</i>
+<dd>
+The relaxation time (in picoseconds) to enforce constant pressure.
+The default is 0.2&nbsp;ps.  Lower values result in stronger enforcement.
+</dl></blockquote>
+
+<p>
+<span class="fcndef">MD_Import</span>
+collates the trajectory files into a single MDB file
+for a simulation (or some of its stages) generated with <tt>MD</tt>.
+The <tt>root</tt> argument must be the same as that given to
+<tt>MD_Initialize</tt> and <tt>MD</tt>.  The <tt>dstmdb</tt> is the
+name of the database to which will be written the imported trajectory
+data.  The <tt>opt</tt> argument is a tagged vector of options that
+control the behavior of <tt>MD_Import</tt>:
+
+<blockquote><dl>
+<p>
+<dt><tt>append :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero the <tt>dstmdb</tt> argument is assumed to
+exist from a previous call to <tt>MD_Import</tt>; in addition,
+<tt>MD_Import</tt> import will only import simulation times greater
+than what is already in <tt>dstmdb</tt>.
+If <i>flag</i> is zero (the default), a new <tt>dstmdb</tt> database
+will be created, possibly overwriting any existing database of that name.
+<p>
+<dt><tt>importRange :</tt> <i>number</i><br>
+<dt><tt>importRange : [</tt><i>number</i><tt>,</tt><i>number</i><tt>]</tt>
+<dd>
+The time interval (in picoseconds) to import.  If a single number is
+specified then the interval is assumed to be
+<tt>[startTime,</tt><i>number</i><tt>]</tt>.
+The default is <tt>INT_MAX</tt>.
+<p>
+<dt><tt>opendbv :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero then a Database Viewer will be opened on
+<tt>dstmdb</tt>.  The default is 0.
+<p>
+<dt><tt>savePosition :</tt> <i>flag</i>
+<dd>
+The <i>flag</i> is non-zero then additional position information stored
+in the <tt>pos</tt> field of the trajectory <tt>.mdb</tt> files will be
+imported.  The default is 1.
+<p>
+<dt><tt>saveVelocity :</tt> <i>flag</i>
+<dd>
+The <i>flag</i> is non-zero then additional velocity information stored
+in the <tt>vel</tt> field of the trajectory <tt>.mdb</tt> files will be
+imported.  The default is 1.
+<p>
+<dt><tt>startTime :</tt> <i>number</i>
+<dd>
+The base time value of the simulations; this must be the same as was
+given to <tt>MD</tt> or <tt>MD_Initialize</tt>.  Trajectory files with
+a time stamp less than the given value will be ignored.
+The default is 0.
+<p>
+<dt><tt>verbose :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero then information will be written to the
+SVL Commands window during the data transfer.  The default is 1.
+</dl></blockquote>
+
+<p>
+The following code can be used to perform an NPT simulation at 300&nbsp;K and
+101&nbsp;kPa using the Nos&eacute;-Hoover-Andersen equations of motion.  The
+system is equilibrated with heavy atom tethers in the NVT
+ensemble followed by NPT equilibration and finally production.  The
+resulting trajectory is then imported to the MDB file <tt>myfile.mdb</tt>.
+
+<blockquote><pre>
+local protocol = cat [
+    "eq_T { ps=100 T=300 r=(0.5,10) } "
+,   "eq_P { ps=100 T=300 P=101      } "
+,   "prod { ps=500 T=300 P=101      } "
+];
+
+MD_Initialize [ 'mytraj', protocol, [deleteFiles:1] ];
+MD [ 'mytraj', protocol, [algorithm:'NHA'] ];
+MD_Import [ 'myfile.mdb', 'mytraj' ];
+</pre></blockquote>
+
+<p>
+The simulation may be continued by specifying a <tt>startTime</tt>
+corresponding to the length of the previous simulation and a new protocol:
+
+<blockquote><pre>
+local t0 = add apt peek [md_ParseProtocol protocol, 'ps'];
+local more_protocol = "prod { ps=1000 T=300 P=101 }";
+MD [ 'mytraj', more_protocol, [startTime:t0, algorithm:'NHA'] ];
+</pre></blockquote>
+
+<p>
+Here we have used the <tt>md_ParseProtocol</tt> function (see below)
+to analyze the previous protocol and determine its length.
+<b>Note:</b> The entire simulation can be
+imported using <tt>MD_Import</tt> by
+specifying <tt>startTime:0</tt> in the options to <tt>MD_Import</tt>;
+the trajectory files will be consistent with a single long simulation.
+Another way of continuing a simulation is to concatenate the protocols
+since <tt>MD</tt> will skip stages that have been previously completed.
+
+<blockquote><pre>
+protocol = cat [protocol, "prod { ps=1000 T=300 P=101 } "];
+MD [ 'mytraj', protocol, [algorithm:'NHA'] ];
+</pre></blockquote>
+
+<p>
+In this case, the entire protocol was given to the second <tt>MD</tt> call
+so there is no need to specify a <tt>startTime</tt>.  This latter method
+has the advantage of tracking the complete protocol without resorting to
+length analysis.
+
+<p><a name="NAMD_Import"></a></p>
+<p><a name="NAMD_Initialize"></a></p>
+<p><hr noshade></p>
+<pre>
+<span class="fcndef">NAMD_Initialize</span> [ root  , protocol, md_opt ]
+<span class="fcndef">NAMD_Import</span>     [ dstmdb, root    , opt    ]
+</pre>
+
+<p>
+The <span class="fcndef">NAMD_Initialize</span>
+function is analogous to the
+<tt>MD_Initialize</tt> function in that it creates initial files
+with prefix <tt>root</tt> for conducting a multi-stage simulation,
+in this case
+using the external NAMD program.  <tt>startTime</tt> in <tt>md_opt</tt>
+specifies the time of very the start of the simulation.  If
+<tt>startTime</tt> is 0, the following files will be generated
+from the currently loaded system, potential setup and
+crystal parameter setup:
+</p>
+
+<p><center><table class="titlebar" width="80%">
+<tr>
+<th>Generated&nbsp;Files</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td>
+<pre>
+root.a.0.coor
+root.a.0.vel
+root.a.0.xsc
+</pre>
+</td>
+<td>
+Initial coordinates, velocities and periodicity information of the system.
+</td>
+</tr>
+
+<tr>
+<td>
+<pre>
+root.a.0.colvars
+root.a.0.fix
+root.a.0.par
+root.a.0.psf
+</pre>
+</td>
+<td>
+The encoding of the forcefield parameters, restraints and
+system topology required for NAMD.
+</td>
+</tr>
+
+<tr>
+<td>
+<pre>
+root.a.0.valid
+</pre>
+</td>
+<td>
+Existence of this file indicates that the initial files were successfully
+written to disk.
+</td>
+</tr>
+
+<tr>
+<td>
+<pre>
+root.a.0.moe
+root.a.0.ff
+</pre>
+</td>
+<td>
+These files are not needed by NAMD but are
+used to import trajectories back into MOE (and to conduct further
+analyses).
+</td>
+</tr>
+
+<tr>
+<td>
+<pre>
+root.z.cfg
+root.z.cfg.tcl
+</pre>
+</td>
+<td>
+Control files for NAMD
+to interpret the generated input files.
+</td>
+</tr>
+
+<tr>
+<td>
+<pre>
+root.z.bat
+root.z.sh
+</pre>
+</td>
+<td>
+Scripts for running/restarting calculations on Window (<tt>.bat</tt>)
+and Unix/Linux systems (<tt>.sh</tt>).
+To run the scripts:
+
+<blockquote><pre>
+unix&gt; sh root.sh
+mswin&gt; root.bat
+</pre></blockquote>
+
+These scripts will exit when the full simulation protocol
+is complete.
+</td>
+</tr>
+
+</table></center></p>
+
+<!--
+<blockquote><pre>
+root.a.0.coor
+root.a.0.vel
+root.a.0.xsc
+
+root.a.0.colvars
+root.a.0.fix
+root.a.0.par
+root.a.0.psf
+
+root.a.0.valid
+
+root.a.0.moe
+root.a.0.ff
+
+root.z.cfg
+root.z.cfg.tcl
+
+root.z.bat
+root.z.sh
+</pre></blockquote>
+
+<p>
+will be created from the currently loaded system, potential setup and
+crystal parameter setup.
+The <tt>.coor</tt>, <tt>.vel</tt> and <tt>.xsc</tt> files contain the
+initial coordinates, velocities and periodicity information of the system,
+respectively.
+The <tt>.colvars</tt>, <tt>.fix</tt>, <tt>.par</tt> and <tt>.psf</tt>
+files contain the encoding of the forcefield parameters, restraints and
+system topology required for NAMD.
+The <tt>.valid</tt> file indicates that the initial files were successfully
+written to disk.
+The <tt>.moe</tt> and <tt>.ff</tt> files are not needed by NAMD but are
+used to import trajectories back into MOE (and to conduct further
+analyses).
+The <tt>.cfg</tt> and <tt>.cfg.tcl</tt> files are control files for NAMD
+to interpret the generated input files.
+The <tt>bat</tt> and <tt>sh</tt> scripts
+are used to run/restart calculation on Window and Unix/Linux systems,
+respectively.  These scripts will exit when the full simulation protocol
+is complete.
+
+<blockquote><pre>
+unix&gt; sh root.sh
+mswin&gt; root.bat
+</pre></blockquote>
+-->
+
+<p>
+<span class="tip">Warning!</span>
+The scripts assume that the current directory is where the
+<tt>.cfg</tt> file is located.  It is important to verify that
+the current directory is the proper one prior to invoking the scripts.
+</p>
+
+<p>
+<span class="tip">Tip</span>
+If a script is terminated prematurely, the
+simulation can be restarted simply by invoking the script again.
+Internally, the <tt>.bat</tt> and <tt>.sh</tt>
+scripts repeatedly invoke NAMD with the <tt>.cfg</tt> file.
+Each invocation runs only a portion of the simulation,
+so that recovery from premature termination is merely a matter
+of entering the NAMD invocation sequence at the appropriate point.
+For example, the scripts <tt>root.z.bat</tt> and <tt>root.z.sh</tt>
+will call the command
+<tt>namd2 root.z.cfg</tt> iteratively in a loop, each call running the
+next succeeding portion of the simulation.
+At the end of each portion, NAMD will terminate with the expectation
+that it will be called again for the next subsequent portion.
+Normally, direct invocation of <tt>namd2</tt> is not required; the
+scripts make all necessary calls.
+</p>
+
+<p>
+The <tt>.cfg</tt> file will contain something similar to
+</p>
+
+<blockquote><pre>
+source "root.z.cfg.tcl";
+
+_MD <init> {} {
+    filebase         "root"
+    cutoff           10
+    longrange        periodic
+    bondConstraints  yes
+    constraintTol    1e-006
+    rigidWater       yes
+    dt               0.002
+    sample           0.500
+    startTime        0
+    checkpointTime   1000
+    saveVelocity     yes
+    wrapWater        yes
+} ;
+_MD "equil" { ps=100 T=300 } {} ;
+_MD "prod"  { ps=500 T=300 } {} ;
+_MD <done> ;                    
+</pre></blockquote>
+
+<p>
+The <tt>_MD</tt> TCL procedure is defined in <tt>root.z.cfg.tcl</tt> and
+implements functions required to read the MOE generated files, configure
+NAMD properly and run the protocol.  The options are very similar to the
+MOE MD options and all can be set from the MOE protocol interface.  The
+detailed NAMD options are set in the <tt>.cfg.tcl</tt> file, which is
+rather long and involved.
+
+<p>
+The specific commands used to start NAMD in the scripts are specified
+in the <tt>md_opt</tt> argument which can contain the following
+additional options:
+
+<blockquote><dl>
+<p>
+<dt><tt>deleteFiles :</tt> <i>flag</i>
+<dd>
+This option applies to <tt>NAMD_Initialize</tt> only.  If <i>flag</i> is
+non-zero then any existing trajectory files with a time stamp greater
+than or equal to the <tt>startTime</tt> will be deleted.  The default is 0.
+<p>
+<dt><tt>namd_unix :</tt> <i>token</i>
+<dd>
+The operating system command to use to invoke NAMD in generated scripts.
+This option is used for all Unix and Linux based systems.
+The default is <tt>'namd2'</tt>.
+<p>
+<dt><tt>namd_mswin :</tt> <i>token</i>
+<dd>
+The Microsoft Windows command to use to invoke NAMD in generated scripts.
+The default is <tt>'namd2'</tt>.
+<p>
+<dt><tt>PME :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero the Particle Mesh Ewald method in NAMD will
+be enabled (for periodic simulations).  Otherwise, switching function
+cutoffs will be used.  The default is 1.
+</dl></blockquote>
+
+<p>
+In addition, each protocol stage may specify the thermostat and barostat
+controls; furthermore, heavy atom tethers may
+require special treatment:
+</p>
+<blockquote><dl>
+<dt><tt>QT=</tt><i>number</i></dt>
+<dd>
+The relaxation time (in picoseconds) to enforce constant temperature.
+The default is 0.2&nbsp;ps.  Lower values result in stronger enforcement.
+</dd>
+</p>
+<p>
+<dt><tt>QP=</tt><i>number</i></dt>
+<dd>
+The relaxation time (in picoseconds) to enforce constant pressure.
+The default is 0.2&nbsp;ps.  Lower values result in stronger enforcement.
+</dd>
+</p>
+<p>
+<dt><tt>r=</tt><i>number</i><br>
+<tt>r=</tt><i>range</i><br>
+<tt>r=*</tt>
+</dt>
+<dd>
+Due to a limitation of NAMD, complete accuracy of tether annealing
+is not possible when there are tethers already in the system.
+If tethers are present and complete accuracy is desired,
+avoid specifying a <i>range</i> for the tether parameter.  Instead,
+break the protocol stage into several stages each specifying
+a single number.  For example, instead of
+<tt>heat&nbsp;{ps=100&nbsp;r=(10,100)}</tt>,
+use e.g.
+<tt>heat&nbsp;{ps=30&nbsp;r=10} heat&nbsp;{ps=30&nbsp;r=50}
+heat&nbsp;{ps=40&nbsp;r=*}</tt>.
+</dd>
+</p>
+</dl></blockquote>
+
+<p>
+Running the script (<tt>.sh</tt> or <tt>.bat</tt>) files
+will create a sequence of trajectory
+files.  These files will correspond to the simulation stages and to
+any checkpoint or restart splits.  A typical segment of the generated
+output will be (assuming a stage end time of 100&nbsp;ps)
+
+<blockquote><pre>
+root.c.100.coor
+root.c.100.vel
+root.c.100.xsc
+root.c.100.out
+root.c.100.coor.dcd
+root.c.100.vel.dcd
+root.c.100.xst
+root.c.100.valid
+</pre></blockquote>
+
+<p>
+The <tt>.coor</tt>, <tt>.vel</tt> and <tt>.xsc</tt> files are the coordinate,
+velocity and periodic cell output of NAMD at <i>t</i>&nbsp;=&nbsp;100.
+The <tt>.coor.dcd</tt> and <tt>.vel.dcd</tt> are the coordinate and velocity
+trajectory files in DCD format; the <tt>.xst</tt> is the extended system
+(periodicity) trajectory file up to <i>t</i>&nbsp;=&nbsp;100.
+The <tt>.out</tt> file contains the trajectory energy measurements and
+other sampled information up to <i>t</i>&nbsp;=&nbsp;100.  The <tt>.valid</tt>
+file is created to indicate the validity of the <i>t</i>&nbsp;=&nbsp;100 data.
+When the simulation protocol is complete, a number of <tt>z</tt> stamped
+files will be written:
+
+<blockquote><pre>
+root.z.coor
+root.z.vel
+root.z.xsc
+root.z.out
+root.z.valid
+</pre></blockquote>
+
+<p>
+These files contain no essential information not contained in the previous
+trajectory files.  They are written to indicate the successful completion
+of the <tt>.bat</tt> or <tt>.sh</tt> scripts.
+
+<p>
+<span class="fcndef">NAMD_Import</span> collates the trajectory files into a single MDB file
+for a simulation (or some of its stages) generated with <tt>NAMD</tt>.
+The <tt>root</tt> argument must be the same as that given to
+<tt>NAMD_Initialize</tt>.  The <tt>dstmdb</tt> is the
+name of the database into which will be written the imported trajectory
+data.  The <tt>opt</tt> argument is a tagged vector of options that
+control the behavior of <tt>NAMD_Import</tt>:
+
+<blockquote><dl>
+<p>
+<dt><tt>append :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero the <tt>dstmdb</tt> argument is assumed to
+exist from a previous call to <tt>NAMD_Import</tt>; in addition,
+<tt>NAMD_Import</tt> import will only import simulation times greater
+than what is already in <tt>dstmdb</tt>.
+If <i>flag</i> is zero (the default), a new <tt>dstmdb</tt> database
+will be created, possibly overwriting any existing database of that name.
+<p>
+<dt><tt>importRange :</tt> <i>number</i><br>
+<dt><tt>importRange : [</tt><i>number</i><tt>,</tt><i>number</i><tt>]</tt>
+<dd>
+The time interval (in picoseconds) to import.  If a single number is
+specified then the interval is assumed to be
+<tt>[startTime,</tt><i>number</i><tt>]</tt>.
+The default is <tt>INT_MAX</tt>.
+<p>
+<dt><tt>opendbv :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero then a Database Viewer will be opened on
+<tt>dstmdb</tt>.  The default is 0.
+<p>
+<dt><tt>savePosition :</tt> <i>number</i>
+<dd>
+If <i>number</i> is non-zero then the trajectory coordinate data will be
+saved in a separate <tt>pos</tt> field every <i>number</i> samples.
+The default is 0.
+<p>
+<dt><tt>saveTerms :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero then the NAMD energy terms will be imported
+to the destination database.  The default is 0.
+<p>
+<dt><tt>saveVelocity :</tt> <i>number</i>
+<dd>
+If <i>number</i> is non-zero then the trajectory velocity data will be
+saved in a separate <tt>vel</tt> field every <i>number</i> samples.
+The default is 0.
+<p>
+<dt><tt>startTime :</tt> <i>number</i>
+<dd>
+The base time value of the simulations; this must be the same as was
+given to <tt>NAMD_Initialize</tt>.  Trajectory files with
+a time stamp less than the given value will be ignored.
+The default is 0.
+<p>
+<dt><tt>verbose :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero then information will be written to the
+SVL Commands window during the data transfer.  The default is 1.
+</dl></blockquote>
+
+<p>
+The following code can be used to perform an NVT simulation at 300&nbsp;K
+using NAMD.  The system is equilibrated in one stage and production
+follows in another.
+The resulting trajectory is then imported to the MDB file <tt>myfile.mdb</tt>.
+
+<blockquote><pre>
+local protocol = cat [
+    "equil { ps=100 T=300 } "
+,   "prod  { ps=500 T=300 } "
+];
+
+svl &gt; NAMD_Initialize [ 'mytraj', protocol, [deleteFiles:1] ];
+unix&gt; cd /path/to/mytraj
+unix&gt; sh mytraj.sh
+svl &gt; MD_Import [ 'myfile.mdb', 'mytraj' ];
+</pre></blockquote>
+
+
+<p><a name="md_FormatProtocol"></a></p>
+<p><a name="md_CheckProtocol"></a></p>
+<p><a name="md_ParseProtocol"></a></p><p><hr noshade></p>
+<pre>
+prot   = <span class="fcndef">md_ParseProtocol</span>  str
+errtok = <span class="fcndef">md_CheckProtocol</span>  str
+str    = <span class="fcndef">md_FormatProtocol</span> prot
+</pre>
+
+<p>
+The <span class="fcndef">md_ParseProtocol</span> function converts a string representation of
+a protocol into an SVL vector with length equal to the number of stages.
+The return value is a vector of tagged vectors with <tt>prot(i)</tt>
+containing the specified options for stage <tt>i</tt>.
+The name-value pairs of the stages are encoded in the tagged vector along
+with an additional tag containing the stage name.  Each tagged vector may have
+the following tags;
+
+<blockquote><dl>
+<dt><tt>name :</tt> <i>token</i>
+<dd>
+The token name of the stage.
+<p>
+<dt><tt>ps :</tt> <i>number</i>
+<dd>
+The length of time (in picoseconds) of the stage.  This tag will always
+be present and will default to 0 if not specified in the stage.
+<p>
+<dt><tt>T :</tt> <tt>[</tt><i>number</i><tt>,</tt><i>number</i><tt>]</tt>
+<dd>
+If specified then the value is the temperature ramp for the stage (in Kelvin)
+and will be of length 2 even if a single number was specified.
+<p>
+<dt><tt>P :</tt> <tt>[</tt><i>number</i><tt>,</tt><i>number</i><tt>]</tt>
+<dd>
+If specified then the value is the pressure ramp for the stage (in kPa)
+and will be of length 2 even if a single number was specified.
+<p>
+<dt><tt>r :</tt> <tt>[</tt><i>number</i><tt>,</tt><i>number</i><tt>]</tt>
+<dd>
+If specified then the value is the heavy atom tether ramp for the stage
+(in angstroms).  The values specify the strength of an additional tether
+force applied to heavy atoms in the form of a radial standard deviation;
+i.e. 0 means a fixed atom, 1 means a restraint force constant that produces
+a 1&nbsp;&Aring; radial standard deviation from the reference position.
+If specified, the value will be of length 2 even if a single number
+was specified.
+<p>
+<dt><tt>prop :</tt> <i>number</i>
+<dd>
+Other stage properties; <tt>prop</tt> values
+are constrained to be single numbers.
+</dl></blockquote>
+
+<p>
+With the exception of <tt>name</tt> and <tt>ps</tt>, if the protocol stage
+does not specify one of the tags then it will not be present in the stage's
+tagged vector. For example,
+
+<blockquote><pre>
+local prot = md_ParseProtocol (
+#   string
+    heat  { ps=100 T=(0,300) }
+    equil { ps=100 T=300     }
+    prod  { ps=500 T=300 P=101 }
+    cool  { ps=100 T=(300,0) }
+# ) ;
+
+svl&gt; app pr prot
+[ name: 'heat', ps:100, T:[0,300] ]
+[ name: 'equil', ps:100, T:[300,300] ]
+[ name: 'prod', ps:500, T:[300,300] P:101 ]
+[ name: 'cool', ps:100, T:[300,0] ]
+</pre></blockquote>
+
+
+<p>
+The <span class="fcndef">md_CheckProtocol</span>
+function checks the validity of a protocol
+string and returns the empty token <tt>''</tt> if the string is valid and
+a diagnostic error message if it is not.
+The <span class="fcndef">md_FormatProtocol</span>
+converts a protocol SVL vector (as returned
+by <tt>md_ParseProtocol</tt>) into a string representation, suitable
+for printing.
+
+<p><a name="DynamicsLoadFrame"></a></p>
+<p><a name="DynamicsReload"></a></p>
+<p><a name="Dynamics"></a></p>
+<p><a name="DynamicsInit"></a></p>
+<p><hr noshade></p>
+<pre>
+    <span class="fcndef">DynamicsInit</span>      ['mdbfile', md_opt]
+t = <span class="fcndef">Dynamics</span>          ['mdbfile', duration, T, P, md_opt]
+    <span class="fcndef">DynamicsReload</span>    'mdbfile'
+    <span class="fcndef">DynamicsLoadFrame</span> ['mdbfile', entkey]
+</pre>
+
+<p>
+The <span class="fcndef">DynamicsInit</span>
+and <span class="fcndef">Dynamics</span> functions constitute the low
+level MOE molecular dynamics engine.
+Typically, <tt>DynamicsInit</tt> will be called first, to initialize a
+database to hold dynamics information based upon the current forcefield,
+potential setup, restraints and molecular system in MOE.  After that,
+<tt>Dynamics</tt> will be called one or more times to generate a
+trajectory that will be stored in the database.  An interrupted
+dynamics simulation can be resumed with another call to <tt>Dynamics</tt>.
+<tt>DynamicsReload</tt> is a utility to load the stored molecular system
+information into MOE from a dynamics database.
+The <tt>DynamicsLoadFrame</tt> function is a utility to load the
+position data of a particular sample from a dynamics output database into MOE.
+
+<p>
+<tt>DynamicsInit</tt> and <tt>Dynamics</tt> both accept an <tt>md_opt</tt>
+tagged vector that contains the settings and other parameters of the
+simulation.  The <a href="#Common_Options">common options</a>
+are accepted (described at the start of this document),
+as well as the following:
+
+<blockquote><dl>
+<p>
+<dt><tt>algorithm :</tt> <i>token</i>
+<dd>
+The <i>token</i> parameter determines the particular equations of motion
+and integration method used for the simulation.
+<tt>'NPA'</tt> means the Nos&eacute;-Poincar&eacute;-Andersen equations.
+<tt>'NHA'</tt> means the Nos&eacute;-Hoover-Andersen equations.
+<tt>'BER'</tt> means the Berendsen velocity/position scaling methodology.
+The default is <tt>'NPA'</tt>.
+<p>
+<dt><tt>stage :</tt> <i>token</i>
+<dd>
+The <i>token</i> parameter is a label to be written to the <tt>stage</tt>
+field of the trajectory.  By convention, production runs have the empty
+token as a stage name; otherwise short names like <tt>'heat'</tt> or
+<tt>'cool'</tt> should be used.  The default is the empty token.
+<p>
+<dt><tt>QT :</tt> <i>num</i>
+<dd>
+The relaxation time (in picoseconds) to enforce constant temperature.
+The default is 0.5&nbsp;ps.  Lower values result in stronger enforcement.
+<p>
+<dt><tt>QP :</tt> <i>num</i>
+<dd>
+The relaxation time (in picoseconds) to enforce constant pressure.
+The default is 5&nbsp;ps.  Lower values result in stronger enforcement.
+<p>
+<dt><tt>savePosition :</tt> <i>flag</i>
+<dd>
+If non-zero, the position vectors will be saved to the trajectory database
+in a separate field at every sample.  The default is 0.
+<p>
+<dt><tt>saveVelocity :</tt> <i>flag</i>
+<dd>
+If non-zero, the velocity vectors will be saved to the trajectory database
+in a separate field at every sample.  The default is 0.
+<p>
+<dt><tt>source :</tt> <i>token</i>
+<dd>
+This option applies to <tt>DynamicsInit</tt> only and contains the name
+of a previously created dynamics database from which to obtain initialization
+data (to continue a previous simulation).  If the name is empty then
+the current MOE system is used for initialization.
+The default is <tt>''</tt>.
+<p>
+<dt><tt>T0 :</tt> <i>num</i>
+<dd>
+The nominal temperature (in Kelvin) used when assigning initial velocities to
+the atoms.  The default is 300&nbsp;K.  This assignment is done once
+at the start of a simulation.
+</dl></blockquote>
+
+<p>
+<tt>DynamicsInit</tt> creates a new database named <tt>mdbfile</tt> and
+initializes it for subsequent calls to <tt>Dynamics</tt>.  If a <tt>source</tt>
+database is not specified, then the current molecular system, forcefield
+file name, potential setup and the supplied <tt>options</tt> are written
+into the database.  Therefore, all system parameters (such as the periodic
+box) must be set up prior to the call to <tt>DynamicsInit</tt>.  The current
+molecular system should be minimized to an RMS gradient less than 1.
+
+<p>
+The <tt>Dynamics</tt> function generates a trajectory of the current
+molecular system.  It is assumed that the given <tt>mdbfile</tt> was created
+with <tt>DynamicsInit</tt> and (possibly) contains trajectory information
+from prior calls to <tt>Dynamics</tt>.  If the current molecular system
+contains no atoms, then a <tt>DynamicsReload</tt> will be performed
+(to restart the simulation).  In  all events, the current molecular
+system, forcefield information and potential setup will be written anew to
+<tt>mdbfile</tt> for subsequent restarts or continuations.  The remaining
+arguments are interpreted as follows:
+
+<blockquote><dl>
+<p>
+<dt><tt>duration</tt>
+<dd>
+The duration (in picoseconds) for which a trajectory is to be generated.
+The <tt>duration</tt> argument is of the form <tt>[tmin,tmax]</tt> with
+<tt>tmin</tt>&nbsp;&lt;&nbsp;<tt>tmax</tt>.  <tt>Dynamics</tt> will generate
+trajectory information for time values strictly greater than <tt>tmin</tt>
+and less than or equal to <tt>tmax</tt>.  If the <tt>duration</tt> argument
+is a single scalar, the value is used as <tt>tmax</tt>, and the duration
+is taken to be <tt>[t,tmax]</tt> where <tt>t</tt> is the time value of
+the last entry in <tt>mdbfile</tt>.  In all cases, if the time value in
+the database is greater than <tt>tmax</tt> then no trajectory information
+will be generated.
+<p>
+<dt><tt>T</tt>
+<dd>
+The <tt>T</tt> argument is used to control temperature in NVT and NPT
+simulations and has the form <tt>[Ta,Tb]</tt>, the initial and final
+temperatures given in Kelvin.  If a single scalar value is given, then
+its value is replicated to the second value.  If <tt>[]</tt>
+is given then constant temperature dynamics is disabled.
+Otherwise, the desired temperature at a given time step is taken to
+be <tt>Ta + (Tb-Ta) * (t-tmin) / (tmax-tmin)</tt>.
+This is useful for heating or cooling a system.
+<p>
+<dt><tt>P</tt>
+<dd>
+The <tt>P</tt> argument is used to control temperature in NPT and NPH
+simulations and has the form <tt>[Pa,Pb]</tt>, the initial and final
+pressures given in kPa.  If a single scalar value is given, then its
+value is replicated to the second value.  If <tt>[]</tt> is given,
+then constant pressure dynamics is disabled.  Otherwise, the
+desired pressure at a given time step is taken to be
+<tt>Pa + (Pb-Pa) * (t-tmin) / (tmax-tmin)</tt>.
+This is useful for pressurizing or depressurizing a system.
+<p>
+<dt><tt>md_opt</tt>
+<dd>
+The <tt>md_opt</tt> argument provides for overriding or modifying the
+options stored in <tt>mdbfile</tt>.  Any dynamics option not specified in
+<tt>md_opt</tt> will take its value from the options stored in
+<tt>mdbfile</tt>.  In all cases, the new options are written into the
+database for subsequent calls to <tt>Dynamics</tt>.
+</dl></blockquote>
+
+<p>
+<tt>Dynamics</tt> returns <tt>tmax</tt>.
+
+<p>
+The <span class="fcndef">DynamicsReload</span>
+function is a utility to read all of the
+stored molecular system information from a dynamics database into MOE.
+This function will affect the forcefield, the potential setup and the
+molecular system.  <tt>Close[force:1]</tt> can be used to clear the
+current system prior to calling <tt>DynamicsReload</tt>.
+<tt>DynamicsReload</tt> reads the <i>restart</i> information from the
+dynamics database; therefore, it is only the most recent molecular
+system information stored by <tt>DynamicsInit</tt> and <tt>Dynamics</tt>
+that is loaded.
+
+<p>
+The <span class="fcndef">DynamicsLoadFrame</span>
+function is a utility to load the
+position data from a Dynamics output database into MOE.
+It is assumed
+that the system in MOE is that which <tt>DynamicsReload</tt> would set.
+The <tt>entkey</tt> must be an entry key for the trajectory database.
+This function is commonly used to traverse dynamics trajectories for
+data collection.
+
+<p>
+The following is an example of how to use the dynamics calls in a script.
+The script will heat the current system to 300&nbsp;K over 100&nbsp;ps,
+run dynamics for 500&nbsp;ps and then cool the system to 1&nbsp;K over
+100&nbsp;ps.  The NVT ensemble is used throughout.
+<pre>    if restart then
+        Close[force:1];
+    else
+        DynamicsInit ['md.mdb', [T0:1]];
+    endif
+    local t = 0;
+    t = Dynamics ['md.mdb', t + 100, [1,300], 0];    // heat
+    t = Dynamics ['md.mdb', t + 500,    300 , 0];
+    t = Dynamics ['md.mdb', t + 100, [300,1], 0];    // cool
+</pre>
+<p>
+Set <tt>restart</tt> to 0 the first time the script is used.
+If the simulation is terminated prematurely then set <tt>restart</tt> to 1
+and run the script again.  The dynamics functions will use the restart
+information and time information in the database to skip over iterations
+that have already been performed.
+
+<h2>See Also</h2>
+
+<a href="../../apps/md.htm">Molecular Dynamics</a>
+
+<p>
+   <a class="svl" href="restrain.html">RestraintCreate</a>
+   <br />
+   <br />
+   <a href="atom_p.htm">Atom Potential Functions</a><br />
+   <a href="potfcn.htm">Potential Energy Functions</a><br />
+   <a href="cellfcn.htm">Crystal Cell Functions</a><br />
+</p>
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Using the molinfo command</TITLE>
+<META NAME="description" CONTENT="Using the molinfo command">
+<META NAME="keywords" CONTENT="ug">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ug.css">
+
+<LINK REL="next" HREF="node199.html">
+<LINK REL="previous" HREF="node197.html">
+<LINK REL="up" HREF="node197.html">
+<LINK REL="next" HREF="node199.html">
+</HEAD>
+
+<BODY BGCOLOR="WHITE">
+<!--Navigation Panel-->
+<A NAME="tex2html3849"
+  HREF="node199.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html3843"
+  HREF="node197.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html3837"
+  HREF="node197.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html3845"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html3847"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html3850"
+  HREF="node199.html">Using the atomselect command</A>
+<B> Up:</B> <A NAME="tex2html3844"
+  HREF="node197.html">Molecular Analysis</A>
+<B> Previous:</B> <A NAME="tex2html3838"
+  HREF="node197.html">Molecular Analysis</A>
+ &nbsp; <B>  <A NAME="tex2html3846"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html3848"
+  HREF="node251.html">Index</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION001510000000000000000">
+Using the <TT>molinfo</TT> command</A>
+</H1>
+This section covers how to extract information about molecules and
+atoms using the VMD text command <TT>molinfo</TT>.
+
+<P>
+Examples:
+
+<P>
+Two functions, one to save the current view position, the other to
+restore it.  The position of the axis is not changed by these
+operations.
+
+<P>
+<A NAME="15775"></A>
+<A NAME="15776"></A>
+<A NAME="15777"></A>
+<PRE>
+proc save_viewpoint {} {
+   global viewpoints
+   if [info exists viewpoints] {unset viewpoints}
+   # get the current matricies
+   foreach mol [molinfo list] {
+      set viewpoints($mol) [molinfo $mol get {
+	center_matrix rotate_matrix scale_matrix global_matrix}]
+   }
+}
+proc restore_viewpoint {} {
+   global viewpoints
+   foreach mol [molinfo list] {
+      puts "Trying $mol"
+      if [info exists viewpoints($mol)] {
+         molinfo $mol set {center_matrix rotate_matrix scale_matrix
+	   global_matrix} $viewpoints($mol)
+      }
+   }
+}
+</PRE>
+
+<P>
+Cycle through the list of displayed molecules, turning each one on
+one at a time.  At the end, return the display flags to their original
+state.
+<A NAME="15780"></A>
+<PRE>
+# save the current display state
+foreach mol [molinfo list] {
+  set disp($mol) [molinfo $mol get drawn]
+}
+# turn everything off
+mol off all
+# turn each molecule on then off again
+foreach mol [molinfo list] {
+  if $disp($mol) {
+     mol on $mol
+     sleep 1
+     mol off $mol
+  }
+}
+# turn the original ones back on
+foreach mol [molinfo list] {
+  if $disp($mol) {mol on $mol }
+}
+</PRE>
+
+<P>
+The last loop, which turns the originally drawn molecules back on,
+doesn't turn them on at the same time.  That's because some commands
+(those which use the command queue) redraw the graphics when they are
+used.  This can be disabled with the <TT>display update</TT> 
+<A NAME="15784"></A> (see
+section <A HREF="node126.html#ug:ui:text:display">9.3.6</A> for
+more information).  Using this, the final loop becomes
+<PRE>
+#turn the original ones back on
+display update off
+foreach mol [molinfo list] {
+  if $disp($mol) {mol on $mol }
+}
+display update on
+</PRE>
+Alternatively, since the <TT>drawn</TT> option is settable, you could
+do:
+<PRE>
+foreach mol [molinfo list] {
+  if $disp($mol) {molinfo $mol set drawn 1}
+}
+</PRE>
+However, that won't set the flag to redraw the scene so you need to force a
+redraw with <TT>display redraw</TT>.
+
+<P>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html3849"
+  HREF="node199.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html3843"
+  HREF="node197.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html3837"
+  HREF="node197.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html3845"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html3847"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html3850"
+  HREF="node199.html">Using the atomselect command</A>
+<B> Up:</B> <A NAME="tex2html3844"
+  HREF="node197.html">Molecular Analysis</A>
+<B> Previous:</B> <A NAME="tex2html3838"
+  HREF="node197.html">Molecular Analysis</A>
+ &nbsp; <B>  <A NAME="tex2html3846"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html3848"
+  HREF="node251.html">Index</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+vmd@ks.uiuc.edu
+</ADDRESS>
+</BODY>
+</HTML>

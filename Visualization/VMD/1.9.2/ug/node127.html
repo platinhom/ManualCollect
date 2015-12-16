@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>draw</TITLE>
+<META NAME="description" CONTENT="draw">
+<META NAME="keywords" CONTENT="ug">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ug.css">
+
+<LINK REL="next" HREF="node128.html">
+<LINK REL="previous" HREF="node126.html">
+<LINK REL="up" HREF="node120.html">
+<LINK REL="next" HREF="node128.html">
+</HEAD>
+
+<BODY BGCOLOR="WHITE">
+<!--Navigation Panel-->
+<A NAME="tex2html2789"
+  HREF="node128.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html2783"
+  HREF="node120.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html2777"
+  HREF="node126.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html2785"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html2787"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html2790"
+  HREF="node128.html">exit</A>
+<B> Up:</B> <A NAME="tex2html2784"
+  HREF="node120.html">Tcl Text Commands</A>
+<B> Previous:</B> <A NAME="tex2html2778"
+  HREF="node126.html">display</A>
+ &nbsp; <B>  <A NAME="tex2html2786"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html2788"
+  HREF="node251.html">Index</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION001237000000000000000"></A>
+<A NAME="7009"></A>
+<A NAME="7010"></A>
+<A NAME="ug:ui:text:draw"></A>
+<BR>
+draw
+</H2>
+VMD offers a way to display user-defined objects built from graphics
+primitives such as 
+points, lines, cylinders, cones, spheres, triangles, and text.  
+Since these are displayed in the scene just like all other graphics, 
+they can also be exported to the various ray tracing formats, 3-D printers, 
+etc.
+User-defined graphics can be used to draw a box around a molecule, draw
+an arrow between two atoms, place a text label somewhere in space,
+or to test a new method for visualizing a molecule.  
+
+<P>
+The <TT>draw</TT> command is a straight Tcl function which is meant to
+simplify the interface to the <TT>graphics</TT> command as well as
+provide a base for extensions to the standard graphics primitives.
+The format of the <TT>draw</TT> command is:
+
+<UL>
+<LI><B>draw <I>command</I> [<I>arguments</I>]</B>
+</LI>
+</UL>
+
+<P>
+The draw command is equivalent (in most cases) to <TT>graphics top
+<I>command</I> [<I>arguments</I>]</TT>, in that it simply adds graphics
+primitives to the top molecule, saving you the trouble of typing
+an extra argument.  However, <TT>draw</TT> extends graphics in two ways.
+First, if no molecule exists, <TT>draw</TT> creates one for you automatically.
+Second, <TT>draw</TT> can be extended with user-defined drawing commands.
+This is done by defining for a function of the form
+<TT>vmd_draw_$command</TT>.  If the function exists, it is called with the
+first parameter as the molecule index and the rest as the arguments from
+the original <TT>draw</TT> call.
+Here's an example which extends the draw command to include an
+``arrow'' primitive.
+
+<P>
+<A NAME="7027"></A>
+<PRE>
+proc vmd_draw_arrow {mol start end} {
+    # an arrow is made of a cylinder and a cone
+    set middle [vecadd $start [vecscale 0.9 [vecsub $end $start]]]
+    graphics $mol cylinder $start $middle radius 0.15
+    graphics $mol cone $middle $end radius 0.25
+}
+</PRE>
+
+<P>
+After entering this command into VMD, you can use a command such as
+<code>draw arrow {0 0 0} {1 1 1}</code> 
+to draw an arrow.
+In addition to defining new commands, user-defined drawing commands can also 
+be used to override existing commands.  For example, if you define
+<TT>vmd_draw_sphere</TT>, then <code>draw sphere {0 0 0}</code>
+will call your sphere routine, not the one from <TT>graphics</TT>.
+
+<P>
+<A NAME="7032"></A>
+<A NAME="7033"></A>
+  Here's a quick way to add your own label to an 
+<A HREF="node89.html#ug:topic:selections">atom selection</A>.  
+This function take the selection text and the labels that
+atom (in the <I>top</I> molecule) with the given string.  It returns
+with an error if more anything other than one atom is selected.
+<PRE>
+proc label_atom {selection_string label_string} {
+    set sel [atomselect top $selection_string]
+    if {[$sel num] != 1} {
+        error "label_atom: '$selection_string' must select 1 atom"
+    }
+    # get the coordinates of the atom
+    lassign [$sel get {x y z}] coord
+    # and draw the text
+    draw text $coord $label_string
+}
+</PRE>
+
+<P>
+<A NAME="7041"></A><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html2789"
+  HREF="node128.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html2783"
+  HREF="node120.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html2777"
+  HREF="node126.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html2785"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html2787"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html2790"
+  HREF="node128.html">exit</A>
+<B> Up:</B> <A NAME="tex2html2784"
+  HREF="node120.html">Tcl Text Commands</A>
+<B> Previous:</B> <A NAME="tex2html2778"
+  HREF="node126.html">display</A>
+ &nbsp; <B>  <A NAME="tex2html2786"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html2788"
+  HREF="node251.html">Index</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+vmd@ks.uiuc.edu
+</ADDRESS>
+</BODY>
+</HTML>

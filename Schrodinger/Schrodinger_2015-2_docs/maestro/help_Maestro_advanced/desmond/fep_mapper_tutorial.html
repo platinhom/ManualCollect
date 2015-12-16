@@ -1,0 +1,494 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<link rel="stylesheet" href="../support/help.css" charset="ISO-8859-1" type="text/css" />
+<title>FEP Mapper Tutorial</title>
+</head>
+<body>
+<table bgcolor="#dcdcdc" border="0" cellspacing="0" width="100%">
+<tr><td>
+<p><img src="../images/common/schrodinger_logo.png" align="left" alt=""
+ border="0" hspace="5" vspace="5" /></p>
+</td></tr>
+<tr><td>
+<h1 class="title">FEP Mapper Tutorial</h1>
+</td></tr>
+</table>
+
+<p>In this tutorial, you will set up an FEP calculation in which a ligand
+molecule is transformed into other ligand molecules by modification of a
+functional group, in the presence of a receptor. The receptor is an engineered
+version of the protein lysozyme containing an artificial non-polar cavity. The
+ligand is butyl benzene, and it is transformed to ethyl benzene, propyl benzene,
+and isobutyl benzene, to determine the relative binding free energies of these
+ligands. This is a system where ligand docking calculations often fail, since
+the complexes fall outside the narrow range of typical drug-like molecules
+binding to common targets that their scoring functions are trained on. The
+system represents a rather small receptor and simple ligands, chosen to make
+the tutorial simple and relatively fast.
+</p>
+<img src="../images/desmond/FEP_ligands.png" />
+
+<p>It is assumed that you have access to a host with one or more GPU cards,
+which have been configured, that the host has a queueing system with an entry
+for the GPU queue in your <span class="GUI">schrodinger.hosts</span> file.
+</p>
+
+
+<h3>Preparing the Receptor and Ligand</h3>
+<p>The structure of the ligand-receptor complex is taken from the PDB. X-ray
+structures usually need preparation for modeling, to assign bonds, add
+hydrogens, remove unwanted molecules, optimize the hydrogen bonding, and
+preminimize the structure. This is done in
+the <a href="../workflows/protein_preparation.html"><span class="GUI">Protein 
+Preparation Wizard</span> panel</a>.
+</p>
+<ol>
+<li><p>Click the <span class="GUI">Prep Wiz</span> button on the 
+<span class="GUI">Project</span> toolbar.<br style="margin-bottom: 10px;" />
+<img src="../images/MaestroToolbarIcons/PPW.png" />
+<br style="margin-bottom: 10px;" /></p>
+<p>The <span class="GUI">Protein Preparation Wizard</span> panel opens.
+</p></li>
+
+<li><p>In the PDB text box, type <code>186L</code> and
+press <span class="Keys">Enter</span>.</p>
+<p>The structure of 186L is imported from the PDB and displayed in the
+Workspace. It is colored by the PDB conversion status, which can indicate
+problems in the structure. The orange molecules are het groups (nonstandard
+residues). 
+</p></li>
+
+<li><p>In the <span class="GUI">Delete waters beyond</span> text box,
+enter <code>0</code>.</p>
+<p>All waters are removed, as the system will be solvated later in preparation
+for the MD simulations. Water does not play a role in binding here. If it does,
+you may want to keep structural waters. The panel provides several ways of
+selectively deleting waters.
+</p></li>
+
+<li><p>Click <span class="GUI">Preprocess</span>. </p>
+<p>The stages of the preprocessing are reported in the status area at the bottom
+of the panel as they occur. If any problems are found, a dialog box opens
+reporting on these problems. No problems should be reported for this
+structure.</p>
+<p>When the preprocessing is complete, a new structure is displayed in the
+Workspace, colored by element, with green carbons for the het groups.
+</p></li>
+
+<li><p>Click the <span class="GUI">Review and Modify</span> tab.</p>
+<p>This tab shows the chains, waters, and het groups, and gives you an
+opportunity to delete any unwanted groups.
+</p></li>
+
+<li><p>Select all except the A:N4B het group in the table.</p>
+<p>The Workspace view zooms to the het groups as you select them. You can
+disable the zooming by deselecting <span class="GUI">Fit on select</span>.
+</p></li>
+
+<li><p>Click <span class="GUI">Delete</span> (above the tables).</p>
+<p>The view zooms out to show the entire structure. The only molecules left are
+the protein and the butyl benzene. 
+</p></li>
+
+<li><p>Click the <span class="GUI">Refine</span> tab.</p>
+<p>This tab provides tools to refine the protein structure.
+</p></li>
+
+<li><p>In the <span class="GUI">H-bond assignment</span> section,
+click <span class="GUI">Optimize</span>.</p>
+<p>The optimization takes several seconds, and is reported in the status
+area. The protein is labeled with the results of the optimization, which include
+flips of terminal amides and tautomerization of a histidine. </p>
+<p>If you want to review and change any of these settings, click
+<span class="GUI">Interactive Optimizer</span>. 
+To remove the labels, choose <span class="GUI">Labels</span> from the <span class="GUI">Delete</span> button on the 
+<span class="GUI">Edit</span> toolbar.<br style="margin-bottom: 10px;" />
+<img src="../images/MaestroToolbarIcons/delete.png" />
+<br style="margin-bottom: 10px;" />
+</p></li>
+
+<li><p>In the <span class="GUI">Restrained minimization</span> section, click
+<span class="GUI">Minimize</span>.</p>
+<p>When the minimization is done, a new structure is added to the Project Table
+and displayed in the Workspace.
+</p></li>
+
+</ol>
+<p>For each step in the process, a new project entry is created. When you have
+completed the steps above, there should be four entries named 186L. The last of
+these is the one to use for modeling.
+</p>
+
+<h3>Setting Up the Ligands</h3>
+
+<p>To perform the FEP calculations, the structures of each of the ligands must
+be provided. The ligands should be suitably placed in the binding cavity, and
+the cores should be superimposed, preferably to within an RMSD of 0.5&Aring;.
+In this part of the tutorial, you will extract the ligand from the complex and
+duplicate it, then edit the duplicates to produce the other ligands. 
+In a real situation, you may be using cocrystallized ligands, for which you can
+align the ligand cores in
+the <a href="../tools_menu/super_panel.html"><span class="GUI">Superposition</span> 
+panel</a> using SMARTS patterns.</p>
+<p>The ligand in the protein is butyl benzene; from it you will create propyl,
+ethyl, and isobutyl benzene.</p>
+
+<p><b>Butyl benzene:</b></p>
+<img src="../images/desmond/butyl_benzene.png" />
+<ol>
+<li><p>In the <a href="../project_menu/entry_list.html"><span class="GUI">Entry
+List</span> panel</a>, right-click on the fourth 186L entry and choose
+<span class="GUI">Split &rarr; Into Ligands, Water, Other</span>.</p>
+<p>The entry is split into two new entries (preserving the original). These
+entries are labeled 186L_ligand and 186L_protein.
+</p></li>
+<li><p>Rename the ligand entry to &quot;butyl benzene&quot; by editing the table cell.
+</p></li>
+<li><p>Save the project by choosing <span class="GUI">Project &rarr; Save As</span> or
+clicking <span class="GUI">Save As</span> button on the 
+<span class="GUI">Project</span> toolbar<br style="margin-bottom: 10px;" />
+<img src="../images/MaestroToolbarIcons/saveas.png" />
+<br style="margin-bottom: 10px;" />
+and providing a name for the project in the project selector that opens,
+e.g. &quot;mapper_tutorial&quot;.
+</p></li>
+</ol>
+
+<p><b>Propyl benzene:</b></p>
+<img src="../images/desmond/propyl_benzene.png" />
+<ol>
+<li><p>Right-click on the entry and choose <span class="GUI">Duplicate &rarr; In Place</span>.
+</p></li>
+
+<li><p>Rename the duplicated entry to &quot;propyl benzene&quot; by editing the table cell.
+</p></li>
+
+<li><p>Choose <span class="GUI"></span> from the <span class="GUI">Delete</span> button menu on the 
+<span class="GUI">Edit</span> toolbar<br style="margin-bottom: 10px;" />
+<img src="../images/MaestroToolbarIcons/delete.png" />
+<br style="margin-bottom: 10px;" /> and click
+on the terminal carbon of the butyl group.</p> 
+<p>The carbon and its attached hydrogens are removed. (If the hydrogens are not
+removed, click on them as well. This could happen, depending on your preferences.)
+The new terminal carbon is missing a hydrogen, which you will add in the next step.
+</p></li>
+
+<li><p>Double-click the <span class="GUI">Add H</span> button on the 
+<span class="GUI">Edit</span> toolbar.<br style="margin-bottom: 10px;" />
+<img src="../images/MaestroToolbarIcons/addhydrogens.png" />
+<br style="margin-bottom: 10px;" /></p>
+<p>A hydrogen atom is added to the terminal carbon.
+</p></li>
+</ol>
+
+<p><b>Ethyl benzene:</b></p>
+<img src="../images/desmond/ethyl_benzene.png" />
+<ol>
+<li><p>Right-click on the propyl benzene entry in the <span class="GUI">Entry
+List</span> panel and choose <span class="GUI">Duplicate &rarr; In Place</span>.
+</p></li>
+
+<li><p>Rename the duplicated entry to &quot;ethyl benzene&quot; by editing the table cell.
+</p></li>
+
+<li><p>Choose <span class="GUI"></span> from the <span class="GUI">Delete</span> button menu on the 
+<span class="GUI">Edit</span> toolbar<br style="margin-bottom: 10px;" />
+<img src="../images/MaestroToolbarIcons/delete.png" />
+<br style="margin-bottom: 10px;" /> and click
+on the terminal carbon of the propyl group.</p> 
+<p>The carbon and its attached hydrogens are removed. </p></li>
+
+<li><p>Double-click the <span class="GUI">Add H</span> button on the 
+<span class="GUI">Edit</span> toolbar.<br style="margin-bottom: 10px;" />
+<img src="../images/MaestroToolbarIcons/addhydrogens.png" />
+<br style="margin-bottom: 10px;" /></p>
+<p>A hydrogen atom is added to the terminal carbon.
+</p></li>
+</ol>
+
+<p><b>Isobutyl benzene:</b></p>
+<img src="../images/desmond/isobutyl_benzene.png" />
+<ol>
+
+<li><p>Right-click on the propyl benzene entry (<i>not</i> the ethyl benzene entry)
+in the <span class="GUI">Entry List</span> panel and
+choose <span class="GUI">Duplicate &rarr; In Place</span>. 
+</p></li>
+
+<li><p>Click the <span class="GUI">In</span> column for the duplicated entry to
+place it in the Workspace.
+</p></li>
+
+<li><p>Rename the duplicated entry to &quot;isobutyl benzene&quot; by editing the table cell.
+</p></li>
+
+<li><p>Click the <span class="GUI">Methyl</span> button on the 
+<span class="GUI">Fragments</span> toolbar<br style="margin-bottom: 10px;" />
+<img src="../images/MaestroToolbarIcons/build_frag_methyl.png" />
+<br style="margin-bottom: 10px;" />
+then click one of the hydrogens on the middle cabon of the propyl group.</p>
+<p>The hydrogen atom is replaced with a mentyl group. It does not matter which
+of the hydrogens you click on. The carbon is colored gray by default. If you
+want to change the color, choose <span class="GUI">Element (Custom Carbons)
+&rarr; Green</span> from the <span class="GUI">Color Scheme</span> button menu on the 
+<span class="GUI">Representation</span> toolbar.<br style="margin-bottom: 10px;" />
+<img src="../images/MaestroToolbarIcons/colorscheme.png" />
+<br style="margin-bottom: 10px;" />  
+</p></li>
+
+</ol>
+
+
+<h3>Setting Up the FEP graph</h3>
+
+<p>In this part of the exercise, you will construct a graph of the perturbations
+to be performed, in the <span class="GUI">FEP Mapper</span> panel. The graph
+construction automatically determines which ligands can be transformed into
+other ligands, and displays this information graphically. You can edit it
+manually, but often the default mapping is sufficient to run the FEP calculations. 
+</p>
+
+<ol>
+<li><p>In the <span class="GUI">Entry List</span> panel, click
+the <span class="GUI">In</span> column for the prepared protein entry, 
+186L_protein, to place it in the Workspace and exclude the ligands.
+</p></li>
+
+<li><p>Select the four ligands in the <span class="GUI">Entry List</span> panel,
+but do not include them in the Workspace.</p>
+<p>You can use the <span class="GUI">Row</span> column when selecting the
+entries to ensure that you only do the selection.
+</p></li>
+
+<li><p>Choose <span class="GUI">Applications &rarr; Desmond &rarr; FEP Mapper</span> or 
+<span class="GUI">Tasks &rarr; Free Energy Calculations &rarr; FEP Mapper</span>.</p>
+<p>The <a href="fep_mapper.html"><span class="GUI">FEP Mapper</span> panel</a> opens.
+</p></li>
+
+<li><p>For <span class="GUI">Import from</span>, click <span class="GUI">Project
+Table</span>.</p>
+<p>After a short delay, the panel is populated. The receptor entry title is
+shown above the table that contains the ligands, which lists the four ligands
+you selected. The graph area shows the 2D structures of the ligands in boxes,
+or &quot;tiles&quot;, with the titles.</p></li>
+
+<li><p>Click <span class="GUI">Generate Map</span>.</p>
+<p>A progress dialog box is shown while the map is generated. When the
+generation finishes, the tiles are connected with lines. Each of these lines
+represents an FEP calculation that will be performed when the job is submitted.</p>
+<p>The automatic generation of the graph does not always include all the
+perturbations that you want to include. In the current map, there is no
+connection between propyl benzene and isobutyl benzene. One way of fixing the
+map is to bias it towards selected ligands. 
+</p></li>
+
+<li><p>Check the <span class="GUI">Bias</span> check box for propyl benzene, and
+click <span class="GUI">Generate Map</span>.</p>
+<p>When the graph is redrawn, propyl benzene is connected to both butyl benzene
+and isobutyl benzene, but is no longer connected to ethyl benzene.</p>
+<p>Another factor that is not included in the graph construction is the
+experimental data. Butyl benzene and isobutyl benzene are the strongest binders
+experimentally, so it makes sense to add the perturbation between them. This can
+be done manually.
+</p></li>
+
+<li><p>Click the <span class="GUI">Add new connection</span> button on the toolbar
+</p>
+<img src="../images/desmond/plus_grayscale.png" />
+<p>then click on the isobutyl benzene tile and the butyl benzene tile.</p>
+<p>A line is drawn between the two tiles you clicked on. 
+</p></li>
+
+<li><p>Enter the experimental free energies in the <span class="GUI">Affinity</span> column:
+</p>
+<table>
+<tbody>
+<tr>
+<td style="vertical-align: top; padding-right: 20;">
+butyl benzene:
+</td>
+<td style="vertical-align: top;">
+&minus;6.7
+</td>
+</tr>
+<tr>
+<td style="vertical-align: top; padding-right: 20;">
+isobutyl benzene:
+</td>
+<td style="vertical-align: top;">
+&minus;6.5
+</td>
+</tr>
+<tr>
+<td style="vertical-align: top; padding-right: 20;">
+propyl benzene:
+</td>
+<td style="vertical-align: top;">
+&minus;6.5
+</td>
+</tr>
+<tr>
+<td style="vertical-align: top; padding-right: 20;">
+ethyl benzene:
+</td>
+<td style="vertical-align: top;">
+&minus;5.7
+</td>
+</tr>
+</tbody>
+</table>
+<p>It is not necessary to add experimental free energies, as the FEP calculation
+does not depend on them. They are used to process the results and prepare data
+for the analysis. 
+</p>
+</li>
+</ol>
+
+<p>The graph is now set up with all the perturbations that are needed. Only one
+is missing: ethyl benzene to propyl benzene. 
+</p>
+
+<h3>Setting Up and Running the Job</h3>
+
+<p>FEP calculations involve running a number of &quot;replicas&quot; along the
+path from the initial ligand to the final ligand, that represent steps in the
+perturbation. Usually there are 12 replicas, each of which can be run separately.
+There are 5 ligand transformations in this tutorial, each of which involves 2
+FEP jobs: one for transformation in the complex, and one for the transformation
+in solvent. Each individual simulation involves building a system, equilibrating
+it, and then running a production simulation. So there are at least 120 subjobs
+that will be run for this system.</p>
+<p>The whole process is managed by a master job, which takes care of running
+each subjob and accumulating the results.  You can run the master job on your
+local workstation and submit the subjobs to a queue host that has one or more
+GPUs, so that the subjobs can be run simultaneously, and each subjob can run 
+in parallel.
+</p>
+
+<ol>
+<li><p>Click the Job settings button.</p>
+<img src="../images/MaestroToolbarIcons/settings.png" />
+<p>The <span class="GUI">FEP Mapper - Job Settings</span> dialog box opens.
+</p></li>
+
+<li><p>Change the job name to &quot;fep_tutorial&quot;. 
+</p></li>
+
+<li><p>For the master job, set the <span class="GUI">Maximum simultaneous
+subjobs</span> to 0.</p>
+<p>This value removes the limit on the number of subjobs, so all of the subjobs
+are submitted to the subjob host.
+</p></li>
+
+<li><p>Choose a GPU host for the subjobs from the  <span class="GUI">Host</span>
+option menu in the <span class="GUI">Subjob</span> section.</p>
+<p>You should run the subjobs on a host with multiple GPUs to reduce the
+turnaround time.
+</p></li>
+
+<li><p>Set the number of GPUs in the <span class="GUI">Total</span> text box in
+the <span class="GUI">Subjob</span> section.</p>
+<p> 
+As there are 12 replicas, the number of GPUs should be a factor of 12, as the
+replicas must be divided evenly between the GPUs.
+</p></li>
+</ol>
+
+<p>Once you have set up the job parameters, you can either start the job, or you
+can write out the input files and then start the job from the command line. 
+</p>
+<p><b>Important!</b> This job may run for many hours, so you should not start
+the job from a laptop or any other machine that is likely to be disconnected
+from the network while the job is running. At best, when the job finishes and
+the machine is reconnected, the results will be immediately uploaded. As the
+results can be several GB this may be highly undesirable. At worst, the results
+might not be uploaded at all, and be lost. It is therefore recommended that you
+copy the input files to your compute machine (cluster, for example), run it
+there, and transfer the results back when it is convenient to you.  
+</p>
+<p><b>To run from the GUI:</b>
+</p>
+<ul>
+<li><p>Click <span class="GUI">Run</span>.</p>
+<p>The <span class="GUI">FEP Mapper - Job Settings</span> dialog box closes, and
+the job is started.
+</p></li>
+</ul>
+
+<p><b>To run from the command line:</b>
+</p>
+<ol>
+<li><p>Click <span class="GUI">OK</span> in the dialog box to save the job
+settings.</p>
+<p>The <span class="GUI">FEP Mapper - Job Settings</span> dialog box closes.
+</p></li>
+
+<li><p>Choose <span class="GUI">Write</span> from
+the <span class="GUI">Settings</span> button menu. 
+</p>
+<img src="../images/MaestroToolbarIcons/settings.png" />
+<p>The job files are written to a subdirectory of the current directory, named
+with the job name, and with the job name as the base name for the files. Six
+files are written: one <code>.msj</code> file for the job, one for the
+calculation in the complex, and one for the calculation in solvent;
+a <span class="GUI">_pv.maegz</span> containing the structures,
+a <code>.pkl</code> file that contains the perturbation map, and a shell script,
+named <i>jobname</i><code>.sh</code>. 
+</p></li>
+<li><p>Run the shell script <i>jobname</i><code>.sh</code>.</p>
+<p>If you copy the files to your cluster to run the job, you might have to
+change some of the settings in the shell script, such as the names of the hosts.
+</p></li>
+</ol>
+
+<h3>Examining the Results</h3>
+<p>When the job finishes, you can copy the results back to your local machine,
+if you copied the results to a compute host. You should have the following files
+and directories in the subdirectory that contained the input files: 
+</p>
+<p>
+<i>jobname</i><tt>_*-out.tgz</tt><br/>
+<i>jobname</i><tt>_out.pkl</tt><br/>
+<i>jobname</i><tt>_out_pv.maegz</tt><br/>
+<i>jobname</i><tt>_3</tt><br/>
+</p>
+<p>in addition to the log and checkpoint files.
+</p>
+
+<ol>
+<li><p>In Maestro, choose  <span class="GUI">Applications &rarr; Desmond &rarr; FEP Mapper Analysis</span> or 
+<span class="GUI">Tasks &rarr; Free Energy Calculations &rarr; FEP Mapper Analysis</span>.</p>
+<p>The <span class="GUI">FEP Mapper Analysis</span> panel opens. 
+</p></li>
+
+<li><p>Click <span class="GUI">Browse</span>, and open the <code>_out.pkl</code>
+file in the job subdirectory.</p>
+<p>The panel tables are populated with results for each ligand, and the graph is
+displayed. The <span class="GUI">Results</span> tab lists the experimental and
+the predicted &Delta;G values, along with errors evaluated from the
+calculations.  The <span class="GUI">Hysteresis</span> tab shows the sum of the
+&Delta;&Delta;G values around each loop in the graph (the hysteresis), which
+should ideally be zero. The <span class="GUI">Raw Data</span> tab gives the raw 
+&Delta;&Delta;G values for each perturbation and estimates of their errors. 
+</p></li>
+
+</ol>
+
+
+<hr />
+<table width="100%">
+<tr><td><p class="small"><a href="../support/legal_notice.html" target="LegalNoticeWindow">Legal Notice</a></p></td>
+<td>
+<table align="right">
+<tr><td><p class="small">
+File: desmond/fep_mapper_tutorial.html<br />
+Last updated: 12 Feb 2015
+</p></td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

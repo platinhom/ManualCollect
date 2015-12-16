@@ -1,0 +1,360 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Analysis scripts</TITLE>
+<META NAME="description" CONTENT="Analysis scripts">
+<META NAME="keywords" CONTENT="ug">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ug.css">
+
+<LINK REL="next" HREF="node201.html">
+<LINK REL="previous" HREF="node199.html">
+<LINK REL="up" HREF="node197.html">
+<LINK REL="next" HREF="node201.html">
+</HEAD>
+
+<BODY BGCOLOR="WHITE">
+<!--Navigation Panel-->
+<A NAME="tex2html3877"
+  HREF="node201.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html3871"
+  HREF="node197.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html3865"
+  HREF="node199.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html3873"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html3875"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html3878"
+  HREF="node201.html">RMS Fit and Alignment</A>
+<B> Up:</B> <A NAME="tex2html3872"
+  HREF="node197.html">Molecular Analysis</A>
+<B> Previous:</B> <A NAME="tex2html3866"
+  HREF="node199.html">Using the atomselect command</A>
+ &nbsp; <B>  <A NAME="tex2html3874"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html3876"
+  HREF="node251.html">Index</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION001530000000000000000"></A>
+<A NAME="15881"></A>
+<BR>
+Analysis scripts
+</H1>
+Following are some more examples of routines that could be used for analysing
+molecules.  These are not the best routines to use since many of these can be
+implemented with the <TT>measure</TT> command, which calls a much faster built-in
+function. <A NAME="15883"></A>
+
+<P>
+
+<H4><A NAME="SECTION001530010000000000000">
+Finding waters near a protein</A>
+</H4>
+This example finds the waters near the protein for each frame of a trajectory
+and writes out a PDB file containing those waters:
+
+<P>
+<A NAME="15885"></A>
+<PRE>
+set sel [atomselect top "water and same residue as (within 2 of protein)"]
+set n [molinfo top get numframes]
+for { set i 0 } { $i &lt; $n } { incr i } {
+  $sel frame $i
+  $sel update
+  $sel writepdb water_$i.pdb
+}
+</PRE>
+
+<P>
+The <TT>frame</TT> option sets the frame of the selection, <TT>update</TT> tells
+the atom selection to recompute which waters are near the protein, and
+<TT>writepdb</TT> writes the selected waters to a file.  
+
+<P>
+
+<H4><A NAME="SECTION001530020000000000000"></A>
+<A NAME="15892"></A>
+<A NAME="15893"></A>
+<BR>
+Total mass of a selection
+</H4>
+<PRE>
+proc total_mass {selection} {
+  set sum 0
+  foreach mass [$selection get mass] {
+    set sum [expr {$sum + $mass}]
+  }
+  return $sum
+}
+</PRE>
+Note the curly braces after the <TT>expr</TT> command in the above example.
+Omitting those braces causes this script to run about three times slower!
+The moral of the story is: always put curly braces around the expression
+that you pass to <TT>expr</TT>.
+
+<P>
+Here's another (slightly slower) way to do the same thing.  This works 
+because
+the mass returned from the selection is a list of lists.  Putting it
+inside the quotes of the eval makes it a sequence of vectors, so the
+vecadd command will work on it.
+<PRE>
+proc total_mass1 {selection} {
+  set mass [$selection get mass]
+  eval "vecadd $mass"
+}
+</PRE>
+
+<P>
+
+<H4><A NAME="SECTION001530030000000000000"></A>
+<A NAME="15901"></A>
+<BR>
+Coordinate min and max
+</H4>
+Find the min and max coordinate values of a given molecule in the x,
+y, and z directions (see also the <TT>measure</TT> command 'minmax').  
+<A NAME="15903"></A> The
+function takes the molecule id and returns two vectors; the first
+contains the min values and the second contains the max.
+
+<P>
+<A NAME="15904"></A>
+<PRE>
+proc minmax {molid} {
+  set sel [atomselect top all]
+  set sx [$sel get x]
+  set sy [$sel get y]
+  set sz [$sel get z]
+  set minx [lindex $sx 0]
+  set miny [lindex $sy 0]
+  set minz [lindex $sz 0]
+  set maxx $minx
+  set maxy $miny
+  set maxz $minz
+  foreach x $sx y $sy z $sz {
+    if {$x &lt; $minx} {set minx $x} else {if {$x &gt; $maxx} {set maxx $x}}
+    if {$y &lt; $miny} {set miny $y} else {if {$y &gt; $maxy} {set maxy $y}}
+    if {$z &lt; $minz} {set minz $z} else {if {$z &gt; $maxz} {set maxz $z}}
+  }
+  return [list [list $minx $miny $minz] [list $maxx $maxy $maxz]]
+}
+</PRE>
+
+<P>
+
+<H4><A NAME="SECTION001530040000000000000"></A>
+<A NAME="15908"></A>
+<A NAME="15909"></A>
+<BR>
+Radius of gyration
+</H4>
+Compute the radius of gyration for a selection (see also <TT>measure rgyr</TT>).  The square of the radius of gyration is
+defined as <!-- MATH
+ $\sum_i m_i (\vec r_i - \vec r_c)^2/\sum_i m_i$
+ -->
+<IMG
+ WIDTH="181" HEIGHT="37" ALIGN="MIDDLE" BORDER="0"
+ SRC="img113.png"
+ ALT="$ \sum_i m_i (\vec r_i - \vec r_c)^2/\sum_i m_i$">
+.  
+This uses the center_of_mass function defined earlier in
+this chapter; a faster version would replace that with <TT>measure
+center</TT>.  Note that the <TT>measure rgyr</TT> command does the same thing
+as this script, only much much faster.
+
+<P>
+<A NAME="15913"></A>
+<PRE>
+proc gyr_radius {sel} {
+  # make sure this is a proper selection and has atoms
+  if {[$sel num] &lt;= 0} {
+    error "gyr_radius: must have at least one atom in selection"
+  }
+  # gyration is sqrt( sum((r(i) - r(center_of_mass))^2) / N)
+  set com [center_of_mass $sel]
+  set sum 0
+  foreach coord [$sel get {x y z}] {
+    set sum [vecadd $sum [veclength2 [vecsub $coord $com]]]
+  }
+  return [expr sqrt($sum / ([$sel num] + 0.0))]
+}
+</PRE>
+
+<P>
+Applying this to the alanin.pdb coordinate file
+<PRE>
+vmd &gt; mol new alanin.pdb
+vmd &gt; set sel [atomselect top all]
+vmd &gt; gyr_radius $sel
+Info) 5.45443
+</PRE>
+
+<P>
+
+<H4><A NAME="SECTION001530050000000000000"></A>
+<A NAME="15919"></A>
+<BR>
+Root mean square deviation
+</H4>
+Compute the rms difference of a selection between two frames of a
+trajectory. This takes a selection and the values of the two frames to compare.
+<A NAME="15920"></A>
+<PRE>
+proc frame_rmsd {selection frame1 frame2} {
+  set mol [$selection molindex]
+  # check the range
+  set num [molinfo $mol get numframes]
+  if {$frame1 &lt; 0 || $frame1 &gt;= $num || $frame2 &lt; 0 || $frame2 &gt;= $num} {
+    error "frame_rmsd: frame number out of range"
+  }
+  # get the first coordinate set
+  set sel1 [atomselect $mol [$selection text] frame $frame1]
+  set coords1 [$sel1 get {x y z}]
+  # get the second coordinate set
+  set sel2 [atomselect $mol [$selection text] frame $frame2]
+  set coords2 [$sel2 get {x y z}]
+  # and compute the rmsd values
+  set rmsd 0
+  foreach coord1 $coords1 coord2 $coords2 {
+    set rmsd [expr $rmsd + [veclength2 [vecsub $coord2 $coord1]]]
+  }
+  # divide by the number of atoms and return the result
+  return [expr $rmsd / ([$selection num] + 0.0)]
+}
+</PRE>
+
+<P>
+The following uses the frame_rmsd function to list the rmsd of the
+molecule over the whole trajectory, as compared to the first frame.
+<PRE>
+vmd &gt; mol new alanin.psf 
+vmd &gt; mol addfile alanin.dcd
+vmd &gt; set sel [atomselect top all]
+vmd &gt; for {set i 0} {$i &lt; [molinfo top get numframes]} {incr i} {
+?   puts [list $i [frame_rmsd $sel $i 0]]
+? }
+0 0.0
+1 0.100078
+2 0.291405
+3 0.523673
+ ....
+97 20.0095
+98 21.0495
+99 21.5747
+</PRE>
+
+<P>
+<A NAME="15925"></A>
+The last example shows how to set the beta field.
+This is
+useful because one of the coloring methods is 'Beta', which uses the
+beta values to color the molecule according to the current color
+scale.  (This can also be done with the occupancy field.)  Thus
+redefining the beta values allows you to color the molecules based on
+your own definition.  One useful example is to color the molecule
+based on the distance from a specific point (for this case, coloring a
+poliovirus protomer based on its distance to the center of the virus
+(0, 0, 0) helps bring out the surface features).
+
+<P>
+<A NAME="15926"></A>
+<PRE>
+proc betacolor_distance {sel point} {
+  # get the coordinates
+  foreach coord [$sel get {x y z}] {
+   # get the distance and put it in the "newbeta" list
+    set dist [veclength2 [vecsub $coord $point]]
+    lappend newbeta $dist
+  } 
+  # set the beta term
+  $sel set beta $newbeta
+}
+</PRE>
+And here's one way to use it:
+
+<P>
+<A NAME="15929"></A>
+<PRE>
+# load pdb2plv.ent using anonymous ftp to the PDB
+vmd &gt; mol new 2plv
+vmd &gt; set sel [atomselect top all]
+vmd &gt; betacolor_distance $sel {0 0 0}
+</PRE>
+Then go to the graphics menu and set the 'Coloring Method' to 'Beta'.
+
+<P>
+<BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL>
+<LI><UL>
+<LI><UL>
+<LI><A NAME="tex2html3879"
+  HREF="node200.html#SECTION001530010000000000000">Finding waters near a protein</A>
+<LI><A NAME="tex2html3880"
+  HREF="node200.html#SECTION001530020000000000000">Total mass of a selection</A>
+<LI><A NAME="tex2html3881"
+  HREF="node200.html#SECTION001530030000000000000">Coordinate min and max</A>
+<LI><A NAME="tex2html3882"
+  HREF="node200.html#SECTION001530040000000000000">Radius of gyration</A>
+<LI><A NAME="tex2html3883"
+  HREF="node200.html#SECTION001530050000000000000">Root mean square deviation</A>
+</UL></UL></UL>
+<!--End of Table of Child-Links-->
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html3877"
+  HREF="node201.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html3871"
+  HREF="node197.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html3865"
+  HREF="node199.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html3873"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html3875"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html3878"
+  HREF="node201.html">RMS Fit and Alignment</A>
+<B> Up:</B> <A NAME="tex2html3872"
+  HREF="node197.html">Molecular Analysis</A>
+<B> Previous:</B> <A NAME="tex2html3866"
+  HREF="node199.html">Using the atomselect command</A>
+ &nbsp; <B>  <A NAME="tex2html3874"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html3876"
+  HREF="node251.html">Index</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+vmd@ks.uiuc.edu
+</ADDRESS>
+</BODY>
+</HTML>

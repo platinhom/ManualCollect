@@ -1,0 +1,708 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	model.htm	QuaSAR-Model chapter
+!!	moemanuals/quasar
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<meta panel QuaSAR-Model>
+<meta panel QuaSAR: Fit Validation>
+
+<meta fileformat .fit>
+
+<title>QuaSAR-Model</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>QuaSAR-Model</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Theory">Formulation and Theory</a>
+    <ul>
+    <li><a href="#Linear_Model">Linear Model</a>
+    </li><li><a href="#Binary_Methodology">Binary Methodology</a>
+    </li>
+    </ul>
+</li><li><a href="#Run">Running <span class="nobr">QuaSAR-Model</span></a>
+</li><li><a href="#Fit">Estimating Model Parameters</a>
+</li><li><a href="#Valid">Validating a Model</a>
+</li><li><a href="#References">References</a>
+</li><li><a href="#See_Also">See Also</a>
+</li>
+</ul>
+
+<a name="Theory"</a> <h2>Formulation and Theory</h2>
+
+<p>The purpose of <span class="nobr">QuaSAR-Model</span> is to determine optimal parameters for the
+prediction of molecular properties such as biological activity against a
+particular target or physical properties such as logP and refractivity.</p>
+
+<p>Suppose that we are given <i>m</i> molecules each of which is described
+by an <i>n</i>-vector of real numbers
+<i>x<sub>i</i></sub>=(<i>x<sub>i</i>1</sub>,...,<i>x<sub>in</i></sub>),
+consisting of the descriptors for molecule <i>i</i>.  Let
+<i>y<sub>i</i></sub> be an experimental result for molecule <i>i</i>
+(e.g. biological activity, logP or refractivity).  Further,
+suppose that each molecule has an associated importance weight,
+<i>w<sub>i</i></sub>, a non-negative real number.  These weights can be
+thought of as the relative probability that the associated molecule will
+be encountered and are usually all equal to 1; however, in some
+applications, unequal weights are used.  Let <i>W</i> denote the sum of
+all the weights.</p>
+
+<p>
+<a name="Linear_Model"></a>
+<b>Linear Model</b>. A linear model for <i>y</i> takes the
+form <i>a</i><sub>0</sub>+<i>a<sup>T</sup>x</i> where <i>a</i><sub>0</sub> is
+a scalar and <i>a</i> is an <i>n</i>-vector.  These parameters are chosen so
+that they minimize the <i>mean square error </i> (MSE) function</p>
+
+<p align="center"><img src="model/eqn_MSE.png"></p>
+
+<p>By differentiating MSE with respect to the parameters, it can be shown that
+the parameters must satisfy the following equations called the <i>normal
+equations</i>:</p>
+
+<p align="center"><img src="model/eqn_normal_1.png">
+<p align="center"><img src="model/eqn_normal_2.png">
+
+<p>Care must be taken in solving these equations since <i>S</i> is often
+singular or close to singular.  The normal equations are solved using matrix
+diagonalization.  Since <i>S</i> is symmetric and positive semi-definite, all
+of its eigenvalues are real and non-negative.  We can therefore calculate an
+orthogonal matrix <i>Q</i> and a diagonal matrix <i>D</i> such that
+<i>S</i>=<i>Q<sup>T</sup>DQ</i> and such that the diagonal elements of
+<i>D</i> are sorted in descending order.  We take the first <i>p</i>
+eigenvalues such that all are positive and the condition (the largest of the
+<i>p</i> eigenvalues divided by the smallest of the <i>p</i> eigenvalues) is
+less than some pre-set threshold.
+The pseudo-inverse diagonal matrix
+<i>D</i><sup>*</sup> is then formed with the inverse of the selected
+<i>p</i> eigenvalues on the diagonal and zero elsewhere.  Finally, we determine
+the parameter vector <i>a</i> with<i>
+a</i>=<i>Q<sup>T</sup>D</i><sup>*</sup><i>Qb</i>.
+This methodology is called 
+principal components regression (PCR).
+</p>
+
+<p>
+As an alternative to PCR, one may wish to determine the parameters of the
+linear model by the method of partial least squares (PLS). In general,
+this will yield slightly different estimates which may be more robust
+[Geladi 1986].  Setting up the normal
+equations as above, we again seek an estimate of <i>a</i> when <i>S</i> is
+possibly ill-conditioned. One way to proceed is to construct a weight matrix
+<i>V</i><sub>A</sub> = (<i>v</i><sub>1</sub> , <i>v</i><sub>2</sub> , <i>...</i> , <i>v</i><sub>A</sub>)</i>,
+where the <i>v<sub>i</sub></i> are column vectors of length <i>n</i>,
+and <i>A</i>, the degree of the PLS fit, is an integer less than or
+equal to <i>n</i>. We first
+obtain the columns of <i>V<sub>A</sub></i>
+through a Gram-Schmidt orthogonalization
+of the vectors generated by the Krylov sequence
+<i>{b, Sb, S<sup>&nbsp;2&nbsp;</sup>b, ..., S<sup>&nbsp;A-1&nbsp;</sup>b}</i>.
+Then, to get the 
+<i>A<sup>th</sup></i> PLS coefficient vector, we solve for
+
+<p align=center><img src="model/eqn_PLS.png"></p>
+
+<p>
+[Helland 1988].
+An algorithm to determine successive PLS fits will
+terminate at the <i>A<sup>th</sup></i> step when
+<span class="nobr">||<i>v</i><sub><i>A</i>+1</sub>||<i> = 0 </i></span>.
+One may, however, wish to use an even lower order PLS regression vector
+to fit the linear model.
+Note that if the algorithm continues until <i>A = n</i>, the weight matrix is
+square and of full rank.
+The resulting regression vector is simply the ordinary least squares
+solution equivalent to solving <span class="nobr"><i>a = S</i><sup>-1</sup><i>b</i></span>.
+</p>
+
+<p>The fitting procedures for both PCR and PLS have the
+following parameters:</p>
+
+<ul>
+<li><tt>maxcomp</tt> : The maximum number of components. In PCR, this is
+the maximum that <i>p</i> can attain, and in PLS, this is the maximum that
+<i>A</i> can attain.
+
+</li>
+
+<li><tt>maxcond</tt> : For PCR, this is the maximum condition of the
+inverse of the selected <i>p</i> eigenvalues. For PLS, this means that
+<i>A</i> takes on (at most) the number of nonzero eigenvalues of
+<i>S</i>.
+ </li>
+
+</ul>
+
+<p>The results of the fit are presented as the <i>root mean square error</i>
+(RMSE) which is the square root of the MSE function at the chosen parameter
+values and the <i>r</i><sup>2</sup> correlation coefficient which is equal
+to 1-MSE/YVAR where YVAR is the sample variance of the <i>y<sub>i</i></sub>
+values.  The <i>r</i><sup>2</sup> lies between 0 and 1, with 1 corresponding
+to an ideal fit.</p>
+
+
+
+<p>
+<a name="Binary_Methodology"></a>
+<b>Binary Methodology</b>.  Suppose that the <i>y<sub>i</i></sub> data
+are <i>binary</i>, that is, either 0 or 1.  This situation corresponds,
+for example, to a High Throughput Screening run in which the result for each
+molecule is either &quot;active&quot; (1) or &quot;inactive&quot; (0).  Note
+that continuous activity data can be made binary using a threshold criterion
+(e.g. <i>y<sub>i</i></sub>&gt;5).  In the text which follows, <i>Y</i> denotes a
+random variable with value 0 or 1 and
+<i>X</i>=(<i>X</i><sub>1</sub>,...,<i>X<sub>n</i></sub>) denotes a random
+variable over <i>n</i>-vectors (a random molecular descriptor).</p>
+
+<p>Our fundamental method uses the conditional distribution
+Pr(<i>Y</i>|<i>X</i>) in order to determine the probability that a new
+molecule <i>x</i> is active with Pr(<i>Y</i>=1|<i>X</i>=<i>x</i>).  Let
+<i>a</i> denote the prior probability Pr(<i>Y</i>=1) and define
+<i>f</i>(<i>x</i>,<i>y</i>)=Pr(<i>X</i>=<i>x</i>|<i>Y</i>=<i>y</i>).  We
+can now use Bayes Theorem and write:</p>
+
+<p align="center"><img src="model/eqn_Bayes_1.png"></p>
+
+<p>and upon rearranging we have:</p>
+
+<p align="center"><img src="model/eqn_Bayes_2.png"></p>
+
+<p>Without loss of generality we can assume that each descriptor has mean 0
+and variance 1.  Suppose that the individual molecular descriptors,
+<i>X<sub>i</i></sub>, are mutually independent.  In this case we have:</p>
+
+<p align="center"><img src="model/eqn_Bayes_3.png"></p>
+
+<p>where <i>f<sub>j</i></sub>(<i>x</i>,<i>y</i>)=Pr(<i>X<sub>j</i></sub>=<i>x</i>|<i>Y</i>=<i>y</i>).
+Thus, we must estimate distributions of the form
+<span class="nobr">Pr(<i>X<sub>j</i></sub>=<i>x</i>|<i>Y</i>=<i>y</i>)</span>
+and the prior probability <i>a</i>.</p>
+
+<p>The random variable, <i>Y</i>, takes on the values 0 or 1.  Now, the
+maximum likelihood estimate for <i>a</i> is <i>S</i>/<i>m</i> where
+<i>S</i>=<i>y</i><sub>1</sub>+...+<i>y<sub>m</i></sub>.  This is an unbiased
+estimate with the smallest possible variance over all unbiased estimators. However,
+for small sample sizes, or samples in which a single value is observed, it is
+possible to have an estimate of <i>a</i>=0.  This can be catastrophic for the
+above formulae which require likelihood ratios.  For this reason, we use the
+biased Bayes estimate under a uniform prior which is
+<i>a</i>=(<i>S</i>+1)/(<i>m</i>+2), and is always in (0,1) and well
+defined when <i>m</i> is zero.  Let <i>m</i><sub>1</sub> be the number of
+active molecules in the data set and let the number of inactive
+molecules be denoted
+<i>m</i><sub>0</sub>=<i>m</i>-<i> m</i><sub>1</sub> .  We now have:</p>
+
+<p align="center"><img src="model/smoothed.png"></p>
+
+<p>Let <i>z</i><sub>1</sub>,...,<i>z<sub>m</i></sub> be <i>m</i> samples of a
+continuous random variable <i>Z</i>.  We can estimate <i>f</i> by
+accumulating a histogram of observed sample values on a set of <i>B</i> bins
+(<i>b</i><sub>0</sub>,<i>b</i><sub>1</sub>],...,(<i>b<sub>B</i>-1</sub>,<i>b<sub>B</i></sub>]
+defined by <i>B</i>+1 numbers <i>b<sub>j</i></sub>&lt;<i>b<sub>j</i>+1</sub>,
+with <i>b</i><sub>0</sub> equal to minus infinity and <i>b<sub>B</i></sub>
+equal to plus infinity.  The usual procedure for counting the number of
+observations among <i>m</i> samples in bin <i>j</i>&gt;0 is:</p>
+
+<p align="center"><img src="model/bins_1.png"></p>
+
+<p>which has unfortunate sensitivity to the selection of bin boundaries since
+observations close to the boundary between two bins are treated as if they
+were in the middle of one of the bins.  To reduce the sensitivity to the bin
+boundaries we replace the delta function observation density with a normal
+random variable with mean <i>z<sub>i</i></sub> with variance
+<i>s</i><sup>2</sup>.  We now have:</p>
+
+<p align="center"><img src="model/bins_2.png"></p>
+
+<p>We can thus model each of the descriptor distributions
+<i>f<sub>j</i></sub>(<i>x</i>,<i>y</i>) for <i>y</i> equal to 0 and 1 and for
+the <i>n</i> descriptors; that is, for each descriptor, we estimate two
+distributions: one for the active molecules in the training set and one for
+the inactive molecules.</p>
+
+<p>The above considerations suggest the following computational procedure:</p>
+
+<ol>
+<li>
+Perform a principal component analysis on the input descriptors to produce a
+matrix <i>Q</i> and a vector <i>u</i> such that the covariance matrix of
+<i>Z</i>=<i>Q</i>(<i>X</i>-<i>u</i>) is the identity matrix.</li>
+<li>
+Estimate the parameters of the probability model, <i>p</i>, from the
+<i>y<sub>i</i></sub> and <i>z<sub>i</i></sub>.</li>
+<li>
+The probability that a new molecule <i>x</i> is active is then estimated as
+<i>p</i>(<i>Q</i>(<i>x</i>-<i>u</i>)).</li>
+</ol>
+
+<p>The procedure has the following parameters (explained in the foregoing
+equations):
+
+<ul>
+<li><tt>maxcomp</tt> : maximum number of components
+<li><tt>maxcond</tt> : maximum condition of the <i>Q<sup>T</sup>Q</i> transform
+<li><tt>swidth</tt> : normal histogram smoothing width <i>s</i>
+</ul>
+
+<a name="Run"></a><h2>Running <span class="nobr">QuaSAR-Model</span></h2>
+
+<p>There are two ways to invoke <span class="nobr">QuaSAR-Model</span> in order to make a model:
+
+<ul>
+<p><li>In the MOE Window, choose 
+<span class="menu">MOE | Compute | QuaSAR | QuaSAR-Model</span>.  
+Since the command was not
+issued from a Molecular Database Viewer, a file selection box will appear
+requesting the input of the database to be operated upon.</li></p>
+
+<p><li>In the Database Viewer, choose 
+<span class="menu">DBV | Compute | Model | QSAR</span>.  
+Since the command was
+launched from a Molecular Database Viewer, the database to be operated
+upon is specified implicitly.</li></p> </ul>
+
+<p>In either case, the following panel appears:</p>
+
+<p align="center"><img src="model/model.png" ></p>
+
+<p>The panel controls have the following meanings:</p>
+
+<ul>
+<b><p><li>Database</b>.  Specifies the filename of the database to be
+operated upon (the <i>current</i> database).</li></p>
+
+<b><p><li>Selected Entries Only.</b>  If checked, and a Molecular Database
+Viewer is open on the current database, then the calculations will be
+restricted to entries (rows) that have been selected in the Molecular
+Database Viewer.</li></p>
+
+<b><p><li>Status</b>.  The Status line indicates the state of the 
+<span class="nobr">QuaSAR-Model</span> 
+panel.  A value of &quot;No Model&quot; indicates that there is no current
+model.  A value of &quot;Binary Model:...&quot; or &quot;Linear Model:...&quot;
+indicates that a model has been fitted.  Other values may appear during the
+calculations.</li></p>
+
+<b><p><li>Activity Field</b>. The database field containing the data to be 
+fitted (the <i>y</i> values in the theory section).</li></p>
+
+<b><p><li>Method</b>.  Choice of three regression methods: PLS, PCR, Binary.
+If Binary is chosen then the Activity Field together with the
+Binary Threshold value are used to derive a binary value to be fit
+(see below) and the binary methodology is used.  If PLS or PCR is
+chosen, then the multiple linear regression methodology is used.</li></p>
+
+<b><p><li>Weight Field</b>. The name of the field used to weight
+individual entries of the database. These weights should be non-negative;
+negative weights will be set to zero for the calculation. If the Weight Field
+is set to (NONE), then all entries will have a weight of 1.</li></p>
+
+<b><p><li>Component Limit</b>. In the case of PCR, this sets a limit on the 
+number of principal
+components selected. A value of zero means that no limit is set; otherwise, at
+most the specified number of largest principal components will be used.
+In the case of PLS, this sets a limit on the degree of the fit. A value of 
+zero means that no limit is set; otherwise, at most the specified degree 
+will be used. </li></p>
+
+<b><p><li>Condition Limit</b>. For both PCR and PLS, this sets the maximum 
+condition 
+(see theory
+section) number of the principal component transform of the 
+correlation matrix S. When the PLS option is selected,
+one may wish to set this limit to be very large and vary 
+only the component limit.</li></p>
+
+<b><p><li>Binary Threshold</b>.  If Binary is checked, then the binary activity
+condition is created from the Activity Field and the Binary Threshold as
+follows.  If <i>x</i> is the Activity Value and <i>t</i> is the value of
+Binary Threshold, then an entry's binary activity is considered 1 if <i>x</i>
+&gt; <i>t</i> and 0 otherwise.</li></p>
+
+<b><p><li>Smooth</b>. This field controls the width of the smoothing
+distribution used in accumulating the distributions during clustering. It is
+the standard deviation of a normal distribution (the <i>s</i> value in the
+theory section). This field is used only if Binary is checked.</li></p>
+
+<b><p><li>Model</b>.  This list serves two purposes.  First, it specifies
+which fields in the database are to be used as descriptors.  Second, it
+displays the resulting coefficients of linear regression models (see below).
+If no fields are selected in the list, then all fields will be used (with the
+exception of the Activity Field, Weight Field and fields created during model
+validation).  If fields are selected, then the selected fields will be used in
+the fit (with the exception of the Activity Field).</li></p>
+
+<p><li><b>Sort by Normalized</b>.  If checked, then the fields in the Model list
+box will be sorted by their normalized coefficient (see below).</li></p>
+
+<p><li><b>Sort by Name</b>.  If checked, then the fields in the Model list box
+will be sorted by their name.  If Sort by Normalized is also checked then the
+normalized coefficient is used as the primary key and the field name as the
+secondary key.</li></p>
+
+<p><li><b>Select Database Fields</b>.  When pressed, the descriptors
+currently selected in the list will have their respective fields
+in the database viewer selected.  If the specified database is not
+currently open in a database viewer then this button is insensitive.
+
+</ul>
+
+<p>The <b>Fit</b> button is used to fit the parameters of the requested model.
+The <b>Report</b> button generates a text report once a model has been
+calculated.  The <b>Validate</b> button is used to create new fields in the
+database such as model predictions, cross-validated predictions and residuals.
+The <b>Save</b> button is used to save calculated models to disk for
+subsequent evaluation.  The <b>Close</b> button closes the panel.</p>
+
+<p>Once a model has been created and saved to a file using
+<b>Save</b>, it can be evaluated over a database of molecules using 
+<span class="menu">DBV | Compute | Model
+| <a href="modcomp.htm">Evaluate</a></span>.
+
+<a name="Fit"></a><h2>Estimating Model Parameters</h2>
+
+<p>
+To estimate the parameters for a model, press the <b>Fit</b> button in the
+main <span class="nobr">QuaSAR-Model</span> panel.  This will start the parameter estimation calculation,
+which may take some time.  The Status line will indicate whether or not the
+calculation has completed.
+
+<p>
+Once a model has been built, the status line will report the type of model
+(either Linear or Binary) along with an assessment of model quality:
+
+<ul>
+<li><tt>R2=</tt><i>r<sup>2</sup></i>: correlation coefficient (linear models)
+<li><tt>RMSE=</tt><i>e</i>: root mean square error (linear models)
+<li><tt>A=</tt><i>a</i>: percentage accuracy (binary models)
+<li><tt>A0=</tt><i>b</i>: percentage accuracy of the inactive subset
+(binary models)
+<li><tt>A1=</tt><i>c</i>: percentage accuracy of the active subset
+(binary models)
+</ul>
+
+<p>
+If a linear regression model was built, the descriptor coefficients will be
+displayed in the Model listbox of the <span class="nobr">QuaSAR-Model</span> panel.  Two sets of
+coefficients are displayed: the actual coefficient and the <i>normalized</i>
+coefficient (the coefficient in a model where all fields have been normalized
+to mean 0 and variance 1).
+
+<p>
+To generate a report of the fit, press the <b>Report</b> button.  For linear
+regression models, the report will contain a number of sections.  The first
+section contains the values of the input parameters: activity field, 
+weight field, condition and component limits, followed by the dimensions of the
+calculation along with the condition number of the principal component
+transform.  The model quality (and cross-validation statistics) will also be
+listed:
+
+<blockquote><pre>Activity Field               : act 
+Weight Field                 : 
+Condition Limit              : 1e+06 
+Component Limit              : 4
+
+Observations                 : 285
+Descriptors                  : 9
+Components Used              : 4
+Condition Number             : 25.756166
+
+ROOT MEAN SQUARE ERROR (RMSE): 1.91449     
+CORRELATION COEFFICIENT (R2) : 0.37208     
+</pre></blockquote>
+
+<p>
+Two listings of the calculated model will be presented.  The first is a
+list of coefficients and the additive constant of the model.  The second
+lists the coefficients of the normalized model.
+
+<blockquote><pre>ESTIMATED LINEAR MODEL
+
+act =
+         4.30670
+        -0.01464 * PEOE_VSA+1
+        -0.01083 * PEOE_VSA+0
+        +0.02983 * PEOE_VSA+2
+        -0.00116 * PEOE_VSA+3
+        +0.11540 * PEOE_VSA+4
+        +0.04628 * PEOE_VSA+5
+        +0.00447 * PEOE_VSA+6
+        +0.01685 * PEOE_VSA-0
+        -0.01642 * PEOE_VSA-1
+
+ESTIMATED NORMALIZED LINEAR MODEL (SD = Standard Deviation)
+
+act / SD(act) =
+         1.78256
+        -0.12234 * PEOE_VSA+1 / SD(PEOE_VSA+1)
+        -0.12293 * PEOE_VSA+0 / SD(PEOE_VSA+0)
+        +0.13044 * PEOE_VSA+2 / SD(PEOE_VSA+2)
+        -0.00534 * PEOE_VSA+3 / SD(PEOE_VSA+3)
+        +0.50407 * PEOE_VSA+4 / SD(PEOE_VSA+4)
+        +0.14239 * PEOE_VSA+5 / SD(PEOE_VSA+5)
+        +0.01254 * PEOE_VSA+6 / SD(PEOE_VSA+6)
+        +0.17015 * PEOE_VSA-0 / SD(PEOE_VSA-0)
+        -0.17291 * PEOE_VSA-1 / SD(PEOE_VSA-1)
+
+</pre></blockquote>
+
+<p>
+Finally, a statement of the relative importance of the descriptors is
+presented.  The absolute values of the normalized coefficients are printed,
+divided by the absolute value of the largest normalized coefficient.
+
+<blockquote><pre>RELATIVE IMPORTANCE OF DESCRIPTORS
+
+0.242701  PEOE_VSA+1
+0.243874  PEOE_VSA+0
+0.258780  PEOE_VSA+2
+0.010588  PEOE_VSA+3
+1.000000  PEOE_VSA+4
+0.282479  PEOE_VSA+5
+0.024884  PEOE_VSA+6
+0.337559  PEOE_VSA-0
+0.343028  PEOE_VSA-1
+</pre></blockquote>
+
+<p>
+For a binary model, the report starts with similar statistics and a statement
+of the accuracy of the model. <b>Total Accuracy</b> is the 
+fraction of observations
+correctly predicted by the QSAR model, while <b>Accuracy on Active</b> 
+and <b>Accuracy on Inactive</b> are the fractions
+of correctly predicted sample actives and inactives, respectively. 
+One might ask what these accuracies
+would be if there was no correlation between the model and the sample. 
+We shall call these quantities "Chance" accuracies. Now we are in a 
+position to assess the significance of the results. 
+
+Denote the actual number of agreements and disagreements between the model 
+and the sample by <em>n<sub>1</sub></em> and <em>n<sub>0</sub></em>, 
+respectively. Then, denote the number of agreements and disagreements 
+that one would get if the model results
+were uncorrelated with the sample, by <em>e<sub>1</sub></em> 
+and <em>e<sub>0</sub></em>, respectively. As the sample size 
+becomes large, the Chi-square statistic
+
+<p align="center"><img src="model/chi2_1.png" ></p>
+
+takes on a Chi-square distribution with one degree of freedom.
+The associated probability, called a p-value, is interpreted as the 
+likelihood of observing a result "at least this extreme", under
+the assumption that the model is doing no better than pure chance.
+The smaller the p-value, the less likely that the total accuracy 
+is simply luck. 
+
+<blockquote><pre>
+Activity Field                    : act
+Weight Field                      : 
+Binary Threshold                  : 7
+Smooth                            : 0.25
+Condition Limit                   : 1e+006
+Component Limit                   : 2
+
+Active Observations               : 187
+Inactive Observations             : 98
+Observations                      : 285
+Descriptors                       : 4
+Components Used                   : 2
+
+                                    QuaSAR Model	Chance
+Total Accuracy                    : 0.684211		0.607929
+Significance (p-value)            : 0.00815683
+
+Accuracy on Active                : 0.903743		0.845614
+Accuracy on Inactive              : 0.265306		0.154386
+Significance (p-value)            : 0.0028293
+</pre></blockquote>
+
+By only considering "agreement" and "disagreement", 
+we are not discriminating between accuracy 
+in the actives and accuracy in the inactives. 
+To incorporate this information, we 
+again use a Chi-square test, but now with greater degrees of freedom. Denoting
+the number of agreements in the actives by <em>n</em><sub>1</sub>, the number
+of disagreements in the actives by <em>n</em><sub>2</sub>, the number of
+agreements in the inactives by <em>n</em><sub>3</sub>, and the number of 
+disagreements in the inactives by <em>n</em><sub>4</sub>, we can then contrast
+these observed frequencies with the numbers that one would obtain if there 
+was no correlation
+between the model and the sample. Denote these values by 
+<em>e</em><sub>1</sub> through <em>e</em><sub>4</sub>. The Chi-square
+statistic
+
+<p align="center"><img src="model/chi2_2.png" ></p>
+
+also takes on a Chi-square distribution, but now with three degrees of freedom.
+The p-value quoted under 
+<b>Accuracy on Actives/Inactives</b> is the probability that <i>both</i> 
+these accuracies would 
+differ from the "chance accuracy" as much as they do, 
+if the actives and inactives
+in the QSAR model are uncorrelated with those in the sample.
+Note that the former method is a coarser test and will be less likely to
+detect differences from chance.
+
+
+<p>
+Since the binary methodology is highly non-linear, there is no simple
+analogue of the descriptor coefficient or relative importance.  The binary
+report will contain a correlation coefficient for each principal component
+indicating whether or not the active and inactive distributions are
+correlated (0 = perfectly correlated, 1 = perfectly uncorrelated).  The
+RMSE refers to the expected root mean square error between the active
+and inactive distributions.  Finally, a statement of descriptor importance
+is presented giving the degree to which (between 0 and 1) each descriptor
+is useful in distinguishing actives from inactives.
+
+<blockquote><pre>
+COMPONENT DISTRIBUTION COMPARISON
+
+comp          rmse    1-corr
+----  ------------  --------
+   1     16.102059  0.077747
+   2     16.098282  0.089176
+
+DESCRIPTOR IMPORTANCE
+
+     0.088382 PEOE_VSA+2
+     0.087804 PEOE_VSA+4
+     0.083761 PEOE_VSA+6
+     0.078131 PEOE_VSA-0
+
+</pre></blockquote>
+
+<p>
+In both of the linear model and binary model cases, the report will be
+written to a MOE Text Editor.
+
+<a name="Valid"></a><h2>Validating a Model</h2>
+
+<p>
+To start validating a model, press the <b>Validate</b> button in the main
+<span class="nobr">QuaSAR-Model</span> panel.  This will bring up the following panel:
+
+<p>
+<center><img src="model/validate.png" /></center>
+
+<p>
+Any one of six values can be selected for calculation using the checkboxes.
+The validation fields are:
+
+<p>
+<center><table class="titlebar">
+<tr>
+<th>Value</th>
+<th>Field&nbsp;Name</th>
+<th>Description</th>
+</tr><tr>
+<td>Model&nbsp;Prediction</td>
+<td><tt>$PRED</tt></td>
+<td>Value of the model</td>
+</tr><tr>
+<td>Model&nbsp;Residual</td>
+<td><tt>$RES</tt></td>
+<td>Difference between the value of the model and the activity field</td>
+</tr><tr>
+<td>Model&nbsp;Z-Score</td>
+<td><tt>$Z-SCORE</tt></td>
+<td>Absolute difference between the value of the model and the activity
+field, divided by the square root of the mean square error of the data set</td>
+
+</tr><tr>
+<td>Cross&nbsp;Prediction</td>
+<td><tt>$XPRED</tt></td>
+<td>Value of the model under a leave-one-out cross validation scheme</td>
+</tr><tr>
+<td>Cross&nbsp;Residual</td>
+<td><tt>$XRES</tt></td>
+<td>Difference between the value of the model under a leave-one-out cross
+validation scheme and the activity field</td>
+</tr><tr>
+<td>Cross&nbsp;Z-Score</td>
+<td><tt>$XZ-SCORE</tt></td>
+<td>Absolute difference between the value of the model under a
+leave-one-out cross validation scheme and the activity field, divided by
+the square root of the mean square error of the data set</td>
+</tr>
+</table></center>
+
+<p>
+The two Z-Score fields <tt>$Z-SCORE</tt> and <tt>$XZ-SCORE</tt> can be thought
+of as &quot;the number of standard deviations away from the mean&quot; and should be
+used for outlier detection.  Using the Molecular Database Viewer plot area,
+select all molecules with a Z-Score of 2.5 or more.  This subset should then
+be examined carefully for errors, or to determine new descriptors to calculate.
+
+<p>
+If any of the cross-validation fields are selected, then the Status Line of the
+main <span class="nobr">QuaSAR-Model</span> panel will contain cross-validated versions of the
+correlation coefficient (r<sup>2</sup>) and root mean square error; also, a
+report generated after cross-validation will contain the cross-validation
+results as well.
+
+<h2><a name="References">References</a></h2>
+
+<p><table width=100% cellpadding=5 border=0>
+<tr>
+<td valign="top">[Helland&nbsp;1988]
+<td valign="top">Helland, I.S.;
+On the Structure of Partial Least Squares Regression; 
+<i>Comm. Statist. B, Simulation Comput. 17</i> (<b>1988</b>) 581&ndash;607.
+
+<tr>
+<td valign="top">[Geladi&nbsp;1986]
+<td valign="top">Geladi, P., Kowalski, R.;
+Partial Least Squares Regression: A Tutorial; 
+<i>Analytica Chimica Acta. 185</i> (<b>1986</b>) 1&ndash;17.
+
+</table>
+
+
+<a name="See_Also"></a>
+<h2>See Also</h2>
+
+<a href="descr.htm">QuaSAR-Descriptor</a><br>
+<a href="qsar.htm">QuaSAR Overview</a><br>
+<a href="../tutorials/quasar_tut.htm">QuaSAR Tutorial</a><br>
+
+<a href="modcomp.htm">Creating and Evaluating Models</a><br>
+<a href="../mdb/fpmodel.htm">Fingerprint Models</a><br>
+<a href="qcrsel.htm">QuaSAR-Reagent</a><br>
+<a href="../apps/ph4_intro.htm">Pharmacophore Applications</a>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

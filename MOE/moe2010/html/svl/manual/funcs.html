@@ -1,0 +1,943 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<title>Functions, Programs and Scoping Rules</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Functions, Programs and Scoping Rules</h2>
+<hr noshade="noshade" />
+
+<p>
+[<a href="control.html">Previous Chapter</a>] 
+[<a href="io.html">Next Chapter</a>] 
+[<a href="index.html">Table of Contents</a>]</p>
+
+<ul>
+  <li><a href="#Scope">Scope</a></li>
+  <li><a href="#Constants">Constants</a></li>
+  <li><a href="#Variables">Variables</a><ul>
+      <li><a href="#local Class"><tt>local</tt> Class</a></li>
+      <li><a href="#static Class"><tt>static</tt> Class</a></li>
+      <li><a href="#global Class"><tt>global</tt> Class</a></li>
+    </ul>
+  </li>
+  <li><a href="#Functions">Functions</a><ul>
+      <li><a href="#Loading Functions">Loading Functions</a><ul>
+          <li><a href="#Compilation Errors">Compilation Errors</a></li>
+        </ul>
+      </li>
+      <li><a href="#Function Declaration">Function Declaration</a></li>
+      <li><a href="#Arguments and Return Values">Arguments and Return Values</a><ul>
+          <li><a href="#return Statement">return Statement</a></li>
+          <li><a href="#Procedure vs. Function Calls">Procedure vs. Function Calls</a></li>
+        </ul>
+      </li>
+      <li><a href="#Passing Functions as Arguments">Passing Functions as Arguments</a></li>
+      <li><a href="#Function Extension">Function Extension</a></li>
+      <li><a href="#Built-in versus Public Functions">Built-in versus Public Functions</a></li>
+    </ul>
+  </li>
+  <li><a href="#Finding Public Symbols">Finding Public Symbols</a></li>
+  <li><a href="#Modules">Modules</a><ul>
+      <li><a href="#Module Environment">Module Environment</a></li>
+      <li><a href="#Obtaining Module Information">Obtaining Module Information</a></li>
+    </ul>
+  </li>
+  <li><a href="#Programs">Programs</a><ul>
+      <li><a href="#Scripts">Scripts</a></li>
+	<li><a href="#RunFiles">Run Files</a>
+    </ul>
+  </li>
+  <li><a href="#Variables and Functions at the CLI">Variables and Functions at the CLI</a></li>
+</ul>
+
+<h2><a name="Scope">Scope</a></h2>
+
+<p>Programs are made of functions. Functions are blocks of code that
+perform certain operations and/or data manipulations. It is often
+desirable to place limits on the visibility and lifetime of variables and
+functions, for better control over their use. In programming parlance,
+such limits are known as <i>scope</i>.</p>
+
+<p>The <i>scope</i> of an object is the part of the program - the
+<i>context</i>- in which the object is defined. We speak of function scope
+and variable scope.  There are 3 classes of scope: <i>local, global
+</i>and <i>file</i>. Local <i>variables</i> have local scope and exist
+only within the function, the loop or the <tt>if-then-else</tt> branch in
+which they are defined (these last are future extensions in development).
+Local <i>functions</i> have file scope and exist only within the file in
+which they are defined. Global objects have global scope and are visible
+across program file boundaries. SVL built-in functions (Bifs) differ from
+user-defined global functions in that Bifs are callable from anywhere
+(i.e. do not have to be declared to be used) while user-defined
+global functions must first be declared in a file before being called.</p>
+
+<p>Functions defined to be <tt>local</tt> are not visible at the command
+line. Global functions are. Functions may not be defined at the command
+line. <b></p>
+
+<p>Note:</b> Local variable scope will soon be enforced. You are strongly
+advised to treat variables local to a given structure as invisible to the
+outside world. We also recommended that you not declare local and global
+variables having the same name.</p>
+
+<h2><a name="Constants">Constants</a></h2>
+
+<p>Constants can be defined anywhere, i.e. both outside of
+functions and within functions, anywhere a statement is permitted. Once
+defined, their values cannot be changed; i.e. constant class
+objects are not lvalues, they cannot appear on the left-hand side of an
+assignment. The value of a constant can be set to an expression; however,
+the expression must be one that can be evaluated at compile time.</p>
+
+<p>The <tt>const</tt> definition is made as follows: </p>
+
+<pre>
+    const <i>identifier</i> = <i>expr</i> [, ... <i>identifier</i> = <i>expr</i> ];
+</pre>
+
+<p>More than one constant can be defined in the same definition, using the comma
+separator. For example, </p>
+
+<pre>
+    const a = 1, b = 2, c = 3;
+</pre>
+
+<p>Constants defined within a function have local scope and are invisible
+outside the function. Constants defined outside a function have file scope
+and are visible to all functions within that file following the constant
+definition. There are no user-defined global constants. SVL has several
+pre-defined <a href="svlfund.html">built-in constants</a> that are
+globally visible.</p>
+
+<h2><a name="Variables">Variables</a></h2>
+
+<p>In general, within functions, variable declarations can appear wherever
+a statement is permitted to appear, although not all classes are available
+in all contexts. Variable declarations can also appear outside of
+functions.</p>
+
+<p>The place where a variable is declared and its storage class have an
+impact on its use and on its scope. There are 3 classes of variables:
+<tt>local</tt>, <tt>static</tt> and <tt>global</tt>.  </p>
+
+<h3><a name="local Class"><tt>local</tt> Class</a></h3>
+
+<p>Local class variables have a lifetime limited to the execution of the
+function in which they are defined. Each function invocation is associated
+with a fresh version of the local variable, with no memory of the
+variable's value from previous invocations. Thus, in recursive function
+calls, each recursion allocates a private version of each local variable
+so that variable values in each call are unaffected by other calls. Local
+variables cannot be declared outside of functions.</p>
+
+<p>Variables in a <tt>local</tt> declaration can be optionally assigned a value at
+declaration time: </p>
+
+<pre>
+    local <i>identifier</i> [= <i>expr</i>] [, ..., <i>identifier</i> [= <i>expr</i>] ] ;
+</pre>
+
+<p>Square brackets <tt>[]</tt> indicate optional assignment. It is permissible to declare
+and assign values to a vector of local variables. </p>
+
+<pre>
+    local p=0, [ d, [e,f] ] = [ 2, [3,4] ];
+</pre>
+<b>
+
+<p>Note:</b> Local variable scope inside loops and inside
+<tt>if-then-else</tt> branches will soon be enforced. Use with
+caution.</p>
+
+<h3><a name="static Class"><tt>static</tt> Class</a></h3>
+
+<p>A static class variable can be declared anywhere. It is
+history-sensitive, and is allocated only once. As a consequence, statics,
+unlike local variables, are not re-allocated in recursive function
+calls.</p>
+
+<p>Static variables declared within a function are only visible to that
+function. Static variables declared outside a function are visible to all
+functions defined within the same file, from the point of the static
+variable declaration onward. In other words, functions defined before
+where the variable is declared will not recognize the variable.</p>
+
+<p>The two main uses of static variables are to permit history-sensitive
+code and data sharing between functions in the same file. <b></p>
+
+<p>Note:</b> Excessive use of statics for sharing data between functions
+in the same file is fraught with peril: not knowing which functions modify
+a given variable often leads to code difficult to read and to debug.</p>
+
+<p>This is the <tt>static</tt> declaration syntax: </p>
+
+<pre>
+    static <i>identifier</i> [, ..., <i>identifier</i>] ;
+</pre>
+
+<p>Statics cannot be assigned values at declaration time. The initial value of a static is
+null <tt>[]</tt>.</p>
+
+<p>For example: </p>
+
+<pre>
+    static x;
+    ...
+    function do_something [a,b]
+	local c, d;
+	static y;
+	y = a+b;
+	...
+	do_something [c,d];     // y preserved for next recursion
+    endfunction
+</pre>
+
+<h3><a name="global Class"><tt>global</tt> Class</a></h3>
+
+<p>Global class variables are used to share data between functions across
+program file boundaries. They cannot be declared inside functions, and
+they cannot be assigned values at declaration time. Be frugal: prodigal
+use of global variables may result in hard-to-read and hard-to-debug
+code.</p>
+
+<p>Here is an example of a <tt>global</tt> declaration. </p>
+
+<pre>
+    global x, y, z;
+
+    function somefunc []
+	x = y = z = 1;
+	...
+    endfunction
+</pre>
+
+<p>The following table summarized the SVL variable classes:
+
+<p><center>
+<table BORDER="1" width="80%">
+  <tr>
+    <th>Behavior</th>
+    <th>const</th>
+    <th>local</th>
+    <th>static</th>
+    <th>global</th>
+  </tr>
+  <tr>
+    <td>Declare inside <tt>loop</tt> or <tt>if</tt> </td>
+    <td>yes</td>
+    <td>yes</td>
+    <td>yes</td>
+    <td>no</td>
+  </tr>
+  <tr>
+    <td>Declare inside functions</td>
+    <td>yes</td>
+    <td>yes</td>
+    <td>yes</td>
+    <td>no</td>
+  </tr>
+  <tr>
+    <td>Declare outside functions</td>
+    <td>yes</td>
+    <td>no</td>
+    <td>yes</td>
+    <td>yes</td>
+  </tr>
+  <tr>
+    <td>Can be assigned</td>
+    <td>no</td>
+    <td>yes</td>
+    <td>yes</td>
+    <td>yes</td>
+  </tr>
+  <tr>
+    <td>Can be assigned on declaration</td>
+    <td>no</td>
+    <td>yes</td>
+    <td>no</td>
+    <td>no</td>
+  </tr>
+  <tr>
+    <td>Allocate on recursive call</td>
+    <td>no</td>
+    <td>yes</td>
+    <td>no</td>
+    <td>no</td>
+  </tr>
+  <tr>
+    <td>De-allocated on return</td>
+    <td>no</td>
+    <td>yes</td>
+    <td>no</td>
+    <td>no</td>
+  </tr>
+  <tr>
+    <td>Visible outside function</td>
+    <td>maybe</td>
+    <td>never</td>
+    <td>maybe</td>
+    <td>always</td>
+  </tr>
+  <tr>
+    <td>Visible outside file</td>
+    <td>no</td>
+    <td>no</td>
+    <td>no</td>
+    <td>yes</td>
+  </tr>
+</table> </center>
+
+
+<p>In this table, constants are included for sake of comparison. A &quot;may
+be&quot; indicates that visibility depends on whether the declaration (or
+definition, as in the case of constants) has been made inside or outside of
+functions.</p>
+
+<h2><a name="Functions">Functions</a></h2>
+
+<p>A <i>function</i> is a piece of code that can be invoked by name. A
+function's operands are passed to the function as an <i>argument</i>
+vector, which immediately follows the function name when calling the
+function. Groups of frequently used or specialized functions, collected
+together, are known as <i>libraries</i>.</p>
+
+<p>Functions break a long piece of code into smaller chunks. It is usually
+good programming practice to make each function perform only one task, and
+to build functions on top of other functions. This is called
+<i>modular</i> programming, and allows implementation details of
+lower-level tasks to be hidden from higher-level tasks. Thus, changes in
+implementation can be localized and made transparently, that is, made in a
+way invisible to other code.</p>
+
+<h3><a name="Loading Functions">Loading Functions</a></h3>
+
+<p>The command for loading a function from a file is <tt>load</tt>. The
+formal syntax is: </p>
+
+<pre>
+    load <i>filename</i>;
+</pre>
+
+<p>where <i>filename</i>, a token, is the name of the file in which the
+function is defined. The <tt>load</tt> command in fact loads all the
+functions found in the specified file. A statement containing
+<tt>load</tt> may appear in a function anywhere that a statement is
+permitted to appear. <tt>load</tt> may also be used at the command-line
+interpreter: </p>
+
+<pre>
+    svl&gt; load 'stats.svl'
+</pre>
+
+<h4><a name="Compilation Errors">Compilation Errors</a></h4>
+
+<p>Before a function is successfully loaded, it must be successfully
+compiled. Compilation may fail for various reasons, for instance, syntax
+errors (see <a href="#Modules">modules</a>).  Compilation will also fail
+when there are lines of code present which are not history-sensitive;
+i.e. they contain none of the following: <tt>print</tt> or
+<tt>pr</tt> statements, assignments or expressions involving random
+numbers. Such history-insensitive statements, although legal, do not have
+any effect, and merely waste computing time. The compiler will not permit
+you to leave them in. </p>
+
+<pre>
+    add x;         // causes compiler error 
+    rand 3;        // no error: random number generation
+    print x;       // no error: print statement
+    3 + pr x;      // no error: pr statement 
+    [ x = 4, 3 ];  // causes compiler error, even though contains an
+                   // assignment inside vector --- the vector being
+                   // constructed has no effect 
+</pre>
+
+<h3><a name="Function Declaration">Function Declaration</a></h3>
+
+<p>There are 3 types of function declaration, two of which include the
+function definition, and one of which indicates that a function to be
+called has been defined elsewhere, either lower down in the current file
+or in another file.</p>
+
+<p>In general, functions are defined as follows: </p>
+
+<pre>
+    [ local|global] function <i>identifier arg</i>
+        <i>statement list</i>
+    endfunction
+</pre>
+
+<p>If the <tt>local</tt> keyword is present, it indicates that the
+function to be declared should only be visible in the current program
+file. A local function can also be declared <i>within</i> another
+function. Such a function is invisible to any other outside function. The
+inner function shares all variables with the outer function that were
+declared before the definition of the inner function, i.e. the
+variables are treated as if they were globals.</p>
+
+<p>The global keyword makes the declared function callable from outside
+the current program file, i.e. it is a <i>public </i>function. If
+the <tt>local</tt> keyword is not present, then the declared function is,
+by default, <tt>global</tt>. It is strongly recommended, however, that
+functions be explicitly declared as <tt>global</tt>. <i>arg</i> is the
+function argument. If no parameters are passed, the function argument is
+null <tt>[]</tt>.  The function declaration must end with the
+<tt>endfunction</tt> keyword. </p>
+
+<pre>
+    global function mean x   // expect x scalar
+        local len, sum;      // declare 2 local variables
+        len = length x;
+        if len == 0 then return 0; endif
+        sum = add x; 
+        return sum / len; 
+    endfunction
+</pre>
+
+<p>Functions that comprise a single expression may be defined using a
+shorthand function declaration. The syntax is: </p>
+
+<pre>
+    [local|global] function <i>identifier</i> arg = <i>expr</i> ;
+</pre>
+
+<p>The key features of this shorthand are the equals sign <tt>=</tt>, and
+the absence of the <tt>endfunction</tt> keyword. The return value is the
+value of the expression <i>expr</i>.  </p>
+
+<pre>
+    global function mean x =      // return null if x is null
+        add x / last x_id x ;
+
+    global function mean x =      // return 0 if x is null
+        add x / ( length x + not length x ) ;
+</pre>
+
+<p>Calling a function that has not yet been defined, or is defined in
+another file, requires a declaration of that function. If the function
+source code is in another file, it must have been originally defined with
+the <tt>global</tt> keyword.</p>
+
+<p>The declaration </p>
+
+<pre>
+    function <i>identifier</i> [, <i>identifier</i>] ;
+</pre>
+
+<p>may be placed inside or outside a function, and indicates that the
+functions named by the <i>identifier</i>s have not, up to this point, been
+declared in the current file and must be imported. Several functions may
+be declared on the same line, separated by commas.  Built-in functions are
+auto-imported, and need not be declared.</p>
+
+<p>When this declaration is found: 
+
+<ul>
+  <li>inside a function, it may be placed anywhere a statement may appear.
+  The declared
+    function is recognized only from the point of its declaration onward
+    in the calling function. </li>
+
+  <li>outside a function, it is recognized by all functions in the file
+  whose definitions
+    appear after its declaration.</li>
+
+</ul>
+
+<pre>
+        // ExternalFunc invisible
+        .
+	.
+	. 
+    function ExternalFunc;    // now ExternalFunc visible 
+    function BelowFunc;       // now BelowFunc visible
+
+    function DoWhatsIt [a,b]
+        .
+	. 
+        ExternalFunc a; 
+        .
+	. 
+        BelowFunc [a,b]; 
+        .
+	. 
+    endfunction
+
+
+    function BelowFunc [m,n]  // ExternalFunc visible 
+	.
+	. 
+        ExternalFunc m; 
+	.
+	. 
+    endfunction
+</pre>
+
+<h3><a name="Arguments and Return Values">Arguments and Return Values</a></h3>
+
+<p>All functions accept exactly one argument, a vector, and return exactly
+one argument, a vector. (For more on function arguments see <a
+href="svlfund.html">SVL Functions</a>.)</p>
+
+<p>Arguments are always passed by value. In other words, only a private,
+temporary copy of the arguments is manipulated by a function. After the
+function has returned, the original arguments remain unaltered. To modify
+actual argument values, the function must return new, updated values, and
+these must then be explicitly assigned back to the originals. The
+arguments, in this case, must be lvalues. For instance, </p>
+
+<pre>
+    global function Return_new_a_b_function [a,b]
+        a = inc a;
+        b = inc b;
+
+        return [a,b];
+    endfunction        // actual a,b unmodified
+
+    [a,b] = Return_new_a_b_function [a,b];
+</pre>
+
+<p>Functions that do not take arguments must still be declared with an
+argument, such as an empty vector; for example: </p>
+
+<pre>
+    function NoArgs [] ...
+    endfunction 
+</pre>
+
+<p>Such a function is invoked with a null vector for argument. </p>
+
+<pre>
+    NoArgs [] ;
+</pre>
+
+<h4><a name="return Statement">return Statement</a></h4>
+
+<p>The <tt>return</tt> statement causes a function, defined using the
+<tt>function-endfunction</tt> declaration, to return a value (a vector) to
+its caller. The syntax of the <tt>return</tt> statement is </p>
+
+<pre>
+    return <i>expr</i>;
+</pre>
+
+<p>where <i>expr</i> is an expression. If no return value is specified, null <tt>[]</tt>
+is returned. In this case, executing </p>
+
+<pre>
+    endfunction
+</pre>
+
+<p>is equivalent to </p>
+
+<pre>
+    return [];
+</pre>
+
+<p>Similarly, if no <tt>return</tt> statement is present, <tt>[]</tt> is also returned.</p>
+
+<p>A single-line function defined using the shorthand function definition
+has an implicit <tt>return</tt> statement; the function returns the value
+of the one-line expression.</p>
+
+<h4><a name="Procedure vs. Function Calls">Procedure vs. Function Calls</a></h4>
+<b>
+
+<p></b>Functions can be made to exhibit different returning behaviors in
+different calling contexts. In an assignment, for instance, a function's
+return value is implicitly required. Sometimes, however, a function's
+return value is not needed. In such a case, i.e. when a function
+is called <i>procedurally</i>, it can be made to return null
+<tt>[]</tt>.</p>
+
+<p>(See the <a href="../fcnref/calletc.html"><tt>call</tt></a> function.)</p>
+
+<p>A function that has a different behavior when called as a procedure
+than when called as a function can be forced to return a value (behave as
+a function) when otherwise it would return null. Forcing a return value is
+achieved by enclosing the function call in parentheses <tt>()</tt>.</p>
+
+<h3><a name="Passing Functions as Arguments">Passing Functions as Arguments</a></h3>
+
+<p>To pass a function as an argument to another function, the caller
+must specify either the <i>function name</i> as a token or the
+<i>function address</i> as a number.  The function name must be the name
+of a global function.  The function address must be the address of a
+local function, which is declared on the top level, i.e. which is not
+nested.  The address of a function is obtained by prefixing its
+(unquoted) name with the symbol <tt>#</tt>.  For example,
+
+<pre>
+    local f = #my_fcn;
+</pre>
+
+assigns the address of the local function <tt>my_fcn</tt> to the variable
+<tt>f</tt>.
+
+<p>The function given by its name or address is subsequently invoked using
+the function <tt>call</tt>. </p>
+
+<pre>
+    function xyz [ f, ... ]      // function f in argument
+        ...
+        v = call [ f, args ] ; 
+        ...
+    endfunction
+
+    global function DoSomething [l,m,n] = ... ;
+
+    function SomeFunc [...] // passes xyz a function name
+        ...
+        w = xyz [ 'DoSomething', [a,b,c] ] ;
+        ...
+    endfunction
+</pre>
+
+<p>Special care must be taken when the functions to be passed as
+arguments are defined in run-module:
+
+<pre>
+    svl&gt; run 'module_name'
+</pre>
+
+<p>causes all functions in the module to be treated as <tt>local</tt>,
+even if they were explicitly declared to be <tt>global</tt>.  If
+functions defined in the run-module are to be passed as arguments to
+other functions, they should be declared <tt>local</tt> and passed to
+other functions by their addresses, not by their names.  </p>
+
+<p>For more on using <tt>run</tt> see <a href="#RunFiles">Run Files</a>.</p>
+
+<h3><a name="Function Extension">Function Extension</a></h3>
+
+<p><a href="svlfund.html">Function extension</a> is a mechanism for
+forcing a function to operate on each of the top-level elements of a
+vector, and is effected using <tt>app</tt> or <tt>apt</tt>.</p>
+
+<p>Here is an example of the use of <tt>app </tt>for applying a function
+to a series of data. </p>
+
+<pre>
+    function f x = igen sqr x;
+
+    svl&gt; app f [2,3]
+    [ [1,2,3,4], [1,2,3,4,5,6,7,8,9] ]
+    endfunction 
+</pre>
+
+<p>In the foregoing, </p>
+
+<pre>
+    app f [2,3] == [ f 2, f 3 ]
+</pre>
+
+<p>apt is similar to <tt>app</tt>, except that it additionally performs a transpose
+operation on the arguments of the <tt>apt</tt>'ed function. In other words, </p>
+
+<pre>
+    apt f x
+</pre>
+
+<p>is equivalent to:</p>
+
+<pre>
+    app f tr x
+</pre>
+
+<p>This is useful for functions taking more than one parameter, and whose
+parameters are passed in vectors.</p>
+
+<h3><a name="Built-in versus Public Functions">Built-in versus Public Functions</a></h3>
+
+<p>The functions that are distributed with your application software are classified as
+belonging to either the application (e.g. <tt>MOE</tt>) or to SVL. The
+application-specific functions are public functions. So are user-defined functions. SVL
+functions are special as they are considered to be <i>built-in</i>. Built-in
+functions (<i>bif</i>s) never need to be explicitly imported (they are
+<i>auto-imports</i>). Some public functions can also be auto-imported. You can
+interrogate functions for their auto-importability; see the next section for more details.
+</p>
+
+<h2><a name="Finding Public Symbols">Finding Public Symbols</a></h2>
+
+<p>There are a host of tools for interrogating the system about public
+symbols. For instance, with <tt>sym_find</tt> you can query for all
+symbols (functions, global constants, global variables, and SVL built-in
+functions) whose names match a given pattern. A set of related functions
+allow you to look for only functions or global variables, for instance,
+whose names match a given pattern. The value, type, size, and
+auto-importability of a symbol can also be determined.</p>
+
+<p>A useful set of cross-referencing tools allow you to find in which file
+a function was defined (<tt>sym_file</tt>) and on which line in the file
+(<tt>sym_line</tt>). You can also determine in which files a function is
+used (<tt>sym_modules</tt>).</p>
+
+<p>Finally, there are functions for listing out all public functions
+(<tt>functions</tt>), global constants (<tt>constants)</tt> and global
+variables (<tt>globals</tt>).</p>
+
+<h2><a name="Modules">Modules</a></h2>
+
+<p>In SVL, several functions can reside in one file. Generally, functions
+that perform similar tasks are gathered in the same file. When such a file
+is loaded using <tt>load</tt> (see <a href="#Loading Functions">loading
+functions</a>), it is compiled into vector binary code called a
+<i>module</i>. If compilation is successful, all the functions contained
+in the module become resident in memory, and can be called at any time.
+Compilation may fail for several reasons: syntax errors, constant
+expression evaluation errors, presence of history-insensitive code (see <a
+href="#Compilation Errors">compilation errors</a>), and name conflicts.
+Name conflicts arise because 2 functions cannot share the same name,
+unless the two instances are functions declared <tt>local</tt> in separate
+files. Attempting to load a function when another function with the same
+name is already resident will raise an error. The one conspicuous
+exception is when re-loading a module:  if the module's <tt>title</tt>
+(set using the <tt>#set title</tt> directive, see next section) is the
+same as that of the currently-loaded module, the already existent
+functions defined in that module will be replaced (the old module will be
+unloaded and the new module loaded).</p>
+
+<h3><a name="Module Environment">Module Environment</a></h3>
+
+<p>The term <i>module environment</i> refers to optional settable
+attributes of a given module, which are established by setting the module
+environment variables. The syntax for setting an environment variable is
+as follows: </p>
+
+<pre>
+    #set <i>environment_variable</i> '<i>value</i>'
+</pre>
+<i>
+
+<p>environment_variable</i> is a token. You can set any arbitrary
+environment variable.  The ones that are recognized by standard SVL are:
+
+
+<p><ul>
+  <li><tt>title</tt>, the name that appears (in windowing environments) in the
+  SVL Modules &amp; Tasks window.</li>
+
+  <li><tt>version</tt>, appended to the title in the SVL Modules &amp;
+  Tasks window.</li>
+
+  <li><tt>class</tt>, module classification; in the SVL Modules &amp;
+  Tasks window, modules can be
+    listed by module class on separate pages. When no class environment
+    variable is set, the default class is <tt>'general'</tt>. </li>
+
+  <li><tt>main</tt>, used to set the entry point of a module that will be
+  executed on a <tt>run</tt> command. The default entry point is a function
+    called <tt>main</tt>. </li>
+</ul>
+
+
+<p>For readability, module environment variables are generally set at the
+very top of a file, before any code.</p>
+
+<h3><a name="Obtaining Module Information">Obtaining Module Information</a></h3>
+
+<p>Modules are assigned internal module keys by which they may be referenced
+when inquiring for information about a module. Modules may also be referred
+to by module title (set using the <tt>#set title</tt> directive) or by file
+name.</p>
+
+<p>The keys, titles, classes, and file names of modules can be found using
+SVL's module information tools: <tt>mod_key</tt>, <tt>mod_title</tt>,
+<tt>mod_class</tt>, <tt>mod_file</tt> and <tt>mod_find</tt>.
+Cross-referencing tools allow you to ask the names of public functions and
+global variables used in a given module.</p>
+
+<p>The function <tt>modules</tt> lists all modules, and <tt>dumpmodules</tt> gives
+detailed information on each.</p>
+
+<h2><a name="Programs">Programs</a></h2>
+
+<p>In a traditional programming environment the language source code files
+are individually compiled into object modules.  Some objects are then linked
+together to form a library of functions.  Other objects are linked with these
+libraries, as well as with each other and with other system libraries, into a
+binary executable file, which is then loaded and run at a later time.  When
+libraries are specified to be "dynamic", they become independent of the
+executable that uses them, allowing them to be shared among multiple
+executables running at the same time.
+
+<p>The SVL programming environment uses a similar but much simplified model
+of execution:
+
+<ul>
+    <li>All SVL source code is compiled into "modules" that serve the
+	function of both the (dynamic) libraries, and the executables of a
+	traditional system.  (SVL does not use object files.)  SVL modules
+	reside in memory; disk files are used only to store the source
+	code.</li>
+
+<p>
+    <li>When the instructions from the compiled modules get to be executed,
+	we refer to these execution streams as SVL programs or SVL tasks.
+	There are multiple ways to cause execution of SVL code, which include
+	typing commands in the CLI, listing expressions in a script file,
+	specifying "main" function in a run-file, or associating SVL
+	expressions with menu commands.</li>
+
+<p>
+    <li>SVL source files can be compiled using the <tt>load</tt> function
+	into "library" modules that stay in memory until they are
+	explicitly unloaded or re-loaded.  The library is formed of all
+	non-local function defined in the file.  These functions can then be
+	used by any SVL program.</li>
+
+<p>
+    <li>SVL expressions typed in the CLI are automatically
+	compiled into an "executable" module which is immediately
+	executed.  The module stays in memory only as long as necessary for
+	its execution.  Typically, the SVL expressions involve functions
+	defined in other, already loaded modules.</li>
+
+<p>
+    <li>A list of SVL expressions stored in a file can be compiled and
+	immediately executed using the <tt>script</tt> function.  The
+	expressions are executed as if typed in the CLI.</li>
+
+<p>
+    <li>A function specified in an SVL source file can be compiled and
+	immediately executed using the <tt>run</tt> function.  The compiled
+	module will not serve as a "library" module for other programs and
+	will stay in the memory only as long as necessary for its
+	execution.</li>
+
+</ul>
+
+<p>See <a href="adv.html">Advanced SVL Topics</a> for more on SVL tasks.</p>
+<h3><a name="Scripts">Scripts</a></h3>
+
+<p>A script is a sequence of SVL expressions stored in a file.
+The expressions are executed as if typed in the CLI, with the exception
+that the semi-colon at the end of each expression is no longer optional
+and that all expressions are executed in one SVL task.
+
+<p>For example, given the script file <tt>try.script</tt>:
+
+<pre>
+    //
+    // try.script	- example of an SVL script 
+    //
+    x = igen 200 / 20 - 5;
+    y = sqr sin x;
+    PlotS [[x,y]];
+</pre>
+
+The CLI command
+
+<pre>
+    svl&gt; script 'try.script'
+</pre>
+
+is identical in effect to typing
+
+<pre>
+    x = igen 200 / 20 - 5;
+    y = sqr sin x;
+    PlotS [[x,y]];
+</pre>
+
+directly in the CLI.</p>
+
+<h3><a name="RunFiles">Run Files</a></h3>
+
+<p>The SVL <tt>run</tt> function starts an SVL program using as the
+entry point a routine defined in a specified file.  The file is compiled in a
+special mode that causes the module to be automatically unloaded when the
+execution is finished.  All functions defined in the file are treated local
+functions.
+
+<p>A routine can be specified as the entry point of the program using the
+
+<pre>
+    #set <b>main</b> <em>function_name</em>
+</pre>
+
+<a href="#Module Environment">module environment</a> variable.  The
+
+
+<pre>
+    run 'programfile'
+</pre>
+
+<p>call entered at the CLI, where <tt>programfile</tt> is the name of the
+file containing the module, causes the file to load, get executed, and then
+unload.  The function designated as "<tt>main</tt>" automatically starts
+executing as soon as the module has been successfully compiled. To pass
+parameters to the function, use </p>
+
+<pre>
+    run ['programfile', arguments_to_main]
+</pre>
+
+<p>With the <tt>#set main</tt> directive in place, a module can still be
+loaded using <tt>load</tt> and invoked in the usual way. </p>
+
+<p>When the <tt>#set main</tt> variable is not present in a file, the
+default entry point is a function called <tt>main</tt>. If such a function
+does not exist in the file, an attempt to use <tt>run</tt> to execute the
+module will result in an error.</p>
+
+
+<h2><a name="Variables and Functions at the CLI">Variables and Functions at the CLI</a></h2>
+
+<p>Constants, and static and local variables cannot be declared at the interactive command
+line. By default, variables are global; their declaration is implicit. </p>
+
+<pre>
+    svl&gt; a = 6           // a is global 
+    svl&gt; [b,c] = [3,4]   // b,c are globals 
+    svl&gt; local a         // Error! 
+</pre>
+
+<p>The CLI is the one place that global variables may be assigned values
+on first appearance. However, this is only when the global declaration is
+<i>implicit</i>. We make this distinction because explicit declaration of
+global variables is permitted. </p>
+
+<pre>
+    svl&gt; a = 1 // legal at CLI: no prior declaration of a
+</pre>
+
+<p>Function declarations and definitions, local or not, are not permitted at the CLI.
+Function definitions must be loaded using <tt>load</tt>. 
+(See <a href="svlfund.html">How CLI commands are executed</a>.)</p>
+
+<p>Next: <a href="io.html">Input and Output</a></p>
+
+<p><a href="../../fcnindex.html">Function Index</a></p>
+<p><a href="../../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

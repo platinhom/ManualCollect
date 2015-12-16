@@ -1,0 +1,3173 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+
+
+
+<!--	api.html
+!!
+!!	10-nov-2004 (ms) changed "void api_main" to "int api_main"
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<title>SVL API Manual</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>SVL API Manual</h2>
+<hr noshade="noshade" />
+
+<h2>Table of Contents</h2>
+ 
+<ul>
+  <li><a href="#Introduction">Introduction</a></li>
+  <li><a href="#Terminology">Terminology and Conventions Used in this Manual</a>
+  </li>
+  <li><a href="#HelloWorld">"Hello, World!": Creating, Compiling, and Linking a
+Simple Application</a></li>
+  <li><a href="#CommandLineArgs">Command Line Arguments</a></li>
+
+  <li><a href="#Anatomy_BuiltIn">Anatomy of an Application Built-In Function</a>
+  <ul>
+    <li><a href="#TheThreeParts">The Three Parts of a Function</a></li>
+    <li><a href="#MacroE_">Error Checking with Macro <tt>E_</tt></a></li>
+    <li><a href="#SVL_Errors">Error Handling</a></li>
+    <li><a href="#CustomizedErrorMessages">Customized Error Messages</a></li>
+  </ul>
+  </li>
+
+  <li><a href="#BindingFunctions">Binding Built-in Functions to SVL Function
+Symbols</a>
+  </li>
+
+  <li><a href="#DataTypes">API Data Types</a>
+  <ul>
+    <li><a href="#Tokens">Tokens</a></li>
+    <li><a href="#TablesOfTokens">Tables of Tokens</a></li>
+  </ul>
+  </li>
+
+  <li><a href="#Constants">Constants</a></li>
+
+  <li><a href="#SVLVariables">SVL Variables</a>
+  <ul>
+    <li><a href="#BasicUtilities">Basic SVL Variable Utilities</a></li>
+    <li><a href="#GeneralGetPutMethods">Accessing SVL variables with
+	<tt>Get</tt> and <tt>Put</tt> Methods</a></li>
+    <li><a href="#DirectGetPutMethods">Direct <tt>Get</tt> and <tt>Put</tt> Methods</a></li>
+  </ul>
+  </li>
+
+  <li><a href="#Context">Context</a>
+  <ul>
+    <li><a href="#SpecialContexts">Special Context Environments</a></li>
+    <li><a href="#ContextGetPutMethods">Context <tt>Get</tt> and <tt>Put</tt>
+Methods</a></li>
+    <li><a href="#DataPtrs">Data Pointers</a></li>
+  </ul>
+  </li>
+
+  <li><a href="#ResourceAndMemoryManagement">Resource And Memory Management</a></li>
+  <li><a href="#TaggedVectors">Tagged Vectors</a></li>
+  <li><a href="#UnitExtension">Unit Extension</a>
+  <li><a href="#TaskMemos">Tasks and Task Memos</a></li>
+</ul>
+
+<h2>
+<a NAME="Introduction">Introduction</a>
+</h2>
+
+<p>This manual describes the SVL Application Programming Interface (API), a
+set of functions and variables used to integrate user applications into SVL.
+This document explains how to put wrappers around your top-level C functions
+so that they can be compiled into the system and thus appear no
+different from any other built-in SVL function. The API provides means for
+passing data from SVL to your C functions and from the C functions back to
+SVL.  Also included in the API are calls for task and memory management and
+for error reporting and handling.</p>
+
+<h2>
+<a NAME="Terminology">Terminology and Conventions Used in this Manual</a>
+</h2>
+
+<p>In this document, we will refer to the SVL API as simply the <i>API</i>.
+The C functions that constitute the API toolkit are called <i>API methods</i>.
+
+<p>The C wrapper functions that you create to interface between the external
+application and SVL will be called the <i>application's built-in functions</i>,
+or simply <i>built-ins</i>.  The term "built-in" is used to indicate that once
+attached to the system, your function will be indistinguishable from other SVL
+built-in functions.  </p>
+
+<p>The functions written in SVL are referred to as <i>SVL functions</i> or
+<i>SVL user functions</i>. The functions that are native to the SVL language
+(such as <tt>add</tt> or <tt>indexof</tt>) are called <i>SVL built-in
+functions</i>, or <i>BIFs</i>.  </p>
+
+<p>In this manual, <tt>typewriter</tt> font will be used for C code, SVL code,
+function names, file names, and directory paths.</p>
+
+
+<h2>
+<a NAME="HelloWorld">"Hello, world!": Creating, Compiling, and Linking a
+Simple Application</a>
+</h2>
+
+<p>In order to use the SVL API you will need the following:
+
+<ul>
+<li>a C compiler (such as <tt>cc</tt>) and
+    an object linker (such as <tt>ld</tt>);</li>
+
+<li>the SVL API include file <tt>svl.h</tt>
+  (such as <tt>$MOE/api/include/svl.h</tt>);</li>
+
+<li>a pre-defined API directory such as <tt>$MOE/api/api-$(ARCH)</tt>
+    (in Unix), containing several <tt>api_XXX.mak</tt> files.  These files
+    are included in the distribution.</li>
+</ul>
+
+<p>
+The first example we will look at is an example of how to create a user
+C function that prints "Hello, world!" in the SVL Commands window.
+</p>
+
+
+<p>Create a file called <tt>my_api.c</tt> containing the following code
+(note: in the distribution of the SVL API there is already a file
+called <tt>api.c</tt> which you can copy and modify):
+
+<dir><hr></dir>
+
+<a NAME="Hello_World_Code"></a>
+<!-- hello1.c -->
+<pre>
+    #include &lt;string.h&gt;
+    #include "svl.h"        /* must be included to use API methods */
+
+    static svl_error my_apif_hello(svl_task t)
+    {
+        svl_var v = svl_TaskVar(t);
+        return svl_Put_string(v, 0, "Hello, world!");
+    }
+
+    static int api_initialize(int argc, char **argv)
+    {
+	svl_MustAddApiFunc("hello", my_apif_hello, 0);     
+        return argc;
+    }
+
+    int main(int argc, char **argv)
+    {
+        svl_InstallApi(api_initialize);  /* install initializations */
+        return api_main(argc, argv);
+    }
+</pre>
+<dir><hr></dir>
+
+The program contains three functions:
+<dir>
+<dl>
+<dt>my_api_hello
+<dd>Interfaces with the SVL system via a "handle" of
+type svl_task.  The variable v, of type svl_var, is a data
+container of a special format used by the SVL system.
+
+<p>In more complicated examples, this function would 
+be an application built-in (wrapper)
+function; <i>i. e.</i>, it would take in data from the SVL system, pass it
+to one or more C functions belonging to the external application, and send
+back to SVL the data returned by those C functions.
+
+<p><dt>api_initialize
+<dd> The API initialization function, in which the SVL public
+symbol hello is bound to the C function my_apif_hello.
+
+<p>The API initialization function is where
+SVL public symbols are bound to the built-ins, relevant
+command-line arguments are processed, and user global constants are defined.
+<p>An API initialization function must always be supplied.
+
+<p><dt>main
+<dd> Call svl_InstallApi to install the new function bindings.
+</dl>
+</dir>
+
+
+
+<p>To simplify compilation and linking, create a file called <tt>Makefile</tt>.
+There is a sample of such a file in your distribution which you can copy and
+modify (the modification required is to replace all instances of <tt>api</tt>
+with <tt>my_api</tt>):
+
+<dir><hr></dir>
+
+<!-- Makefile -->
+<pre>
+    #
+    # Makefile for moe/moebatch API
+    #
+    # Environment variables required:
+    #
+    #    MOE  - the moe root directory
+    #
+    #    ARCH - one of
+    #        lnux Linux (Intel)
+    #        i4w9 Windows 2000/XP/Vista/7
+    #        mppc Mac/PowerPC
+    #        mx86 Mac/Intel
+    #        sgi4 SGI/MIPS
+    #        sun4 Sun/SPARC
+    #        sx86 Sun/AMD
+
+    include $(MOE)/api/api-$(ARCH).mak
+     
+    CFLAGS = $(MOE_CFLAGS)
+    CPPFLAGS = $(MOE_CPPFLAGS)
+     
+    all     : umoe$E umoebatch$E
+     
+    umoe$E  : $(MOE_OBJ) <b>my_api</b>$O
+            $(CC) $(MOE_CFLAGS) -o umoe$E my_api$O $(MOE_OBJ) $(MOE_LIBS)
+     
+    umoebatch$E : $(MOEB_OBJ) <b>my_api</b>$O
+            $(CC) $(MOE_CFLAGS) -o umoebatch$E my_api$O $(MOEB_OBJ) $(MOEB_LIBS)
+
+    #
+    # list of dependencies
+    #
+     
+    <b>my_api</b>$O        : <b>my_api.c</b>
+
+    #
+    # for removing old objects and executable binaries
+    #
+     
+    clean   :
+            -$(RM) *$O umoe$E umoebatch$E
+</pre>
+
+<dir><hr></dir>
+
+<p>Type
+
+<pre>
+    make
+</pre>
+
+<p>to invoke the <tt>make</tt> utility, which does compiling and linking
+according to the directives in <tt>Makefile</tt>.  Two executables are created:
+<tt>umoe</tt>, which provides a graphical windowing interface, and
+<tt>umoebatch</tt>, which provides a batch mode interface. Note that, as a
+mnemonic, the executable names are begun with the letter <i>u</i> which stands
+for <i>user</i>.</p>
+
+<p>The command</p>
+
+<pre>
+    make clean
+</pre>
+
+<p>removes old objects and executable binary files from the current directory.
+</p>
+
+<p>Invoke your newly-created graphical version of MOE by typing</p>
+
+<pre>
+    umoe
+</pre>
+
+<p>Open the SVL Commands window and at the command line type</p>
+
+<pre>
+    hello[]
+</pre>
+
+<p>In the output area of the SVL Commands window</p>
+
+<pre>
+    'Hello, world!'
+</pre>
+
+<p>will appear.  Now invoke the batch version with</p>
+
+<pre>
+    umoebatch
+</pre>
+
+<p>At the <tt>moe&gt;</tt> prompt, type</p>
+
+<pre>
+    hello[]
+</pre>
+
+<p>Once again, <tt>'Hello, world!'</tt> is printed out.</p>
+
+<h2>
+<a NAME="CommandLineArgs">Command-Line Arguments</a>
+</h2>
+
+<p>Command-line arguments relevant to an external
+application are processed in the API initialization
+function.
+</p>
+
+<p> The initialization function accepts the same arguments as
+<tt>main</tt>, <i>i. e.</i>, the size (<tt>argc</tt>) and the address
+(<tt>argv</tt>) of an array of command-line argument strings.  It finds
+and strips out those arguments it understands, returning the rest to the
+caller function (<tt>svl_InstallApi</tt>).  The following code-template
+demonstrates code to do this (this code is found in <tt>api.c</tt> in the
+distribution):
+
+<dir><hr></dir>
+<!-- myswitch.c -->
+<pre>
+    /* API Initialization function: handles command-line arguments */
+
+    static int api_initialize(int argc, char **argv)
+    {
+	int i, new_argc;
+
+	    /* walk down the list of command-line arguments */
+
+	for (new_argc = i = 1; i &lt; argc; i++) {
+
+		/* my_switch not found: go to the next item */
+
+	    if ( strcmp(argv[i], "<b>-my_switch</b>") != 0 ) {
+		argv[new_argc++] = argv[i]; /* update argument list */
+		continue;
+	    }
+
+		/* my_switch found at the end: it has no value */
+
+	    if (i + 1 &gt;= argc) continue;
+	    i++;
+
+		/* my_switch found: its value is in "<b>argv[i]</b>"
+		** ... process the argument ... */
+	}
+
+	    /* ... perform other initializations ... */
+
+	return new_argc;  /* return number of unprocessed arguments */
+    }
+</pre>
+
+<dir><hr></dir>
+
+<p>Here is an example that checks for a command-line switch of the form 
+<tt>-api XXX</tt>. 
+The function <tt>apicmd</tt> returns the value of the switch (<tt>XXX</tt>).
+</p>
+
+<p>Note: This function is not portable to platforms that do not support the
+concept of a command line and command line arguments, <i>e.g.</i>, the Mac OS.
+
+<dir><hr></dir>
+<!-- apicmd.c -->
+<pre>
+    /*------ Example: check for command-line switch -api XXX -----*/
+
+    #include &lt;string.h&gt;
+    #include "svl.h"        /* must be included to use API methods */
+
+    static svlTok <b>cmdarg</b>; /* static variable to contain switch */
+
+    /* api_apicmd:
+    **     Save the command-line switch into the static variable cmdarg. */
+
+    static svl_error api_apicmd(svl_task t){
+        return svl_Put_T(svl_TaskVar(t), 0, <b>cmdarg</b>);
+    }
+
+    /* api_initialize:
+    **     API initialization routine */
+
+    static int api_initialize(int argc, char **argv)
+    {
+        int i, new_argc;
+
+	    /* scan the command line arguments for "-api XXX" */
+
+        cmdarg = svl_nullTok;    /* initialize the switch value */
+
+        for (new_argc = i = 1; i &lt; argc; i++) {
+	    if (strcmp(argv[i],"<b>-api</b>") != 0) {
+		argv[new_argc++] = argv[i];
+		continue;
+	    }
+
+	    if (i + 1 &gt;= argc) continue;
+	    i++;
+
+		/* found the switch; allocate memory in
+		** static variable cmdarg to store switch value */
+
+	    svl_ReallocTokE(&<b>cmdarg</b>, argv[i]);
+	}
+
+	    /* bind api_apicmd to SVL public function symbol apicmd */
+
+	svl_MustAddApiFunc("apicmd", <b>api_apicmd</b>, 0);
+
+	    /* return the number of remaining command line arguments,
+	    ** less the number of -api switches */
+
+	return new_argc;
+    }
+
+    int main (int argc, char **argv)
+    {
+	svl_InstallApi(api_initialize);
+	return api_main(argc, argv);
+    }
+</pre>
+
+<dir><hr></dir>
+
+<h2>
+<a NAME="Anatomy_BuiltIn">Anatomy of an Application Built-in Function</a>
+</h2>
+
+<p>The application built-in function (or simply <i>built-in</i>) is a C
+function of a specific form that permits the application to interact with the
+SVL system.
+
+It may be either an independent function of full functionality on its own, or
+it may be just a wrapper around a method or a set of methods of an external
+library of functions.
+
+ The built-in will: </p>
+
+<ol>
+  <li>use API methods to access and parse the vector argument that the SVL user
+passes in, then</li>
+  <li>pass the relevant portions of the argument to the application's functions,
+and finally</li>
+  <li>interpret the results and use the API methods to create the output vector
+that is returned to the SVL user.</li>
+</ol>
+
+<p>The built-in accepts a single argument, a <i>handle</i>, of type
+<tt>svl_task</tt>, and returns an error value of type <tt>svl_error</tt>. The
+handle is used primarily to access the input argument.
+The returned error value serves as an error path for reporting
+abnormal modes of execution, such as failures in memory allocation, illegal data
+contents, etc.  A <tt>NULL</tt> error value indicates successful execution.
+</p>
+
+<p>The declaration of the built-in is of the form: </p>
+
+<pre>
+    svl_error function_name(svl_task task)
+    {
+        ....
+    }
+</pre>
+
+<h3>
+<a NAME="TheThreeParts">The Three Parts of a Function</a>
+</h3>
+
+<p>The built-in generally comprises three sections: </p>
+
+<ol>
+  <li>An <em>initialization</em> section, in which all variables, buffers, and
+	other resources needed by the routine or by the external application
+	are initialized (but not allocated). This section is always executed
+	in its entirety; <i>i. e.</i>, it must never fail - no errors may
+	occur.</li>
+
+  <li>The <em>body</em> of the routine, where the actual work is done.
+	Managed memory resources are allocated here.
+	If a failure occurs anywhere inside the body, all remaining code in
+	the body is skipped, and control is given to the exit section.</li>
+  <li>The <em>exit</em> section, where housekeeping is performed: any
+	memory or resources allocated by the routine must be cleaned up
+	and freed. It assumes that all variables are correctly initialized.
+	It must not, however, assume anything about the body of the function.</li>
+</ol>
+
+<p>By convention, the exit code starts with the label <tt>X_:</tt>.  Also by
+convention, the variable <tt>e</tt>, (initialized to <tt>NULL</tt>) is used to store the
+<i>error condition</i>, which is a value of type <tt>svl_error</tt>.  The value
+is <tt>NULL</tt> if no error occurred, otherwise it is the handle of the error buffer
+where the error text (that is ultimately seen by the SVL user) is stored.
+
+<h3>
+<a NAME="MacroE_">Error Checking with Macro <tt>E_</tt></a>
+</h3>
+
+Within the body of the routine, the macro <tt>E_</tt> is used to check for a
+non-<tt>NULL</tt> value of <tt>e</tt> :</p>
+
+<pre>
+    #define E_(Call) if (e = (Call)) goto X_; else /* do nothing */
+</pre>
+
+<p>As an example, we will modify the <tt>my_apif_hello</tt> function from
+the <tt>"Hello, world!"</tt> example above so that it follows the convention:
+
+<dir><hr></dir>
+<!-- hello2.c -->
+<pre>
+    #define E_(Call) if (e = (Call)) goto X_; else /* do nothing */
+
+    /* my_apif_hello:
+    **     Interfaces with the SVL system via a "handle" of type
+    **     svl_task.  The variable v, of type svl_var, is a data
+    **     container of a special format used by the SVL system. */
+
+    static svl_error my_apif_hello(svl_task t)
+    {
+	svl_error e = NULL;
+        svl_var v = svl_TaskVar(t);
+
+        E_(svl_Put_string(v, 0, "Hello, world!")); /* check for error */
+    X_:
+	return e;     /* NULL on success, non-NULL on failure */
+    }
+</pre>
+
+<dir><hr></dir>
+
+<p>In such a simple example, the use of the <tt>E_</tt> macro is not warranted
+(<tt>svl_Put_string</tt> returns a value of type <tt>svl_error</tt>, so we could
+just return <i>its</i> return value, which is what we did in the original
+example), but in general, this style of coding is recommended because it
+increases safety.</p>
+
+<h3>
+<a NAME="SVL_Errors">Error Handling</a>
+</h3>
+
+<p>Any function that may fail must trap the error and report it to the
+caller.  Most API functions return a value of type <tt>svl_error</tt>: a
+non-<tt>NULL</tt> value indicates that an error has occurred, in which case
+the value itself is the error handle. Typically, when a function using the
+SVL API detects that a non-<tt>NULL</tt> <tt>svl_error</tt> value is being
+returned to it, the function will simply return that value to <i>its</i>
+caller; <i>i. e.</i>, it will not perform any specific error handling
+itself.  The error handling is assumed to be performed by some other function
+upstream.</p>
+
+<p>Any function you write (not just the built-in) that uses API methods or
+variables or constants or types should have the tripartite composition:
+initialization code, function body, and exit code.</p>
+
+<p>Typically, the <tt>svl_error</tt> value is stored in a variable <tt>e</tt>,
+initialized to <tt>NULL</tt> in the initialization section. Its value
+is checked and potentially reset in the body of the function, and is
+returned to the caller at the end of the exit section.</p>
+
+<p>For example:
+
+<dir><hr></dir>
+
+<pre>
+    #define E_(Expr) if (e = (Expr)) goto X_; else
+
+    static svl_error my_func(arg1, arg2, ...) /* error-returning function */
+    {
+	    /* initialization code */
+
+        svl_error e = NULL;     /* error condition initialize to "no error" */
+        svl_var w = NULL;       /* initialize a data container */
+
+	    /* body of the function */
+
+        E_(svl_AllocVarE(&w));  /* error-returning call */
+	    ...
+
+    X_:     /* exit code */
+	svl_FreeVar(w);         /* free allocated memory */
+	return e;               /* pass error code to caller */
+    }
+</pre>
+
+<dir><hr></dir>
+
+<h3>
+    <a NAME="CustomizedErrorMessages">Customized Error Messages</a>
+</h3>
+
+<p>In rare cases, the error condition must be set by the function itself.  To
+do this, the function uses one of the API error buffer access methods, such
+as <tt>svl_SetErrorText</tt>.  Note that there is only one error buffer, thus
+successive calls to <tt>svl_SetErrorText</tt> will overwrite the buffer
+contents; previous contents are lost.  The API system itself may also use and
+overwrite the buffer.</p>
+
+<p>The following built-in function (which doesn't need separate
+initialization, body, and exit sections because it is so tiny)
+does nothing but set the error text to <tt>&quot;This is my error&quot;</tt>
+and return the error handle:
+
+<pre>
+    static svl_error api_myerr(svl_task t)
+    {
+	return svl_SetErrorText("This is my error");
+    }
+</pre>
+
+<p>Here are the general rules for error handling:</p>
+
+<ol>
+    <li> Initialize a variable <tt>e</tt> of type <tt>svl_error</tt> to
+	<tt>NULL</tt> in the initialization section.</li> <li> Use <tt>e</tt>
+	to store the return value of every error-returning function. The
+	<tt>E_</tt> macro may be used for convenience.  Any function that may
+	fail must return an error.
+    </li>
+
+    <li> Check the value of <tt>e</tt> after each function call: a
+	non-<tt>NULL</tt> value indicates the function failed and returned an
+	error code. If there was an error, jump to the exit section (labeled
+	by <tt>X_</tt>) of the routine, execute the exit code, and, if
+	appropriate (which is generally the case), return the error code to
+	the caller.
+    </li>
+</ol>
+
+
+<h2>
+<a NAME="BindingFunctions">Binding Built-in Functions to SVL Function Symbols</a>
+</h2>
+
+
+<p>A new built-in is attached to an SVL symbol (function name) in an API
+initialization routine. There are two ways to install a new function into SVL:
+</p>
+
+<ul>
+  <li>make a call to <tt>svl_MustAddApiFunc</tt>
+    in the API initialization routine;</li>
+  <li>create a table of type <tt>svlApiFuncInfo</tt> of functions, and use
+    <tt>svl_MustAddApiFuncTbl</tt> to
+    install all the functions in the table at once in the API initialization
+    routine. </li>
+</ul>
+
+<p>The call to <tt>svl_MustAddApiFunc</tt> is of the form:
+
+<pre>
+    svl_MustAddApiFunc("svl_symbol", name_of_built_in, fbits);
+</pre>
+
+<p>The table of functions is of the form:
+
+<pre>
+    svlApiFuncInfo table_name[] = {
+        {  "svl_symbol", name_of_built_in, fbits, 0},
+	    ...
+	{0}
+    };
+</pre>
+
+<p>The last field in every record <i>must</i> be zero, and the table must be
+terminated with a <tt>NULL</tt>-record, i.e. <tt>{0}</tt>.</p>
+
+<p>The <tt>fbits</tt> argument is used to set the "auto-importability" of a
+built-in.  When <tt>fbits</tt> is 0, the function name of the built-in will
+be visible (accessible) in SVL to all SVL modules; <i>i. e.</i>, it will be
+<i>auto-imported</i> to all modules.  Functions that are not auto-imported
+must be explicitly imported by declaring them in the SVL modules where they
+are used.  Setting <tt>fbits</tt> to <tt>SVL_F_DECL</tt> marks the built-in
+for explicit import.</p>
+
+<p>The API initialization routine itself is installed in the <tt>main</tt>
+function using a call to <tt>svl_InstallApi</tt>, which should be followed
+by a call to <tt>api_main</tt>.
+
+The initialization routine will be called from <tt>api_main</tt> at an
+appropriate time.
+
+The function <tt>api_main</tt> is the API's method to start the application.
+It initializes all subsystems of the application and invokes the main event
+loop.  The function never returns.  </p>
+
+<p>The use of the word "<tt>Must</tt>" in the function names indicates that
+if the function fails, the application will be terminated.  Such error
+checking is required in the API initialization routine as there is no
+error path in the API initialization phase.</p>
+
+<p>The <a href="#Hello_World_Code"><tt>"Hello, world!"</tt></a> example
+illustrated the use of <tt>svl_MustAddApiFunc</tt>.  Here is an example of how
+to use <tt>svl_MustAddApiFuncTbl</tt>.  In it, functions <tt>fourth</tt>,
+<tt>fifth</tt>, and <tt>sixth</tt>, which return the fourth, fifth, and sixth
+element of their argument, respectively, are associated with their corresponding
+SVL symbols in a table.
+
+<dir><hr></dir>
+<!-- fourth.c -->
+<pre>
+    #include "svl.h" 
+
+    /*--- fourth, fifth, sixth: uses svl_MustAddApiFuncTbl ---*/
+
+    #define PEEK(N) return svl_Peek(svl_TaskVar(task), N)
+
+    svl_error my_api_fourth(svl_task task) { PEEK(4); }
+    svl_error my_api_fifth(svl_task task) { PEEK(5); }
+    svl_error my_api_sixth(svl_task task) { PEEK(6); }
+
+	/* set up func table, make functions auto-imports */
+
+    static svlApiFuncInfo ftbl[] = {
+	{ "fourth", my_api_fourth, 0, 0},
+	{ "fifth", my_api_fifth, 0, 0},
+	{ "sixth", my_api_sixth, 0, 0},
+	{ 0 }
+    };
+
+    static int api_initialize(int argc, char **argv)
+    {
+	<b>svl_MustAddApiFuncTbl</b>(ftbl);
+    }
+
+    int main (int argc, char **argv)
+    {
+	<b>svl_InstallApi</b>(api_initialize);
+	return api_main(argc, argv);
+    }
+</pre>
+
+<dir><hr></dir>
+
+<h2>
+<a NAME="DataTypes">API Data Types</a>
+</h2>
+
+<p>There are three SVL data types:
+
+<ul>
+<tt>
+  <li>'tok'</li>
+  <li>'char'</li>
+  <li>'num'</li>
+</tt>
+</ul>
+
+<p>The SVL type <tt>'num'</tt>
+encompasses all numerical data. The SVL user sees SVL data in terms of these types, or in
+terms of their corresponding SVL storage types: </p>
+
+<ul>
+  <li><tt>'tok'</tt></li>
+  <li><tt>'char'</tt></li>
+  <li><tt>'int'</tt> or <tt>'real'</tt></li>
+</ul>
+
+<p>The actual C types used for storing SVL data values will be referred to as
+the API C types.  The native C data types will be referred to as the generic C
+types.  The following table gives the API C types, the SVL storage type with
+which each is associated, and the generic C type with which each is
+compatible:</p>
+
+<table BORDER="1" WIDTH="100%">
+<tr>
+    <th>API C type</th>
+    <th>SVL storage type</th>
+    <th>Related generic C type</th>
+</tr>
+<tr>
+    <td><tt>svlInt</tt></td>
+    <td><tt>'int'</tt></td>
+    <td><tt>int</tt>, <tt>short</tt>, <tt>long</tt>, and unsigned versions</td>
+</tr>
+<tr>
+    <td><tt>svlReal</tt></td>
+    <td><tt>'real'</tt></td>
+    <td><tt>double</tt>, <tt>float</tt></td>
+</tr>
+<tr>
+    <td><tt>svlChar</tt></td>
+    <td><tt>'char'</tt></td>
+    <td><tt>char</tt>, <tt>unsigned char</tt></td>
+</tr>
+<tr>
+    <td><tt>svlTok</tt></td>
+    <td><tt>'tok'</tt></td>
+    <td><tt>char[]</tt> (special)</td>
+</tr>
+</table>
+
+<p>The type <tt>svlTok</tt> is a special type used by SVL for handles to managed
+strings of characters call <i>tokens</i>.</p>
+
+<h3>
+<a NAME="Tokens">Tokens</a>
+</h3>
+
+<p>A token is an SVL container for a string. An entire system exists for storing
+and manipulating strings of characters as tokens.  Tokens are manipulated
+through handles of type <tt>svlTok</tt>. Two token handles are equal if and
+only if they represent the same string. This allows for fast searching and
+comparison of vectors of tokens.</p>
+
+<p>All token handles used in a routine <i>must</i> be initialized to the
+&quot;null token&quot;, <tt>svl_nullTok</tt>, in the initialization section of
+the routine, and <i>must</i> be freed in the exit section of the routine with
+the <tt>svl_FreeTok</tt>:
+
+<dir><hr></dir>
+<pre>
+    static svl_error my_func(svl_task v)
+    {
+	    /* initialization section */
+
+	svl_error e = NULL;
+	svlTok tok = svl_nullTok;
+
+	    /* body */
+	...
+
+    X_:	    /* exit section */
+	svl_FreeTok(tok);
+	return e;
+    }
+</pre>
+<dir><hr></dir>
+
+<p>On some platforms (<i>e.g.</i>, PC's), pre-defined constants such as
+<tt>svl_nullTok</tt> are not supported.  The API function <tt>svl_NullTok</tt>
+returns a handle to a null token, which can be used for initialization instead:
+
+<dir><hr></dir>
+<pre>
+    static svl_error my_func(svl_task v)
+    {
+	    /* initialization section */
+
+	svl_error e = NULL;
+
+	    /* for systems that do not allow pre-defined
+	    ** constants, use the API function svl_NullTok() */
+
+	svlTok nullTok = svl_NullTok();	/* define null token variable */
+	svlTok tok = nullTok;
+
+	    /* body */
+	...
+
+    X_:	    /* exit section */
+	svl_FreeTok(tok);
+	return e;
+    }
+</pre>
+<dir><hr></dir>
+
+<p>Tokens are reference-counted (<i>refcounted</i>); <i>i. e.</i>, each token
+maintains a counter to track how many token handles in the system refer to that
+token at any given time.  To maintain the integrity of the refcounting system,
+always use the API token-access methods (<tt>svl_ReallocTokE</tt>,
+<tt>svl_FreeTok</tt>, etc.) when working with token handles. Never make a direct
+C-assignment of a value of type <tt>svlTok</tt>, as doing so will confuse the
+refcounting system.</p>
+
+<dir><hr></dir>
+
+<pre>
+    /* Example of what NOT to do */
+
+    static svl_error my_func(svl_task v)
+    {
+	    /* initialization section */
+
+	svl_error e = NULL;
+
+	svlTok tok1 = svl_nullTok;	/* must always initialize... */
+	svlTok tok2 = svl_nullTok;	/* ...to null token */
+
+	    /* body */
+
+	E_(svl_ReallocTokE(&tok1, "aaa"));
+	E_(svl_ReallocTokE(&tok2, "bbb"));
+	...
+
+	/* <em>Don't do this!</em>
+	    tok1 = tok2; */
+
+	/* <em>DO THIS INSTEAD:</em> */
+	    <b>E_(svl_ResetTok(&tok1, tok2));</b>
+
+	...
+
+    X_:	    /* exit section */
+
+	svl_FreeTok(tok1);		/* must always free... */
+	svl_FreeTok(tok2);		/* ...with svl_FreeTok */
+
+	return e;
+    }
+</pre>
+
+<dir><hr></dir>
+
+<p>The only token that is not refcounted is the null token.  This is why it can
+be used for direct initialization of variables of type <tt>svlTok</tt>.</p>
+
+<p>The contents of a token can be read with the
+
+    <tt>svl_TokToStr</tt>
+
+method and modified with the
+
+    <tt>svl_ReallocTokE</tt>,
+    <tt>svl_ReallocnTokE</tt>, and
+    <tt>svl_ResetTok</tt> methods.
+</p>
+
+<p>Here is an example of token allocation, manipulation, and freeing.  The
+function <tt>api_toktest</tt> initializes three tokens, allocates space for
+and assigns values to them, prints out their values, and then frees them.</p>
+
+<p>Note that to test equality of the contents of two tokens, it is sufficient
+to test equality of only the handles of the two tokens.</p>
+
+<dir><hr></dir>
+<!-- toktest.c -->
+<pre>
+    static svl_error api_toktest(svl_task t)
+    {
+	    /* initialization block */
+
+	svl_error e = NULL;
+	svlTok tok1 = svl_nullTok;
+	svlTok tok2 = svl_nullTok;
+	svlTok tok3 = svl_nullTok;
+
+	    /* body */
+
+	    /* modify the contents of tokens */
+
+	E_(svl_ReallocTokE(&tok1, "aaa"));
+	E_(svl_ReallocTokE(&tok2, "aaa"));
+	E_(svl_ReallocTokE(&tok3, "bbb"));
+
+	    /* read the contents of tokens */
+
+	printf("tok1 = '%s'\n", svl_TokToStr(tok1));
+	printf("tok2 = '%s'\n", svl_TokToStr(tok2));
+	printf("tok3 = '%s'\n", svl_TokToStr(tok3));
+
+	    /* test for equality of tokens */
+
+	printf("tok1 %s tok2\n", tok1 == tok2 ? "==" : "<>");
+	printf("tok2 %s tok3\n", tok2 == tok3 ? "==" : "<>");
+
+
+    X_:	    /* exit block */
+	svl_FreeTok(tok1);
+	svl_FreeTok(tok2);
+	svl_FreeTok(tok3);
+	return e;
+    }
+</pre>
+<dir><hr></dir>
+
+<h3>
+<a NAME="TablesOfTokens">Tables of Tokens</a>
+</h3>
+
+<p>Tokens may be initialized in advance (prior to the definition of the
+built-in) in the API initialization routine.  </p>
+
+<p>One use of pre-initialized tokens is to support the processing 
+of options by a built-in.
+The built-in can be made to accept optional arguments in the
+form of a tagged vector of attribute-value pairs.  (See <a
+href="#TaggedVectors">Tagged Vectors</a> for another example on options,
+and to see how tagged vectors are processed using API methods.)  Within the C
+module of the built-in, a private constant table of tokens would be used to
+hold the option values; on the SVL side, the SVL user can be apprehended of
+the valid possible options via a global constant.</p>
+
+<p> In the following sample code, we illustrate how to create a table of
+tokens (<tt>opttok</tt>) and initialize it in the API initializer.  The
+built-in function is sketched out (<tt>my_api_func</tt>), and two utilities
+for converting an option, expressed as a token, to a number, and back, are
+provided (<tt>opt_to_enum</tt> and <tt>enum_to_opt</tt>).
+
+A global constant is used to hold all valid option for access by the
+SVL user (<tt>OPT_LIST</tt>).
+
+<dir><hr></dir>
+<!-- optlist.c -->
+<pre>
+    /* ------------ Example of private tokens  ------------ */
+
+    #define E_(Call) if (e = (Call)) goto X_; else /* do nothing */
+
+	/* OPT_A, OPT_B, OPT_C, OPT_D will be used
+	** to index into the token table */
+
+    enum { OPT_A = 0, OPT_B, OPT_C, OPT_D, OPT_EXTENSION };
+
+	/* opttok is a static buffer containing
+	** the table of private tokens */
+
+    static svlTok <b>opttok</b>[OPT_EXTENSION] = {0};
+
+	/* optstr is used for initializing the global constant
+	** OPT_LIST, which the SVL user can use to discover the
+	** legal options for the built-in */
+
+    static char *optstr[] = { "A", "B", "C", "D", NULL };
+
+    /* ---------------------- opt_to_enum ------------------------
+    **    Utility to convert the option token to the option number */
+
+    static int <b>opt_to_enum</b>(svlTok opt_tok)
+    {
+	int opt_enum;
+    
+	for (opt_enum = 0; opt_enum < OPT_EXTENSION; opt_enum++)
+	    if (opttok[opt_enum] == opt_tok) break;
+
+	return opt_enum;
+    }
+
+    /* ---------------------- enum_to_opt ------------------------
+    **    Utility to convert the option number to the option token */
+
+    static svlTok <b>enum_to_opt</b>(int opt_enum)
+    {
+	return opttok[opt_enum];
+    }
+
+    /* ----------- my_api_func: the built-in function ------------ */
+
+    static svl_error <b>my_api_func</b>(svl_task task)
+    {
+	    /* initialization code */
+
+	svl_error e = NULL;
+
+	    /* assume the input argument, to be stored in v,
+	    ** comprises solely the list of options */
+
+	svl_var v = svl_TaskVar(task);
+
+	    /* body */
+
+	    /* ...process the options... */
+
+	    ...
+	
+    X_:	    /* exit code */
+	return e;
+    }
+
+    /* ----- api_initialize: the API initialization routine ----- */
+
+    static int api_initialize(int argc, char **argv)
+    {
+	int n;
+
+	    /* make the global constant OPT_LIST, a flat constant
+	    ** vector of tokens */
+
+	svl_MustMakeConst_strings("<b>OPT_LIST</b>", optstr);
+    
+	    /* create (allocate) a token table */
+    
+	svl_InitTokArray(<b>opttok</b>, OPT_EXTENSION);
+
+	    /* initialize the contents of the token table;
+	    ** since there is no error path,
+	    ** use svl_Must to trap any errors */
+
+	for (n = 0; n < OPT_EXTENSION; n++)
+	    svl_Must(svl_ReallocTokE(&<b>opttok</b>[n], optstr[n]));
+
+	svl_MustAddApiFunc("my_func", <b>my_api_func</b>, 0);
+    }
+</pre>
+
+<dir><hr></dir>
+
+<h2>
+<a NAME="Constants">Constants</a>
+</h2>
+
+<p>The external application is permitted to define SVL constants of global
+scope. Such constants behave as any other built-in SVL constant: they are
+accessible to all SVL modules, can be used at the command line, and cannot be
+re-defined or undefined.</p>
+
+<p>Global constants can be defined only in the API initialization routine
+(installed with <tt>svl_InstallApi</tt>). They are defined with the
+<tt>svl_MustMakeConst_XXX</tt> functions, where <tt>XXX</tt> specifies the data
+type of the constant: integer, real, string, array of strings or vector.
+
+<ul>
+<table BORDER="1" WIDTH="80%">
+<tr>
+  <th>API Function</th>
+  <th>SVL storage type of the created constant</th>
+</tr>
+<tr>
+  <td><tt>svl_MustMakeConst_I</tt></td>
+  <td><tt>'int'</tt></td>
+</tr>
+<tr>
+  <td><tt>svl_MustMakeConst_R</tt></td>
+  <td><tt>'real'</tt></td>
+</tr>
+<tr>
+  <td><tt>svl_MustMakeConst_string</tt></td>
+  <td><tt>'tok'</tt></td>
+</tr>
+<tr>
+  <td><tt>svl_MustMakeConst_strings</tt></td>
+  <td>array of <tt>'tok'</tt></td>
+</tr>
+<tr>
+  <td><tt>svl_MustMakeConst_V</tt></td>
+  <td>SVL vector</td>
+</tr>
+</table>
+</ul>
+
+<p>The calling syntax is of the form:</p>
+
+<pre>
+    svl_MustMakeConst_XXX("name_of_constant", value);
+</pre>
+
+<p>For example:
+
+<pre>
+    svl_MustMakeConst_R("my_pi", 22.0 / 7.0);
+</pre>
+
+<p>defines the global constant my_pi to be 22.0/7.0.</p>
+
+<p>As an illustration, we will write a routine to define the following
+constants:</p>
+
+<ul>
+  <li>Days of the week <tt>WEEKDAYS = 'Sun', 'Mon', 'Tue', ... </tt></li>
+  
+  <li>Euler's number <tt>EULER_C = 0.577215... </tt></li>
+  
+  <li>A 3x3 identity matrix <tt>E_3x3 = [ [1,0,0], [0,1,0],
+    [0,0,1] ]</tt></li>
+</ul>
+
+<dir><hr></dir>
+<!-- weekdays.c -->
+<pre>
+    #include &lt;stddef.h&gt;
+    #include "svl.h"
+
+    static int api_initialize(int argc, char **argv)
+    {
+	char *week[] = {"Sun","Mon","Tue","Wed","Thu","Fri","Sat",NULL};
+	int i, j;
+	svl_var v;    /* must be allocated before use! */
+
+	    /* define the global scalar constants */
+  
+	<b>svl_MustMakeConst_strings</b>("WEEKDAYS", week);
+	<b>svl_MustMakeConst_R</b>("EULER_C", 0.555215665);
+  
+	    /* allocate the SVL variable v */
+
+	    /* Since there is no error path in the initialization
+	    ** phase, all error-returning methods should be checked
+	    ** with svl_Must, which will terminate the application
+	    ** if an error occurs. */
+
+	svl_Must(svl_AllocVarE(&v)); /* allocate the svl_var */
+
+	for (i = 0; i < 3; i++) {
+	    svlInt row[3];
+	    for (j = 0; j < 3; j++) row[j] = i == j;
+
+		/* Stuff the matrix values into the SVL variable v */
+
+	    svl_Must(svl_Put_I_(v, i+1, row, 3));
+	}
+	<b>svl_MustMakeConst_V</b>("E_3x3", v);
+
+	svl_FreeVar(v);
+	return argc;
+    }
+
+    int main (int argc, char **argv)
+    {
+	svl_InstallApi(api_initialize);
+	return api_main(argc, argv);
+    }
+</pre>
+
+<dir><hr></dir>
+
+<h2>
+<a NAME="SVLVariables">SVL Variables</a>
+</h2>
+
+<p><i>SVL variables</i>, special containers for holding SVL data, are an
+integral part of the communication mechanism linking an external application to
+SVL. The input argument from an SVL function call and the output return values
+are both passed in a single SVL variable.  SVL variables can also be used for
+passing SVL data between the modules of the external application itself. Data
+can be read directly from an SVL variable, or the data values can be first
+extracted into variables of either API or generic C types. Methods to extract
+values from SVL variables are called <tt>Get</tt>-methods, and methods for
+stuffing values into SVL variables are called <tt>Put</tt>-methods.</p>
+
+<p>An SVL variable stores vectors of data. Here is a brief recapitulation of
+the salient features of SVL vectors:
+
+<ul>
+<li> An SVL vector contains single or multiple values of numerical or character
+data.</li>
+
+<li> Multiple data values are arranged as flat arrays or hierarchical trees.
+</li>
+
+<li> Each SVL vector has zero or more elements.</li>
+
+<li> The elements of a vector are vectors themselves. </li>
+
+<li> There is only one vector of zero length, the null vector, <tt>[]</tt>.
+</li>
+
+<li> Vectors that contain only one data item are called scalars. Scalars are of
+numerical, token, or character type. </li>
+
+<li> Vectors that have only one element (which can be either a scalar
+or a vector) are called units or unit vectors.</li>
+</ul>
+
+<p>SVL variables are accessed using C handles of type <tt>svl_var</tt> (an
+"opaque" type, meaning that the exact storage details are unknown to the user).
+An SVL variable is essentially a data buffer, and an <tt>svl_var</tt> object is
+essentially a pointer to such a buffer.  Within the SVL system, a
+given data buffer may referenced by more than one handle (internal
+mechanisms keep track of this sharing using a system of reference counts or
+<i>refcounts</i>, similar to that used for keeping track of tokens).  This means
+that you must never make direct C assignments of SVL variables (similarly to
+tokens).  You must always use API methods to manipulate them.</p>
+
+<p>The rules for SVL variables are as follows:
+
+<ol>
+  <li>The handle (<tt>svl_var</tt> object) of the input argument, which is
+stored as an SVL variable, can be obtained only with <tt>svl_TaskVar</tt>, which
+operates on an object of type <tt>svl_task</tt>.  The SVL variable used for
+storing the argument is also used to hold the output result (<i>i. e.</i>, its
+contents will be overwritten).  Obtaining a handle to the
+input SVL variable argument is done in the initialization section of the code.
+
+<dir><hr></dir>
+<pre>
+    static svl_error api_myfunc(svl_task task)
+    {
+	    /* initialization section */
+
+	svl_var v = svl_TaskVar(task);
+	...
+
+	    /* body */
+	...
+
+	E_(svl_Put_string(v, 0,
+	    "These are the times that try men's souls"));
+	...
+
+    X_:	    /* exit section */
+	...
+    }
+</pre>
+<dir><hr></dir>
+</li>
+
+<p><li>The SVL variable accessed with <tt>svl_TaskVar</tt> is owned by the
+<i>task</i> (a task is, briefly, just a running SVL program, with maintained
+resources and attached information).  Access to this task-owned SVL variable
+must be solely for the purposes of reading the input argument and setting the
+output result.</li>
+
+<p><li>When an SVL variable handle is declared, it must be initialized
+to <tt>NULL</tt>:
+
+<pre>
+        svl_var w = NULL;
+</pre>
+
+At this point, there is no SVL variable associated with the handle.  A new SVL
+variable is created (allocated) using one of the API allocation methods such as
+<tt>svl_AllocVarE</tt>:
+
+<pre>
+        E_(svl_AllocVarE(&w));
+</pre>
+
+Note that the macro <tt>NULL</tt> is not a part of the <tt>"svl.h"</tt> header
+file.  It is, however, a part of C standard header files, such as
+<tt>&lt;stddef.h&gt;</tt> or
+<tt>&lt;stdio.h&gt;</tt>.
+
+<p></li>
+
+  <li>The SVL variable created with <tt>svl_AllocVarE</tt>
+    is owned by the caller of <tt>svl_AllocVarE</tt> (the
+    function in which the call to <tt>svl_AllocVarE</tt> is made).
+    The owner is responsible for freeing the memory allocated to
+    such a variable, and <i>must</i> call <tt>svl_FreeVar</tt>
+    when the variable is no longer needed (usually in the exit portion
+    of the code).
+
+<dir><hr></dir>
+<pre>
+    #include &lt;stddef.h&gt;
+
+    static svl_error api_myfunc(svl_task task)
+    {
+	    /* initialization section */
+
+	svl_error e = NULL;
+	svl_var w = NULL;
+	    ...
+
+	    /* body */
+
+	E_(svl_AllocVarE(&w));
+	    ...
+
+    X_:
+	svl_FreeVar(w);
+	return e;
+    }
+</pre>
+<dir><hr></dir>
+
+<p><b>Note:</b> For convenience, we will sometimes refer to an <tt>svl_var</tt>
+object as though it were the SVL variable itself and not just the handle.
+</p>
+
+</li>
+</ol>
+
+<h3>
+<a NAME="BasicUtilities">Basic SVL Variable Utilities</a>
+</h3>
+
+<p>Three utilities for clearing and copying SVL variables exist:
+
+<ul>
+    <li><tt>svl_ClearVar</tt></li>
+    <li><tt>svl_CopyVar</tt></li>
+    <li><tt>svl_MoveVar</tt></li>
+</ul>
+
+<p>The contents of an SVL variable are cleared using <tt>svl_ClearVar</tt>.
+This is useful for clearing the SVL variable that is used
+to hold both the input argument and the output result.  For example,
+
+<dir><hr></dir>
+<pre>
+    static svl_error api_func(svl_task task)
+    {
+	svl_error e = NULL;
+	svl_var v = svl_TaskVar(task);
+
+	...
+
+	svl_ClearVar(v);	/* don't need v anymore; return NULL */
+    X_:
+	return e;
+    }
+</pre>
+<dir><hr></dir>
+
+will return <tt>NULL</tt>.  If <tt>v</tt> had not been cleared, the function would
+return its input arguments.</p>
+
+<p>Since SVL variables are reference-counted, direct C assignments are
+forbidden.  To copy the contents of one SVL variable to another, use
+<tt>svl_CopyVar</tt>.</p>
+
+<p>
+The functionality of <tt>svl_MoveVar</tt> combines that of
+<tt>svl_ClearVar</tt> and <tt>svl_CopyVar</tt>:
+the contents of the source vector are duplicated in the
+destination, and then the source is cleared. Note, however, that calling
+<tt>svl_MoveVar</tt> is much more efficient than calling <tt>svl_CopyVar</tt>
+and <tt>svl_ClearVar</tt> separately; indeed, <tt>svl_MoveVar</tt> is even more
+efficient than <tt>svl_CopyVar</tt> alone.</p>
+
+
+<p>A collection of utility functions exists for peeking, poking, and simple
+editing of the contents of an SVL variable. These utilities are direct
+correlates of their SVL counterparts with the following difference: unlike the
+SVL functions which do not modify their source vector, the API functions
+operate on the SVL variable passed to them; <i>i. e.</i>, the SVL variable that
+is passed in gets modified.  The one exception is <tt>svl_Length</tt>,
+which is an exact counterpart of the SVL function <tt>length</tt>:
+both return the number of elements in the source vector.</p>
+
+<ul>
+<table BORDER="1" CELLSPACING="0" CELLPADDING="1" WIDTH="40%">
+<tr>
+    <th>API Utility</th>
+    <th>SVL Function</th>
+</tr>
+<tr>
+    <td><tt>svl_Peek</tt></td>
+    <td><tt>peek</tt></td>
+</tr>
+<tr>
+    <td><tt>svl_Keep</tt></td>
+    <td><tt>keep</tt></td>
+</tr>
+<tr>
+    <td><tt>svl_Drop</tt></td>
+    <td><tt>drop</tt></td>
+</tr>
+<tr>
+    <td><tt>svl_Nest</tt></td>
+    <td><tt>nest</tt></td>
+</tr>
+<tr>
+    <td><tt>svl_Append</tt></td>
+    <td><tt>append</tt></td>
+</tr>
+<tr>
+    <td><tt>svl_Cat</tt></td>
+    <td><tt>cat</tt></td>
+</tr>
+<tr>
+    <td><tt>svl_Tag</tt></td>
+    <td><tt>tag</tt></td>
+</tr>
+<tr>
+    <td><tt>svl_Untag</tt></td>
+    <td><tt>untag</tt></td>
+</tr>
+<tr>
+    <td><tt>svl_Length</tt></td>
+    <td><tt>length</tt></td>
+</tr>
+</table>
+</ul>
+
+<h3>
+<a NAME="GeneralGetPutMethods">Accessing SVL variables with
+    <tt>Get</tt> and <tt>Put</tt> Methods</a>
+</h3>
+
+<p>There are numerous API methods for extracting data from and stuffing data
+into SVL variables.
+Among these are <tt>Get</tt> methods for copying pieces of a given
+SVL variable into C variables or memory buffers, and <tt>Put</tt>
+methods for copying the contents of C
+variables or memory buffers into a given SVL variable.</p>
+
+<p><tt>Get</tt> methods and <tt>Put</tt> methods both have "direct" forms and
+"<a href="#Context">context</a>" forms.  In direct <tt>Get</tt> and
+<tt>Put</tt>, the SVL variable being read from or written to is explicitly
+specified.  In context <tt>Get</tt> and <tt>Put</tt>, the SVL variable being
+accessed is implicit to the context, and is not explicitly specified.</p>
+
+<p>The names of the direct <tt>Get</tt> and <tt>Put</tt> methods are of the form
+
+<pre>
+    svl_Get_XXX
+    svl_Put_XXX
+</pre>
+
+<p>The names of the context <tt>Get</tt> and <tt>Put</tt> methods are identical
+to those of the direct access methods, with the addition of the letters
+<tt>Cv</tt> (which stand for "current variable"):
+
+<pre>
+    svl_GetCv_XXX
+    svl_PutCv_XXX
+</pre>
+
+<p>In all cases, <tt>XXX</tt> is either a word, as in <tt>svl_Get_string</tt>
+and <tt>svl_Put_string</tt>, or a one- or two-letter code, as in
+<tt>svl_Get_I</tt> and <tt>svl_Put_I</tt> (get and put of an
+<tt>svlInt</tt>).</p>
+
+<p>A single <i>upper</i>-case letter code in the name of
+a <tt>Get</tt> or <tt>Put</tt> method indicates conversion to or from an <a
+href="#DataTypes">API C data type</a>.
+For reasons of efficiency and machine-independence, we recommend that API C
+types be used whenever possible for manipulating values extracted from SVL
+variables.</p>
+
+<p>Sometimes, however, it is necessary to convert data to generic C types, for
+instance, for passing values to external libraries. Single or double
+<i>lower</i>-case letters indicate conversion to/from generic C types.</p>
+
+
+<ul>
+<table BORDER="1" WIDTH="70%">
+<tr>
+    <th><tt>XXX</tt> replaced by</th>
+    <th>SVL Data type</th>
+    <th>C Data type</th>
+</tr>
+<tr>
+    <td><tt>b</tt></td>
+    <td><tt>'num'</tt></td>
+    <td><tt>char</tt></td>
+</tr>
+<tr>
+    <td><tt>ub</tt></td>
+    <td><tt>'num'</tt></td>
+    <td><tt>unsigned char</tt></td>
+</tr>
+<tr>
+    <td><tt>c</tt></td>
+    <td><tt>'char'</tt></td>
+    <td><tt>char</tt></td>
+</tr>
+<tr>
+    <td><tt>uc</tt></td>
+    <td><tt>'char'</tt></td>
+    <td><tt>unsigned char</tt></td>
+</tr>
+<tr>
+    <td><tt>s</tt></td>
+    <td><tt>'num'</tt></td>
+    <td><tt>short</tt></td>
+</tr>
+<tr>
+    <td><tt>us</tt></td>
+    <td><tt>'num'</tt></td>
+    <td><tt>unsigned short</tt></td>
+</tr>
+<tr>
+    <td><tt>i</tt></td>
+    <td><tt>'num'</tt></td>
+    <td><tt>int</tt></td>
+</tr>
+<tr>
+    <td><tt>ui</tt></td>
+    <td><tt>'num'</tt></td>
+    <td><tt>unsigned int</tt></td>
+</tr>
+<tr>
+    <td><tt>f</tt></td>
+    <td><tt>'num'</tt></td>
+    <td><tt>float</tt></td>
+</tr>
+<tr>
+    <td><tt>d</tt></td>
+    <td><tt>'num'</tt></td>
+    <td><tt>double</tt></td>
+</tr>
+<tr>
+    <td><tt>C</tt></td>
+    <td><tt>'char'</tt></td>
+    <td><tt>svlChar</tt></td>
+</tr>
+<tr>
+    <td><tt>I</tt></td>
+    <td><tt>'num'</tt></td>
+    <td><tt>svlInt</tt></td>
+</tr>
+<tr>
+    <td><tt>R</tt></td>
+    <td><tt>'num'</tt></td>
+    <td><tt>svlReal</tt></td>
+</tr>
+<tr>
+    <td><tt>T</tt></td>
+    <td><tt>'tok'</tt></td>
+    <td><tt>svlTok</tt></td>
+</tr>
+</table>
+</ul>
+
+<p>An underscore (_) at the <i>end</i> of a function name indicates that the
+function operates on an <i>array</i> of values, rather than just on a single
+value.</p>
+
+<ul>
+<table BORDER="1" WIDTH="70%">
+<tr>
+    <th>Access single value</th>
+    <th>Access array of values</th>
+    <th>Method</th>
+</tr>
+<tr>
+    <td><tt>svl_Get_XXX</tt></td>
+    <td><tt>svl_Get_XXX_</tt></td>
+    <td>Direct <tt>Get</tt></td>
+</tr>
+<tr>
+    <td><tt>svl_Put_XXX</tt></td>
+    <td><tt>svl_Put_XXX_</tt></td>
+    <td>Direct <tt>Put</tt></td>
+</tr>
+<tr>
+    <td><tt>svl_GetCv_XXX</tt></td>
+    <td><tt>svl_GetCv_XXX_</tt></td>
+    <td>Context <tt>Get</tt></td>
+</tr>
+<tr>
+    <td><tt>svl_PutCv_XXX</tt></td>
+    <td><tt>svl_PutCv_XXX_</tt></td>
+    <td>Context <tt>Put</tt></td>
+</tr>
+</table>
+</ul>
+
+<h3>
+<a NAME="DirectGetPutMethods">Direct <tt>Get</tt> and <tt>Put</tt> Methods</a>
+</h3>
+
+<p>Direct <tt>Get</tt> and <tt>Put</tt> methods operate on one element of
+an SVL variable.  They always require at least two arguments:
+
+<ul>
+    <li>The SVL variable on which to operate.</li>
+    <li>The element position in that variable.</li>
+</ul>
+
+For example, <tt>svl_Get_f(v,3,...)</tt> will copy the contents of the
+third element of SVL variable <tt>v</tt> into a C variable of type
+<tt>float</tt>.  (The element <tt>v(3)</tt> must be a numerical scalar.)
+
+<p>When the element position is set to <tt>0</tt>, the method applies to the
+entire variable <tt>v</tt>.  For example, <tt>svl_Get_string(v,0,...)</tt>
+will copy the contents of the SVL variable into a null-terminated C buffer of
+character.  (Variable <tt>v</tt> must be a "string", that is either a single
+token or a flat vector of characters.)
+
+<p>There are additional arguments that the caller must supply to individual
+methods:
+
+<ul>
+    <li>
+	Scalar <tt>Get</tt> methods require the address
+	of the C variable that will store the data.
+
+	For example, <tt>svl_Get_f(v,3,&x)</tt> will copy the contents of
+	<tt>v(3)</tt> into the <tt>float</tt> variable <tt>x</tt>.
+	Element <tt>v(3)</tt> must be a scalar number.
+    </li>
+
+    <p><li>
+	Vector <tt>Get</tt> methods require the address and the length
+	of the C buffer that will store the data.
+
+	For example, <tt>svl_Get_f_(v,3,buf,10)</tt> will copy the contents of
+	<tt>v(3)</tt> into the first 10 elements of buffer <tt>buf</tt>.
+	The buffer elements are of type <tt>float</tt>.
+	Element <tt>v(3)</tt> must be either a vector of length 10 or
+	a scalar number.
+    </li>
+
+    <p><li>
+	Scalar <tt>Put</tt> methods require the value
+	of the C variable that stores the data.
+
+	For example, <tt>svl_Put_f(v,3,x)</tt> will set <tt>v(3)</tt> to
+	the contents of the <tt>float</tt> variable <tt>x</tt>.
+	Element <tt>v(3)</tt> will become a scalar number.
+    </li>
+
+    <p><li>
+	Vector <tt>Put</tt> methods require the address and the length
+	of the C buffer that stores the data.
+
+	For example, <tt>svl_Put_f_(v,3,buf,10)</tt> will set <tt>v(3)</tt> to
+	the contents of the first 10 elements of buffer <tt>buf</tt>.
+	The buffer elements are of type <tt>float</tt>.
+	Element <tt>v(3)</tt> will become a numerical vector of length 10.
+    </li>
+
+    <p><li>
+	Special methods, such as <tt>svl_GetIsNum</tt>
+	or <tt>svl_GetCheckLength</tt>, require their own special set
+	of arguments.
+
+	For example, <tt>svl_GetCheckLength(v,3,10,1)</tt> will verify that
+	<tt>v(3)</tt> is either a vector of length 10 or
+	a scalar number (of length 1).
+    </li>
+</ul>
+
+The following example demonstrates the use of direct <tt>Get</tt>
+and <tt>Put</tt> methods to manipulate the input argument and
+the output result of a built-in function.
+The function, "<tt>tailname</tt>":
+
+<ol>
+    <li>accepts a full pathname of a file (using
+	the <tt>svl_Get_string</tt> method),
+    </li>
+
+    <li>scans the name for the presence of slash-characters
+	("<tt>/</tt>") indicating the directory component of the pathname
+	(using standard C's <tt>strrchr</tt>),
+    </li>
+
+    <li>discards the directory component
+	(by using the return value of <tt>strrchr</tt>), and
+    </li>
+
+   <li>returns the trailing component
+	(using the <tt>svl_Put_string</tt> method).
+    </li>
+</ol>
+
+<!-- tailname.c -->
+<pre>
+    static svl_error api_tailname(svl_task t)
+    {
+	svl_error e = NULL;
+	svl_var v = svl_TaskVar(t);
+	svlChar buf[100], *tail;
+
+	E_(svl_Get_string(v,0,buf,99));
+	tail = strrchr(buf, '/');
+	if (tail) E_(svl_Put_string(v,0,tail+1));
+    X_:
+	return e;
+    }
+</pre>
+
+
+<h4>Note on Peek, Get, and Put</h4>
+
+<p>The functions <tt>svl_Peek</tt>, <tt>svl_Get_V</tt>, and
+<tt>svl_Put_V</tt> all extract data from an SVL variable and write them to an
+SVL variable.  The following table summarizes the similarities and differences
+between the functions:</p>
+
+<table BORDER="1" WIDTH="100%">
+<tr>
+    <th>API Function</th>
+    <th>Description</th>
+</tr>
+<tr>
+    <td><tt>svl_Peek(v, pos);</td>
+    <td>replace the contents of SVL variable <tt>v</tt> with its <tt>pos</tt>-th
+element</td>
+</tr>
+<tr>
+    <td><tt>svl_Get_V(v, pos, w);</td>
+    <td>replace the contents of SVL variable <tt>w</tt> with the <tt>pos</tt>-th
+element of SVL variable <tt>v</tt> </td>
+</tr>
+<tr>
+    <td><tt>svl_Put_V(v, pos, w);</td>
+    <td>replace the <tt>pos</tt>-th element of SVL variable <tt>v</tt> with
+the contents of SVL variable <tt>w</tt></td>
+</tr>
+</table>
+
+<h4>Note on Strings, Characters, and Tokens</h4>
+
+<p>Several API methods exist for handling character data.  They are summarized
+in the table below:</p>
+
+<table BORDER="1" WIDTH="100%">
+<tr>
+    <th>API Function</th>
+    <th>Description</th>
+</tr>
+<tr>
+    <td><tt>svl_Get_c_(v, pos, &buf, len);</td>
+    <td>buffer data type <tt>char</tt>, expected SVL data type
+<tt>'char'</tt>, exactly <tt>len</tt> items read</td>
+</tr>
+<tr>
+    <td><tt>svl_Get_T_(v, pos, &buf, len);</td>
+    <td>buffer data type <tt>svlTok</tt>, expected SVL data
+type <tt>'tok'</tt>, exactly <tt>len</tt> items read</td>
+</tr>
+<tr>
+    <td><tt>svl_Get_string(v, pos, &buf, maxlen);</td>
+    <td>buffer data type <tt>char</tt>,
+	expected SVL data type <tt>'char'</tt> or a scalar <tt>'tok'</tt>,
+	read at most <tt>maxlen</tt> characters,
+	<tt>0</tt> is appended after the last character read</td>
+</tr>
+<tr>
+    <td><tt>svl_Get_token(v, pos, &tok);</td>
+    <td>destination data type <tt>svlTok</tt>, expected SVL data type
+    <tt>'char'</tt> or
+    a scalar
+<tt>'tok'</tt>
+items</td>
+</tr>
+</table>
+
+<h2>
+<a NAME="Context">Context</a>
+</h2>
+
+<p>Sometimes, the direct <tt>Get</tt>- and <tt>Put</tt>-methods are not
+sufficiently powerful for the kind of data accesses required. For instance, when
+taller vector hierarchies or when heterogeneous vectors are involved, more
+sophistication is needed. In such cases, SVL <i>contexts</i> can be set up to
+facilitate data access.</p>
+
+<p>SVL contexts are essentially data-access environments.  They provide means
+for limiting the scope and lifetime of variables, but at the same time permit
+access to variables across recursive function calls.</p>
+
+<p>There is a "generic" context environment, and three special sub-contexts.
+The generic context is opened in the initialization portion of a routine
+
+    (by <tt>svl_Begin</tt>),
+
+and closed in the exit portion
+
+(by <tt>svl_End</tt>).
+
+This allows for clean recovery from any errors occurring in the body of the
+routine:
+
+<dir><hr></dir>
+<pre>
+    static svl_error api_func(svl_task task)
+    {
+	    /* initialization code */
+
+	svl_error e = NULL;
+	svl_context ctx = svl_Begin();
+
+	    /* body of function */
+
+	    ....
+
+    X_:     /* exit code */
+
+	svl_End(ctx);
+	return e;
+    }
+</pre>
+<dir><hr></dir>
+
+<h3>
+<a NAME="SpecialContexts">Special Context Environments</a>
+</h3>
+
+<p>Three special contexts exist:
+
+<ul>
+    <li><em>Get</em> context</li>
+    <li><em>Put</em> context</li>
+    <li><em>Data pointer</em> context</li>
+</ul>
+
+<p> In order to use any of these, a generic context environment must
+first be opened. Only one generic context may be open at a time.</p>
+
+<p>The purpose of the special contexts is scoping.
+Each of the special contexts has associated with it a <i>current</i>
+SVL variable, also called a <i>context</i> variable.
+Data accesses within a special context are limited to the context variable.</p>
+
+<p>Associated with the context variable is a context <i>position</i>,
+which is the index of the next element to access.
+When a special context is opened, the context position is 1.  Each
+successive data access increments the context position.</p>
+
+<p>Special contexts can be nested.  The context variable associated with the
+inner context is an element (specified by the context position) of the context
+variable of the outer context.
+
+In other words, if the outer context applies to a given vector, the inner
+context applies to one element of that vector.  </p>
+
+<p>For example, suppose we pass argument vector
+
+<pre>
+    [ 1, [2,3,4], 5 ]
+</pre>
+
+<p>to the following function:
+
+<dir><hr></dir>
+<!-- gettest.c -->
+<pre>
+    static svl_error api_func(svl_task task)
+    {
+	    /* initialization section */
+
+	svl_error e = NULL;
+	svl_var v = svl_TaskVar(task);
+	svl_context ctx = <b>svl_Begin</b>();
+
+	svlInt val1, val2;
+	svlReal x, y, z;
+
+	    /* function body */
+
+	    /* open a Get context with context variable v */
+
+	E_(<b>svl_BeginGet</b>(v));
+	    E_(svl_GetCv_I(&val1));	/* set val1 = v(1) = 1 */
+
+		/* open Get context with context variable v(2) = [2,3,4] */
+
+	    E_(<b>svl_BeginGet</b>(NULL));
+		E_(svl_GetCv_R(&x));	/* set x = v(2)(1) = 2 */
+		E_(svl_GetCv_R(&y));	/* set y = v(2)(2) = 3 */
+		E_(svl_GetCv_R(&z));	/* set z = v(2)(3) = 4 */
+		E_(svl_GetCvCheckEOV());/* verify # arguments in v(2) */
+	    <b>svl_EndGet</b>();
+
+	    E_(svl_GetCv_I(&val2));	/* set val2 = v(3) = 5 */
+	    E_(svl_GetCvCheckEOV());	/* verify # arguments in v */
+	<b>svl_EndGet</b>();
+	...
+
+    X_:	    /* exit section */
+
+	<b>svl_End</b>(ctx);
+	return e;
+    }
+</pre>
+<dir><hr></dir>
+
+In the outer <tt>Get</tt> context, data accesses walk successively down the
+three elements of the input argument.  The inner <tt>Get</tt> context accesses
+exclusively the second element of <tt>v</tt>.  The three <tt>Get</tt> calls in
+this inner context access successive elements of <tt>v(2)</tt>.</p>
+
+<p>Special contexts must <i>not</i> be opened and closed in the
+initialization and exit portions of a routine; use them only in the body of a
+routine.</p>
+
+<p>The <tt>svl_GetCvCheckEOV</tt> API method is used to check for "end of
+vector".  This is useful for verifying that the input argument contains
+exactly the expected number of values, and not more.</p>
+
+<p>Functions called within an open context have full access to the context,
+provided they do not initialize a context of their own.
+
+For example, one "wrapper" function can open a <tt>Get</tt> context and then
+iteratively call a number of "worker" routines to operate on that context.
+
+</p>
+
+<h3>
+<a NAME="ContextGetPutMethods">Context <tt>Get</tt> and <tt>Put</tt> Methods</a>
+</h3>
+
+<p>The <tt>Get</tt> context is opened and closed with
+
+<pre>
+    svl_BeginGet(v)
+    svl_EndGet()
+</pre>
+
+<p>Similarly, the <tt>Put</tt> context is opened and closed with
+
+<pre>
+    svl_BeginPut()
+    svl_EndPut(v)
+</pre>
+
+<p>In the <tt>Get</tt> context, pieces of the SVL variable associated with
+the context, called the context <tt>Get</tt>-variable, are copied into C
+structures. The context <tt>Get</tt>-variable is initialized by the
+<tt>svl_BeginGet</tt> routine to an SVL variable (<tt>v</tt>), and remains
+active until the matching <tt>svl_EndGet</tt> is called.
+
+The context <tt>Get</tt> position (position in the context variable from
+which to extract) is initialized to 1, and advanced automatically after each
+context <tt>Get</tt>-command, except a few special functions, such as
+<tt>svl_GetLength</tt> and <tt>svl_GetIsNum</tt>, which do <i>not</i> advance
+the context <tt>Get</tt>-position.</p>
+
+<p>In a <tt>Put</tt> context, values from C structures are copied into
+the context <tt>Put</tt>-variable.
+The context <tt>Put</tt>-variable is initialized by
+<tt>svl_BeginPut</tt> to <tt>[]</tt>. The context <tt>Put</tt>-variable is
+active until the corresponding <tt>svl_EndPut</tt> is called, at which point it
+is copied to a supplied output SVL variable (<tt>v</tt>).</p>
+
+<!-- Put example -->
+
+<p>The context <tt>Put</tt> position is initialized to 1 and
+advanced automatically after each <tt>Put</tt>-command.</p>
+
+<p>The argument of <tt>svl_BeginGet</tt> that opens an <em>inner</em> context
+or <tt>svl_EndPut</tt> that closes an <em>inner</em> context is usually
+<tt>NULL</tt>.  When passed a <tt>NULL</tt>, the context uses the
+<tt>Get</tt>- or <tt>Put</tt>-variable of the previous, outer context.
+
+Thus, the result of
+
+<pre>
+    E_(svl_BeginGet(v));	/* open outer context; context position = 1 */
+	E_(svl_BeginGet(NULL));	/* inherit v(1) as context variable */
+	    ...
+	svl_EndGet();		/* close inner context */
+    svl_EndGet();		/* close outer context */
+</pre>
+
+<p>is the same as:
+
+<pre>
+    E_(svl_BeginGet(v));	/* open outer context; context position = 1 */
+	E_(svl_GetCv_V(w));	/* copy v(1) into variable w */
+	E_(svl_BeginGet(w));	/* w = v(1) is context variable */
+	    ...
+	svl_EndGet();		/* close inner context */
+    svl_EndGet();		/* close outer context */
+</pre>
+
+<p>Context <tt>Get</tt>- and <tt>Put</tt>-methods are equivalent to the
+direct <tt>Get</tt>-and <tt>Put</tt>-methods, except that the SVL variable
+argument and the position to which the method applies are supplied (and
+maintained) by the context manager. Thus, the context functions are called
+with two fewer arguments than their direct-access counterparts.</p>
+
+<p>The names of the context <tt>Get</tt> and <tt>Put</tt> functions are
+identical to those of their direct-access counterparts, with the addition of the
+two-letter combination <tt>Cv</tt> immediately following the word <tt>Get</tt>
+or <tt>Put</tt>.  <tt>Cv</tt> stands for "current variable".  For example:
+
+<pre>
+    svl_Get_I
+    svl_GetCv_I
+</pre>
+
+<p>Note that <tt>GetCv</tt>-methods are only valid inside <tt>Get</tt> contexts,
+and <tt>PutCv</tt>-methods only inside <tt>Put</tt> contexts.</p>
+
+<h3>
+<a NAME="DataPtrs">Data Pointers</a>
+</h3>
+
+<p>A data pointer is a pointer into the internal buffers of an SVL variable.
+It permits direct <i>read-only</i> access of the SVL variable's contents.
+Data pointers can be used only within a context environment.</p>
+
+<p>The following example uses data pointers in the "generic" context.
+The function <tt>api_flatsum</tt> returns the sum of a flat numerical vector.
+
+<dir><hr></dir>
+<!-- flatsum.c -->
+<pre>
+    static svl_error api_flatsum(svl_task task)
+    {
+	    /* initialization code */
+
+	svl_error e = NULL;
+	svl_var v = svl_TaskVar(task);
+
+	svlReal s = 0;			/* running sum */
+	svlReal *dp;			/* data pointer */
+	int n = 1;			/* must be initialized to 1 */
+	svl_context ctx = <b>svl_Begin</b>();	/* open the "generic" context */
+
+	    /* body of routine */
+ 
+	E_(<b>svl_DataPtr_R_</b>(v, 0, &dp, &n, NULL));
+	while (--n >= 0) s += dp[n];	/* step through data */
+ 
+	E_(svl_Put_R(v, 0, s));		/* return s, overwriting the input */
+
+    X_:    /* exit code */
+
+	<b>svl_End</b>(ctx);			/* close the generic context */
+	return e;
+    }
+</pre>
+<dir><hr></dir>
+
+<p>Data pointers must be used in the generic context; their scope is limited
+by that context.
+
+In addition, a special data pointer context exists, which can be used to
+further limit the scope.</p>
+
+<table BORDER="1" WIDTH="100%">
+<tr>
+    <th>Context</th>
+    <th>Context delimiters</th>
+</tr>
+
+<tr>
+    <td>Generic context</td>
+    <td>
+<tt>
+svl_context ctx = svl_Begin();<br>
+svl_End(ctx);
+</tt>
+    </td>
+</tr>
+
+<tr>
+    <td>Data pointer context</td>
+    <td>
+<tt>
+E_(svl_BeginDataPtr());<br>
+svl_EndDataPtr();
+</tt>
+    </td>
+</tr>
+</table>
+
+<p>The data pointer methods are of the form
+
+<pre>
+    svl_DataPtr_X_(v, pos, &p, &n, &step);
+</pre>
+
+<p>where <tt>X</tt> is one of <tt>C</tt>, <tt>I</tt>, <tt>R</tt>, or <tt>T</tt>
+for accessing a data buffer of type <tt>svlChar</tt>, <tt>svlInt</tt>,
+<tt>svlReal</tt>, or <tt>svlTok</tt>, respectively.</p>
+
+<p>Within the <tt>Get</tt> context,
+the data pointer access functions may be also of the form
+
+<pre>
+    svl_DataPtrCv_X_(&p, &n, &step);
+</pre>
+
+<p>The data pointer methods set the pointer <tt>p</tt> to point to
+the data buffer of an element in the given SVL variable:
+either the <tt>pos</tt>-th element of the variable <tt>v</tt>,
+or the current element of the current variable of the <tt>Get</tt> context.
+
+<p>The arguments <tt>n</tt> and <tt>step</tt> are set by the data pointer API
+method so that the buffer elements can be accessed in a loop:
+
+<pre>
+    for (; n > 0; n--, p+= step) /* *p is the read-only value */
+</pre>
+
+<p>Combining multiple calls to data pointer methods with
+common <tt>n</tt> but varying <tt>step</tt> allows for efficient
+<a href="#UnitExtension">unit extension</a>
+of the vectors comprising the built-in's argument.</p>
+
+<p>Here is an example which uses data pointers in data pointer context.  The
+function <tt>api_maxcolor</tt> reads red, green, and blue intensity values
+from the input argument, finds the maximum value of the combined intensity,
+and returns it:
+
+<dir><hr></dir>
+<!-- maxcolor.c --> 
+<pre>
+    /*------ Example: Data pointer context ------*/
+
+    static svl_error api_maxcolor(svl_task task)
+    {
+	    /* initialization code */
+
+	svl_error e = NULL;
+	svl_var v = svl_TaskVar(task);
+
+	svlReal *red, *green, *blue, max_val;
+	int step_r, step_g, step_b;
+	int len = 1;			/* must be initialized to 1 */
+
+	svl_context ctx = svl_Begin();	/* open the "generic" context */
+
+	    /* body of routine */
+
+	E_(<b>svl_BeginDataPtr</b>());    	/* open data pointer context */
+
+	    E_(<b>svl_DataPtr_R_</b>(v, 1, &red, &len, &step_r));
+	    E_(<b>svl_DataPtr_R_</b>(v, 2, &green, &len, &step_g));
+	    E_(<b>svl_DataPtr_R_</b>(v, 3, &blue, &len, &step_b));
+ 
+		/* step through the read-only data (red intensity
+		** values) pointed to by data pointer "red",
+		** and find the maximum value */
+  
+	    for (max_val = 0; len > 0; len--) {
+		svlReal val =  <b>*red</b> + <b>*green</b> + <b>*blue</b>;
+		if (val > max_val) max_val = val;
+		red += step_r;
+		green += step_g;
+		blue += step_b;
+	    }
+
+	<b>svl_EndDataPtr</b>();		/* close data pointer context */
+
+	E_(svl_Put_R(v, 0, max_val));	/* output the value */
+
+    X_:    /* exit code */
+
+	svl_End(ctx);			/* close the "generic" context */
+	return e;
+    }
+</pre>
+<dir><hr></dir>
+
+<h2>
+<a NAME="ResourceAndMemoryManagement">Resource and Memory Management</a>
+</h2>
+
+<p>All resources - memory, SVL variables (<tt>svl_var</tt> objects), tokens
+(<tt>svlTok</tt> objects), etc. - belonging to a routine should be
+initialized in the initialization section and freed in the exit section of that
+routine. The actual allocation of the resources (which may fail) should be done
+only within the body of the routine.</p>
+
+<p>Note: a routine <i>owns</i> a resource if it takes responsibility for
+allocating and freeing it (it is a good idea to do both allocation and
+freeing in one single routine).  Freeing memory correctly is of utmost
+importance.  Uninitialized memory must not be freed, and allocated memory
+must always be freed.  Memory buffers should always be initialized (to
+<tt>NULL</tt>) to allow them to be freed at any time.</p>
+
+<p>The API provides methods to manipulate managed memory, SVL variables, and SVL
+tokens (character string objects).  The API methods return, as a rule, error
+codes (<a href="#SVL_Errors"><tt>svl_error</tt></a> objects) to be reported along
+the error path.  When using resources managed by other methods, <i>e.g.</i>,
+the standard C library calls <tt>malloc</tt> and <tt>free</tt>, or the Xlib
+calls <tt>XAlloc...</tt> and <tt>XFree...</tt>, your routine must explicitly set
+the error code on failure (<i>e.g.</i>, using the API method
+<tt>svl_SetErrorText</tt>).</p>
+
+<p>Managed memory should be allocated and freed using the API methods
+
+<pre>
+    svl_MallocE
+    svl_CallocE
+    svl_ReallocE
+    svl_Free
+</pre>
+
+<p>rather than the standard C library calls (<tt>malloc</tt>, <tt>free</tt>,
+etc.).</p>
+
+<p>Here are rules for working with a buffer of managed memory:
+
+<ol>
+
+  <li>Initialize the buffer pointer to <tt>NULL</tt> in the initialization section of your
+routine. This ensures that the buffer can be freed with <tt>svl_Free</tt>
+even if actual allocation of managed memory fails.</li>
+
+  <li>Allocate the memory for the buffer when appropriate; allocation and
+resizing are to be done only in the body of the routine. If the buffer is to
+hold data that themselves need to be initialized (<i>e.g.</i>, <tt>svlTok</tt>
+objects), initialize the buffer immediately after it is allocated.</li>
+
+  <li>Free the buffer in the exit section of the routine. If the buffer holds
+data that themselves need to be freed, free the data before freeing the
+memory buffer.</li>
+
+</ol>
+
+<p>Buffers can be created using either stack memory,
+static memory, or allocated memory. If the buffer data require initialization,
+the initialization must be done before the buffer is first used: </p>
+
+<table BORDER="1" WIDTH="100%">
+<tr>
+    <th>Type of memory</th>
+    <th>Where to do buffer data initialization</th>
+</tr>
+<tr>
+    <td>stack</td>
+    <td>initialization section of routine</td>
+</tr>
+<tr>
+    <td>static</td>
+    <td>API initializer (or a routine that is executed in the API
+initializer)</td>
+</tr>
+<tr>
+    <td>allocated</td>
+    <td>immediately after buffer allocation</td>
+</tr>
+</table>
+
+<p>Here is an example using managed memory:
+<dir><hr></dir>
+<!-- memtest.c -->
+<pre>
+    /* --- Allocate a buffer of tokens --- */
+
+    static svl_error api_func(svl_task task)
+    {
+	    /* initialization section */
+
+	svl_error e = NULL;
+	svlTok *buf = NULL;
+
+	int n = ...;
+
+	    /* body of routine */
+	    ...
+
+	    /* Allocate a buffer of n SVL tokens.
+	    ** Immediately initialize all tokens to svl_nullTok. */
+
+	E_(svl_MallocE(&buf, n * sizeof(svlTok)));
+	svl_InitTokArray(buf, n);
+	    ...
+
+    X_:		
+	svl_FreeTokArray(buf, n);
+	svl_Free(buf);
+	return e;
+    }
+</pre>
+
+<dir><hr></dir>
+
+<!-- OMIT_CONTEXT_MEMORY
+
+<h4>
+<a NAME="ContextAssociatedMemory">Context-Associated Memory</a>
+</h4>
+
+<p>Memory for use restricted to an API <a href="#Context"><i>context</i></a> can
+be allocated and freed with API methods of the form:
+
+<pre>
+    svl_Alloc_X_(p, n);
+    svl_Free_X_(p);
+</pre>
+
+<p>where <tt>X</tt> specifies the data type of the buffer being allocated, and
+<tt>p</tt> is a pointer to the buffer being allocated or freed.  <tt>n</tt>
+is the size of the buffer to allocate. Allocation and
+freeing of the context-associated memory must be performed inside a context.
+</p>
+
+<p>The trailing underscore in the names follows the naming convention of API
+methods.  The underscore serves as a mnemonic, indicating that the function
+handles an array of data.</p>
+
+<p>The possible values of <tt>X</tt> are as for the
+<a href="#DirectGetPutMethods">direct <tt>Get</tt> and <tt>Put</tt> methods</a>.</p>
+
+<p><b>Note:</b> Buffers allocated using <tt>svl_Alloc_X_</tt> functions
+<i>must not</i> be reallocated with <tt>svl_ReallocE</tt> or freed using 
+<tt>svl_Free</tt>.
+
+<p>For convenience, a set of functions is available inside a context environment
+for performing memory allocation followed by a <tt>Get</tt>, and for
+performing a <tt>Put</tt> followed by memory freeing:</p>
+
+<table BORDER="1" WIDTH="100%">
+<tr>
+    <th>API Method</th>
+    <th>Equivalent to</th>
+</tr>
+<tr>
+    <td><tt>svl_GetAlloc_X_(v, pos, p, n);</td>
+    <td><tt>svl_Alloc_X_(p, n)</tt> followed by <tt>svl_Get_X_(v, pos, p, n)</tt></td>
+</tr>
+<tr>
+    <td><tt>svl_PutFree_X_(v, pos, p, n);</td>
+    <td><tt>svl_Put_X_(v, pos, p, n)</tt> followed by <tt>svl_Free_X_(p)</tt></td>
+</table>
+
+<p>Both the <tt>svl_GetAlloc_X_</tt> and the <tt>svl_PutFree_X_</tt>
+methods have <i>current variable</i> equivalents:</p>
+
+<table BORDER="1" WIDTH="100%">
+<tr>
+    <th>API Method</th>
+    <th>Use in</th>
+    <th>Operate on</th>
+</tr>
+<tr>
+    <td><tt>svl_GetCvAlloc_X_(p, n);</tt></td>
+    <td><tt>Get</tt> contexts only</tt></td>
+    <td>the current <tt>Get</tt>-variable</td>
+</tr>
+<tr>
+    <td><tt>svl_PutCvFree_X_(p, n);</tt></td>
+    <td><tt>Put</tt> contexts only</tt></td>
+    <td>the current <tt>Put</tt>-variable</td>
+</tr>
+</table>
+
+<p>A buffer allocated using <tt>svl_GetAlloc_X_</tt> <i>must</i> be freed with
+either <tt>svl_Free_X_</tt> or <tt>svl_PutFree_X_</tt>.  A buffer allocated
+using <tt>svl_GetCvAlloc_X_</tt> <i>must</i> be freed with either
+<tt>svl_Free_X_</tt> or <tt>svl_PutCvFree_X_</tt>.</p>
+
+OMIT_CONTEXT_MEMORY -->
+
+<h2>
+<a NAME="TaggedVectors">Tagged Vectors</a>
+</h2>
+
+<p>It is common for SVL functions to have an
+options vector as an argument with which the SVL user can set any number
+(including zero) of the function's options to values other than their
+defaults. The options vector contains attribute-value pairs, which in SVL are of
+the form <tt>attribute:value</tt>. Options are handled as follows:
+
+<ol>
+  <li>Extract the options vector into a separate SVL variable.</li>
+
+  <li>Use <tt>svl_Untag</tt> (the API counterpart of the SVL <tt>untag</tt>
+function) to split the vector of options into two vectors, one of attribute
+tokens, and one of values.</li>
+
+  <li>Use generic <tt>Get</tt>- and <tt>Put</tt>-methods 
+to access the attributes and to process the corresponding values.</li>
+
+  <li>If necessary, use <tt>svl_Tag</tt> (the API counterpart of the SVL
+<tt>tag</tt> function) to re-combine the
+    attributes and values into one vector of attribute-value pairs.</li>
+
+</ol>
+
+<p>To give an example, let us consider the following problem.
+An RGB color value may be represented in two ways:
+<ul>
+
+<li>as a vector of RGB intensity values tagged by their respective colors,
+or</li>
+
+<li> as an integer with the three intensity values stored in its lower
+tree bytes.</li>
+</ul>
+
+<p>
+<em>E.g.</em>, the color "orange" can be represented either as a tagged vector
+<pre>
+    [ red:0xff, green:0x8a ]
+</pre>
+or as an integer
+<pre>
+    0xff8a00
+</pre>
+
+<p> We will create functions <tt>rgb_to_int</tt> and <tt>int_to_rgb</tt> that
+convert RGB color between the two representations.
+
+<p>In the example, the names of the colors are stored in both a global constant,
+<tt>COLORS</tt>,
+that the user can use for querying the valid color names, and a 
+<a href="#TablesOfTokens">private table of tokens</a>, <tt>ctok</tt>.
+
+<dir><hr></dir>
+<!-- rgb2int.c -->
+<pre>
+    /*----------- Example: Using Function Options ------------*/
+
+	/* indices into private token table */
+    enum { RED = 0, GREEN, BLUE, NUM_COLORS };
+
+	/* private token table of color names */
+    static svlTok <b>ctok</b>[NUM_COLORS] = {0};
+
+	/* color name strings for initializing global constant */
+    static char *cstr[] = { "red","green","blue",NULL };
+
+    /* api_rgb_to_int:
+    **    Built-in for converting red, green, blue intensities
+    **    into a single integer. */
+
+    static svl_error <b>api_rgb_to_int</b>(svl_task task)
+    {
+	svl_error e = NULL;
+	svl_var v = svl_TaskVar(task);
+	svl_var w = NULL;
+
+	int i;
+	int intensity;
+	int int_color = 0;
+
+	int len = svl_Length(v);	/* number of options */
+	svlTok tok = svl_nullTok;
+
+	    /* allocate space for the SVL variable w */
+
+	E_(svl_AllocVarE(&w));
+
+	    /* put tags (color tokens) in v, values (intensities) in w */
+
+	E_(<b>svl_Untag</b>(v, w));
+
+	    /* walk through option (color) and value lists */
+
+	for (i = 1; i <= len; i++) {
+	    E_(svl_Get_T(v, i, &tok));	/* color token */
+	    E_(svl_Get_i(w, i, &intensity));
+	    intensity &= 0xff;		/* byte value */
+
+		/* blue value will be in least significant byte,
+		** green in the next higher byte (shift up 8 bits), and
+		** red in the byte above that (shift up 16 bits) */
+
+	    if (tok == <b>ctok</b>[RED])        int_color |= intensity << 16;
+	    else if (tok == <b>ctok</b>[GREEN]) int_color |= intensity << 8;
+	    else if (tok == <b>ctok</b>[BLUE])  int_color |= intensity;
+	}
+	    /* return the value */
+
+	E_(svl_Put_i(v, 0, int_color));
+    X_:
+	svl_FreeVar(w);				/* clean up */
+	return e;
+    }
+
+    /* api_int_to_rgb:
+    **     Built-in for converting single byte-packed intensity value
+    **     into R, G, B intensities */
+
+    static svl_error <b>api_int_to_rgb</b>(svl_task task)
+    {
+	svl_error e = NULL;
+	svl_var v = svl_TaskVar(task);
+	svl_var w = NULL;
+
+	int int_color;
+	int intensity[NUM_COLORS] = {0};
+
+	E_(svl_Get_i(v, 0, &int_color));
+
+	    /* convert single integer into component color intensities;
+	    ** use byte masks to extract each color individually:
+	    **
+	    ** red stored in 3rd highest byte: shift down 16 bits;
+	    ** green stored in 2nd highest byte: shift down 8 bits;
+	    ** blue stored in least significant byte */
+
+	intensity[RED] = int_color >> 16 & 0x0000ff;
+	intensity[GREEN] = int_color >> 8 & 0x0000ff;
+	intensity[BLUE] = int_color & 0x0000ff;
+
+	    /* store color names in v(1) and
+	    ** color intensities in v(2) */
+
+	svl_ClearVar(v);
+	E_(svl_Put_T_(v, 1, <b>ctok</b>, NUM_COLORS));
+	E_(svl_Put_i_(v, 2, intensity, NUM_COLORS));
+
+	    /* return attribute-value (color-intensity) pairs */
+
+	E_(<b>svl_Tag</b>(v, NULL));
+    X_:
+	return e;
+    }
+
+    /* api_initialize:
+    **    API initialization function */
+
+    static int <b>api_initialize</b>(int argc, char **argv)
+    {
+	int n;
+
+	    /* create a constant to hold the names
+	    ** of the colors 'red', 'green', 'blue' (as tokens) */
+
+	svl_MustMakeConst_strings("<b>COLORS</b>", cstr);
+
+	    /* initialize the token names of the colors
+	    ** and the corresponding enums */
+
+	svl_InitTokArray(<b>ctok</b>, NUM_COLORS);
+	for (n = 0; n < NUM_COLORS; n++)
+	    svl_Must(svl_ReallocTokE(&<b>ctok</b>[n], cstr[n]));
+
+	    /* initialize the SVL symbols for the functions created */
+
+	svl_MustAddApiFunc("rgb_to_int", <b>api_rgb_to_int</b>, 0);
+	svl_MustAddApiFunc("int_to_rgb", <b>api_int_to_rgb</b>, 0);
+
+	    ...
+	return argc;
+    }
+</pre>
+
+<dir><hr></dir>
+
+<h2>
+<a NAME="UnitExtension">Unit Extension</a>
+</h2>
+
+<p>Many SVL operations, such as <tt>add</tt> or
+<tt>indexof</tt>, require that their operands "unit-extend" to the same
+size. This means that all operands must be either of length one or of length
+<i>n</i>. The operands of size one (<i>i. e.</i>, unit vectors) are
+unit-extended to size <i>n</i> by replicating their contents <i>n</i> times.
+The length <i>n</i> to which all the operands unit-extend is
+called "laminated length".  </p>
+
+<p>In general, the <em>laminated length</em> of a vector that contains a
+non-unit element is the length of that element;  all other non-unit elements
+must be of the same length.  The laminated length of a vector of only unit
+elements is 1.  The laminated length of the vector is accessible with the API
+method <tt>svl_GetLLength</tt>.  </p>
+
+<p>For example, the laminated length of
+
+<pre>
+    [ [1,2,3], 4, [5,6,7], 8 ]
+</pre>
+
+<p>is 3, since the units (scalars) will unit extend as follows:
+
+<pre>
+    [ [1,2,3], [4,4,4], [5,6,7], [8,8,8] ]
+</pre>
+
+<p>The laminated length of
+
+<pre>
+    [1,2,3,4,5]
+</pre>
+
+<p>is 1 since all five elements are units (scalars).</p>
+
+<p>The following built-in
+function returns the laminated length of a vector of vectors, and illustrates
+the use of the API method <tt>svl_GetLLength</tt>.  This method is central
+to creating built-ins that unit-extend.</p>
+
+<p>In the example, the built-in is bound to the SVL public symbol
+<tt>llength</tt>, and is invoked at the SVL command line as follows:
+
+<pre>
+    llength [[1,2,3], 4, [5,6,7], 8]
+</pre>
+
+<p>which returns 3. Note that all the elements of the input vector must be
+unit-extendable to the same length or an error will result.
+
+<dir><hr></dir>
+<!-- llength.c -->
+<pre>
+    static svl_error api_llength(svl_task task)
+    {
+	svl_error e = NULL;
+	svl_var v = svl_TaskVar(task);	/* SVL input variable */
+	int llen = 1;	/* initialize the laminated length */
+
+	    /* Extract the laminated length of variable v.
+	    ** Return the output result in the same SVL variable. */
+
+	E_(svl_GetLLength(v, 0, &llen, 0));
+	E_(svl_Put_i(v, 0, llen));
+
+    X_:
+	return e;
+    }
+    
+    static int api_initialize(int argc, char **argv)
+    {
+	svl_MustAddApiFunc("llength", api_llength, 0);
+    }
+</pre>
+<dir><hr></dir>
+
+You can achieve the same effect of "unit-extension" in your own
+built-in routines. The task is simplified by the fact that all
+<tt>Get</tt>-methods already unit-extend. For instance, when a vector of five
+numbers is expected in the call <tt>svl_Get_i(v, 0,&amp;buf, 5)</tt> but the
+actual contents of <tt>v</tt> is just a single number, this number will get
+replicated five times to fill the five slots in the buffer <tt>buf</tt>.</p>
+
+<p>This functionality can be combined with <tt>svl_GetLLength</tt> to achieve
+unit-extension behavior in more general cases.  A similar effect can be also
+achieved using the data-pointer access methods (<tt>svl_DataPtr_XXX</tt>).</p>
+
+<p>As an example, we will write the data-access portion of a function to draw a
+graphical point.
+
+(Instead of actually drawing the points, we will simply print out their
+color and coordinates.)
+
+We will show two different methods for unit-extension:
+
+<ol>
+<li>using <tt>svl_GetLLength</tt> to calculate the laminated length of the
+input arguments, and then extracting the arguments using the API
+<tt>Get</tt>-methods, taking advantage of the implicit unit-extension in those
+methods; </li>
+
+<li>using <i>data pointers</i>; data-pointer access methods do double-duty,
+combining the functionality of <tt>Get</tt>-methods with that of
+<tt>svl_GetLLength</tt>.</li>
+</ol>
+
+<p>We will use API contexts in both cases.</p>
+
+<p>In SVL, the function <tt>DrawPoint</tt> will have the following syntax:
+
+<pre>
+    DrawPoint [ key, color, position ]
+</pre>
+
+<p>where:
+
+<ul>
+  <li><tt>key</tt> is an identifier for the drawn point(s)</li>
+  <li><tt>color</tt> is a vector of intensities given as
+<pre>
+    [ red, green, blue ]
+</pre></li>
+  <li>and <tt>position</tt> is a vector of three coordinates
+<pre>
+    [ x, y, z ]
+</pre></li>
+</ul>
+
+<p>Any color <tt>red</tt>, <tt>green</tt>, or <tt>blue</tt>,
+and any coordinate <tt>x</tt>, <tt>y</tt>, or <tt>z</tt>,
+may be a vector of values.   <tt>key</tt> must be a scalar.
+All colors and all coordinates must unit-extend to the same length
+(the number of points to be drawn). Thus, the following call to
+<tt>DrawPoint</tt>:
+
+<pre>
+    DrawPoint [
+	1234,
+	[ 200, 0, 0 ],
+	[ [10,20,30,40], 0, [100,200,300,400] ]
+    ]
+</pre>
+
+is to be interpreted as:
+
+<pre>
+    DrawPoint [
+	1234,                                           // key
+	[ [200,200,200,200], [0,0,0,0], [0,0,0,0] ],    // rgb values
+	[ [10,20,30,40], [0,0,0,0], [100,200,300,400] ] // xyz coordinates
+    ]
+</pre>
+
+Note that the end result should be the same as when <tt>DrawPoint</tt> is
+called four times successively to draw the points one at a time:
+
+<pre>
+    DrawPoint [ 1234, [200,0,0], [10,0,100] ]
+    DrawPoint [ 1234, [200,0,0], [20,0,200] ]
+    DrawPoint [ 1234, [200,0,0], [30,0,300] ]
+    DrawPoint [ 1234, [200,0,0], [40,0,400] ]
+</pre>
+
+<p><b>DrawPoint Version I:</b> We will first show how to use
+<tt>svl_GetLLength</tt> for unit-extension. Assuming the argument of
+<tt>DrawPoint</tt> is held in the SVL variable <tt>v</tt>, the laminated length
+of the colors and positions is determined using a sequence of two calls to
+<tt>svl_GetLLength</tt>. The laminated length is then used to access the actual
+data in the vectors using the API <tt>Get</tt>-methods.
+
+<dir><hr></dir>
+<!-- drawpt1.c -->
+<pre>
+    /*---- code for DrawPoint function: uses LLength methods ----*/
+
+    static svl_error api_drawpoint(svl_task task)
+    {
+	    /* ...initialization section of code... */
+
+	svl_error e = NULL;
+	svl_var v = svl_TaskVar(task);	/* get handle to input argument */
+
+	svl_context ctx = svl_Begin();	/* begin "generic" context */
+
+	svlInt key;
+	svlReal *red = NULL, *green = NULL, *blue = NULL;
+	svlReal *x_coord = NULL, *y_coord = NULL, *z_coord = NULL;
+
+	int i, len = 1;		/* LLength must be initialized to 1 */
+
+	    /* ...function body... */
+
+ 	    /* calculate LLength of second and third arguments,
+	    ** i. e., of "color" and "position" */
+
+	E_(svl_GetLLength(v, 2,&len, 0));
+	E_(svl_GetLLength(v, 3,&len, 0));
+
+	    /* len now contains the laminated length of the arguments;
+	    ** allocate space to store values */
+
+	E_(svl_ReallocE(&red, len * sizeof(svlReal)));
+	E_(svl_ReallocE(&green, len * sizeof(svlReal)));
+	E_(svl_ReallocE(&blue, len * sizeof(svlReal)));
+	E_(svl_ReallocE(&x_coord, len * sizeof(svlReal)));
+	E_(svl_ReallocE(&y_coord, len * sizeof(svlReal)));
+	E_(svl_ReallocE(&z_coord, len * sizeof(svlReal)));
+
+	    /* start a Get-context to read the input arguments */
+    
+	E_(svl_BeginGet(v));
+	    E_(svl_GetCv_i(&key));	/* set key = v(1) */
+    
+		/* start new Get-context for reading color values
+		** from v(2); svl_GetCv_R does unit extension
+		** implicitly */
+
+	    E_(svl_BeginGet(NULL));
+		E_(svl_GetCv_R_(red, len));	/* red = v(2)(1) */
+		E_(svl_GetCv_R_(green, len));	/* green = v(2)(2) */
+		E_(svl_GetCv_R_(blue, len));	/* blue = v(2)(3) */
+
+		    /* ensure we are at the end of the color
+		    ** argument vector to verify we were given
+		    ** right number of arguments */
+
+		E_(svl_GetCvCheckEOV());
+	    svl_EndGet();
+
+		/* start new Get-context for reading position
+		** values from v(3) */
+
+	    E_(svl_BeginGet(NULL));
+		E_(svl_GetCv_R_(x_coord, len));
+		E_(svl_GetCv_R_(y_coord, len));
+		E_(svl_GetCv_R_(z_coord, len));
+
+		    /* check for exactly 3 coordinate vectors */
+
+		E_(svl_GetCvCheckEOV());
+	    svl_EndGet();
+
+		/* check for exactly 3 input arguments */
+
+	    E_(svl_GetCvCheckEOV());
+	svl_EndGet();
+
+	    /* Check the key and do the work */
+	...
+
+	for (i = 0; i < len; i++) {
+	    printf("DrawPoint [ %d, ",key);
+	    printf("[%g,%g,%g], ",red[i],green[i],blue[i]);
+	    printf("[%g,%g,%g] ]\n",x_coord[i],y_coord[i],z_coord[i]);
+	}
+
+    X_:			/* ...exit code... */
+	svl_Free(red);
+	svl_Free(green);
+	svl_Free(blue);
+	svl_Free(x_coord);
+	svl_Free(y_coord);
+	svl_Free(z_coord);
+
+	svl_End(ctx);	/* close "generic" context */
+	return e;
+    }
+</pre>
+<dir><hr></dir>
+
+<p><b>DrawPoint Version II:</b> Now we will see how to use data pointers for
+unit-extension.
+
+<dir><hr></dir>
+<!-- drawpt2.c -->
+<pre>
+    /*--- code for DrawPoint: uses data pointer access methods ---*/
+
+    static svl_error api_drawpoint(svl_task task)
+    {
+	    /* ...initialization section of code... */
+
+	svl_error e = NULL;
+	svl_var v = svl_TaskVar(task);	/* get handle to input argument */
+
+	svl_context ctx = svl_Begin();	/* begin "generic" context */
+
+	svlInt key;
+	svlReal *red, *green, *blue;		/* data pointers */
+	svlReal *x_coord, *y_coord, *z_coord;	/* data pointers */
+
+	int i, len = 1;		/* LLength must be initialized to 1 */
+
+	    /* the following values will be used by svl_DataPtrCv_R_ for
+	    ** handling unit-extension: they will indicate the 
+	    ** amount (0 or 1) by which to increment a data pointer 
+	    ** after each read operation */
+
+	int step_r, step_g, step_b, step_x, step_y, step_z;
+
+	    /* ...function body... */
+
+	    /* start a Get-context to read the input arguments */
+
+	E_(svl_BeginGet(v));
+	    E_(svl_GetCv_i(&key));
+
+		/* start new context for setting data pointers to point
+		** to the values in v(2); red, green, and blue will provide
+		** read-only access to the color intensity values;
+		** step_r, step_g, step_b are used for unit extension */
+
+	    E_(svl_BeginGet(NULL));
+		E_(svl_DataPtrCv_R_(&red, &len, &step_r));
+		E_(svl_DataPtrCv_R_(&green, &len, &step_g));
+		E_(svl_DataPtrCv_R_(&blue, &len, &step_b));
+		E_(svl_GetCvCheckEOV());
+	    svl_EndGet();
+
+		/* start new Get-context for setting data pointers to
+		** point to the position data in v(3) */
+
+	    E_(svl_BeginGet(NULL));
+		E_(svl_DataPtrCv_R_(&x_coord, &len, &step_x));
+		E_(svl_DataPtrCv_R_(&y_coord, &len, &step_y));
+		E_(svl_DataPtrCv_R_(&z_coord, &len, &step_z));
+		E_(svl_GetCvCheckEOV());
+	    svl_EndGet();
+
+	E_(svl_GetCvCheckEOV());
+	svl_EndGet();
+
+	    /* Check the key and do the work */
+	...
+
+	for (i = 0; i < len; i++) {
+	    printf("DrawPoint [ %d, ",key);
+	    printf("[%g,%g,%g], ", *red, *green, *blue);
+	    printf("[%g,%g,%g] ]\n", *x_coord, *y_coord, *z_coord);
+
+	    red += step_r;
+	    green += step_g;
+	    blue += step_b;
+	    x_coord += step_x;
+	    y_coord += step_y;
+	    z_coord += step_z;
+	}
+
+    X_:			/* ...exit code... */
+
+	svl_End(ctx);	/* close "generic" context */
+	return e;
+    }
+</pre>
+<dir><hr></dir>
+
+<h2>
+<a NAME="TaskMemos">Tasks and Task Memos</a>
+</h2>
+
+<p>An SVL task is, essentially,
+
+<ul>
+
+<li> a single SVL instruction stream (a piece of executing SVL code),
+together with </li>
+
+<li> references to the resources registered with the task, such as open files or
+windows used in the procedures (applications) invoked by the SVL program.</li>
+
+</ul>
+
+<p>Examples of resources are hash tables, window widgets, and file descriptors;
+the common thread is that they must be opened (usually at some expense),
+maintained, and closed.</p>
+
+<p> Applications must maintain the resources they use.  Because resources can
+normally be shared by several tasks (the applications themselves can be invoked
+by different tasks concurrently), a resource must be registered with each task in
+which it is used, and the application that owns (maintains) the resource needs
+to know when those tasks terminate or fork. The API provides <i>task memos</i>
+for this purpose.</p>
+
+<p>Task memos form a notification mechanism used to alert an application
+that something has happened to a task that is using one of the resources it
+maintains.
+
+The word "memo" refers to the idea of notification:  a note, or a "memo",
+is attached to the task that will remind the task to notify the resource
+about any change in the task status.</p>
+
+
+<p>Each memo is composed of a <em>callback</em> function and associated
+<em>callback data</em>.
+
+When a task dies or forks, all callbacks registered with it are called (the
+application is "called back"), permitting the application to perform
+administration and clean-up as appropriate for its resources.  Such a
+notification mechanism allows for resources to be <i>reference-counted</i>
+(<i>refcounted</i>), so that they are maintained only while needed (resources
+used by no-one can be closed).</p>
+
+<p>Task memos are registered with a task using the API method
+<tt>svl_TaskMemoAllocE</tt>, which must be supplied with the task handle (an
+object of type <tt>svl_task</tt>), the callback data (<tt>NULL</tt> if none),
+and the callback function.</p>
+
+<p>When called, the callback function will be given as arguments the task
+handle, the callback data, and a pointer to a structure of type
+<tt>svlTaskMemoInfo</tt> containing information about the task.  The
+structure has a <tt>code</tt> field which specifies what is to be done with
+the resource.  The two possible values for <tt>code</tt> are:
+
+<ul>
+<li><tt>SVL_TASKMEMO_DUP</tt>: the task forked; typically, increase the resource
+   reference count and register the callback with the new task</li>
+
+<li><tt>SVL_TASKMEMO_FREE</tt>: the task finished; typically,  decrease the
+   resource reference count; if the reference count is zero, close the
+   resource.</li>
+</ul>
+
+<p>Within the callback, the programmer should use a <tt>switch</tt> statement
+to process the two possible values of <tt>code</tt>.</p>
+
+<p>The API method <tt>svl_TaskMemoFree</tt> finds the task memo specified
+by the callback function and the callback data and detaches it from the
+task.  This also causes the callback to be called with <tt>code</tt> set to
+<tt>SVL_TASKMEMO_FREE</tt>.
+
+<tt>svl_TaskMemoFree</tt> is used when
+the resource in question has been destroyed, and all tasks must be
+forced to relinquish use of the resource.</p>
+
+<p>A simple example will illustrate how to use task memos. The function
+<tt>write_note</tt> appends a line with a given message to a file called
+<tt>notes</tt>.  We do not want file <tt>notes</tt> to be re-opened
+every time <tt>write_note</tt> is called: it would be much more efficient
+to open the file just once, leaving it open until no more remains to
+be written to it.  The problem, of course, is determining when
+the file is no longer needed. </p>
+
+<p>Using the callback function of a task memo provides a solution: when a
+task that is using the resource (the <tt>notes</tt> file) terminates, the
+task will notify the application that it is finished with the
+resource.  The task does so by calling the callback which decreases the
+reference count on that resource.  When the reference count falls to zero,
+the application knows that it is safe to free the resource (close the file).
+If the task using the resource is forked, the resource can be "duplicated"
+(by increasing its reference count).  Thus, while there are tasks using a
+common resource, the resource is maintained.
+
+<dir><hr></dir>
+<!-- memo.c -->
+<pre>
+    /*-------------- Task Memo Example: Append to file --------------*/
+
+    static FILE *notes_file = NULL;
+    static int notes_refcount = 0;
+    
+    /* memo_cb: the callback function, called either when the task
+    ** ends, or when the task forks. Registered in api_write_note */
+    
+    static void memo_cb(
+	svl_task task,		/* task that holds the memo */
+	void *data,		/* callback data */
+	svlTaskMemoInfo *info	/* task status information */
+    ){
+	if (notes_refcount <= 0) return; /* safety check */
+
+	    /* memo_cb gets called by the task manager with 
+	    ** a code indicating the type of action to be taken. */
+    
+	switch ((unsigned)info->code) {
+    
+		    /* free the resource only when refcount is 0 */
+
+	    case SVL_TASKMEMO_FREE:
+		if (--notes_refcount == 0) fclose(notes_file);
+		break;
+
+		    /* task fork: increase the resource refcount
+		    ** and register a task memo for the new task */
+
+	    case SVL_TASKMEMO_DUP:
+		info->u.memo_dup.error = svl_TaskMemoAllocE(
+		    info->u.memo_dup.newtask, NULL, memo_cb
+		);
+
+		if (!info->u.memo_dup.error) notes_refcount++;
+		break;
+	}
+    }
+
+    /* api_write_note: the built-in function */
+
+    svl_error api_write_note(svl_task task)
+    {
+	svl_error e = NULL;
+	svlTok msg = svl_nullTok;
+
+	    /* Extract the message to be written */
+
+	E_(svl_Get_token(svl_TaskVar(task), 0, &msg));
+
+	    /* If refcount <= 0, this is the first call
+	    ** to write_note. Open the file, register
+	    ** the callback, attach the task memo. */
+
+	if (notes_refcount <= 0) {
+	    E_(svl_TaskMemoAllocE(task, NULL, memo_cb));
+	    if (!(notes_file = fopen("notes", "a")))
+		E_(svl_SetErrorText("Can't open file"));
+	    notes_refcount = 1;
+	}
+
+	    /* Append to notes file */
+
+	fprintf(notes_file, "%s\n", svl_TokToStr(msg));
+
+    X_:
+	svl_FreeTok(msg);
+	return e;
+    }
+</pre>
+<dir><hr></dir>
+
+In the above example, a reminder is attached to the task with
+<tt>svl_TaskMemoAllocE</tt>, to tell the task to call <tt>memo_cb</tt> when it
+is done or when it forks. <tt>memo_cb</tt> is called with three arguments:
+
+<ul>
+  <li>the task that forks or terminates,</li>
+  <li>a pointer to private data associated with the application's resource,</li>
+  <li>and a callback information structure of type <tt>svlTaskMemoInfo</tt>.</li>
+</ul>
+
+Note that the <tt>notes_file</tt> resource in the above example
+attaches memos only to the task that opened the file, and to the
+tasks that are forked out of that task.
+
+Other tasks can still use the resource, but the resource does not
+count those references.  In general, it should do so, which would
+require maintaining an additional a list of all tasks using the resource.
+
+
+<h2>See Also</h2>
+
+<a href="../../apifcnindex.html">API Functions</a><br>
+<a href="../../svl/manual/index.html">SVL Programming Manual</a><br>
+
+
+<p><a href="../../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

@@ -1,0 +1,1186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--	smp_inst.htm
+!!
+!!	28-oct-2009 (hf) Improve clarity
+!!	24-sep-2008 (kk) copy edit
+!!	07-sep-2006 (jd) SSH
+!!	09-jul-2003 (al) Changed instructions for adding path
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<title>Installing and Running MOE/smp</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Installing and Running MOE/smp</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Overview">Overview</a>
+<li><a href="#Select">Selecting the Nodes</a>
+<li><a href="#ConfMP">Using MOE/smp on a Multiprocessor Workstation</a>
+<li><a href="#ConfSSH">Option 1: Configuring MOE/smp via <tt>ssh</tt></a>
+    <ol>
+    <li> <a href="#TrySSH">Verifying Passwordless <tt>ssh</tt> Availability</a>
+    <li> <a href="#SSHMFile">Create and Test a Machine File</a>
+    </ol>
+<li><a href="#ConfRexec">Option 2: Configuring MOE/smp via <tt>rexec</tt></a>
+    <ol>
+    <li><a href="#Rexec">Enable the <tt>rexec</tt> Daemon</a>
+	<ul>
+	<li><a href="#RexecUnix">Enabling <tt>rexecd</tt> on UNIX</a>
+	<li><a href="#RexecWin">Enabling <tt>rexecd</tt> on Microsoft
+	    Windows</a>
+	</ul>
+    <li> <a href="#Account">Set Up the User Account and Path</a>
+    <li> <a href="#Encrypt">Encrypt the Password</a>
+    <li> <a href="#MFile">Create and Test a Machine File</a>
+    </ol>
+<li><a href="#RunSMP">Running MOE/smp</a>
+    <ul>
+    <li><a href="#StartUp">Updating the Machine File and Launching</a>
+    <li><a href="#RunSwitch">Command Line Switches</a>
+    <li><a href="#RunEnv">Environment Variables</a>
+    </ul>
+<li><a href="#Trouble">Common Problems</a>
+    <ul>
+    <li><a href="#Troubleshooting">Troubleshooting Procedure</a>
+    <li><a href="#Problem1">I get the error message: <tt>rexec</tt> child
+	failed (Connection refused)</a>
+    <li><a href="#Problem2">I get the error message: MPU initialization failed
+	(Timeout)</a>
+    </ul>
+
+<li><a href="#SVL">SVL Commands</a>
+</ul>
+
+
+<h2> <a name="Overview"> Overview </a> </h2>
+
+<p>
+MOE/smp (Scalable Multi-Processor)
+is an enhancement to MOE and MOE/batch allowing several MOE processes
+to cooperate on large-scale distributed computing jobs.
+
+<p>
+Multi-processing with MOE/smp is relatively easy to set up.  The same session
+can run on a variety of computers, e.g. laptops, workstations, and
+multi-processor supercomputers, and each computer can run a different operating
+system including various flavors of both UNIX and Windows. It uses the existing
+LAN (local area network) for inter-processor communication, requires no special
+daemons on the nodes other than standard remote execution protocols like
+<tt>rexec</tt> or <tt>ssh</tt>, and respects typical OS socket limits.  No
+shared file system is assumed. For these reasons, little or no intervention
+from specialized IT personnel is normally required for setup.
+
+<p>
+This document is divided into four main parts.  <a href="#Select">Selecting the
+Nodes</a> outlines the minimum requirements needed for a computer to be able to
+run a MOE/smp session.  The Configuring MOE/smp sections describe an initial
+setup procedure (usually done only once) that will enable specific computers on
+your LAN to participate in MOE/smp sessions via either
+<a class="svl" href="#ConfSSH"><tt>ssh</tt></a> or
+<a class="svl" href="#ConfRexec"><tt>rexec</tt></a>.
+<a href="#RunSMP">Running MOE/smp</a> describes issues you may need to consider
+each time you launch a distributed computing job using MOE/smp.  <a
+href="#Trouble">Common Problems</a> provides information that may prove helpful
+if you have difficulty getting MOE/smp to function.
+
+
+<h2> <a name="Select"> Selecting the Nodes </a> </h2>
+
+<p>
+Each computer designated to participate in a MOE/smp session must have the
+following properties:
+
+<ul>
+<li>It must be a properly configured TCP/IP host.
+<li>It must allow connections to any valid ports.
+<li>It must be running a remote execution daemon (<tt>rexec</tt> or
+    <tt>ssh</tt>).
+<li>It must be able to execute MOE.
+</ul>
+
+<p>
+These requirements are usually met by the majority of workstations connected
+through a network.  A LAN protected by a firewall, however, may disallow
+connections from foreign computers to some of its host ports. It is recommended
+that you verify with your system administrator whether the computers selected
+to run a distributed computing experiment span multiple LANs or reside on
+different sides of a firewall.  In either case, you will need the help of your
+system administrator to ensure that the MOE/smp requirements are met.
+
+<p>
+While it may seem obvious that every computer participating in a MOE/smp
+session must be able to locate and run MOE, it is important to verify that this
+requirement is met when preparing for large scale distributed computing jobs.
+Most convenient is if all participating machines have access to a shared file
+system; in this case, MOE need be installed only once in a central location.
+Computers that do not have access to such a shared file system must have MOE
+installed on their local file systems.  Please refer to the <a
+href="install.htm">MOE installation manual</a> for instructions on how to
+install MOE.
+
+<p>
+MOE/smp can be configured to use either the <tt>rexec</tt> or <tt>ssh</tt>
+remote execution protocol. Check with your system administrator which protocols
+are available on your LAN. The <tt>rexec</tt> (remote execution client)
+protocol is easy to set up, but
+is insecure and should only be used on networks not exposed to the
+internet. Although more work to configure, <tt>ssh</tt> (Secure Shell)
+is far more secure and facilitates MOE/smp usage with passwordless login.
+
+<p>
+The <b><i>root node</i></b> is a critical MOE/smp concept.  The root node is
+the computer from which the distributed computing session is initiated using
+<tt>moe</tt> or <tt>moebatch</tt>.  The root node reads a special file (the
+<i>machine file</i>) to determine which processors, in addition to itself, will
+participate in the distributed computation.  Using the machine file, it invokes
+MOE on each of those processors.  Although there are no special requirements
+for the root node, it is recommended you choose a machine with a familiar
+operating system, i.e. one you are comfortable working with.
+
+<h2><a name="ConfMP">Using MOE/smp on a Multiprocessor Workstation</a></h2>
+<p>
+To use MOE/smp on a multiprocessor workstation, define an environment
+variable named <tt>MOE</tt>. The value of this environment variable must be set
+to the path of the MOE installation directory on the machine. It is used
+by newly created MOE processes to locate all the files distributed with MOE.
+<p>
+The following command can be used to start MOE/smp:
+<p>
+On UNIX systems (assuming the MOE root directory to be <tt>/usr/local/moe</tt>):
+<pre>
+    smp_user% <b>setenv MOE /usr/local/moe</b>
+    smp_user% <b>$MOE/bin/moe -mpu 2</b>
+</pre>
+
+On Macintosh and some Linux systems
+(assuming the MOE root directory to be <tt>/usr/local/moe</tt>):
+<pre>
+    smp_user% <b>export MOE=/usr/local/moe</b>
+    smp_user% <b>$MOE/bin/moe -mpu 2</b>
+</pre>
+
+On Windows systems (assuming the MOE root directory to be <tt>c:\moe</tt>):
+<pre>
+    c:\&gt; <b>set MOE=c:\moe</b>
+    c:\&gt; <b>%MOE%\bin\moe -mpu 2</b>
+</pre>
+In the commands above we specify a cluster of size 2 by using
+the <tt>-mpu 2</tt> command line switch. Replace 2 by the number of processors
+available in your workstation.
+
+<h2><a name="ConfSSH">Option 1: Configuration Steps for MOE/smp via <tt>ssh</tt></a></h2>
+
+<p>
+To configure a computer so it can participate in MOE/smp sessions via
+<tt>ssh</tt>, perform the following steps.  This initial configuration usually
+need be done only once.
+
+<p>
+<ol>
+<li>
+<a href="#TrySSH">Verify Passwordless <tt>ssh</tt> Availability.</a>
+<li>
+<a href="#SSHMFile">Create a machine file describing the virtual
+multi-processor "machine" and test that MOE/smp works.</a>
+</ol>
+
+<p>
+The remainder of this section describes each of these steps.
+MOE/smp will not function unless both steps are successfully
+completed.
+
+<p>
+<b>Note:</b> In this document,
+
+<pre>
+    smp_user%
+</pre>
+
+represents the prompt displayed by the system at the beginning of each
+command line and is not part of the command to be entered.  The prompt is
+likely to be different on your system.
+
+<h3>
+<a name="TrySSH">1. Verifying Passwordless <tt>ssh</tt> Availability</a>
+</h3>
+
+<p>
+MOE/smp can use the remote execution capabilities of the <tt>ssh</tt> protocol
+to initialize processors. You can test if a particular computer supports
+<tt>ssh</tt> by logging in and typing:
+
+<pre>
+    smp_user% ssh localhost hostname
+</pre>
+
+<p>
+If <tt>ssh</tt> is properly configured, the name of the computer is printed. If
+instead the result is "Command not found" or "Connection refused" then
+<tt>ssh</tt> is not enabled on this host and must be configured.
+
+<p>
+<b>Note:</b> Configuring <tt>ssh</tt> requires root or administrator privileges
+and is beyond the scope of this document.  Please contact your system
+administrator.
+
+<p>
+If <tt>ssh</tt> is available, the MOE installation can be tested by typing:
+
+<pre>
+    smp_user% ssh localhost "moebatch -test"
+</pre>
+
+A message similar to "MOE 2009.10 appears OK (/usr/local/moe)" should
+be printed. Messages like "Command not found" or "Permission denied" indicate
+that MOE could not be located. Verify that MOE is installed on this computer.
+If this is not the case, refer to the <a href="install.htm">MOE installation
+manual</a> for instructions on how to install MOE. Otherwise, specify the
+full path to MOE and try again:
+
+<pre>
+    smp_user% ssh localhost "/usr/local/moe/bin/moebatch -test"
+</pre>
+
+<p>
+Take careful note of the location of MOE on each of the computers you wish to
+add to the MOE/smp session. This information will be required for creating a <a
+href="#SSHMFile">Machine File</a> in the next step.  Alternatively, you can add
+the bin directory of this MOE installation to your <tt>PATH</tt> environment
+variable.
+
+<p>
+Finally, test the connectivity of each computer participating in the MOE/smp
+run. This can be achieved by logging onto one computer and using <tt>ssh</tt>
+to start MOE/batch on a remote computer.  For example, if computers
+<tt>tiamat</tt> and <tt>tyr</tt> are to be used in a MOE/smp session, logging
+onto tiamat and typing:
+
+<pre>
+    tiamat% ssh tyr "moebatch -test"
+</pre>
+
+and performing the corresponding operation on <tt>tyr</tt> will determine if both
+machines are properly configured and connected.
+
+<h3> <a name="SSHMFile"> 2. Create and Test a Machine File </a> </h3>
+
+<p>
+The machine file is a file used by MOE/smp to determine which processors will
+be connected together and how to locate and start MOE/smp on each of those
+processors.  The name of the machine file is passed as an argument to
+<tt>moe</tt> or <tt>moebatch</tt> when initiating a distributed computing
+session on the root node.  Note that the root node always participates in the
+distributed computation.
+
+<p>
+The machine file is an ASCII text file that you can create and edit with your
+favorite text editor, e.g. vi or Notepad.  You may wish to put the file in the
+home directory of <tt>smp_user</tt> or some other convenient place on the root
+node machine.  Open a blank file named <tt>machine.txt</tt>.
+
+<p>
+<b>Add host lines</b>.  Host lines are used to list the computers that will be
+used in the multi-processor computations.  The computers can be any of the set
+of computers that have been configured for running MOE/smp.  The format of each
+line is:
+
+<pre>
+    localhost&nbsp;ssh&nbsp;<i>ip_address&nbsp;shellcommand</i>
+</pre>
+
+where <i>ip_address</i> is an IP (internet protocol) address
+(e.g. 192.1.1.22) or a hostname
+(e.g. myhost.company.com) and <i>shellcommand</i> is the shell command
+to be executed on the specified node.  If a computer has more than one
+processor, there must be one host line for each processor.  For example, if a
+computer has <i>n</i> processors, there must be <i>n</i> lines, all bearing the
+same <i>ip_address</i>, in the list so that a process will be assigned to each
+processor.
+
+<p>
+<font color="#ff0000"><b>Important</b></font>&nbsp;&nbsp;<i>The computer
+specified by the first host line will be used as the root node.</i> Ensure that
+the first host line in the file corresponds to the computer where the MOE/smp
+session will be initiated.
+
+<p>
+<b>Note:</b> Unlike MOE/smp via the <tt>rexec</tt> protocol, no
+<tt>$mpu-user</tt> or <tt>$mpu_password</tt> lines are required.
+
+<p>
+The last line in the machine file must be
+
+<pre>
+    $eof
+</pre>
+
+<p>
+<b>A Complete Example</b>. Assuming our MOE/smp session will use two machines,
+<tt>tiamat</tt> and <tt>tyr</tt>, the following machine file is required:
+</p>
+
+<pre>
+    localhost ssh tiamat 'moebatch -mpu -'
+    localhost ssh tyr 'moebatch -mpu -'
+    $eof
+</pre>
+
+<p>The command-line switch <tt>-mpu -</tt> indicates that <tt>moebatch</tt>
+is to be started in multi-processor mode, but that the current machine is
+<i>not</i> the root node.
+The dash at the end of the line tells MOE/smp that the standard input will be
+used at boot time to receive configuration information from the root node.
+</p>
+
+<p>
+<b>Run a test on the root node machine</b>.  To test the machine file, log onto
+the root node (the first machine specified in the machine file).  At the shell
+prompt type:
+
+<pre>
+    smp_user% moebatch -mpu machine.txt
+</pre>
+
+<p>
+If all goes well you should see the <tt>moe&gt;</tt> prompt.  Enter:
+
+<pre>
+    moe&gt; MPU_HOSTCOUNT
+    2
+</pre>
+
+which displays the number of hosts involved in the MOE/smp session (in this
+case 2).  To test remote SVL execution, type
+
+<pre>
+    moe&gt; mpu_eval [ [1,2], 'HOSTNAME' ]
+    [ ['somename','somename'], ['',''] ]
+</pre>
+
+<p>
+<tt>mpu_eval</tt> takes two arguments.  The first is a vector of target hosts
+and the second the SVL expression that will be sent to them.  If all is working
+properly, the names of the computers used in your MOE/smp session should be
+displayed in place of <tt>'somename'</tt> in the example above.  (Please refer
+to the <a href="../svl/fcnref/svlmpu.htm"><tt>mpu_*</tt></a> function
+references for more information on available calls and constants.)
+
+<p>
+<b>Add more computers to the test</b>.  Adding a computer is simply a matter of
+adding more host lines to the machine file.
+<p>
+<b>Nice mode</b>.  In some situations you may wish to only use some machines when they
+are not busy with other tasks.  UNIX facilitates this with the <tt>nice</tt> command.
+Simply precede the <tt>moebatch</tt> call with this command, and it will run at a lower
+priority on the given host, only using up CPU when other jobs on the machine do not
+require CPU cycles.  For example, if we wanted to run on <tt>tyr</tt>
+in nice mode, the above
+example would be changed like so:
+
+<pre>
+    localhost ssh tiamat 'moebatch -mpu -'
+    localhost ssh tyr 'nice moebatch -mpu -'
+    $eof
+</pre>
+
+<h2>
+<a name="ConfRexec">Option 2: Configuration Steps for MOE/smp via <tt>rexec</tt></a>
+</h2>
+
+<p>
+Initial configuration of computers so they can participate in MOE/smp sessions
+via <tt>rexec</tt> is a relatively simple process consisting of the following
+steps:
+
+<ol>
+<li> <a href="#Rexec">Enabling the <tt>rexec</tt> daemon on each node, if it is
+not already running;</a>
+
+<li> <a href="#Account">Ensuring the designated user account exists on each
+machine;</a>
+
+<li> <a href="#Encrypt">Encrypting the password;</a>
+
+<li> <a href="#MFile">Creating a machine file describing the virtual
+multi-processor "machine" and testing that MOE/smp works.</a>
+
+</ol>
+
+<p>
+The remainder of this section describes each of these steps.  MOE/smp will not
+function unless all of these are performed.
+
+<p>
+<b>Note:</b> In this document, <tt>smp_user%</tt> represents the prompt
+displayed by the system at the beginning of each command line.
+Thus, you don't type it and it is likely to be different
+on your system.
+
+<h3> <a name="Rexec"> 1. Enable the <tt>rexec</tt> Daemon </a> </h3>
+
+<ul>
+<li><a href="#RexecUnix">Enabling <tt>rexecd</tt> on UNIX</a>
+<li><a href="#RexecWin">Enabling <tt>rexecd</tt> on Microsoft Windows</a>
+</ul>
+
+<h4> <a name="RexecUnix"> 1.1  Enabling <tt>rexecd</tt> on UNIX </a> </h4>
+
+<p>
+MOE/smp relies on remote execution facilities of the <tt>rexec</tt> daemon
+(<tt>rexecd</tt>) to initialize processors.  The <tt>rexec</tt> daemon is
+installed by default on most UNIX systems but some system administrators
+disable it.  Its presence on a particular computer can be tested by logging in
+and typing:
+
+<pre>
+    smp_user% rexec localhost hostname
+</pre>
+
+<p>
+If <tt>rexecd</tt> is running, then you will be prompted for your password
+and once you enter it, the name of the computer will be printed.  If,
+instead, the result you get is "Connection refused" or "Command not found"
+then the <tt>rexecd</tt> daemon is not running on this host and must be
+enabled.
+
+<p>
+<b>Note:</b> Root privileges are required to enable <tt>rexecd</tt>.
+
+<p>
+To enable the <tt>rexec</tt> daemon, the internet servers database must be
+updated.  The database is usually named <tt>/etc/inetd.conf</tt> but on
+some newer systems it is <tt>/etc/xinetd.conf</tt>.
+
+<p>
+If your system is configured using <tt>inetd.conf</tt>, then load this
+file into a text editor and locate a line that looks like this:
+
+<pre>
+    #exec  stream  tcp    nowait  root    /usr/etc/rexecd    rexecd
+</pre>
+The <tt>#</tt> at the beginning of the line indicates the beginning of
+a comment. Remove the <tt>#</tt> character and save the file.
+
+<p>If your system is configured with <tt>xinetd.conf</tt>,
+then the file <tt>/etc/xinet.d/rexec</tt> needs to be edited. Replace the
+line that reads:
+
+<pre>
+    disable = yes
+</pre>
+
+<p>with
+
+<pre>
+    disable = no
+</pre>
+
+<p>and save the file.
+
+<p>
+In order for any change in the internet servers database to take effect, the
+internet services daemon (<tt>inetd/xinetd</tt>) must be restarted. To
+do so, first determine its PID using the following command:
+
+<pre>
+    smp_user% ps -e | grep inetd
+       233 ?       0:07 inetd
+</pre>
+
+<p>In this example, the PID of <tt>inetd</tt> is 233. <tt>inetd</tt> can
+then be restarted using:
+
+<pre>
+    smp_user% kill -HUP <i>pid</i>
+</pre>
+
+<p>where <i>pid</i> is the PID of inetd.
+
+<h4>
+<a name="RexecWin"> 1.2 Enabling <tt>rexecd</tt> on Microsoft Windows </a>
+</h4>
+
+<p>
+MOE/smp relies on remote execution facilities of the <tt>rexec</tt> daemon
+(<tt>rexecd</tt>) to initialize processors. Since the Microsoft family of
+operating systems does not offer <tt>rexecd</tt>, use the <tt>rexecd</tt> for
+Windows that is provided with MOE.  The file <tt>rexecd.exe</tt> is located in
+<tt>$MOE/bin-i4w9</tt>.  Copy it to the local file system of the machine where
+it is to be installed and follow these instructions:
+
+<p>
+<i>On Windows NT/2000/XP/Vista/7:</i>
+
+<ol>
+<li>Log in as a member of the Administrator group.
+<li>Open a command window.
+<li><tt>cd</tt> to the directory where you copied the file <tt>rexecd.exe</tt>.
+<li>Type <tt>rexecd -install</tt>.
+<li>Open the
+<span class="menu">Control Panel | Administrative Tools | Services</span> panel.
+<li>Scroll to the service named <tt>rexecd</tt>.
+<li>Press Start
+
+<li>The service is installed with a startup type of "manual". This must be
+changed to "automatic" if you want the <tt>rexec</tt> daemon to automatically
+start on system power-on.
+
+<li>A logfile named <tt>rexecd.log</tt> will be created in the temp directory
+of the Local System account. Usage and errors will be reported there.
+
+<li>Use the Stop button of the Services panel to stop the <tt>rexec</tt>
+daemon.
+
+<li>Type <tt>rexecd -uninstall</tt> to remove the <tt>rexec</tt> daemon from
+the services database.
+
+</ol>
+
+<p>
+<i>On Windows 98, or Windows Me:</i>
+
+<ol>
+<li>Open a command window.
+<li><tt>cd</tt> to the directory where you copied the file <tt>rexecd.exe</tt>.
+<li>Type <tt>rexecd -log rexecd.log</tt>.  The <tt>rexec</tt> daemon program
+will now run until you power off the computer (even if you logoff).
+<li>If you ever need to stop the <tt>rexec</tt> daemon, type
+<span class="nobr"><tt>rexecd -stop</tt></span> in a command window.
+The logfile named <tt>rexecd.log</tt> will contain usage and error information.
+</ol>
+<p>
+<b>Warning!</b> Please take note that the Win32 API does not offer much in
+terms of security for the Windows9X family of operating systems. Running the
+<tt>rexec</tt> daemon program on these platforms will leave the machine
+wide open to external attacks. Please consult with your system
+administrators before installing the <tt>rexec</tt> daemon programs on these
+platforms.
+
+<h3> <a name="Account"> 2. Set Up the User Account and Path </a> </h3>
+
+In order to authenticate remote execution requests,
+a user account under which the MOE/smp session will run must be selected.
+In this document, we will assume that the chosen user is <tt>smp_user</tt>.
+On <i>all</i> computers where MOE/smp is to run:
+<ol>
+<li><tt>smp_user</tt> must have login rights.
+<li>The password for <tt>smp_user</tt> must be the same for all computers.
+<li>The home directory for <tt>smp_user</tt> must be readable and writable.
+<li>MOE must be runnable by <tt>smp_user</tt> when logged in.
+</ol>
+
+<p>
+It is recommended to configure the login/startup shell script of
+<tt>smp_user</tt> so that <tt>moe</tt> and/or <tt>moebatch</tt> can be run
+without specifying the entire path.  Including the path to the MOE executables
+in the PATH environment variable will facilitate multi-processor operations by
+standardizing the launch sequence.
+ 
+<p>
+On Microsoft Windows platforms, add the <tt>$MOE/bin-i4w9</tt> directory to the
+path.  On UNIX machines, add the <tt>$MOE/bin</tt> directory to the path by
+adding the following to the <tt>~/.cshrc</tt> file (or depending on your login
+shell, this may be called <tt>.tcshrc</tt>, <tt>.bashrc</tt>,
+<tt>.login</tt> or <tt>.profile</tt> - consult your System Administrator if
+unsure which to modify):
+
+<pre>
+    set path=($MOE/bin $path)
+</pre>
+
+<!--
+On UNIX machines with <tt>csh</tt> or <tt>tcsh</tt> you can add
+the following to the <tt>~/.cshrc</tt> &nbsp; file to automatically set the
+correct directory:
+ 
+<blockquote>
+<pre>set OS=XXX
+set uname='/bin/uname'
+ 
+if ( -x $uname ) then
+    set OS=`$uname -srm`
+endif
+ 
+switch ( "$OS" )
+    case SunOS' '5.[6-9]' 'sun*:        # Solaris 5.6-5.9 on Sun/SPARC
+        setenv ARCH sun4
+        breaksw
+    case IRIX*' '6.?' 'IP*:             # IRIX 6.x on Sgi/MIPS
+        setenv ARCH g453
+        breaksw
+    case HP-UX*' '9000*:                # HP-UX
+        setenv ARCH hpux
+        breaksw
+    case Linux*' 'i[4-7]86:             # Linux on Intel
+        setenv ARCH i4lx
+        breaksw
+    case *:                             # anything else
+        setenv ARCH none
+endsw
+ 
+setenv MOE installation_directory_for_moe
+set path=($MOE/bin-$ARCH $path)
+</pre>
+</blockquote>
+-->
+ 
+<p>
+Log in as <tt>smp_user</tt> and type <tt>moebatch -test</tt> to verify that
+the PATH has been properly set.  The MOE version and installation directory
+will be printed if the PATH is correct.
+
+<p><b>Warning!</b> Make sure that the <i>same</i> MOE version is in the
+path for all computers.
+
+<h3> <a name="Encrypt"> 3. Encrypt the Password </a> </h3>
+
+<p>
+The password information is encrypted for security.  Choose any computer where
+MOE is installed to do the encryption - in other words, you only need to do this
+once.  Do it as shown below being careful to replace
+<i>password_for_smp_user</i> by the password you chose for the
+<tt>smp_user</tt> account:
+
+<pre>    smp_user% moebatch
+    moe> mpu_password '<i>password_for_smp_user</i>'
+    'jmicfeeolefdbpagfpnbjhggicpjokgfgggpplklbkdnml'
+</pre>
+
+<p>
+In the example above, <tt>jmicfeeolefdbpagfpnbjhggicpjokgfgggpplklbkdnml</tt>
+is the encrypted password.  Write down the string of text that is produced or
+save it in a file (without the single quotes) for later use.
+
+<h3> <a name="MFile"> 4. Create and Test a Machine File </a> </h3>
+
+<p>
+The machine file is a file you create that is used by MOE/smp to determine
+which processors will be connected together and how to locate and start MOE/smp
+on these processors.  You pass the name of the machine file as an argument to
+<tt>moe</tt> or <tt>moebatch</tt> when initiating a distributed computing
+session on the root node.  As well as using the machine file to determine the
+other processors involved, the root node participates in the distributed
+computation itself.
+
+<p>
+The machine file is an ASCII text file that you can create with your favorite
+text editor like vi or notepad.
+You may wish to put it in the home directory of <tt>smp_user</tt> or some
+other convenient place on the root machine.
+Open a blank file named <tt>machine.txt</tt>.
+Enter:
+<pre>    $mpu-user smp_user
+    $mpu-password jmicfeeolefdbpagfpnbjhggicpjokgfgggpplklbkdnml
+</pre>
+
+<p>
+Be sure to replace <tt>smp_user</tt> with the userid you've chosen and replace
+the argument to <tt>$mpu-password</tt> that appears above by the encrypted
+password you created.  These two lines determine the user and password used to
+launch MOE on other computers.
+
+<p><b>Add the <tt>rexec</tt> line</b>. 
+The <tt>rexec</tt> line defines the default
+command to execute on each MOE/smp computer. The format is:
+
+<tt>$mpu-rexec</tt>&nbsp;<i>shellcommand</i>.  We will use the following:
+
+<pre>
+    $mpu-rexec moebatch -mpu -
+</pre>
+
+<p>
+<p>The command-line switch <tt>-mpu -</tt> indicates that <tt>moebatch</tt>
+is to be started in multi-processor mode, but that the current machine is
+<i>not</i> the root node.
+The dash at the end of the line tells MOE/smp that the standard input will be
+used at boot time to receive configuration information from the root node.
+</p>
+
+<p><b>Nice mode</b>.  In some situations you may wish to only use machines when they
+are not busy with other tasks.  UNIX facilitates this with the <tt>nice</tt> command.
+Simply precede the <tt>moebatch</tt> call with this command, and it will run at a lower
+priority, only using up CPU when other jobs on the machines do not
+require CPU cycles.  This would look like:
+
+<pre>
+    $mpu-rexec nice moebatch -mpu -
+</pre>
+
+<p>
+<b>Add host lines</b>.  Host lines are used to list the computers that will be
+used in the multi-processor computations.  The format of each line is:
+
+<pre>
+    <i>ip_address&nbsp;shellcommand</i>
+</pre>
+
+where <i>ip_address</i> is an IP address (e.g. 192.1.1.22) or a
+hostname (e.g. myhost.company.com) and <i>shellcommand</i> is an
+optional shell command to be executed on the specified node.  If present, this
+shell command overrides the <tt>$mpu-rexec</tt> default.  If nothing is
+specified for the shell command, then the value specified with
+<tt>$mpu-rexec</tt> is used.  You might want to use this to have some
+processes run in nice mode (see above), and others at normal priority, for example.
+If a computer has more than one processor, say
+<i>n</i>, then specify it on <i>n</i> lines in the list to assign a process to
+each processor.
+
+<p>
+<font color="#ff0000"><b>Important</b></font>&nbsp;&nbsp;<i>The first host line
+in the file <b>must</b> specify the root node where the session will be
+initiated.</i>
+
+<p>
+<b>Determining the IP address of a host.</b> If you don't know the IP address
+of a host, you can discover it by issuing the <tt>ping</tt> command at the
+command line.  For example, if the name of the computer is <tt>isis</tt>,
+enter:
+
+<blockquote>
+<tt>smp_user% ping isis</tt>
+</blockquote>
+
+Output resembling the following is generated:
+
+<blockquote> <tt>
+PING isis.chemcomp.com (192.168.1.22) from 192.168.1.54 : 56(84) bytes of
+data.
+<br>
+64 bytes from isis.chemcomp.com (192.168.1.22): icmp_seq=0 ttl=255
+time=471 usec
+<br>
+64 bytes from isis.chemcomp.com (192.168.1.22): icmp_seq=1 ttl=255
+time=251 usec
+</tt> </blockquote>
+
+In this example, the IP address of isis is 192.168.1.22.
+
+<p>
+<b>Create a test on the root machine</b>.  As a first experiment to verify that
+things have been properly configured, add the following lines to the machine
+file:
+
+<pre>
+    localhost
+    localhost
+</pre>
+
+<p>
+This specifies two MOE/smp processes running on the machine where the MOE/smp
+session is initiated (the root node).
+
+<p>
+End the machine file by adding a <tt>$eof</tt> line to indicate end of file and
+save the file.  The complete file should look like this:
+ 
+<pre>    $mpu-user smp_user
+    $mpu-password jmicfeeolefdbpagfpnbjhggicpjokgfgggpplklbkdnml
+    $mpu-rexec moebatch -mpu -
+    localhost
+    localhost
+    $eof
+</pre>
+
+<p>
+<font color="#ff0000"><b>Warning</b></font>&nbsp;&nbsp;<i>Although 
+<b><tt>localhost</tt></b> is being used for this test, 
+in general it is best <b>not</b> to use it, but
+rather the actual IP address or machine name.</i>
+  
+<p>
+<b>Run the test on the root machine</b>.  To test the machine file, log in as
+<tt>smp_user</tt> on the root node.  At the shell prompt type:
+
+<pre>
+    smp_user% moebatch -mpu machine.txt
+</pre>
+
+<p>
+If all goes well you should see the <tt>moe&gt;</tt> prompt.  Enter:
+
+<pre>    moe&gt; MPU_HOSTCOUNT
+    2
+</pre>
+
+which displays the number of hosts involved in the MOE/smp session (in this
+case 2).  To test remote SVL execution, type
+
+<pre>    moe&gt; mpu_eval [ [1,2], 'HOSTNAME' ]
+    [ ['somename','somename'], ['',''] ]
+</pre>
+
+<p>
+The first parameter is a vector of target hosts and the second parameter is the
+SVL expression that will be sent to them.  If all is working, two copies of the
+current computer's name should be displayed in place of <i>somename</i> in the
+example above.  (Please refer to the <a
+href="../svl/fcnref/svlmpu.htm"><tt>mpu_*</tt></a> function references for more
+information on available calls and constants.)
+
+<p>
+<b>Add more computers to the test</b>.  Adding a computer is simply a matter of
+adding more host lines to the machine file.  In general it is best not to use
+<tt>localhost</tt>, but rather the actual IP address or machine name.  If you
+can execute the <tt>$mpu-rexec</tt> default command then you don't need to
+bother with specifying a specific shell command for a given host. If this is
+not the case, then you will either need to alter the <tt>smp_user</tt>
+environment on the particular host or complete the host line with a tailored
+command specific to that computer.
+
+<p>
+<b>Run the test on all the hosts</b>.  To do a test run on all the hosts
+specified in the machine file, do as follows.  As <tt>smp_user</tt>, once again
+execute:
+
+<pre>
+    smp_user% moebatch -mpu machine.txt
+</pre>
+
+<p>
+After the <tt>moe&gt;</tt> prompt, enter:
+
+<pre>
+    moe&gt; MPU_HOSTCOUNT
+</pre>
+
+<p>
+If all is well, a number will be printed that is equal to the number of host
+lines in the machine file.  Call this number <i>n</i>.
+
+<p>
+To test remote SVL execution once again, type:
+
+<pre>
+    moe&gt; mpu_eval [ igen MPU_HOSTCOUNT, 'HOSTNAME' ]
+</pre>
+
+<p>
+The vector that is printed should contain <i>n</i> names of host computers.
+All the names should correspond to hosts mentioned in your machine file. Names
+will be repeated if you specified multiple processes on the same host.  Note
+that the order of the names may not match the order of the host lines in your
+file because different processes complete at different speeds. This successful
+result indicates that all of those hosts are participating in the distributed
+computation.
+
+
+<h2> <a name="RunSMP"> Running MOE/smp </a> </h2>
+
+<ul>
+<li><a href="#StartUp">Updating the Machine File and Launching</a>
+<li><a href="#RunSwitch">Command Line Switches</a>
+<li><a href="#RunEnv">Environment Variables</a>
+</ul>
+
+<h3> <a name="StartUp"> Updating the Machine File and Launching </a> </h3>
+
+<p>
+Let's assume you have configured and tested all of the computers you wish to
+enable to participate in distributed computing based on MOE/smp as described
+above.  Before initiating a MOE/smp job, you should consider whether you need
+to modify your machine file.  This may be necessary for any of a number of
+reasons.  If a machine listed in the machine file is not currently available
+for your use, perhaps because of a breakdown or because someone else is using
+it, you must remove it from the host list.  If you plan to initiate the session
+on a different root node than the last time, you will need to re-arrange the
+order in which the hosts are listed, so that the root node is first.  In this
+case, you also need to ensure that the machine file is readily available on the
+root node.
+Furthermore, as a rule of thumb,
+it is preferable to position fast-access, fast
+CPU machines early in the list.  This, for technical reasons, will
+increase the efficiency of the cluster.
+</p>
+
+<p>
+Once the machine file has been updated appropriately to reflect the computing
+resources to be used, the session is initiated as follows.  Log in as
+<tt>smp_user</tt> on the root node.  We assume the machine file is called
+<tt>machine.txt</tt>.  To initiate a non-graphical <tt>moebatch</tt>
+distributed computation, at the shell prompt type:
+
+<pre>    smp_user% moebatch -mpu machine.txt
+</pre>
+
+<p>
+Alternatively, to initiate a graphical <tt>moe</tt> distributed computation
+session that will bring up MOE on the graphics display of the root node and may
+display windows on the graphics displays of other computers involved in the
+session, type:
+
+<pre>    smp_user% moe -mpu machine.txt
+</pre>
+
+<h3> <a name="RunSwitch"> Command Line Switches </a> </h3>
+
+<p>
+When <tt>moe</tt> or <tt>moebatch</tt> are invoked to participate in a MOE/smp
+session, a number of <i>switches</i> or options are available.  These are used
+by typing the following (this example assumes MOE is installed in
+/usr/local/moe):
+ 
+<pre>
+   user% <b>/usr/local/moe/bin/moe <i>switches</i></b>
+   user% <b>/usr/local/moe/bin/moebatch <i>switches</i></b>
+</pre>
+ 
+<p>
+where <i>switches</i> are one or more of the following items:
+
+<p>
+<table border="1" cellpadding="5" cellspacing=0>
+
+<tr>
+<th bgcolor="#cccccc">Switch</th>
+<th bgcolor="#cccccc">Description</th>
+</tr>
+
+<tr>
+<td valign="top"><tt>-mpu</tt>&nbsp;<i>filename</i></td>
+<td valign="top">
+Specifies the machine file. The machine file is an ASCII file containing
+information about which network computers are intended as hosts for the
+multi-processor.
+If <i>filename</i> is a hyphen (-) then the process "standard in" (stdin)
+will be read.
+</tr>
+
+<tr>
+<td valign="top"><tt>-mpu</tt>&nbsp;<i>number</i></td>
+<td valign="top">
+Specifies the number of local processes participating in the MOE/smp
+session. 
+</tr>
+
+<tr>
+<td valign="top">
+<span class="nobr"><tt>-mpulog</tt>&nbsp;<i>filename</i></span></td>
+<td valign="top">
+Specifies the file to be used for writing information relating to
+multi-processor startup and any errors detected. If <tt>filename</tt> is a
+hyphen (-) then the process "standard error" (stderr) will be used.
+
+</table>
+
+<h3> <a name="RunEnv"> Environment Variables </a> </h3>
+
+<p>
+The following environment variables are used by MOE/smp:
+
+<p>
+<table border="1" cellpadding="5" cellspacing=0>
+
+<tr>
+<th bgcolor="#cccccc">Variable</th>
+<th bgcolor="#cccccc">Description</th>
+</tr>
+
+<tr>
+<td valign="top"><tt>SVL_MPU_PASSWORD</tt></td>
+<td valign="top">
+Specifies the password used when logging on to network machines via rexecd
+(this does not apply when using ssh). The environment
+variable <tt>SVL_MPU_PASSWORD</tt> is used when the <tt>$mpu-password</tt>
+line does not appear in the machine file. For security reasons, the value
+of the password is scrambled. The SVL function
+<tt>mpu_password</tt> must be used to create scrambled passwords from
+plain text. Note: if the environment variable is used, then it is that of
+the root processor only.  Other processors will receive a copy of the
+root processor's environment variable.
+
+<tr>
+<td valign="top"><tt>SVL_MPU_USER</tt></td>
+<td valign="top">
+Specifies the login user account under which multi-processor processes will
+run via rexecd (this does not apply when using ssh).
+The user must exist on the destination machine.  The environment
+variable SVL_MPU_USER is used when the $mpu-USER line does not appear
+in the machine file.
+
+</table>
+
+
+<h2> <a name="Trouble"> Common Problems </a> </h2> 
+
+<ul>
+    <li><a href="#Troubleshooting">Troubleshooting Procedure</a>
+
+    <li><a href="#Problem1">I get the error message: rexec child failed
+        (Connection refused)</a>
+
+    <li><a href="#Problem2">I get the error message: MPU initialization failed
+    (Timeout)</a>
+</ul>
+
+
+<h3> <a name="Troubleshooting"> Troubleshooting Procedure </a> </h3>
+
+<p>
+If MOE/smp is not working properly, it is most likely due to one of the
+following problems:
+
+<ol>
+<li>The <tt>rexec</tt> daemon has not been properly installed
+<li>The software keys or license manager is not being found
+<li>The machine file has not been properly created
+</ol>
+
+<p>
+The following procedure will help you to identify these cases.
+It assumes that MOE has been installed in <tt>/usr/local/moe</tt>
+for UNIX systems and <tt>c:\moe</tt> for Windows systems.
+ 
+<p>
+The first step in troubleshooting the MOE installation is to unset the
+<tt>MOE</tt> environment variable.  Often, the <tt>MOE</tt> variable is
+specifying a directory other than the one intended (such as a previous
+version of MOE).  On UNIX, type
+ 
+<pre>
+    user% <b>unsetenv MOE</b>
+</pre>
+ 
+<p>On Windows, type (in an MS-DOS Prompt window):
+ 
+<pre>
+    c:\&gt; <b>set MOE=</b>
+</pre>
+ 
+<p>Next, on UNIX, type:
+ 
+<pre>
+    user% <b>/usr/local/moe/bin/moebatch -test</b>
+</pre>
+ 
+<p>On Windows, type:
+ 
+<pre>
+    c:\&gt; <b>c:\moe\bin-i4w9\moebatch.exe -test</b>
+</pre>
+ 
+<p>After a few seconds, you should see something like
+ 
+<pre>
+    MOE 2009.10 appears OK (/usr/local/moe)
+</pre>
+ 
+<p>
+where <tt>2009.10</tt> is the version of MOE and <tt>/usr/local/moe</tt> is the
+MOE root directory.  If this message appears (alone) then it means that the
+software installation and license management files seem to be in working order.
+If this does not appear or other messages are printed, it means that there is a
+problem with either the MOE installation files or the license management
+system.
+
+<p>
+If there is a problem, first make sure that the license manager file
+<tt>license.dat</tt> is correct and make sure that the <tt>lmgrd</tt> program
+is running and using the same license information (you may need to restart
+<tt>lmgrd</tt>).  If this does not work, consult the list of common problems in
+<a href="install.htm">Installing and Running MOE</a> and as a last resort try
+re-copying the MOE files from the CD-ROM (re-install).
+
+<p>
+If these tests work, try running <tt>moe</tt> or <tt>moebatch</tt> with the
+<tt>-std</tt> switch.  If MOE runs, then there may be a problem with local
+customization (menu files, default forcefields, new SVL code).
+
+<p>
+<h3>
+<a name="Problem1">I get the error message: rexec child failed (Connection
+refused)</a>
+</h3>
+
+<p>
+This error message is printed when a processor was unable to start MOE or
+MOE/batch on a remote host because the <tt>rexec</tt> daemon is not
+enabled. Enable the <tt>rexec</tt> daemon on the remote host and try again.
+
+<h3>
+<a name="Problem2">I get the error message: MPU initialization failed
+(Timeout)</a>
+</h3>
+
+<p>
+This error message is printed when one of the hosts in your MOE/smp session
+failed to connect back to its parent in a timely fashion.
+
+<p>
+The first step in solving this problem is to log on as <tt>smp_user</tt> on the
+child computer and run MOE/batch.  If MOE/batch fails to start then there is a
+problem with either the MOE installation files or the license management
+system. Refer to the <a href="install.htm">Installing and Running MOE</a> for
+more information on how to resolve these problems.
+
+<p>
+If the test works then there may be a connectivity problem.  A common mistake
+is to initiate the MOE/smp session on a different computer than the first one
+specified in the machine file.  This will confuse the node numbering and cause
+connectivity problems.
+
+<p>
+In this is not the problem, search the log file of the parent (specified with
+the <tt>-mpulog</tt> argument described above) for a line of the
+following form:
+
+<pre>
+    [   1] listen on isis#32790
+</pre>
+
+<p>
+This line indicates the <b>hostname</b> of the parent, <tt>isis</tt> in this
+case, and the port on which it accepts connections (e.g. 32790). The
+hostname in the log file must be resolvable by any child node.  Log on the
+child as <tt>smp_user</tt> and try to <b>ping</b> or <b>telnet</b> to the
+parent node using the name displayed in the logfile. If the problem persists,
+try using IP addresses instead of the host name.
+
+
+<h2> <a name="SVL"> SVL Commands </a> </h2>
+
+<a class="svl" href="../svl/fcnref/svlmpu.htm">mpu_eval</a><br>
+<a class="svl" href="../svl/fcnref/svlmpu.htm">mpu_password</a><br>
+<a class="svl" href="../svl/fcnref/svlmpu.htm">MPU_HOSTCOUNT</a><br>
+<a class="svl" href="../svl/fcnref/svlmpu.htm">SVL_MPU_PASSWORD</a><br>
+<a class="svl" href="../svl/fcnref/svlmpu.htm">SVL_MPU_USER</a><br>
+
+
+<h2>See Also</h2>
+<p>
+<a href="install.htm">Installing and Running MOE</a>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

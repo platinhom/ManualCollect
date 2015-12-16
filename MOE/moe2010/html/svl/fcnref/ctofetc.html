@@ -1,0 +1,266 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--	ctofetc.html
+!!
+!!	12-dec-2005(ms) typo in segment vectors
+!!	28-jan-2005(ms) added btom, mtob, ctob, btoc, btob, mtom
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions ctof,ctom,mtoc,mtof,ftoc,ftom>
+<meta functions ctob,mtob,btoc,btom,mtom,btob>
+<title>Segment Descriptor Conversions: ctof, ctom, ...</title>
+
+</head>
+
+<body  bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Segment Descriptor Conversions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    counts = <a class="fcnlink" href="#btoc">btoc</a> blocks
+    counts = <a class="fcnlink" href="#ftoc">ftoc</a> flags
+    counts = <a class="fcnlink" href="#mtoc">mtoc</a> mask
+
+    mask = <a class="fcnlink" href="#btom">btom</a> blocks
+    mask = <a class="fcnlink" href="#ctom">ctom</a> counts
+    mask = <a class="fcnlink" href="#ftom">ftom</a> flags
+    mask = <a class="fcnlink" href="#mtom">mtom</a> mask
+
+    blocks = <a class="fcnlink" href="#btob">btob</a> blocks
+    blocks = <a class="fcnlink" href="#ctob">ctob</a> counts
+    blocks = <a class="fcnlink" href="#mtob">mtob</a> mask
+
+    flags = <a class="fcnlink" href="#ctof">ctof</a> counts
+    flags = <a class="fcnlink" href="#mtof">mtof</a> mask
+</pre>
+
+<p><a name="ftoc"></a></p>
+<p><a name="mtoc"></a></p>
+<p><a name="ctof"></a></p>
+<p><a name="ctom"></a></p>
+<h2>Description</h2>
+
+<p>These functions convert between flag, count, mask and block representations
+of a segment descriptor.  A <i>segment descriptor</i> stores information
+about the logical segmentation, or clustering, of the top-level elements
+of a vector <tt>v</tt>.
+
+<dl>
+<dt><i>count</i> representation
+<p><dd>Stores the number of elements (length) of
+    each segment.  The sum of the descriptor is equal to the length of vector
+    <tt>v</tt>.  The length of the descriptor is equal to the number of
+    segments.
+
+<p><dt><i>mask</i> representation
+<p><dd>Stores a binary marker for each element
+    of vector <tt>v</tt>.  Value <tt>1</tt> marks the first element of each
+    segment; value <tt>0</tt> marks all subsequent elements of the segment.
+    The length of the descriptor is equal to the length of <tt>v</tt>.  The
+    sum of the descriptor is equal to the number of non-empty segments. This
+    representation cannot store information about empty segments.
+    As input, any non-0 in the mask is interpreted as 1;
+    the first element is always interpreted as 1.
+    As output, the mask always consists of 0's and 1's; the first element
+    is always 1.
+
+<p><dt><i>block</i> representation
+<p><dd>Stores an integer ID for each element
+    of vector <tt>v</tt>.  All consecutive elements of the same ID
+    belong to the same segment.
+    The length of the descriptor is equal to the length of <tt>v</tt>.
+    This representation cannot store information about empty segments.
+    As input, the segment IDs can be of any integer value.
+    As output, the segment IDs are consecutive integers, starting from 1.
+
+<p><dt><i>flag</i> representation
+<p><dd>Similar to the <it>mask</tt>
+    representation, except that it also stores the information about empty
+    segments by increasing the markers marking the beginning of each
+    segment in the <i>mask</i> descriptor by the number of empty segments
+    preceding the segment. There is a final count at the end of the vector
+    for any trailing empty segments. The length of the descriptor is equal
+    to the length of <tt>v</tt> plus one (trailing count).  The sum of the
+    descriptor is equal to the number of segments.
+</dl>
+
+
+<p><b>Conversions:</b>
+ <ol>
+ <table class="titlebar" border="1" cellpadding="6">
+
+<tr>
+  <th>Function</th>
+  <th>From / To</th>
+  <th>Example</th>
+</tr>
+
+<tr>
+  <td><tt>btob</tt></td>
+  <td>blocks<br />blocks
+  <small><sup>(1)</sup></small></td>
+  <td><tt>[5,5,1,1,1,1,2,1,1]<br />
+  [1,1,2,2,2,2,3,4,4]</tt></td>
+</tr>
+
+<tr>
+  <td><tt>btoc</tt></td>
+  <td>blocks<br />counts</td>
+  <td><tt>[5,5,1,1,1,1,2,1,1]<br />
+  [2,4,1,2]</tt></td>
+</tr>
+
+<tr>
+  <td><tt>btom</tt></td>
+  <td>blocks<br />mask</td>
+  <td><tt>[5,5,1,1,1,1,2,1,1]<br />
+  [1,0,1,0,0,0,1,1,0]</tt></td>
+</tr>
+
+<tr>
+  <td><tt>ctob</tt></td>
+  <td>counts<br />blocks
+  <small><sup>(2)</sup></small></td>
+  <td><tt>[2,4,1,0,2]<br />
+  [1,1,2,2,2,2,3,4,4]</tt></td>
+</tr>
+
+<tr>
+  <td><tt>ctof</tt></td>
+  <td>counts<br />flags</td>
+  <td><tt>[0,0,4,0,5,0,0]<br />
+  [3,0,0,0,2,0,0,0,0,2]</tt></td>
+</tr>
+
+<tr>
+  <td><tt>ctom</tt></td>
+  <td>counts<br />mask
+  <small><sup>(2)</sup></small></td>
+  <td><tt>[2,4,1,0,2]<br />
+  [1,0,1,0,0,0,1,1,0]</tt></td>
+</tr>
+
+<tr>
+  <td><tt>mtob</tt></td>
+  <td>mask<br />blocks</td>
+  <td><tt>[0,0,5,0,0,0,3,3,0]<br />
+  [1,1,2,2,2,2,3,4,4]</tt></td>
+</tr>
+
+<tr>
+  <td><tt>mtoc</tt></td>
+  <td>mask<br />counts</td>
+  <td><tt>[2,0,1,0,0,0,2,1,0]<br />
+  [2,4,1,2]</tt></td>
+</tr>
+
+<tr>
+  <td><tt>mtof</tt></td>
+  <td>mask<br />flags</td>
+  <td><tt>[2,0,1,0,0,0,3,3,0]<br />
+  [1,0,1,0,0,0,1,1,0,0]</tt></td>
+</tr>
+
+<tr>
+  <td><tt>mtom</tt></td>
+  <td>mask<br />mask
+  <small><sup>(3)</sup></small>
+  </td>
+  <td><tt>[0,0,3,0,0,0,8,4,0]<br />
+  [1,0,1,0,0,0,1,1,0]</tt></td>
+</tr>
+
+<tr>
+  <td><tt>ftom</tt></td>
+  <td>flags<br />mask
+  <small><sup>(2)</sup></small>
+  <td><tt>[3,0,0,0,2,0,0,0,0,2]<br />
+  [1,0,0,0,1,0,0,0,0]</tt></td>
+</tr>
+
+<tr>
+  <td><tt>ftoc</tt></td>
+  <td>flags<br />counts</td>
+  <td><tt>[3,0,0,0,2,0,0,0,0,2]<br />
+  [0,0,4,0,5,0,0]</tt></td>
+</tr>
+
+</table>
+<br /><sup><b>(1)</b></sup> Blocks are renumbered 1..K
+<br /><sup><b>(2)</b></sup> Empty segments are ignored
+<br /><sup><b>(3)</b></sup> Mask is reset to 1's and 0's
+<p>
+
+</ol>
+
+<p><b>Examples:</b>
+<pre>
+    svl&gt; v = &quot;abcdef&quot;;
+    svl&gt; counts = [0,0,2,1,0,3,0,0,0];
+    svl&gt; print seg = split [v, counts];
+    [[], [], &quot;ab&quot;, &quot;c&quot;, [], &quot;def&quot;, [], [], []]
+
+    svl&gt; app length seg
+    [0,0,2,1,0,3,0,0,0]
+
+    svl&gt; print mask = <span class="fcndef">ctom</span> counts;
+    [1,0,1,1,0,0] 
+
+    svl&gt; print flags = <span class="fcndef">ctof</span> counts;
+    [3,0,1,2,0,0,3] 
+
+    svl&gt; [length v,add counts,length mask,length flags]
+    [6,6,6,7]
+
+    svl&gt; [length seg, length counts, add flags]
+    [9,9,9]
+
+    svl&gt; [length pack counts, add mask]
+    [3,3]
+
+    svl&gt; [pack counts, <span class="fcndef">mtoc</span> ctom counts]
+    [[2,1,3], [2,1,3]]
+
+    svl&gt; [counts, <span class="fcndef">ftoc</span> ctof counts]
+    [[0,0,2,1,0,3,0,0,0], [0,0,2,1,0,3,0,0,0]]
+</pre>
+
+<h2>See Also</h2>
+<p>
+<a class="svl" href="length.html">length</a>
+<a class="svl" href="sam.html">sam</a> 
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

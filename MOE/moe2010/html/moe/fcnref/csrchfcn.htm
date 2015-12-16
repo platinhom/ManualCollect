@@ -1,0 +1,397 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<title>Conformational Search</title>
+<meta functions ConfSearch>
+</head>
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Conformational Search</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    ConfSearch [
+        infile         : 'mdbfilename'      // '' for the current system
+    ,   infile_data    : flag               // copy source data fields?
+    ,   infile_esel    : flag               // selected entries only?
+    ,   outfile        : 'mdbfilename'      // name of output database
+    ,   dbview         : flag               // open output mdb in viewer?
+    ,   dbappend       : flag               // append to existing mdb?
+    ,   method         : 'methodname'       // the algorithm to use
+    ,   cutoff         : num                // the strain energy cutoff
+    ,   cutoff_chi     : flag               // strain within stereo class?
+    ,   maxconf        : 10000              // max number of conformations
+    ,   maxfail        : num                // stochastic failure limit
+    ,   maxit          : num                // iteration limit
+    ,   gtest          : num                // energy gradient test
+    ,   mm_maxit       : num                // minimization iteration limit
+    ,   rmsd           : num                // rmsd tolerance for duplicates
+    ,   rmsd_H         : flag               // include H/LP in rmsd calc?
+    ,   free_shape     : flag		    // unfixed atoms only in shape?
+    ,   pot_charge     : flag               // re-calculate partial charges?
+    ,   invert_sp3     : flag               // invert sp3 stereo centers?
+    ,   rot_amide      : flag               // rotate amide bonds?
+    ,   rot_double     : flag               // rotate double bonds?
+    ,   chair_only     : flag               // chair conformations only?
+    ,   verbose        : flag               // write to SVL Commands window?
+    ];
+</pre>
+
+<h2>Description</h2>
+
+<p>
+The <tt>ConfSearch</tt> function performs detailed conformational search either
+on the currently loaded molecular system or a given molecular database.
+This function is not intended for high-throughput applications; consequently,
+any supplied database should be only of modest size.  For each input molecular
+system, the following algorithm is used to generate conformations:
+
+<ol>
+<li>Perturb the coordinates of the atoms.  Each conformational search
+method will perform this in a different way.
+Systematic Search will systematically rotate all non-ring bonds in fixed
+increments.
+Stochastic Search will randomly rotate all bonds, even in rings.
+LowModeMD will perform a short molecular dynamics simulation using special
+initial velocities.
+Refine will leave the coordinates alone.
+<p>
+<li>Energy minimize the atoms to a specified root mean square gradient.
+<p>
+<li>Save the resulting conformation if it is novel and of reasonable
+strain energy; otherwise discard the conformation.  An RMSD criterion
+is used for duplicate detection; optimal rotation and translation are
+applied for systems with no fixed atoms.
+<p>
+<li>Return to Step 1.
+</ol>
+
+<p>
+The generated conformations will depend on the method chosen.  Each method
+is suitable for different situations.  All of the methods will honor
+fixed atoms (and not change their coordinates) if the currently loaded
+molecular system is specified.  A rough guide is given below.
+
+<blockquote><table class="titlebar">
+<tr>
+<th>Method</th>
+<th>Situation</th>
+<tr>
+<td><tt>LowModeMD</tt>
+<td>
+Systems of any size (small molecules, macrocycles, protein loops, water
+clusters).  Ring conformations are explored.  Stereochemistry is not
+explored.  Good for complex non-bonded environments.  Supports
+multiple component systems.
+<tr>
+<td><tt>Stochastic</tt>
+<td>
+Good for small molecules with a single connected component.  Ring
+conformations are explored.  Stereochemistry is explored.  Especially good
+for small fragments.  Inefficiency can result in systems with many
+fused <i>sp</i><sup>3</sup> ring junctions.  Not suitable for macrocycles.
+<tr>
+<td><tt>Systematic</tt>
+<td>
+Good for small molecules with a single connected component with few
+rotatable bonds.  Ring conformations are not explored.  Stereochemistry
+is not explored.
+<tr>
+<td><tt>Refine</tt>
+<td>
+Typically used to refine molecular dynamics trajectories.  No conformational
+search is performed but all resulting refinements are subjected to
+duplicate removal.  Good for systems of any size or complexity.
+</table></blockquote>
+
+<p>
+The behavior of the <tt>ConfSearch</tt> function is specified by the
+argument tagged vector.  The legal options are as follows.
+
+<blockquote><dl>
+<dt><tt>chair_only</tt> : <i>flag</i>
+<dd>
+If on, then conformations that contain six membered rings with all single
+bonds in non-chair conformations will be discarded.  This option is ignored
+by the Systematic method.  The default is 1.
+
+<p>
+<dt><tt>dbappend</tt> : <i>flag</i>
+<dd>
+If false then the <tt>outfile</tt> database will overwrite any existing
+file of the same name.
+If true then the results of the conformational search will be appended
+to an existing molecular database with the name <tt>outfile</tt>.
+The default is 0.
+<p>
+<dt><tt>dbview</tt> : <i>flag</i>
+<dd>
+If true then the <tt>outfile</tt> database (if non-empty) will be opened
+in a Database Viewer.  The default is 0.
+
+<p>
+<dt><tt>cutoff</tt> : <i>num</i>
+<dd>
+A generated conformation will be discarded if its strain energy
+(relative to the minimum energy of all conformations with the same
+stereochemistry configuration) does not exceed the given value (in kcal/mol).
+Use larger values for complex systems like protein loops and smaller
+values for small molecules.
+The default is 7.0.
+<p>
+<dt><tt>cutoff_chi</tt> : <i>flag</i>
+<dd>
+If true then strain energies will be measured relative to the minimum energy
+of all conformations with the same stereochemistry configuration.  If
+false, then stereochemistry configuration will be ignored when measuring
+strain energy.  The default is 1.
+
+<p>
+<dt><tt>free_shape</tt> : <i>flag</i>
+<dd>
+Certain shape descriptors are written to the output database for each
+conformation.  If <tt>free_shape</tt> is true then only the unfixed atoms
+will be included in the shape descriptor calculation; otherwise, all atoms
+will be included.  The default is 0.
+
+<p>
+<dt><tt>gtest</tt> : <i>flag</i>
+<dd>
+The root mean square gradient test to use to terminate energy minimizations
+(in kcal/mol/A).  Small magnitude values are suitable for small molecules.
+Larger values such as 0.1 or 1.0 are suitable for large systems.  
+The larger the value the less likely a local minimum will have been
+reached and, consequently, duplicate detection will be less effective.
+The default is 0.005.
+
+<p>
+<dt><tt>infile</tt> : <i>token</i>
+<dd>
+If the given token is empty then the currently loaded molecular system
+is subjected to conformational search.
+The filename of a MOE molecular database.  Each molecule in the first
+molecule type field in every entry is subjected to conformational search.
+The default is the empty token.
+<p>
+<dt><tt>infile_data</tt> : <i>flag</i>
+<dd>
+If true then data fields from the <tt>infile</tt> database will be copied
+to the output.  <b>Note!</b> If an <tt>infile</tt> field has the same
+name as an <tt>outfile</tt> field then it will not be copied.
+The default is 1.
+<p>
+<dt><tt>infile_esel</tt> : <i>flag</i>
+<dd>
+If true then <tt>infile</tt> database only selected entries in a Database
+Viewer will be processed; the unselected entries will be skipped.  If the
+<tt>infile</tt> database is not opened in a Database Viewer then all entries
+will be considered selected.
+The default is 0.
+
+<p>
+<dt><tt>invert_sp3</tt> : <i>flag</i>
+<dd>
+If true then unconstrained <i>sp</i><sup>3</sup> stereo centers will be
+randomly inverted (to explore stereochemistry configurations).
+This option is ignored for the Systematic, LowModeMD and Refine methods.
+The default is 0.
+
+<p>
+<dt><tt>maxconf</tt> : <i>num</i>
+<dd>
+No more than the given number of (lowest energy) conformations for a particular
+molecule in a particular stereochemistry configuration will be retained.
+This option does not affect speed and the diversity of output may be
+adversely affected if it is set too low.
+The default is 10000.
+<p>
+<dt><tt>maxfail</tt> : <i>num</i>
+<dd>
+For given molecule, the conformational search will terminated no new
+conformation is discovered after the given number of consecutive iterations.
+This limit is ignored the Systematic and Refine methods.
+For very thorough search of small molecules, a value of 300-500 will
+generally produce a complete search.  For small systems, this limit
+is generally the one that terminates the search.  For large systems, this
+value will rarely be reached; consequently, <tt>maxit</tt> should be used
+to control the search.
+The default is 100.
+<p>
+<dt><tt>maxit</tt> : <i>num</i>
+<dd>
+For each molecule, the conformational search will terminate after the
+given number of iterations.  This option is ignored for the Refine and
+Systematic methods.  For small molecules, there is little need to change
+this option since other limits will generally terminate the search.
+<b>Note!</b> For large systems it is important to use a smaller value
+such as 1000 since there is little chance that a complete set of
+conformations will be generated.
+The default is 10000.
+
+<p>
+<dt><tt>method</tt> : <i>token</i>
+<dd>
+The conformational search method to use for each molecule.  Legal values
+are <tt>'LowModeMD'</tt>, <tt>'Stochastic'</tt>, <tt>'Systematic'</tt>
+and <tt>'Refine'</tt>.  For large systems, only <tt>'LowModeMD'</tt>
+and <tt>'Refine'</tt> are suitable.  The <tt>'Refine'</tt> method is
+used typically to refine molecular dynamics trajectories.
+The default is <tt>'LowModeMD'</tt>.
+
+<p>
+<dt><tt>mm_maxit</tt> : <i>num</i>
+<dd>
+Energy minimization will be terminated if a local minimum is not reached
+after the specified number of iterations.  A value of 0 disables energy
+minimization; a zero setting is not compatible with the Stochastic method.
+The default is 500.
+
+<p>
+<dt><tt>outfile</tt> : <i>token</i>
+<dd>
+The name of the output database to which conformations will be written.
+If the given token is empty then conformations will not be written to
+any database; however, the conformational search will proceed and upon
+termination the lowest energy structure encountered will be retained
+in the current system.
+The default is <tt>'csearch.mdb'</tt>.
+
+<p>
+<dt><tt>pot_charge</tt> : <i>flag</i>
+<dd>
+If true then the partial charges of the atoms will be calculated according
+the specifications of the currently loaded forcefield.  Otherwise, the
+partial charges will be left as-is and assumed to be valid.
+The default is 1.
+
+<p>
+<dt><tt>rmsd</tt> : <i>num</i>
+<dd>
+Two conformations are considered duplicates if the root mean square distance
+between them is greater than the specified tolerance (in angstroms).
+Only heavy atoms are considered, unless the <tt>rmsd_H</tt> flag is true.
+Topological symmetry is taken into account.  Fixed atoms in the
+molecular system are not included in the calculation.
+The default is 0.25.
+<p>
+<dt><tt>rmsd_H</tt> : <i>flag</i>
+<dd>
+If true the hydrogen and lone pair atoms will be included in the RMSD
+calculation (for duplicate detection).  The default is 0.
+
+<p>
+<dt><tt>rot_amide</tt> : <i>flag</i>
+<dd>
+If true then amide bonds will be rotated to explore <i>cis</i> and <i>trans</i>
+amides.  This option is ignored for the LowModeMD and Refine methods.
+The default is 0.
+<p>
+<dt><tt>rot_double</tt> : <i>flag</i>
+<dd>
+If true then double bonds without stereochemistry constraints will be
+rotated (to explore stereochemistry configurations).
+This option is ignored for the LowModeMD and Refine methods.
+The default is 0.
+
+<p>
+<dt><tt>verbose</tt> : <i>flag</i>
+<dd>
+If true the information will be written to the SVL Commands window during
+the calculation; otherwise, nothing will be written.  The default is 0.
+
+</dl></blockquote>
+
+A number of descriptors are saved along with each conformation as it is
+generated.  These descriptors are useful for analysis of the results.
+
+<p>
+<center>
+<table class="titlebar" border="1" cellpadding="3" width="90%">
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="baseline"><tt>E</tt></td>
+<td valign="baseline">  The value of the potential energy of the conformation.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>dE</tt></td>
+<td valign="baseline">  The strain energy of the conformation relative to the
+lowest energy conformation with the same stereochemistry configuration.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>chi</tt></td>
+<td valign="baseline">An integer encoding the stereochemistry configuration
+of the conformation; identical <tt>chi</tt> values imply identical
+stereochemistry configurations.
+</td>
+</tr>
+<tr>
+<td><tt>rgyr</tt></td>
+<td>The radius of gyration of the conformation.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>glob</tt></td>
+<td valign="baseline">The globularity of the conformation: the
+ratio of the smallest principal moment of inertia to the largest.
+Values near zero indicate extended conformations.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>ecc</tt></td>
+<td valign="baseline">The eccentricity of the conformation: the
+ratio of the second smallest principal moment of inertia to the largest.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>mseq</tt></td>
+<td valign="baseline">An integer encoding the input molecule number
+(which is useful when more than one molecule is subjected to conformational
+search).
+</td>
+</table>
+</center>
+
+<h2>See Also</h2>
+
+<a href="../../apps/confsrch.htm">Generating and Analyzing Conformations</a>
+<br />
+<p>
+   <a class="svl" href="potfcn.htm">PotSetup</a><br />
+   <a class="svl" href="potfcn.htm">pot_Load</a><br />
+   <a class="svl" href="restrain.html">RestraintCreate</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+
+<meta keywords>
+<meta functions FastaOpen, FastaScore, FastaClose>
+
+<title>Local Alignment: FastaOpen, FastaScore, FastaClose</title>
+
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Local Alignment</h2>
+<hr noshade="noshade" />
+
+
+<h2>Syntax</h2>
+
+<pre>
+    fasta_key = <a class="fcnlink" href="#FastaOpen">FastaOpen</a> [query_idx, align_parameters, scan_parameters] 
+    score = <a class="fcnlink" href="#FastaScore">FastaScore</a> [fasta_key, subject_idx]
+    <a class="fcnlink" href="#FastaClose">FastaClose</a> fasta_key
+</pre>
+where
+<pre>
+    align_parameters = [
+        mda       : integer vectors
+        gapstart  : integer
+        gapextend : integer
+    ]
+
+    scan_parameters = [
+        ktup          : integer
+        optcut        : integer
+        join_penalty  : integer
+        optwid        : integer
+        hmap0         : integers
+        hmap1         : integers
+        hscore        : integers
+    ]
+</pre>
+
+<h2>Description</h2>
+<p>The <tt>Fasta</tt> functions implement a generalized version of the
+heuristic local alignment scoring function of Pearson [Pearson 1997].
+The Fasta method for scoring a query sequence and a subject sequence
+consists of three steps:
+<ol>
+<li> Find all positive-scoring partial alignments (paired segments without gaps)
+between the query and subject sequences.
+In this step, all alignments must contain at least a specified
+number of exact matches. This implementation of the Fasta method has been
+generalized to allow for the determination of exact matches based 
+on comparing query and sequence elements after passing them through specified
+translation tables.
+
+<p>
+<li> Attempt to join non-overlapping partial alignments from step one
+together into a smaller set of high-scoring local similarity regions.
+The score of a local similarity region is equal to the sum of the partial
+alignment scores less a penalty for each two partial alignments which are
+joined together. Regions scoring below a specified cutoff are then discarded.
+<p>
+<li>The highest scoring regions from step two
+are then submitted to a gapped local alignment calculation [Smith 1981],
+restricted to a window of a specified size around the region.
+The highest score recorded for any one region is returned as the score for
+the subject sequence.
+</ol>
+
+<p><a name="FastaOpen"></a></p><hr noshade="noshade" />
+
+<pre>
+fasta_key = <span class="fcndef">FastaOpen</span> [query_idx, align_parameters, scan_parameters] 
+</pre>
+
+<p>Initializes a query and returns the key to be used
+to score subject sequences.
+
+<dl>
+<dt><tt>query_idx</tt> 
+<dd>a flat vector of non-negative integers representing
+the query sequence for the search. The elements of <tt>query_idx</tt> are
+used as zero-based indices to select rows of the scoring matrix when
+calculating sequence alignments between the query sequence and subject
+sequences.
+
+<p><dt><tt>align_parameters</tt>
+<dd>parameters controlling sequence alignments, given as
+attribute-value pairs:
+
+<dl>
+<p><dt><tt>mda:integer vectors</tt>
+<dd>Rectangular matrix of integers used to score alignments. The length of
+this vector should be equal to or greater than the largest value in
+<tt>query_idx</tt>. The laminated length should be equal to or
+greater than than the largest value in any subject sequence.
+
+<p><dt><tt>gapstart:integer</tt>
+<dd>The score for creating a gap in the local alignment.
+
+<p><dt><tt>gapextend:integer</tt>
+<dd>The score for extending a gap in a local alignment.
+</dl>
+
+
+<p><dt><tt>scan_parameters</tt>
+<dd>parameters controlling the Fasta heuristic, given as
+attribute-value pairs:
+
+    <dl>
+    <p><dt><tt>ktup:integer</tt>
+    <dd>Specifies the number of exact matches between the query and subject
+    sequences required to report partial alignments. The maximum value
+    is three.
+
+    <p><dt><tt>join_penalty:integer</tt>
+    <dd>The penalty for joining two partial alignments when calculating
+    local similarity regions.
+
+    <p><dt><tt>optcut:integer</tt>
+    <dd>Specifies the threshold score which must be met by a local similarity
+    region in order to be submitted to 
+    gapped local alignment calculation.
+
+    <p><dt><tt>optwid:integer</tt>
+    <dd>Specifies the size of the window around a local similarity region within
+    which the gapped local alignment is restricted.
+
+    <p><dt><tt>hmap0:integers</tt>
+    <dd>Table used to translate query elements before comparisons to
+    the subject sequence when seeking exact matches
+    during the gapless partial alignment step of the search. Values should be
+    strictly positive. The vector size should be equal to the highest value
+    in <tt>query_idx</tt>.
+
+    <p><dt><tt>hmap1:integers</tt>
+    <dd>Table used to translate subject elements before comparisons to
+    the query sequence when seeking exact matches
+    during the gapless partial alignment step of the search. Values should
+    be strictly positive. The vector size should be equal to the
+    highest value in <tt>subject_idx</tt>.
+
+    <p><dt><tt>hscore:integers</tt>
+    <dd>A flat vector of integers containing scores for matching
+    translated elements of the query and subject sequences. The vector
+    size should be equal to or larger than the largest values in
+    <tt>hmap0</tt> and <tt>hmap1</tt>.
+    </dl>
+</dl>
+
+<p><a name="FastaScore"></a></p><hr noshade="noshade" />
+<pre>
+score = <span class="fcndef">FastaScore</span> [fasta_key, subject_idx] 
+</pre>
+
+<p>Calculate the score for a subject sequence of a query specified by
+<tt>fasta_key</tt>.
+
+<p><tt>subject_idx</tt> 
+is a flat vector of non-negative integers representing
+the subject sequence for the search. The elements of <tt>subject_idx</tt> are
+used as zero-based indices to select columns of the scoring matrix when
+calculating gapped local alignments between the query sequence and the subject
+sequence.
+<p>
+
+<p><a name="FastaClose"></a></p><hr noshade="noshade" />
+<pre>
+<span class="fcndef">FastaClose</span> fasta_key 
+</pre>
+
+<p>Free the memory associated with the query specified by <tt>fasta_key</tt>.
+This memory is freed automatically at the end of a task, but it is good
+practice to call <tt>FastaClose</tt> explicitly.</p>
+
+
+<h2>References</h2>
+
+<table width="100%" cellpadding="5" border="0">
+
+<tr>
+<td valign="baseline">[Pearson&nbsp;1997]
+<td valign="baseline">
+Pearson, W. R. Effective protein sequence comparison.
+<I>Meth. Enz.</I>., R. F. Doolittle, ed. (San Diego: Academic Press) 266:227-258(1996).
+
+<tr>
+<td valign="baseline">[Smith&nbsp;1981]
+<td valign="baseline">
+Smith, T.F. and Waterman, M.S. Identification of Common Molecular Subsequences.
+<I>Journal of Molecular Biology</I>. 147(1):195-197, (1981).
+
+</table>
+
+
+<h2>See Also</h2>
+<a class="svl" href="../../proteins/fcnref/pro_srch.htm">pro_SearchPDB</a>
+<a class="svl" href="../../moe/fcnref/sysalign.html">AlignRange</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

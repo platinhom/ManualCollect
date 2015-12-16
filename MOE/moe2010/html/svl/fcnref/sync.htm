@@ -1,0 +1,257 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--	sync.htm	Syncronization object
+!!
+!!	28-apr-2005 (ms) close is a unop
+!!	11-apr-2005 (ms) created
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+
+<meta functions sync_close>
+<meta functions sync_key>
+<meta functions sync_keylist>
+<meta functions sync_name>
+<meta functions sync_open>
+<meta functions sync_ref>
+<meta functions sync_taskref>
+<meta functions sync_update>
+<meta functions sync_wait>
+<meta functions sync_poll>
+<meta functions sync_diff>
+
+<title>SVL Task Synchronization Functions</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>SVL Task Synchronization Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    key = <a class="fcnlink" href="#sync_open">sync_open</a> [];
+    key = <a class="fcnlink" href="#sync_open">sync_open</a> 'name';
+    key = <a class="fcnlink" href="#sync_open">sync_open</a> key;
+
+    <a class="fcnlink" href="#sync_close">sync_close</a> key;
+
+    key = <a class="fcnlink" href="#sync_key">sync_key</a> key_or_name;
+    name = <a class="fcnlink" href="#sync_name">sync_name</a> key_or_name;
+    keylist = <a class="fcnlink" href="#sync_keylist">sync_keylist</a> []
+
+    count = <a class="fcnlink" href="#sync_ref">sync_ref</a> key
+    count = <a class="fcnlink" href="#sync_taskref">sync_taskref</a> key
+
+    sn = <a class="fcnlink" href="#sync_update">sync_update</a> [key, val];
+    [sn, val] = <a class="fcnlink" href="#sync_wait">sync_wait</a> [key, sn, timeout];
+    [sn, val] = <a class="fcnlink" href="#sync_poll">sync_poll</a> key;
+    val = <a class="fcnlink" href="#sync_diff">sync_diff</a> [key, sn];
+</pre>
+
+<h2>Description</h2>
+
+A <i>synchronization object</i> is a programmatic tool that allows
+tasks to notify the rest of the system about changes in their state
+without blocking the execution of the notifying task.
+
+<p>
+A synchronization object is associated with a serial number that increases
+with every update from the notifying task(s).  A synchronizing task can
+then block and wait until the serial number of the object increases beyond
+a given threshold - and a new update of the monitored state becomes available.
+
+<p><a name="sync_open"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>key = <span class="fcndef">sync_open</span> []
+key = <span class="fcndef">sync_open</span> 'name'
+key = <span class="fcndef">sync_open</span> key
+</pre>
+
+<p>
+Function <tt>sync_open</tt> with an empty argument creates a new
+synchronization object and returns its key.  If the argument
+is a key of an existing object or a token name of an existing object,
+the function duplicates the object and returns the key of the duplicate.
+If the argument is a token name and no object of such a name exists,
+the function creates a new object of the given name.
+
+<p>
+The object will remain available for the calling task until the function
+<tt>sync_close</tt> is called by the same task.  For each call to
+<tt>sync_open</tt> there must be a corresponding call to <tt>sync_close</tt>
+in the same task.
+
+<p>
+Each synchronization object stores its serial number and its value.
+The serial number is initialized to zero and then increased with each
+<tt>sync_update</tt>.  The value is initialized to <tt>[]</tt>
+and then reset with each <tt>sync_update</tt>.
+
+<p><a name="sync_close"></a></p>
+<p><hr noshade="noshade" />
+
+<pre><span class="fcndef">sync_close</span> key
+</pre>
+
+Function <tt>sync_close</tt> closes the given synchronization object.
+The argument may be a nested vector.
+The function ignores keys that refer to non-existing objects.
+
+<p><a name="sync_update"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>sn = <span class="fcndef">sync_update</span> [key, val]
+</pre>
+
+Function <tt>sync_update</tt> increments and returns the serial number
+of the given synchronization object.  It also resets the value of the
+object to the value of the second argument.
+
+<p><a name="sync_poll"></a></p>
+<p><hr noshade="noshade" /></p>
+
+<pre>[sn, val] = <span class="fcndef">sync_poll</span> key
+</pre>
+
+Function <tt>sync_poll</tt> returns the serial number and the value
+of the given synchronization object.
+
+<p><a name="sync_wait"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>[sn, val] = <span class="fcndef">sync_wait</span> [key, sn, timeout]
+</pre>
+
+Function <tt>sync_wait</tt> blocks the calling tasks until the serial number
+of the given synchronization object, <tt>key</tt>, exceeds the given value,
+<tt>sn</tt>.  The function then returns the value and the serial number of
+the synchronization object.  If the supplied serial number is smaller
+that the object's serial number, the function returns immediately.
+
+<p><a name="sync_diff"></a></p>
+<p><hr noshade="noshade" /></p>
+
+<pre>sn_diff = <span class="fcndef">sync_diff</span> [key, sn]
+</pre>
+
+Function <tt>sync_diff</tt> returns the difference between
+the serial number of the given synchronization object, <tt>key</tt>,
+and the supplied serial number, <tt>sn</tt>.
+
+<p>
+The function can be used to determine whether or not a subsequent call
+to <tt>sync_wait</tt> would block the task.  If the return value is
+zero or negative, the task would be blocked.
+
+<p><a name="sync_key"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>key = <span class="fcndef">sync_key</span> key
+key = <span class="fcndef">sync_key</span> 'name'
+</pre>
+
+Returns the key of the given object.  If the object does not exist,
+the function returns&nbsp;0.  The argument may be a nested vector.
+
+<p><a name="sync_name"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>name = <span class="fcndef">sync_name</span> key
+name = <span class="fcndef">sync_name</span> 'name'
+</pre>
+
+Returns the name of the given sync.  If the sync does not exist,
+the function returns <tt>''</tt> (empty token).  The argument may
+be a nested vector.
+
+<p><a name="sync_keylist"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>keylist = <span class="fcndef">sync_keylist</span> []
+</pre>
+
+Returns the list of keys of all currently open object objects.
+
+<p><a name="sync_taskref"></a></p>
+<p><a name="sync_ref"></a></p>
+<p><hr noshade="noshade" /></p>
+
+<pre>
+count = <span class="fcndef">sync_ref</span> [ key1, key2, ...]
+count = <span class="fcndef">sync_taskref</span> [ key1, key2, ...]
+</pre>
+
+Each synchronization object has associated with it a reference count.
+
+When the object is opened or reopened with <tt>sync_open</tt>,
+the reference count is increased.
+
+When the object is closed with <tt>sync_close</tt> or when the
+opening task is destroyed, the reference count is decreased.
+
+<p> For each <tt>key</tt> specified, function <tt>sync_ref</tt>  returns
+the reference count of the corresponding synchronization object or&nbsp;0 if
+no such object exists.  Function <tt>sync_taskref</tt> returns only the
+reference count associated with <tt>sync_open</tt>/<tt>sync_close</tt>
+calls executed by the calling task.
+
+
+<h2>See Also</h2>
+
+<table>
+<tr>
+<td valign=top>
+
+<a class="svl" href="tasksend.htm">task_send</a><br />
+<a class="svl" href="tasksend.htm">task_receive</a><br />
+<a class="svl" href="tasksend.htm">task_reply</a><br />
+<br />
+
+<a class="svl" href="mutex.htm">mutex_open</a><br />
+<a class="svl" href="mutex.htm">mutex_close</a><br />
+<a class="svl" href="mutex.htm">mutex_lock</a><br />
+<a class="svl" href="mutex.htm">mutex_unlock</a><br />
+
+</td>
+</tr>
+
+</table>
+
+<p>
+<a href="introcomm.htm">SVL Task Communication Functions</a>
+</p>
+
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

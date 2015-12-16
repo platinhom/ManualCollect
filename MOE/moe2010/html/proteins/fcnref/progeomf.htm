@@ -1,0 +1,707 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--	progeomf.htm
+!!       
+!!	05-apr-2010 (hf) updated
+!!	05-sep-2007 (jm) updated
+!!	28-jul-2007 (jm) created
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta functions pro_BackboneDAT, pro_CheckBackboneDAT> 
+<meta functions pro_SSBondGeometries, pro_CheckSSBondGeometries>
+<meta functions pro_ProlineGeometries, pro_CheckProlineGeometries>
+<meta functions pro_RotamerData, pro_CheckRotamerData>
+<meta functions pro_DrawRamachandran, pro_ReportGeometry>
+<meta functions pro_AtomicContactEnergy, pro_CheckVDWContacts>
+<meta functions pro_CheckPlanarity>
+
+<title>Protein Geometry Checking Functions.</title>
+
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Protein Geometry Checking Functions.</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+<blockquote>
+<pre>
+backboneData       = <a class="fcnlink" href="#pro_BackboneDAT">pro_BackboneDAT</a> residue_keys
+[Zlen, Zang, Ztor] = <a class="fcnlink" href="#pro_CheckBackboneDAT">pro_CheckBackboneDAT</a> [rnamelist, [len, ang, tor]]
+
+prolineData        = <a class="fcnlink" href="#pro_ProlineGeometries">pro_ProlineGeometries</a> residue_keys
+proMasks           = <a class="fcnlink" href="#pro_CheckProlineGeometries">pro_CheckProlineGeometries</a> prolineData
+
+ssBondData         = <a class="fcnlink" href="#pro_SSBondGeometries">pro_SSBondGeometries</a> atom_keys
+ssBondEnergies     = <a class="fcnlink" href="#pro_CheckSSBondGeometries">pro_CheckSSBondGeometries</a> ssBondData
+
+rotamerData        = <a class="fcnlink" href="#pro_RotamerData">pro_RotamerData</a> residue_keys
+[pValue, EValue]   = <a class="fcnlink" href="#pro_CheckRotamerData">pro_CheckRotamerData</a> rot_type
+<!--
+[A, B, type]       = pro_CheckConnections residue_keys
+-->
+grkey              = <a class="fcnlink" href="#pro_DrawRamachandran">pro_DrawRamachandran</a> [residue_keys, plot_type, options]
+
+[planarity, mask]  = <a class="fcnlink" href="#pro_CheckPlanarity">pro_CheckPlanarity</a> residue_keys
+
+clashData          = <a class="fcnlink" href="#pro_CheckVDWContacts">pro_CheckVDWContacts</a> [source, target, options]
+
+contact_energy     = <a class="fcnlink" href="#pro_AtomicContactEnergy">pro_AtomicContactEnergy</a> [atoms, targets]
+
+<a class="fcnlink" href="#pro_ReportGeometry">pro_ReportGeometry</a> [residue_keys, options]
+
+</pre>
+</blockquote>
+
+<p><a name="pro_BackboneDAT"></a></p>
+<h2>Description</h2>
+
+<pre>backboneData = <span class="fcndef">pro_BackboneDAT</span> residue_keys</pre>
+
+<p>The function calculates the backbone bond lengths, bond angles and torsion 
+angles that are defined by the backbone atoms N, C&alpha; (CA), C, O, 
+C&beta; (CB) of input amino acid residues specified by <tt>residue_keys</tt>. 
+The return vector <tt>backboneData</tt> of this function is composed of four 
+scalar elements:
+<blockquote>
+<dl>
+<tt>bb_atoms</tt>
+<dd>Backbone atom keys in the order N,CA,C,O,CB for each of the input residue 
+keys. The value 0 is assigned in case backbone atoms are missing 
+(e.g. C&beta;-atoms of Glycines or non-standard amino acids).
+</dd>
+<br /><tt>bb_len</tt><br>
+<dd>Bond length values in angstroms for the various backbone bonds.</dd>
+    
+<br /><tt>bb_ang</tt><br>
+<dd>Bond angle values in Degrees.</dd>
+
+<br /><tt>bb_tor</tt><br>
+<dd>Torsion angles in Degrees.</dd>
+</dl>
+</blockquote>
+
+<p>The data vectors for bond lengths, bond angles and torsions are set to
+<tt>Inf</tt> in case values can not be determined. The respective entries
+are defined as follows:
+<blockquote>
+<table class="titlebar" border="1" cellpadding="4">
+  <tr>
+    <th width="60">bb_atoms</th>
+    <th width="60">bb_len</th>
+    <th width="60">bb_ang</th>
+    <th width="60">bb_tor</th>
+  </tr>
+  <tr>
+    <td>N</td><td>N-pC</td><td>N-pC-pCA</td><td>N-pC-pCA-pO</td></tr>
+    <td>CA</td><td>CA-N</td><td>CA-N-pC</td><td>CA-N-pC-pCA  (omega)</td></tr>
+    <td>C</td><td>C-CA</td><td>C-CA-N</td><td>C-CA-N-pC  (phi)</td></tr>
+    <td>O</td><td>O-C</td><td>O-C-CA</td><td>0-C-CA-N   (psi+180)</td></tr>
+    <td>CB</td><td>CB-CA</td><td>CB-CA-N</td><td>CB-CA-N-C</td></tr>
+</table>
+</blockquote>
+with CA denoting the C&alpha;, CB the C&beta; atoms and pC,pCA and pN 
+correspond to the backbone atoms of the N-terminally bonded amino acid residue. 
+Each residue will create five entries in the respective output vector.
+<p>Example:
+</p>
+
+<blockquote><pre>
+    // get backbone data
+    
+bbDAT = pro_BackboneDAT Residues[];
+
+    // get backbone dihedrals and write D-amino as well as Cis-Peptide 
+    // residues to CLI
+    
+idx = x_pack resize [[1,0,0,0,0], l_length bbDAT];
+if length idx then
+   omega_idx = idx | (bbDAT(1)[idx] > 0 and leE [-60, bbDAT(3)[idx+1], 60]);
+   cbeta_idx = idx | (bbDAT(1)[idx] > 0 and bbDAT(3)[idx+4] > 0);
+   
+   if length omega_idx then
+       write 'cis - Peptides:\n';
+       apt write ['{}: {t:3} {}\n', 
+           indexof [aChain bbDAT(1)[omega_idx], Chains[]],
+           rName aResidue bbDAT(1)[omega_idx],
+           rUID aResidue bbDAT(1)[omega_idx]
+       ];
+   endif
+   
+   if length cbeta_idx then
+       write '\nD-amino acid residues:\n';
+       apt write ['{}: {t:3} {}\n', 
+           indexof [aChain bbDAT(1)[cbeta_idx], Chains[]],
+           rName aResidue bbDAT(1)[cbeta_idx],
+           rUID aResidue bbDAT(1)[cbeta_idx]
+       ];
+       
+   endif
+endif
+</pre></blockquote>
+
+<p><a name="pro_CheckBackboneDAT"></a></p>
+<p><hr noshade="noshade" /></p>
+
+<pre>[Zlen, Zang, Ztor] = <span class="fcndef">pro_CheckBackboneDAT</span> [rnamelist, [len, ang, tor]]
+</pre>
+
+<p>The function evaluates the backbone geometry data by assignment of Z-Scores 
+for backbone bond lengths, bond angles and dihedrals. The input vector is 
+composed of two elements, a list of residue names 
+<tt>rnamelist</tt> and a data vector with values for backbone 
+bond lengths, angles and dihedrals. The entries of <tt>rnamelist</tt> denote 
+the 3-letter codes of the amino acids as tokens. The data vector 
+is composed of three elements and expected to have the same 
+format than the data vectors of the <tt>pro_BackboneDAT</tt> function 
+mentioned above. The Z-Scores for each 
+category are calculated based on expected values obtained from a reference 
+database of high resolution structures originating from then Protein Data Bank 
+(PDB). The Z-Scores are set to 0 in case the values can not be calculated 
+(e.g. missing CA-CB bonds of Glycines). 
+Phi and Psi torsion angles are interdependent and evaluated in combination. 
+A refined set of Ramachandran maps classified for Glycines, Prolines, residues 
+preceding Prolines as well as a general case delineate the core and 
+allowed regions within the map [Lovell&nbsp;2003]. The Z-Scores for Phi/Psi 
+torsions are calculated in relation to the outlier cutoff value of the 
+reference set. 
+For omega torsion angles, the Z-Scores are calculated for the respective 
+isomer, omega-<i>cis</i> and omega-<i>trans</i>.
+<p>Example:
+<blockquote><pre>
+    // get backbone data
+    
+bbDAT = pro_BackboneDAT Residues[];
+
+    // get Ramachandran outliers
+
+zDAT = pro_CheckBackboneDAT [rName Residues[], dropfirst bbDAT];
+idx  = x_pack resize [[1,0,0,0,0], l_length zDAT];
+if length idx then
+    res = aResidue bbDAT(1)[idx];
+    phi = bbDAT(3)[idx+2];             // phi values in degrees
+    psi = bbDAT(3)[idx+3] - 180;       // psi values in degrees
+    psi = select [psi, mod [360,psi], psi &smaller; -180];
+    
+    idx = x_pack andE [finite phi, finite psi, res > 0, zDAT(3)[idx+2] > 4.0];
+    if length idx then
+        write 'Residue with unusual backbone torsions:\n'
+        apt write ['{t:3} {4}   {n:8.2f}', rName res];
+    else
+        write 'No Ramachandran outliers in the system.\n'
+    endif
+endif
+</pre></blockquote>
+
+<p><a name="pro_ProlineGeometries"></a></p>
+<p><hr noshade="noshade"/></p>
+
+<pre>prolineData = <span class="fcndef">pro_ProlineGeometries</span> residue_keys </pre>
+<p>The function determines the core data for Prolines given by input residues 
+<tt>residue_keys</tt>.The return vector <tt>prolineData</tt> is composed 
+of of the following elements:
+<blockquote>
+<dl>
+<dt><tt>phi</tt><br />
+<dd>Backbone Phi angle in Degrees.</dd>
+<br /><tt>psi</tt><br>
+<dd>Backbone Psi angle in Degrees.</dd>
+<br /><tt>omega</tt><br>
+<dd>Backbone omega angle in Degrees.</dd>
+<br /><tt>chi1</tt><br>
+<dd>Chi1 torsion defined by N-CA-CB-CG in Degrees.</dd>
+<br /><tt>chi2</tt><br>
+<dd>Chi2 torsion defined by CA-CB-CG-CD in Degrees.</dd>
+<br /><tt>chi3</tt><br>
+<dd>Chi3 torsion defined by CB-CG-CD-N in Degrees.</dd>
+<br /><tt>chi4</tt><br>
+<dd>Chi4 torsion defined by CG-CD-N-CA in Degrees.</dd>
+<br /><tt>chi5</tt><br>
+<dd>Chi5 torsion defined by CD-N-CA-CB in Degrees.</dd>
+<br /><tt>mask</tt><br>
+<dd>Vector masking Proline residues of the input residues.</dd>
+</dl>
+</blockquote>
+The angle entries are set to <tt>Inf</tt> in case values can not be determined.
+
+
+<p><a name="pro_CheckProlineGeometries"></a></p>
+<p><hr noshade="noshade"/></p>
+
+<pre>proMasks = <span class="fcndef">pro_CheckProlineGeometries</span> prolineData</pre>
+<p>The function evaluates the input geometry data of Proline residues 
+given by <tt>prolineData</tt>. The input vector has the identical composition 
+as the output vector of the <tt>pro_ProlineGeometries</tt> function mentioned 
+above. The output vector <tt>proMasks</tt> is a collection of masks for conformer
+and puckering types with the following elements:
+<blockquote>
+<dl>
+<br /><tt>m_cis</tt><br>
+<dd>Mask for <i>cis</i>-Prolines.</dd>
+<br /><tt>m_trans</tt><br>
+<dd>Mask for <i>trans</i>-Prolines.</dd>
+<br /><tt>m_up</tt><br>
+<dd>Mask for Prolines with Up puckering type.</dd>
+<br /><tt>m_down</tt><br>
+<dd>Mask for Prolines with Down puckering type.</dd>
+<br /><tt>m_planar</tt><br>
+<dd>Mask for Prolines with Planar puckering type.</dd>
+<br /><tt>m_outliers</tt><br>
+<dd>Mask for Prolines with unusual geometry. Residues with Planar puckering 
+type are included as well.</dd>
+</dl>
+</blockquote>
+
+<p><a name="pro_SSBondGeometries"></a></p>
+<p><hr noshade="noshade"/></p>
+
+<pre>ssBondData = <span class="fcndef">pro_SSBondGeometries</span> atom_keys </pre>
+<p>The function determines the key data of bonded as well as unbonded 
+disulfide bond pairs within an atom collection specified by <tt>atom_keys</tt>.
+The heavy atoms involved in forming a disulfide bond are expected to comply 
+to the general pattern <tt>CA1-CB1-S1--S2-CB2-CA1</tt>, with S1 and S2 denoting 
+the sulphur atoms involved in forming the disulfide bond, CA1 and CA2 are the 
+heavy atoms bonded to the respective sulphur atoms and CB1 and CB2 the heavy 
+atoms bonded to the CA atoms. The return vector <tt>sbondData</tt> is composed 
+of of the following elements:
+<blockquote>
+<dl>
+<dt><tt>S1,S2</tt><br />
+<dd>Atom keys of the sulphur atoms involved in forming the disulfide bond.</dd>
+<br /><tt>dist</tt><br>
+<dd>Disulphide bond distance of S1 and S2 in angstroms.</dd>
+<br /><tt>A1</tt><br>
+<dd>Angle (in Degrees) defined by CB1-S1-S2.</dd>
+<br /><tt>A2</tt><br>
+<dd>Angle (in Degrees) defined by S1-S2-CB2.</dd>
+<br /><tt>D1</tt><br>
+<dd>Dihedral (in Degrees) defined by CA1-CB1-S1-S2.</dd>
+<br /><tt>D2</tt><br>
+<dd>Dihedral (in Degrees) defined by CB1-S1-S2-CB2.</dd>
+<br /><tt>D3</tt><br>
+<dd>Dihedral (in Degrees) defined by S1-S2-CB2-CA2.</dd>
+</dl>
+</blockquote>
+The entries are set to <tt>Inf</tt> in case values can not be determined.
+
+
+<p><a name="pro_CheckSSBondGeometries"></a></p>
+<p><hr noshade="noshade"/></p>
+
+<pre>ssBondEnergies = <span class="fcndef">pro_CheckSSBondGeometries</span> ssBondData</pre>
+<p>The function evaluates the quality of the disulfide bond geometry data as 
+given by the input vector <tt>ssbondDAT</tt>. 
+The input vector has the identical composition as the output vector of the 
+<tt>pro_SSBondGeometries</tt> function mentioned above. The 
+quality of the disulfide bonds is assessed by the energy terms (in kcal/mol) 
+for the S-S bond stretch and the bending of the respective disulfide angles 
+and torsions. In addition, the internal strain energy of the sidechains 
+involved in formation of the disulfide bond is calculated.
+The output vector <tt>ssBondEnergies</tt> is composed of four elements with 
+values in kcal/mol:
+<blockquote>
+<dl>
+<br /><tt>E_dist</tt><br>
+<dd>Energy term for the S-S bond stretch.</dd>
+<br /><tt>E_ang</tt><br>
+<dd>Sum of the angle energy terms as calculated from the input angles.</dd>
+<br /><tt>E_tor</tt><br>
+<dd>Sum of the torsion energy terms as calculated from input dihedrals.</dd>
+<br /><tt>E_self</tt><br>
+<dd>Strain energy of the sidechain rotamers involved in formation of the 
+disulfide bond bridge.
+</dd>
+</dl>
+</blockquote>
+
+<p><a name="pro_RotamerData"></a></p>
+<p><hr noshade="noshade"/></p>
+
+<p></p>
+<pre>rotamerData = <span class="fcndef">pro_RotamerData</span> residue_keys</pre>
+<p></p>
+<p>
+The function determines the essential values for specification of a 
+sidechain rotamer denoted by <tt>residue_keys</tt>. The specification 
+of standard amino acid rotamers include the backbone Phi/Psi torsions and 
+the respective sidechain torsion angles. The values are factored in creating 
+a unique rotamer type number for identification in a backbone dependent 
+rotamer library [Dunbrack&nbsp;1997]. In case of invalid 
+torsion values (e.g. missing heavy atoms or non-standard amino acid residues) 
+the entries are set to <tt>Inf</tt>. Invalid rotamer types are set to 0.
+The output vector <tt>rotamerData</tt> is composed of the following elements:
+<blockquote>
+<dl>
+<br /><tt>phi</tt><br>
+<dd>Phi backbone torsion angle in Degrees.</dd>
+<br /><tt>psi</tt><br>
+<dd>Psi backbone torsion angle in Degrees.</dd>
+<br /><tt>chi1</tt><br>
+<dd>Chi1 sidechain torsion angle in Degrees.</dd>
+<br /><tt>chi2</tt><br>
+<dd>Chi2 sidechain torsion angle in Degrees.</dd>
+<br /><tt>chi3</tt><br>
+<dd>Chi3 sidechain torsion angle in Degrees.</dd>
+<br /><tt>chi4</tt><br>
+<dd>Chi4 sidechain torsion angle in Degrees.</dd>
+<br /><tt>rot_type</tt><br>
+<dd>Rotamer type for identification in backbone dependent rotamer library.</dd>
+</dl>
+</blockquote>
+
+<p><a name="pro_CheckRotamerData"></a></p>
+<p><hr noshade="noshade"/></p>
+
+<pre>[pValue, EValue] = <span class="fcndef">pro_CheckRotamerData</span> rot_type</pre>
+<p></p>
+<p>
+The function calculates the internal strain energy and probability factors of 
+sidechains specified by <tt>rot_type</tt>. The input values
+encode the distinct rotamers specifications necessary to extract the probability 
+factors from the backbone dependent rotamer library [Dunbrack&nbsp;1997]. 
+The values of the input vector are generated as the last element of the 
+function <tt>pro_RotamerData</tt> mentioned above. The return vector is 
+composed of two elements; the probability factor <tt>pValue</tt> for the 
+respective rotamer and the inner strain energy (in kcal/mol) designated 
+by the vector <tt>EValue</tt>. The entries are set to 0 in case of 
+inappropriate p or E values.
+</p>
+
+<p><a name="pro_DrawRamachandran"></a></p>
+<p><hr noshade="noshade"/></p>
+
+<pre>grkey = <span class="fcndef">pro_DrawRamachandran</span> [residue_keys, plot_type, options]</pre>
+<p></p>
+<p>
+The function generates a graphic object of a Ramachandran Plot. The Phi/Psi 
+torsion angles to be depicted are specified by <tt>residue_keys</tt>, the 
+plot class is defined by <tt>plot_type</tt> and the particular drawing mode 
+is specified by the tagged vector <tt>options</tt>. The <tt>plot_type</tt> 
+value determines the classification of the allowed and and core regions within 
+the respective Ramachandran Map [Lovell&nbsp;2003]. The following values are 
+expected:
+<blockquote>
+<dl>
+<tt>General</tt><br />
+<dd>Contour lines of the General class are drawn along with the data points 
+of all residues except Prolines, Glycines and residues preceding Prolines.</dd>
+
+<br /><tt>Glycine</tt><br>
+<dd>Contour lines of the General class are drawn along with the data points of 
+Gly residues.</dd>
+
+<br /><tt>Proline</tt><br>
+<dd>Contour lines of the Proline class are drawn along with the data points of 
+Pro residues.</dd>
+
+<br /><tt>Pre-Proline</tt><br>
+<dd>Contour lines of the Pre-Proline class are drawn along with the data points 
+of residues preceding Prolines.</dd>
+
+<br /><tt>All</tt><br>
+<dd>Contour lines of the General class are drawn along with all the data points 
+of the input residues. Pro, Gly, pre-Pro residues are marked by different 
+shapes. Glycines are drawn as diamonds, Prolines as pentagons and residues 
+preceding Prolines are drawn as squares.
+</dd>
+</dl>
+</blockquote>
+<p>
+The tagged vector <tt>options</tt> defines the drawing mode of the plot with 
+the following values:
+<blockquote>
+<dl>
+<tt>colorCore: <i>number</i></tt><br />
+<dd>Color of contour line of the core region. The default color is green.</dd>
+<br /><tt>colorAllowed: <i>number</i></tt><br>
+<dd>Color of the contour line of the allowed region. The default color is 
+orange.</dd>
+<br /><tt>colorCore: <i>number</i></tt><br>
+<dd>Color of the Phi/Psi data points. Default color is dark green.</dd>
+<br /><tt>colorAllowed: <i>number</i></tt><br>
+<dd>Color of the data points within the allowed region of the map. 
+Default  color is yellow.</dd>
+<br /><tt>printTitle: <i>flag</i></tt><br>
+<dd>When true, the title of the plot is drawn. Default value is 1.</dd>
+<br /><tt>labelOutliers: <i>flag</i></tt><br>
+<dd>When true, outlier residues are labeled in the plot. Default value is 1.
+</dd>
+</dl>
+</blockquote>
+</p>
+
+<!--
+<p><a name="pro_CheckConnections"></a></p>
+<p><hr noshade="noshade"/></p>
+
+<pre>[A, B, conntype] = <span class="fcndef">pro_CheckConnections</span> residue_keys</pre>
+<p></p>
+<p>
+The function evaluates the inter-residue connections of input residues
+specified by <tt>residue_keys</tt> and returns a vector composed of 
+three elements. The first two elements <tt>A</tt> and <tt>B</tt> contain the 
+atom keys that form the inter-residual bond, the third element <tt>conntype</tt>
+encodes the connection type of the bond pair assigning the following values for 
+bond atoms:
+<blockquote><pre>
+0: Standard amino acids
+2: RNA/DNA
+3: HET
+</pre></blockquote>
+In this scheme, a <tt>conntype</tt> value of 6 encodes that both contact atoms 
+are in the HET group, a value of 4 is assigned when the bonded residues 
+are nucleotides, the connection of non-standard amino acid with a standard 
+amino acid is marked by the value 3, etc.
+<p>Protein backbone or nucleotide backbone bonds as well as disulfide bridges 
+are discarded from the results.
+</p>
+-->
+
+<p><a name="pro_CheckPlanarity"></a></p>
+<p><hr noshade="noshade"/></p>
+
+<pre>[planarity, mask] = <span class="fcndef">pro_CheckPlanarity</span> residue_keys</pre>
+
+<p>Nine of the 20 standard amino acids contain a planar group in their side 
+chains. The function calculates the side-chain planarity of input residues 
+specified by <tt>residue_keys</tt> and returns the values in angstroms in the 
+output vector <tt>planarity</tt>. For non-planar sidechains the planarity 
+value is set to <tt>-Inf</tt>.
+Residues with values larger than the expected cutoffs are 
+flagged in the output vector <tt>mask</tt>.
+</p>
+
+<p><a name="pro_CheckVDWContacts"></a></p>
+<p><hr noshade="noshade"/></p>
+
+<pre>clashData = <span class="fcndef">pro_CheckVDWContacts</span> [source, target, options]</pre>
+<p>The function examines and returns all possible clashes of input atoms specified by 
+<tt>source</tt> with atoms of a target set specified by <tt>target</tt>. The 
+output vector <tt>clashData</tt> is composed of eight elements:
+<blockquote>
+<dl>
+<br /><tt>clashA</tt><br>
+<dd>Atom keys of the source atom pool with clashes.</dd>
+<br /><tt>clashB</tt><br>
+<dd>Atom keys of the target atom pool in clash with clashA atoms.</dd>
+<br /><tt>dist</tt><br>
+<dd>Distance (in angstroms) between the atom centers of the clashing atoms 
+clashA and clashB.
+</dd>
+<br /><tt>repulsion</tt><br>
+<dd>Repulsion energy term (in kcal/mol) of the clashing atoms indicating the 
+severity of the clash.
+</dd>
+<br /><tt>symmetry operator</tt><br>
+<dd>The symmetry operator (as a token) to apply to the target atom to get
+the image which clashes; x,y,z are the real (non-image) atoms.  It will
+always be x,y,z except when symmetry = 1 (see below) is used.
+</dd>
+<br /><tt>translation operator</tt><br>
+<dd>The translation operator to apply to the target atom in conjunction with
+the symmetry operator to get the image which clashes.  Units are in fractional
+coordinates and indicate the number of unit cells away.  This is returned
+as a laminated vector of length 3.  It will always be [0,0,0] except when
+symmetry = 1 (see below) is used.
+</dd>
+<br /><tt>special position mask</tt><br>
+<dd>A mask with a 1 representing a clash at a special position.  Special
+positions are points in space invariant under a symmetry operation of the
+crystal system.  Only applies when symmetry = 1 is used.
+</dd>
+<br /><tt>pos</tt><br>
+<dd>The position of the clashing target atom as a laminated vector of length 3.  This
+can be computed from the orignal atom coordinate, the symmetry operator and
+the translation operator, but is provided for convenience.  Only applies when
+symmetry = 1 is used.
+</dd>
+</dl>
+</blockquote>
+
+<p>In case the number of clashing contacts with atom distances smaller than 1.3 
+&Aring; is too large (e.g. PDB structures harboring multiple models in 
+separate chains, chain collection during the homology modeling process), 
+the function by default collects only clashing pairs with atoms of the same 
+protein chain. This behavior can be modified by setting the <tt>forceall</tt> 
+option parameter (see below).
+
+<p>The <tt>options</tt> input vector is a tagged vector modulating the result 
+set of the function. The following parameters may be assigned:
+<blockquote>
+<dl>
+<tt>ignoreH:</tt>&nbsp;<i>flag</i></tt><br />
+<dd>When true, the result set is confined to heavy atom clashes. Default value
+is 1.
+</dd>
+<br /><tt>ignoreHBonds:</tt>&nbsp;<i>flag</i></tt><br> 
+<dd>When true, clashes of atoms that are involved in the hydrogen bond network 
+are ignored and not included in the results. Default value is 1.
+</dd>
+<br /><tt>symmetry:</tt>&nbsp;<i>flag</i></tt><br>
+<dd>When true, clashes between atoms in <i>source</i> and atoms in any
+crystal-symmetry images of <i>target</i> are included in the results.
+Four extra columns of information (<tt>symmetry operator</tt>,
+<tt>translation operator</tt>, <tt>special position mask</tt> and <tt>pos</tt>)
+are filled with the relevant details when this option is used (see above).
+Default value is 0.
+</li></ul>
+</dd>
+<br /><tt>forceall:</tt>&nbsp;<i>flag</i></tt><br>
+<dd>When this is set to 0, if an excessive number
+of inter-chain contacts are found, they are all filtered out.  When true,
+this extra filtering
+step will never be done and all close contacts are included in the result set.
+Default value is 0.
+</dd>
+</dl>
+</blockquote>
+
+<p><a name="pro_AtomicContactEnergy"></a></p>
+<p><hr noshade="noshade"/></p>
+
+<pre>contact_energy = <span class="fcndef">pro_AtomicContactEnergy</span> [atoms, targets]</pre>
+<p>
+The function calculates the effective atomic contact energies (in kcal/mol)
+of input atoms specified by <tt>atoms</tt>. The contact partners for 
+<tt>atoms</tt> are searched within a radius of 6 angstroms in the atom pool 
+specified by <tt>targets</tt>. Close neighbor contacts are eliminated.
+For each entry in the <tt>atoms</tt> vector the contact energies is calculated 
+according to [Zhang&nbsp;1997].
+The contact calculation is restricted to the heavy atoms of standard amino acid 
+residues. Energy values of input atoms that can not be classified are set to 0.
+</p>
+
+<p><a name="pro_ReportGeometry"></a></p>
+<p><hr noshade="noshade"/></p>
+
+<pre><span class="fcndef">pro_ReportGeometry</span> [residue_keys, options]</pre>
+<p>
+The function generates a protein geometry checking report for the 
+input residues specified by <tt>residue_keys</tt>. The content and layout of the 
+report is dependent on the specifications set by the tagged vector 
+<tt>options</tt>.
+<p>The following parameters for <tt>options</tt> are feasible:
+<blockquote>
+<dl>
+<tt>report: <i>token</i></tt><br />
+<dd>The parameter determines the data content of the report. Possible values 
+are <tt>all</tt> and <tt>exceptions</tt>. When set to 
+<tt>all</tt>, the complete result set of each of the selected report topics is 
+factored in the report. If set to <tt>exceptions</tt>, then only the outliers 
+of a report topic are shown in the report.
+</dd>
+<br /><tt>ramachandran: <i>flag</i></tt><br>
+<dd>When true, Phi/Psi evaluation is included in the report.</dd>
+<br /><tt>lengths: <i>flag</i></tt><br>
+<dd>When true, evaluation of backbone bond lengths is included in the report.
+</dd>
+<br /><tt>cutofflengths: <i>number</i></tt><br>
+<dd>Z-Score cutoff value for backbone bond length outliers. Default value is 
+4.0
+</dd>                     
+<br /><tt>angles: <i>flag</i></tt><br>
+<dd>When true, evaluation of backbone bond angles is included in the report.
+</dd>
+<br /><tt>cutoffangles: <i>number</i></tt><br>
+<dd>Z-Score cutoff value for backbone bond angle outliers. Default value is 4.0
+</dd>
+<br /><tt>dihedrals: <i>flag</i></tt><br>
+<dd>When true, evaluation of backbone dihedrals is included in the report.
+</dd>
+<br /><tt>cutoffdihedrals: <i>number</i></tt><br>
+<dd>Z-Score cutoff value for backbone dihedral outliers. Default value is 4.0
+</dd> 
+<br /><tt>rotamer: <i>flag</i></tt><br>
+<dd>When true, evaluation of sidechain rotamers is included in the report.
+</dd>
+<br /><tt>cutoffrotamer: <i>number</i></tt><br>
+<dd>Energy cutoff (kcal/mol) for rotamers strain energy. Only entries above 
+the cutoff are included in the report. Default value is 5.0 kcal/mol.
+</dd> 
+<br /><tt>contacts: <i>flag</i></tt><br>
+<dd>When true, evaluation of atom clashes is included in the report.
+</dd>
+<br /><tt>cutoffcontacts: <i>number</i></tt><br>
+<dd>Repulsion energy (kcal/mol) cutoff for close atom contacts. Only entries 
+with higher repulsion energies are factored in the report. Default value is 
+0.5 kcal/mol.
+</dd> 
+</dl>
+</blockquote>
+
+</p>
+<p>&nbsp;</p>
+
+<!-- ============================ REFERENCES ============================= -->
+
+<h2>See Also</h2>
+
+<a href="../../proteins/procontacts.htm">Protein Contacts</a><br />
+<a href="../../proteins/fcnref/intropro.html">Protein Functions</a>
+
+<p>
+    <a class="svl" href="../../proteins/fcnref/pro_hb.html">pro_Contacts</a>
+    <a class="svl" href="../../proteins/fcnref/pro_bkdi.html">pro_Chi</a>
+    <a class="svl" href="../../proteins/fcnref/pro_bkdi.html">pro_Omega</a>
+</p>
+
+<p><a name="Ref"></a></p><h2>References</h2>
+
+<table cellpadding="5" width="100%">
+<tbody>
+<tr>
+<td valign="top">[Dunbrack&nbsp;1997]
+</td><td valign="top">
+Dunbrack Jr., R.L. and Cohen, F.E.;
+Bayesian Statistical Analysis of Protein Sidechain Rotamer Preferences;
+<i>Protein Science 6</i> (<b>1997</b>) 1661-1681.
+</td></tr>
+
+<tr>
+<td valign="top">[Lovell&nbsp;2003]
+</td><td valign="top">
+Lovell, S.C., Davis, I.W., Arendall III, W.B., de Bakker, P.I., Word, J.M., 
+Prisant, M.G., Richardson, J.S., and Richardson, D.C.; 
+Structure Validation by C&alpha; Geometry: &phi;, &psi; and C&beta; Deviation; 
+<i>Proteins 50</i> (<b>2003</b>) 437-450.
+</td>
+</tr>
+<tr>
+<td valign="top">[Zhang&nbsp;1997]
+</td><td valign="top">
+Zhang, C., Vasmatizis, G., Cornette, J.L. and DeLisi, C.;
+Determination of Atomic Desolvation Energies From the Structures of 
+Crystallized Proteins
+<i>J. Mol. Biol. 267</i> (<b>1997</b>) 707-326.
+</td></tr>
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

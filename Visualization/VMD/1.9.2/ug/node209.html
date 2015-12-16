@@ -1,0 +1,435 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Collective Variables Interface</TITLE>
+<META NAME="description" CONTENT="Collective Variables Interface">
+<META NAME="keywords" CONTENT="ug">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ug.css">
+
+<LINK REL="next" HREF="node239.html">
+<LINK REL="previous" HREF="node197.html">
+<LINK REL="up" HREF="ug.html">
+<LINK REL="next" HREF="node210.html">
+</HEAD>
+
+<BODY BGCOLOR="WHITE">
+<!--Navigation Panel-->
+<A NAME="tex2html4018"
+  HREF="node210.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html4012"
+  HREF="ug.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html4006"
+  HREF="node208.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html4014"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html4016"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html4019"
+  HREF="node210.html">General parameters and input/output</A>
+<B> Up:</B> <A NAME="tex2html4013"
+  HREF="ug.html">VMD User's Guide</A>
+<B> Previous:</B> <A NAME="tex2html4007"
+  HREF="node208.html">Coloring Trick - Override</A>
+ &nbsp; <B>  <A NAME="tex2html4015"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html4017"
+  HREF="node251.html">Index</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+
+<H1><A NAME="SECTION001600000000000000000"></A>
+
+<A NAME="section:colvars"></A>
+<BR>
+Collective Variables Interface
+</H1>
+
+<P>
+In today's molecular dynamics simulations, it is often useful to reduce the large number of degrees of freedom of a physical system into few parameters whose statistical distributions can be analyzed individually, or used to define biasing potentials to alter the dynamics of the system in a controlled manner. 
+These have been called `order parameters', `collective variables', `(surrogate) reaction coordinates', and many other terms.
+Here we use primarily the term `collective variable' (shortened to <I>colvar</I>), which indicates any differentiable function of atomic Cartesian coordinates, <!-- MATH
+ ${\mbox{\boldmath {$x$}}}_{i}$
+ -->
+<IMG
+ WIDTH="21" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img119.png"
+ ALT="$ {\mbox{\boldmath {$x$}}}_{i}$">
+, with <IMG
+ WIDTH="10" HEIGHT="16" ALIGN="BOTTOM" BORDER="0"
+ SRC="img42.png"
+ ALT="$ i$">
+ between <IMG
+ WIDTH="13" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img64.png"
+ ALT="$ 1$">
+ and <IMG
+ WIDTH="20" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img41.png"
+ ALT="$ N$">
+, the total
+number of atoms:
+<P></P>
+<DIV ALIGN="CENTER"><A NAME="eq:colvar_basic"></A><!-- MATH
+ \begin{equation}
+\xi(t) \; = \xi\left({\mbox{\boldmath {$x$}}}_{i}(t), {\mbox{\boldmath {$x$}}}_{j}(t), {\mbox{\boldmath {$x$}}}_{k}(t),
+  \ldots \right)\;, \;\; 1 \leq i,j,k\ldots \leq N
+\end{equation}
+ -->
+<TABLE CELLPADDING="0" WIDTH="100%" ALIGN="CENTER">
+<TR VALIGN="MIDDLE">
+<TD NOWRAP ALIGN="CENTER"><IMG
+ WIDTH="402" HEIGHT="34" ALIGN="MIDDLE" BORDER="0"
+ SRC="img120.png"
+ ALT="$\displaystyle \xi(t) \; = \xi\left({\mbox{\boldmath {$x$}}}_{i}(t), {\mbox{\bol...
+...mbox{\boldmath {$x$}}}_{k}(t), \ldots \right)\;, \;\; 1 \leq i,j,k\ldots \leq N$"></TD>
+<TD NOWRAP WIDTH="10" ALIGN="RIGHT">
+(13.1)</TD></TR>
+</TABLE></DIV>
+<BR CLEAR="ALL"><P></P>
+
+The colvars module in VMD may be used to calculate these functions over a molecular structure, and to analyze the results of previous simulations.
+
+The module is designed to perform multiple tasks concurrently during or after a simulation, the most common of which are:
+
+<UL>
+<LI>apply restraints or biasing potentials to multiple colvars, tailored on the system by choosing from a wide set of basis functions, without limitations on their number or on the number of atoms involved; 
+
+<P>
+</LI>
+<LI>calculate potentials of mean force (PMFs) along any set of colvars, using different enhanced sampling methods, such as Adaptive Biasing Force (ABF), metadynamics, steered MD and umbrella sampling; variants of these methods that make use of an ensemble of replicas are supported as well;
+
+<P>
+</LI>
+<LI>calculate statistical properties of the colvars, such as running averages and standard deviations, correlation functions of pairs of colvars, and multidimensional histograms: this can be done either at run-time without the need to save very large trajectory files, or after a simulation has been completed using VMD and the <TT>cv</TT> command.
+
+<P>
+</LI>
+</UL>
+
+<P>
+<B>Note:</B> although restraints and PMF algorithms are primarily used during simulations, they are also available in VMD to test a new input for a simulation, or to evaluate the relative free energy of a new structure based on data from a previous calculation.  <I>Options that only have an effect during a simulation are also included for compatibility purposes.</I> 
+
+<P>
+To briefly illustrate the flexibility of the colvars module, Figure&nbsp;<A HREF="#fig:colvars_diagram">13.1</A> shows an example of a non-trivial configuration (the corresponding input can be found in <A HREF="node212.html#sec:colvars_config">13.1.2</A>).
+
+<P>
+
+<DIV ALIGN="CENTER"><A NAME="fig:colvars_diagram"></A><A NAME="19629"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Figure 13.1:</STRONG>
+Graphical representation of a collective variables configuration.
+    The colvar called ``<IMG
+ WIDTH="13" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img121.png"
+ ALT="$ d$">
+'' is defined as the difference between two distances: the first distance (<IMG
+ WIDTH="21" HEIGHT="32" ALIGN="MIDDLE" BORDER="0"
+ SRC="img122.png"
+ ALT="$ d_{1}$">
+) is taken between the center of mass of atoms 1 and 2 and that of atoms 3 to 5, the second (<IMG
+ WIDTH="21" HEIGHT="32" ALIGN="MIDDLE" BORDER="0"
+ SRC="img123.png"
+ ALT="$ d_{2}$">
+) between atom 7 and the center of mass of atoms 8 to 10.
+The difference <!-- MATH
+ $d = d_{1} - d_{2}$
+ -->
+<IMG
+ WIDTH="91" HEIGHT="32" ALIGN="MIDDLE" BORDER="0"
+ SRC="img124.png"
+ ALT="$ d = d_{1} - d_{2}$">
+ is obtained by multiplying the two by a coefficient <IMG
+ WIDTH="64" HEIGHT="31" ALIGN="MIDDLE" BORDER="0"
+ SRC="img125.png"
+ ALT="$ C = +1$">
+ or <IMG
+ WIDTH="64" HEIGHT="31" ALIGN="MIDDLE" BORDER="0"
+ SRC="img126.png"
+ ALT="$ C = -1$">
+, respectively.
+The colvar called ``<IMG
+ WIDTH="12" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img127.png"
+ ALT="$ c$">
+'' is the coordination number calculated between atoms 1 to 10 and atoms 11 to 20.  A harmonic restraint is applied to both <IMG
+ WIDTH="13" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img121.png"
+ ALT="$ d$">
+ and <IMG
+ WIDTH="12" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img127.png"
+ ALT="$ c$">
+: to allow using the same force constant <IMG
+ WIDTH="20" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img128.png"
+ ALT="$ K$">
+, both <IMG
+ WIDTH="13" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img121.png"
+ ALT="$ d$">
+ and <IMG
+ WIDTH="12" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img127.png"
+ ALT="$ c$">
+ are scaled by their respective fluctuation widths <IMG
+ WIDTH="25" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img129.png"
+ ALT="$ w_d$">
+ and <IMG
+ WIDTH="24" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img130.png"
+ ALT="$ w_c$">
+.
+A third colvar ``alpha'' is defined as the <IMG
+ WIDTH="16" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img44.png"
+ ALT="$ \alpha$">
+-helical content of residues 1 to 10.
+The values of ``<IMG
+ WIDTH="12" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img127.png"
+ ALT="$ c$">
+'' and ``alpha'' are also recorded throughout the simulation as a joint 2-dimensional histogram.
+</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<IMG
+ WIDTH="510" HEIGHT="375" ALIGN="BOTTOM" BORDER="0"
+ SRC="img131.png"
+ ALT="\includegraphics[width=12cm]{pictures/colvars_diagram}">
+
+  </DIV></TD></TR>
+</TABLE>
+</DIV>
+
+<P>
+Detailed explanations of the design of the colvars module are provided in reference&nbsp;[<A
+ HREF="node250.html#Fiorin2013">32</A>]. Please cite this reference whenever publishing work that makes use of this module.
+
+<P>
+<BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL>
+<LI><A NAME="tex2html4020"
+  HREF="node210.html">General parameters and input/output files</A>
+<UL>
+<LI><A NAME="tex2html4021"
+  HREF="node211.html">Using the <TT>cv</TT> command</A>
+<LI><A NAME="tex2html4022"
+  HREF="node212.html">Configuration syntax for the collective variables module</A>
+<LI><A NAME="tex2html4023"
+  HREF="node213.html">Input state file (optional)</A>
+<LI><A NAME="tex2html4024"
+  HREF="node214.html">Output files</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html4025"
+  HREF="node215.html">Defining collective variables and their properties</A>
+<UL>
+<LI><A NAME="tex2html4026"
+  HREF="node216.html">General options for a collective variable</A>
+<LI><A NAME="tex2html4027"
+  HREF="node217.html">Artificial boundary potentials (walls)</A>
+<LI><A NAME="tex2html4028"
+  HREF="node218.html">Trajectory output</A>
+<LI><A NAME="tex2html4029"
+  HREF="node219.html">Extended Lagrangian.</A>
+<LI><A NAME="tex2html4030"
+  HREF="node220.html">Statistical analysis of collective variables</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html4031"
+  HREF="node221.html">Selecting atoms for colvars: defining atom groups</A>
+<UL>
+<LI><A NAME="tex2html4032"
+  HREF="node222.html">Selection keywords</A>
+<LI><A NAME="tex2html4033"
+  HREF="node223.html">Moving frame of reference.</A>
+<LI><A NAME="tex2html4034"
+  HREF="node224.html">Treatment of periodic boundary conditions.</A>
+<LI><A NAME="tex2html4035"
+  HREF="node225.html">Computational cost of colvars based on group size.</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html4036"
+  HREF="node226.html">Collective variable components (basis functions)</A>
+<UL>
+<LI><A NAME="tex2html4037"
+  HREF="node227.html">List of available colvar components</A>
+<UL>
+<LI><A NAME="tex2html4038"
+  HREF="node227.html#SECTION001641100000000000000"><TT>distance</TT>: center-of-mass distance between two groups.</A>
+<LI><A NAME="tex2html4039"
+  HREF="node227.html#SECTION001641200000000000000"><TT>distanceZ</TT>: projection of a distance vector on an axis.</A>
+<LI><A NAME="tex2html4040"
+  HREF="node227.html#SECTION001641300000000000000"><TT>distanceXY</TT>: modulus of the projection of a distance vector on a plane.</A>
+<LI><A NAME="tex2html4041"
+  HREF="node227.html#SECTION001641400000000000000"><TT>distanceVec</TT>: distance vector  between two groups.</A>
+<LI><A NAME="tex2html4042"
+  HREF="node227.html#SECTION001641500000000000000"><TT>distanceDir</TT>: distance unit vector between two groups.</A>
+<LI><A NAME="tex2html4043"
+  HREF="node227.html#SECTION001641600000000000000"><TT>distanceInv</TT>: mean distance between two groups of atoms.</A>
+<LI><A NAME="tex2html4044"
+  HREF="node227.html#SECTION001641700000000000000"><TT>angle</TT>: angle between three groups.</A>
+<LI><A NAME="tex2html4045"
+  HREF="node227.html#SECTION001641800000000000000"><TT>dihedral</TT>: torsional angle between four groups.</A>
+<LI><A NAME="tex2html4046"
+  HREF="node227.html#SECTION001641900000000000000"><TT>coordNum</TT>: coordination number between two groups.</A>
+<LI><A NAME="tex2html4047"
+  HREF="node227.html#SECTION0016411000000000000000"><TT>selfCoordNum</TT>: coordination number between atoms within a group.</A>
+<UL>
+<LI><A NAME="tex2html4048"
+  HREF="node227.html#SECTION0016411010000000000000"><TT>hBond</TT>: hydrogen bond between two
+  atoms.</A>
+</UL>
+<LI><A NAME="tex2html4049"
+  HREF="node227.html#SECTION0016411100000000000000"><TT>rmsd</TT>: root mean square displacement  (RMSD) from reference positions.</A>
+<LI><A NAME="tex2html4050"
+  HREF="node227.html#SECTION0016411200000000000000">Advanced usage of the <TT>rmsd</TT> component.</A>
+<LI><A NAME="tex2html4051"
+  HREF="node227.html#SECTION0016411300000000000000"><TT>eigenvector</TT>: projection of the atomic  coordinates on a vector.</A>
+<LI><A NAME="tex2html4052"
+  HREF="node227.html#SECTION0016411400000000000000"><TT>gyration</TT>: radius of gyration of a group  of atoms.</A>
+<LI><A NAME="tex2html4053"
+  HREF="node227.html#SECTION0016411500000000000000"><TT>inertia</TT>: total moment of inertia of a group  of atoms.</A>
+<LI><A NAME="tex2html4054"
+  HREF="node227.html#SECTION0016411600000000000000"><TT>inertiaZ</TT>: total moment of inertia of a group of atoms around a chosen axis.</A>
+<LI><A NAME="tex2html4055"
+  HREF="node227.html#SECTION0016411700000000000000"><TT>orientation</TT>: orientation from reference  coordinates.</A>
+<LI><A NAME="tex2html4056"
+  HREF="node227.html#SECTION0016411800000000000000"><TT>orientationAngle</TT>: angle of rotation from reference coordinates.</A>
+<LI><A NAME="tex2html4057"
+  HREF="node227.html#SECTION0016411900000000000000"><TT>orientationProj</TT>: cosine of the angle of rotation from reference coordinates.</A>
+<LI><A NAME="tex2html4058"
+  HREF="node227.html#SECTION0016412000000000000000"><TT>spinAngle</TT>: angle of rotation around a given axis.</A>
+<LI><A NAME="tex2html4059"
+  HREF="node227.html#SECTION0016412100000000000000"><TT>tilt</TT>: cosine of the rotation orthogonal to a given axis.</A>
+<LI><A NAME="tex2html4060"
+  HREF="node227.html#SECTION0016412200000000000000"><TT>alpha</TT>: <IMG
+ WIDTH="16" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img44.png"
+ ALT="$ \alpha$">
+-helix content of a  protein segment.</A>
+<LI><A NAME="tex2html4061"
+  HREF="node227.html#SECTION0016412300000000000000"><TT>dihedralPC</TT>: protein dihedral pricipal component</A>
+</UL>
+<LI><A NAME="tex2html4062"
+  HREF="node228.html">Advanced usage and special considerations</A>
+<UL>
+<LI><A NAME="tex2html4063"
+  HREF="node228.html#SECTION001642100000000000000">Periodic components.</A>
+<LI><A NAME="tex2html4064"
+  HREF="node228.html#SECTION001642200000000000000">Non-scalar components.</A>
+<LI><A NAME="tex2html4065"
+  HREF="node228.html#SECTION001642300000000000000">Calculating system forces.</A>
+</UL>
+<LI><A NAME="tex2html4066"
+  HREF="node229.html">Linear and polynomial combinations of components</A>
+<LI><A NAME="tex2html4067"
+  HREF="node230.html">Colvars as scripted functions of components</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html4068"
+  HREF="node231.html">Biasing and analysis methods</A>
+<UL>
+<LI><A NAME="tex2html4069"
+  HREF="node232.html">Adaptive Biasing Force</A>
+<UL>
+<LI><A NAME="tex2html4070"
+  HREF="node232.html#SECTION001651100000000000000">ABF requirements on collective variables</A>
+<LI><A NAME="tex2html4071"
+  HREF="node232.html#SECTION001651200000000000000">Parameters for ABF</A>
+<LI><A NAME="tex2html4072"
+  HREF="node232.html#SECTION001651300000000000000">Output files</A>
+<LI><A NAME="tex2html4073"
+  HREF="node232.html#SECTION001651400000000000000">Post-processing: reconstructing a multidimensional free energy surface</A>
+</UL>
+<LI><A NAME="tex2html4074"
+  HREF="node233.html">Metadynamics</A>
+<UL>
+<LI><A NAME="tex2html4075"
+  HREF="node233.html#SECTION001652100000000000000">Output files</A>
+<LI><A NAME="tex2html4076"
+  HREF="node233.html#SECTION001652200000000000000">Performance tuning</A>
+<LI><A NAME="tex2html4077"
+  HREF="node233.html#SECTION001652300000000000000">Well-tempered metadynamics</A>
+<LI><A NAME="tex2html4078"
+  HREF="node233.html#SECTION001652400000000000000">Multiple-replicas metadynamics</A>
+<LI><A NAME="tex2html4079"
+  HREF="node233.html#SECTION001652500000000000000">Compatibility and post-processing</A>
+</UL>
+<LI><A NAME="tex2html4080"
+  HREF="node234.html">Harmonic restraints</A>
+<UL>
+<LI><A NAME="tex2html4081"
+  HREF="node234.html#SECTION001653100000000000000">Moving restraints: steered molecular dynamics</A>
+<LI><A NAME="tex2html4082"
+  HREF="node234.html#SECTION001653200000000000000">Moving restraints: umbrella sampling</A>
+<LI><A NAME="tex2html4083"
+  HREF="node234.html#SECTION001653300000000000000">Changing force constant</A>
+</UL>
+<LI><A NAME="tex2html4084"
+  HREF="node235.html">Linear restraints</A>
+<LI><A NAME="tex2html4085"
+  HREF="node236.html">Adaptive Linear Bias/Experiment Directed Simulation</A>
+<LI><A NAME="tex2html4086"
+  HREF="node237.html">Multidimensional histograms</A>
+<LI><A NAME="tex2html4087"
+  HREF="node238.html">Scripted biases</A>
+</UL></UL>
+<!--End of Table of Child-Links-->
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html4018"
+  HREF="node210.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html4012"
+  HREF="ug.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html4006"
+  HREF="node208.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html4014"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html4016"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html4019"
+  HREF="node210.html">General parameters and input/output</A>
+<B> Up:</B> <A NAME="tex2html4013"
+  HREF="ug.html">VMD User's Guide</A>
+<B> Previous:</B> <A NAME="tex2html4007"
+  HREF="node208.html">Coloring Trick - Override</A>
+ &nbsp; <B>  <A NAME="tex2html4015"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html4017"
+  HREF="node251.html">Index</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+vmd@ks.uiuc.edu
+</ADDRESS>
+</BODY>
+</HTML>

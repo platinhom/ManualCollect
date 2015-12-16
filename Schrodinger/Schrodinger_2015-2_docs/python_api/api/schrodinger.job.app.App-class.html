@@ -1,0 +1,1199 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>schrodinger.job.app.App</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >2015-2Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="schrodinger-module.html">Package&nbsp;schrodinger</a> ::
+        <a href="schrodinger.job-module.html">Package&nbsp;job</a> ::
+        <a href="schrodinger.job.app-module.html">Module&nbsp;app</a> ::
+        Class&nbsp;App
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="schrodinger.job.app.App-class.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== CLASS DESCRIPTION ==================== -->
+<h1 class="epydoc">Class App</h1><p class="nomargin-top"></p>
+<p>A class to handle all aspects of job setup and running.  Application 
+  scripts based on a sub-class of App will be able to run from the command 
+  line in top-level mode (e.g., starting jobs with '-HOST &lt;host&gt;' or 
+  '-i &lt;inputfile&gt;' args) or restart mode (using the pickled instance 
+  file instead of the input file), run under Job Control by using Launcher 
+  for startup functionality, and as a backend (using '-NOJOBID').  A user 
+  only needs to write one script to be able to run a job with full Job 
+  Control features.  Optionally, the script can be used to launch a GUI in 
+  a standard fashion.</p>
+  <p>Non-toplevel, but JC-type options like -SAVE and -LOCAL are supported 
+  by App, so a user doesn't need to make special arrangements.</p>
+  <p>The general approach for using App is for a script author to create a 
+  derived class that overrides several key methods that define the 
+  particular behaviors of the script -- commandLine() for turning 
+  command-line arguments and input parameters into instance attributes, 
+  backend() for doing the actual work of the job, and optionally gui() for 
+  enabling a graphical interface.</p>
+  <p>The __init__ method determines the mode in which the App will run from
+  the arguments passed to it.  Therefore, all that is necessary in the 
+  &quot;if __name__ == '__main__'&quot; block of the script is to create 
+  the App instance, passing it __file__ (i.e., the script name) and the 
+  command-line arguments.  If the script is runnable via a GUI from 
+  Maestro, the will be an additional function needed that creates the App 
+  instance with &quot;-gui&quot; as the only argument.</p>
+  <p>Note that there is no 'run' method; the App machinery starts working 
+  as soon as the instance is created.</p>
+  <p>The App instance is saved as a pickled file prior to submission to Job
+  Control.  This pickled file (i.e., a 'restart' file) is transferred to 
+  the JobDir/Compute Host and then read prior to running backend().  It 
+  also is possible for a user to start a job from a restart file via the 
+  '-RESTART' option.  If the backend() method updates the instance with the
+  current state of the job, bases its actions on the recorded state, and 
+  calls the dumpBE() method at critical checkpoints (so the .restart file 
+  is written and registered as an output file with Job Control), the 
+  restart mechanism can be used to resume interrupted jobs.</p>
+  <p>For restartability of some types of jobs, it is necessary to preserve 
+  the contents of the scratch directory (e.g., when backend() is a driver 
+  for other subjobs, and not all of the subjob input/output files are 
+  registered as input/output files of the driver).  Preserving the JobDir 
+  can be accomplished by running with -LOCAL (which avoids the use of a 
+  scratch directory).</p>
+  <p>If a job is ran without -LOCAL (using scratch directory), and it 
+  fails; then job control will compress the scratch dir and copy it to the 
+  launch dir.</p>
+  <p>FIXME: the mechanism is not yet in place to restart a job from a 
+  compressed scratch directory (.zip) file.</p>
+
+<!-- ==================== INSTANCE METHODS ==================== -->
+<a name="section-InstanceMethods"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Instance Methods</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-InstanceMethods"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#__init__" class="summary-sig-name">__init__</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">script</span>,
+        <span class="summary-sig-arg">args</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span><br />
+      When an App instance is constructed and __init__ is run, App 
+      determines from the 'args' list whether...</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#run" class="summary-sig-name">run</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      If '-gui' passed to the constructor, runs the GUI OR...</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#commandLine" class="summary-sig-name">commandLine</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">args</span>)</span><br />
+      Overwrite this method with code that parses the arguments and 
+      initializes the instance variables to appropriate values.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#gui" class="summary-sig-name">gui</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      Overwrite this method with your GUI code.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#backend" class="summary-sig-name">backend</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      Overwrite this function with your backend (main) code.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#dumpFE" class="summary-sig-name">dumpFE</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">relpath</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">.</code><code class="variable-quote">'</code></span>)</span><br />
+      Dumps the App instance to file named '&lt;jobname&gt;.restart'.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#dumpBE" class="summary-sig-name">dumpBE</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">relpath</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">.</code><code class="variable-quote">'</code></span>)</span><br />
+      Dumps the App instance to file named '&lt;jobname&gt;.restart'.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="setJobName"></a><span class="summary-sig-name">setJobName</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">jobname</span>)</span><br />
+      Call this method from commandLine() to set the jobname.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="getJobName"></a><span class="summary-sig-name">getJobName</span>(<span class="summary-sig-arg">self</span>)</span><br />
+      Returns the jobname of the App.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="setProgramName"></a><span class="summary-sig-name">setProgramName</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">progname</span>)</span><br />
+      Call this method from commandLine() to set the program name.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="getProgramName"></a><span class="summary-sig-name">getProgramName</span>(<span class="summary-sig-arg">self</span>)</span><br />
+      Returns the program name of the App.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#getHostStr" class="summary-sig-name">getHostStr</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      What user specified as -HOST when running the script.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#alwaysLocal" class="summary-sig-name">alwaysLocal</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      Call this method from the commandLine() method to make the backend 
+      always run in the local (i.e., launch) directory instead of in a 
+      scratch directory.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#useLocalDriver" class="summary-sig-name">useLocalDriver</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      The backend will be run on the local host, regardless of the -HOST 
+      setting.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="addInputFile"></a><span class="summary-sig-name">addInputFile</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">file</span>)</span><br />
+      Call from commandLine() to specify job input files.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="addOutputFileFE"></a><span class="summary-sig-name">addOutputFileFE</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">file</span>)</span><br />
+      Call from commandLine() to specify output files.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="addOutputFileBE"></a><span class="summary-sig-name">addOutputFileBE</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">file</span>)</span><br />
+      Call from backend() to specify output files.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="setStructureOutputFileFE"></a><span class="summary-sig-name">setStructureOutputFileFE</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">file</span>)</span><br />
+      Call from commandLine() to specify the structure output file (i.e., 
+      the file that gets incorporated into Maestro upon job completion).</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="setStructureOutputFileBE"></a><span class="summary-sig-name">setStructureOutputFileBE</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">file</span>)</span><br />
+      Call from backend() to specify the structure output file (i.e., the 
+      file that gets incorporated into Maestro upon job completion).</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#addLogFile" class="summary-sig-name">addLogFile</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">file</span>)</span><br />
+      Call from commandLine() to specify additional log files.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="log"></a><span class="summary-sig-name">log</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">*args</span>)</span><br />
+      Use this method to print from within backend().</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#lognotret" class="summary-sig-name">lognotret</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">*args</span>)</span><br />
+      Use this method to print from within backend().</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">jobcontrol.Job object</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#launchBackend" class="summary-sig-name">launchBackend</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">args</span>=<span class="summary-sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span><br />
+      Call this method from the gui() method to run the job.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#addCommandLineOptions" class="summary-sig-name">addCommandLineOptions</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">parser</span>,
+        <span class="summary-sig-arg">distributed</span>=<span class="summary-sig-default">False</span>,
+        <span class="summary-sig-arg">use_group</span>=<span class="summary-sig-default">False</span>)</span><br />
+      Add top-level and App options to the OptionParser 'parser'.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#_extractArguments" class="summary-sig-name" onclick="show_private();">_extractArguments</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">args</span>)</span><br />
+      Extract the App-specific command-line arguments.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#_printJobInfo" class="summary-sig-name" onclick="show_private();">_printJobInfo</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      This method is called right before calling backend().</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#_readDumpFile" class="summary-sig-name" onclick="show_private();">_readDumpFile</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">file</span>)</span><br />
+      Returns an instance of App loaded from the supplied dump file.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.job.app.App-class.html#_startup" class="summary-sig-name" onclick="show_private();">_startup</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">args</span>,
+        <span class="summary-sig-arg">scratch_file</span>,
+        <span class="summary-sig-arg">local</span>,
+        <span class="summary-sig-arg">wait</span>,
+        <span class="summary-sig-arg">run_under_jobcontrol</span>)</span><br />
+      Run the job.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+</table>
+<!-- ==================== METHOD DETAILS ==================== -->
+<a name="section-MethodDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Method Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-MethodDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="__init__"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">__init__</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">script</span>,
+        <span class="sig-arg">args</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span>
+    <br /><em class="fname">(Constructor)</em>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>When an App instance is constructed and __init__ is run, App 
+  determines from the 'args' list whether...</p>
+  <ol start="1">
+    <li>
+      The GUI should be launched ('-gui'), in which case the gui() method 
+      is called.
+    </li>
+    <li>
+      A restart file should be read ('-RESTART') or job parameters should 
+      be determined from command-line arguments.
+    </li>
+    <li>
+      The backend should be launched directly (-NOJOBID) or under Job 
+      Control.  This is handled by the _startup() method.
+    </li>
+  </ol>
+  <p>GUI/startup/backend execution doesn't occur until the 'run' method is 
+  called.</p>
+  <p>Another option ('--scratch') is for a previously-generated scratch 
+  directory file to be used during a restart job.  This file is generated 
+  by jobcontrol when the job fails.</p>
+  <p>The _startup() method also handles the -LOCAL argument.</p>
+  <p>'script' is the name of the user application script (often passed in 
+  via the builtin '__file__').</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="run"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">run</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>If '-gui' passed to the constructor, runs the GUI OR...</p>
+  <p>Reads the restart file (-RESTART, existing job) or command-line 
+  arguments (default, new job) and then runs in startup mode (default) or 
+  backend mode (-NOJOBID).</p>
+  <p>Raises a SyntaxError if the commandLine() method returns no 
+  arguments.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="commandLine"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">commandLine</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">args</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Overwrite this method with code that parses the arguments and 
+  initializes the instance variables to appropriate values. This method 
+  should also set the job name and input/output files for the 
+  scriptlauncher via dedicated App methods.  The method should return a 
+  revised list of arguments (e.g., removing arguments that won't be needed 
+  when running the backend on the restart file).  Output files also can be 
+  registered in the backend() method.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="gui"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">gui</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <pre class="literalblock">
+
+Overwrite this method with your GUI code.  When a job is ready to be
+submited, call 'self.launchBackend()' with appropriate arguments.
+'launchBackend' then will run the rerun the script in non-GUI mode, so
+the argument list should be like a command-line invocation.
+
+Ex: self.launchBackend(['-i', input_file, '-j', 'testjob',
+                        '-HOST', hostname, '-USER', myname])
+
+</pre>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="backend"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">backend</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Overwrite this function with your backend (main) code.  This method 
+  also may set output files via dedicated App methods for jobs that are 
+  running under Job Control.  To enable restartability at intermediate 
+  stages of the job, record the state of the job in an instance variable, 
+  have the method base its actions on the current state, and periodically 
+  save the instance via the dumpBE() method.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="dumpFE"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">dumpFE</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">relpath</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">.</code><code class="variable-quote">'</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Dumps the App instance to file named '&lt;jobname&gt;.restart'.  This 
+  version is called on the front end to create the initial restart file 
+  during job submission. This is the file from which a user would resume an
+  interrupted job via a command like...</p>
+  <p>&lt;myapp&gt;.py -RESTART</p>
+  <p>When the user runs the application with '-RESTART' option, the App 
+  instance is recovered from the dump file instead of initializing the 
+  instance via the commandLine() method.</p>
+  <p>If the job was submitted with -LOCAL, then the restart file will be in
+  the launch directory, otherwise restart file will be in the 
+  &lt;jobname&gt;.zip archive that is created by jobcontrol.</p>
+  <p>A 'relpath' optional argument is available, in case the restart file 
+  needs to be written somewhere other than the CWD (e.g., in case the 
+  backend is running in a workdir).</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="dumpBE"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">dumpBE</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">relpath</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">.</code><code class="variable-quote">'</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Dumps the App instance to file named '&lt;jobname&gt;.restart'.  This 
+  function is to be called by backend() at restartable places in the code. 
+  This is the file from which a user would resume an interrupted job via a 
+  command like...</p>
+  <p>&lt;myapp&gt;.py -RESTART</p>
+  <p>When the user runs the application with '-RESTART' option, the App 
+  instance is recovered from the dump file instead of initializing the 
+  instance via the commandLine() method.</p>
+  <p>If the job was submitted with -LOCAL, then the restart file will be in
+  the launch directory, otherwise restart file will be in the 
+  &lt;jobname&gt;.zip archive that is created by jobcontrol.</p>
+  <p>A 'relpath' optional argument is available, in case the restart file 
+  needs to be written somewhere other than the CWD (e.g., in case the 
+  backend is running in a workdir).</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="getHostStr"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">getHostStr</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <pre class="literalblock">
+
+What user specified as -HOST when running the script.  Use in
+backend() when running jobs with JobDJ.  Should be in format...
+
+&quot;host1:ncpu1 host2:ncpu2&quot;
+
+NOTE: NOT COMPLETE YET.  ALSO, THIS INFORMATION IS AVAILABLE TO JOBDJ
+      VIA THE SCHRODINGER_NODEFILE.
+
+</pre>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="alwaysLocal"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">alwaysLocal</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Call this method from the commandLine() method to make the backend 
+  always run in the local (i.e., launch) directory instead of in a scratch 
+  directory.  This enforces -LOCAL without the user having to use that 
+  command-line option.  Running in the local directory removes the need to 
+  use addInputFile(), addOutputFile*(), etc., but it imposes a requirement 
+  that the local directory be directly accessible to any machine where the 
+  backend will run, which may or may not be true for remote jobs.  Running 
+  locally also can facilitate restarting if the backend is a driver for 
+  other subjobs.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="useLocalDriver"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">useLocalDriver</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>The backend will be run on the local host, regardless of the -HOST 
+  setting.  This is so the -HOST option can be used to set the subjob host 
+  info, while letting the driver/backend run locally.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="addLogFile"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">addLogFile</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">file</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Call from commandLine() to specify additional log files.  The main log
+  file (i.e., the stdout/stderr of the backend() is registered 
+  automatically.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="lognotret"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">lognotret</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">*args</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Use this method to print from within backend().  Unlike log(), it does
+  not print a carriage return at end of logged text.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="launchBackend"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">launchBackend</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">args</span>=<span class="sig-default"><code class="variable-group">[</code><code class="variable-group">]</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Call this method from the gui() method to run the job.  Returns the 
+  Job object of the launched job.  In order to set up the appropriate 
+  environment variables, a top-level script must be called.  Therefore, 
+  launchBackend() will invoke the script in command-line mode, with all 
+  arguments passed to it.  The 'args' should be a list of command-line 
+  arguments (e.g., ['-i', input_file, '-HOST', hostname]).</p>
+  <dl class="fields">
+    <dt>Returns: jobcontrol.Job object</dt>
+        <dd>The job object for the launched backend job.</dd>
+    <dt>Raises:</dt>
+    <dd><ul class="nomargin-top">
+        <li><code><strong class='fraise'>RuntimeError</strong></code> - If there is a problem launching the job (e.g., no JobId gets 
+        printed). If running within Maestro, an error dialog will first be 
+        shown to the user.</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="addCommandLineOptions"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">addCommandLineOptions</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">parser</span>,
+        <span class="sig-arg">distributed</span>=<span class="sig-default">False</span>,
+        <span class="sig-arg">use_group</span>=<span class="sig-default">False</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Add top-level and App options to the OptionParser 'parser'.  With this
+  method, the application-specific parser can include top-level and App 
+  options in its usage/help statement, though the actual parsing of those 
+  arguments is handled elsewhere.  The 'distributed' boolean option 
+  (default is False) alters the option descriptions slightly, making 
+  references to the job as the &quot;driver job&quot;.  If 'use_group' is 
+  True (default is False), the options will be added as an OptionGroup.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="_extractArguments"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_extractArguments</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">args</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Extract the App-specific command-line arguments.  These control 
+  whether the job will bypass Job Control ('-NOJOBID), whether a restart 
+  ('-RESTART) or scratch ('--scratch &lt;file&gt;') will be used, whether 
+  the job will run in the local directory ('-LOCAL'), and whether the 
+  scratch directory, if used, should be cleaned up ('-SAVE').  -NOJOBID, 
+  -LOCAL, and -SAVE are JC-like options that must be handled by startup 
+  scripts (i.e., here) instead of the standard top-level script.  The 
+  -LOCAL and -SAVE arguments are kept in the argument list in case the 
+  application wants to use that information (e.g., to propagate -LOCAL to 
+  subjobs).  Returns 1) list of unused and retained args, 2) name of the 
+  restart file, 3) name of the scratch file, 4) whether -LOCAL is used, 5) 
+  whether -SAVE is used, and 6) whether -NOJOBID is used.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="_printJobInfo"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_printJobInfo</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>This method is called right before calling backend(). It prints job 
+  information to the terminal/log file.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="_readDumpFile"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_readDumpFile</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">file</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Returns an instance of App loaded from the supplied dump file.  Raises
+  a RuntimeError if the specified file doesn't exist or if there is a 
+  problem reading it.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="_startup"></a>
+<div class="private">
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">_startup</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">args</span>,
+        <span class="sig-arg">scratch_file</span>,
+        <span class="sig-arg">local</span>,
+        <span class="sig-arg">wait</span>,
+        <span class="sig-arg">run_under_jobcontrol</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Run the job.  Submits the script under Job Control to be run from the 
+  dump/restart file.  If -NOJOBID is used, backend() is called directly 
+  (i.e., no Job Control).  'schrodinger.job.launcher' handles setting all 
+  the jlaunch arguments and issuing the jlaunch command. Returns the Job 
+  object if running under Job Control (or None, otherwise).</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >2015-2Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Sat May  9 06:31:23 2015
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

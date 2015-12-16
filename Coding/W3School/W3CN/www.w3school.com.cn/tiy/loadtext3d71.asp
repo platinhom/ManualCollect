@@ -1,0 +1,52 @@
+<html>
+
+<!-- Mirrored from www.w3school.com.cn/tiy/loadtext.asp?f=xpath_select_pricenodes_35_title by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 02 Dec 2015 07:13:37 GMT -->
+<!-- Added by HTTrack --><meta http-equiv="content-type" content="text/html;charset=GB2312" /><!-- /Added by HTTrack -->
+<body>
+<script type="text/javascript">
+function loadXMLDoc(dname)
+{
+if (window.XMLHttpRequest)
+  {
+  xhttp=new XMLHttpRequest();
+  }
+else
+  {
+  xhttp=new ActiveXObject("Microsoft.XMLHTTP");
+  }
+xhttp.open("GET.html",dname,false);
+xhttp.send("");
+return xhttp.responseXML;
+}
+
+xml=loadXMLDoc("../example/xmle/books.xml");
+path="/bookstore/book[price>35]/title";
+// code for IE
+if (window.ActiveXObject)
+{
+var nodes=xml.selectNodes(path);
+
+for (i=0;i<nodes.length;i++)
+  {
+  document.write(nodes[i].childNodes[0].nodeValue);
+  document.write("<br />");
+  }
+}
+// code for Mozilla, Firefox, Opera, etc.
+else if (document.implementation && document.implementation.createDocument)
+{
+var nodes=xml.evaluate(path, xml, null, XPathResult.ANY_TYPE,null);
+var result=nodes.iterateNext();
+
+while (result)
+  {
+  document.write(result.childNodes[0].nodeValue);
+  document.write("<br />");
+  result=nodes.iterateNext();
+  }
+}
+</script>
+</body>
+
+<!-- Mirrored from www.w3school.com.cn/tiy/loadtext.asp?f=xpath_select_pricenodes_35_title by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 02 Dec 2015 07:13:37 GMT -->
+</html>

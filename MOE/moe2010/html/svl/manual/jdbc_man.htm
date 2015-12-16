@@ -1,0 +1,286 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!    03-mar-2010 (hf) fixed MSSQL example
+!!    18-nov-2002 (sb) created
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<title>SVL Relational Database Access</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>SVL Relational Database Access</h2>
+<hr noshade="noshade" />
+
+<p>
+<ul>
+<li><a href="#Overview">Overview</a>
+<li><a href="#JDBC">Using SVL Relational Database Functions</a>
+  <ul>
+  <li><a href="#OpenConnection">Opening a Connection to a Database Server</a>
+  <li><a href="#CreateTable">Creating a New Table</a>
+  <li><a href="#WritingData">Writing Data to a Table</a>
+  <li><a href="#ReadingData">Reading Data from a Table</a>
+  </ul>
+<li><a href="#SVL">SVL Commands</a>
+</ul>
+
+<h2> <a name="Overview">Overview</a> </h2>
+
+<p>The SVL relational database functions provide both access to a wide
+variety of relational databases and compatibility with a wide variety
+of database servers.  In these functions, the language of communication
+with the relational databases is SQL (<dfn>Structured Query Language</dfn>
+for use with JDBC).  The connections to databases are made using JDBC
+(<dfn>Java Database Connectivity</dfn>).  In the current distribution,
+the functions have been tested with the following database products:
+IBM DB2, Oracle, Microsoft SQL Server, and MySQL databases.
+
+<p>SQL, a common standard for interfacing with relational databases, is
+the most popular <i>set processing</i> language for relational databases.
+JDBC is a driver-based Java application programming interface supported
+by a large number of database applications.  The relational database
+functions transparently make the appropriate JDBC calls to open, read from,
+and write to databases, without the user having to write any Java code.
+
+<p>To use the relational database functions, you must have Java (i.e. a
+Java Virtual Machine) installed.  For complete installation instructions
+for the JVM and JDBC Drivers refer to
+<a href="../../install/install.htm">Installing and Running MOE</a>.
+
+<h2> <a name="JDBC">Using SVL Relational Database Functions</a> </h2>
+
+<p>This section presents sample SVL code illustrating the usage of some of
+the SVL relational database functions.  For detailed information on each
+<tt>jdbc_XXX</tt> function, please refer to the function reference page
+<a href="../fcnref/jdbc_fcn.htm">Relational Database Functions</a>.
+
+<p>The code samples provided below illustrate how to establish a connection
+to a database server and create a new table on that database server.
+Sample code is also provided to demonstrate how information can be read
+from the MOE database <tt>$MOE/sample/mol/mref.mdb</tt> and copied
+to the table.  A final example shows how to read back the information
+from the newly created table.
+
+<p><i>Note:</i> Currently, Microsoft SQL is the only driver that supports
+<tt>jdbc_append</tt> exactly as it is used here. It is expected that all
+drivers will support this usage in the near future.  For those drivers
+that currently do not, <tt>jdbc_execute</tt> can replicate the behavior if
+passed the appropriate <tt>SQL</tt> query string.
+
+<a name="OpenConnection"></a>
+<h3>Opening a Connection to a Database Server</h3>
+
+<p> In this example, the variable <tt>server</tt> is a parameter specifying
+the database server.  The form of the <tt>url</tt> and <tt>driver</tt>
+arguments is JDBC-specific, and is provided in the JDBC driver documentation.
+
+<pre>
+    local url, driver, usr, password, server = 'MSSQL';
+
+    if server == 'DB2' then
+	url      = 'jdbc:db2://beast.chemcomp.com:50000/ccg';
+	driver   = 'com.ibm.db2.jcc.DB2Driver';
+	usr      = 'db2';
+	password = 'dkdholphdnbliknpiabbhobgahnknbplblhoahibhkejcj';
+
+    elseif server == 'Oracle' then
+	url      = 'jdbc:oracle:thin:@oracle1:1521:o8iserv';
+	driver   = 'oracle.jdbc.driver.OracleDriver';
+	usr      = 'scott';
+	password = 'okphcagjmggdbpagemakmgobfeeflgchgeekoanbmchana';
+
+    elseif server == 'MySQL' then
+	url      = 'jdbc:mysql://garm.chemcomp.com/ccg';
+	driver   = 'com.mysql.jdbc.Driver';
+	usr      = 'root';
+	password = 'kllagbcajoejeggbjjadhmlaajmjgmklikdjliiclmaeoi';
+
+    elseif server == 'MSSQL' then
+	url      = 'jdbc:sqlserver://vali:1433';
+	driver   = 'com.microsoft.sqlserver.jdbc.SQLServerDriver';
+	usr      = 'ccg';
+	password = 'pipccpggkmaljjlcefaimjckpoffbjpddllfkiomgjpdkn';
+    endif
+
+    local ckey = jdbc_open [url, driver, usr, password];
+    write ['Open Connection: {}\n', ckey];
+
+	// Note: the jdbc_open call should be paired with a
+	// jdbc_close ckey call.
+</pre>
+
+<a name="CreateTable"></a>
+<h3>Creating a New Table</h3>
+
+
+<p>The SVL function <tt>jdbc_execute</tt> is used to create a new table.
+For some SQL queries, <tt>jdbc_execute</tt> returns a key to a result set.
+With the <tt>CREATE TABLE</tt> query, however, no result set key is
+returned.
+
+<pre>
+	// If a table named "mref" already exists, destroy it.
+	// "ckey" is the return value of jdbc_open.
+
+    local sql = "DROP TABLE mref";
+    local sql_ret = jdbc_execute [ckey, sql];
+
+	// This example uses Microsoft SQL data types.
+	// Create a table with fields Name, MR_exp, and Mol.
+
+    sql = "CREATE TABLE mref (Name VARCHAR(100),MR_exp FLOAT,Mol TEXT)";
+    sql_ret = jdbc_execute [ckey, sql];
+</pre>
+
+<a name="WritingData"></a>
+<h3>Writing Data to a Table</h3>
+
+<p>To write to a table, a result set for that table is needed.  New additions
+to the table are made by appending to the result set.
+
+<pre>
+	// Create a result set.
+	// The result set key is needed for operating on the table.
+
+    local opt = [type:'SCROLL_INSENSITIVE',mode:'UPDATABLE',fetchsize:10];
+
+	// The "select *" operation returns all entries in the table.
+	// For a newly created table, the result set will be empty.
+	// "rkey" is the result set key.
+
+    sql = "select * from mref";
+    local rkey = jdbc_execute [ckey, sql, opt];
+
+	// Get the table field names.
+	// These were set above to be 'Name', 'MR_exp', and 'Mol'.
+
+    local fields = first jdbc_fields rkey;
+
+    local db = db_Open ['$MOE/sample/mol/mref.mdb', 'read'];
+
+	// Step through the entries of mref.mdb.
+	// Append each entry to the result set.
+
+    const DB_FIELDS = ['name', 'MR(exp)', 'mol'];
+    local ent = 0;
+    local values, moemol;
+
+    Close [force:1];
+    while ent = db_NextEntry [db, ent] loop
+	values = db_ReadFields [db, ent, DB_FIELDS];
+
+	    // Create the molecule in MOE.
+
+	local chains = mol_Create last values;
+
+	    // Convert the molecule to MOE file format.
+
+	local fp = fopen '';	// temporary file handle
+	WriteMOE fp; 	    	// output molecule to MOE file format
+	fseek [fp, 0];
+  	moemol = freadb [fp, 'char', INT_MAX];
+
+	jdbc_append [rkey, tag [fields, append [droplast values, moemol]]] ;
+	oDestroy chains;
+    endloop
+
+	// Clean up: close the result set.
+
+    jdbc_close rkey;
+</pre>
+
+<a name="ReadingData"></a>
+<h3>Reading Data from a Table</h3>
+
+<p>
+To read from a table, a result set for that table is needed.  The result set
+identifies which table entries are to be read.
+
+<pre>
+	// Create a result set.
+	// The "select *" operation returns all entries in the table.
+	// "rkey" is the result set key.
+
+    sql = "select * from mref";
+    rkey = jdbc_execute [ckey, sql, opt];
+
+	// Step through the result set, print values from the set.
+
+    local idx = 0;		// entry index
+
+    while jdbc_next rkey loop
+	idx = inc idx;
+	local rowdata = jdbc_readfields [rkey, ['MR_exp', 'Name']];
+	write cat ['{}: MR_exp={n:8.3}\tName= {20}\n', idx, rowdata];
+    endloop
+
+	// Clean up: close the result set.
+
+    jdbc_close rkey;
+</pre>
+
+
+<h2> <a name="SVL">SVL Commands</a></h2>
+
+<table>
+<tr>
+<td valign="top">
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_append</a><br />
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_close</a><br />
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_delete</a><br />
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_execute</a><br />
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_fields</a>
+</td>
+
+<td valign="top">
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_next</a><br />
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_nread</a><br />
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_open</a><br />
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_read</a><br />
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_readfields</a><br />
+</td>
+
+<td valign="top">
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_readlob</a><br />
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_seek</a><br />
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_scroll</a><br />
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_tell</a><br />
+<a class="svl" href="../fcnref/jdbc_fcn.htm">jdbc_write</a>
+</td>
+
+</tr>
+</table>
+
+
+<p><a href="../../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

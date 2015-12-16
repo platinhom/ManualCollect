@@ -1,0 +1,495 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--	ph4srch.htm	ph4_Search[]
+!!
+!!	15-jan-2009 (al) added some filler
+!!	11-sep-2007 (ms) ID->sequence
+!!	03-aug-2007 (ms) updated opt fields and call syntax for 2007.08
+!!	20-mar-2007 (ms) removed ph4field references
+!!-->
+
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions ph4_Search>
+
+<title>Pharmacophore Search Functions</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Pharmacophore Search Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    <a class="fcnlink" href="#ph4_Search">ph4_Search</a> ['dbfile.mdb', 'query.ph4', options];
+</pre>
+
+<h2>Description</h2>
+
+<p>
+<tt>ph4_Search</tt> takes a pharmacophore query file
+(<tt>'query.ph4'</tt>) and
+performs a pharmacophore search on an input database
+(<tt>'dbfile.mdb'</tt>).
+When invoked with a null argument (or some of its arguments missing),
+<tt>ph4_Search</tt> displays a graphical interface for specifying the
+search parameters and interactive repeated pharmacophore searching.
+</p>
+
+<p>
+The search can be controlled using <tt>options</tt>,
+which is a set of optional parameters.
+See <a href="#Search_Options">below</a> for a complete
+listing of all search parameters.  In the following, the most
+commonly used options are presented.
+</p>
+
+<p><b>Input Molecule Field.</b>
+The molecule field in the input database can be specified.
+By default, the first database field of type <tt>'molecule'</tt>
+is used, but this can be overridden, e.g.
+</p>
+
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [molfield:'ligand2']]
+</pre>
+
+<p><b>Entries.</b>
+Usually, the entire input database is processed.  Sometimes,
+however, only part of the database need be searched.  In this
+case, the <tt>firstent</tt> or <tt>firstentkey</tt> options can
+be used to specify the entry row or key at which to begin
+searching, and <tt>lastent</tt> to specify the number of
+entry rows to search.  For example,
+</p>
+
+<blockquote>
+<dl>
+
+<dt>Search from entry row 10 to the end of the database.</dt>
+<dd>
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [firstent: 10]]
+</pre>
+</dd>
+
+<dt>Search from 1 to entry 25.</dt>
+<dd>
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [lastent: 25]]
+</pre>
+</dd>
+
+<dt>Search from 10 to entry 25 (firstent + lastent - 1).</dt>
+<dd>
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [firstent:10, lastent: 15]]
+</pre>
+</dd>
+
+</dl>
+</blockquote>
+
+<p>
+When working with an "unpacked" conformer database, there is one
+conformation per entry: the conformers of each different molecule
+in the input database span multiple entries.  In this case,
+it may be useful to specify the number of distinct molecules to
+be searched:
+</p>
+
+<blockquote>
+<dl>
+
+<dt>Search 100 molecules starting from the molecule 1 of the database.</dt>
+<dd>
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [nmol:100]]
+</pre>
+</dd>
+
+<dt>Search 100 molecules starting from the molecule 25 of the database.</dt>
+<dd>
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [skipmol: 24, nmol:100]]
+</pre>
+</dd>
+
+</dl>
+</blockquote>
+
+<p>
+The <tt>firstent</tt> and <tt>firstentkey</tt> options can be combined with
+the number of molecule options, in which case the number of molecules
+skipped/processed is calculated from the specified first entry.
+</p>
+
+<p>In a "packed" conformer database, each entry is a different molecule
+(the conformations are encoded into a separate conformation field),
+thus the number of molecules is equal to the number of entries.
+</p>
+
+<p><b>Molecule Sequence Number.</b>
+In the case of an unpacked molecular database, molecule numbers are
+either calculated at runtime from the molecule field, or are supplied
+as a pre-calculated field in the input database.  If a pre-calculated
+molecule number field exists, it can be used as follows:
+
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [mseqfield:'seqno']]
+</pre>
+
+<p>The default name is <tt>mseq</tt>.
+</p>
+
+<p>
+<b>Note:</b> If the molecule sequence number field is to be ignored
+or does not exist, <tt>ph4_Search</tt> must be instructed not to use
+the field (the default is to use it):
+</p>
+
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [use_mseqfield:0]]
+</pre>
+
+<p><b>Number of hits.</b>
+The pharmacophore search can be restricted to produce a limited number of
+hits:
+</p>
+
+<blockquote>
+<dl>
+
+<dt>When 500 hits are found for a given conformation, skip the rest.</dt>
+<dd>
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [maxconfhits:500]]
+</pre>
+</dd>
+
+<dt>When 500 hits are found for a given molecule, skip the rest.</dt>
+<dd>
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [maxmolhits:5000]]
+</pre>
+</dd>
+
+<dt>When 15000 entries have been written to the output database, stop.</dt>
+<dd>
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [out_maxent:15000]]
+</pre>
+</dd>
+
+</dl>
+</blockquote>
+
+<p><b>Output.</b>
+The output database and fields can be specified:
+</p>
+
+<blockquote>
+<dl>
+
+<dt>Write output to database <tt>mysearch_out.mdb</tt>, overwriting
+the file if it already existed.
+</dt>
+<dd>
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [
+	out_dbfile:'mysearch_out.mdb',
+	out_append: 0			// 0=overwrite 1=append
+    ]]
+</pre>
+</dd>
+
+<dt>Write the output molecules to the field <tt>Hits</tt> (default is
+<tt>mol</tt>).</dt>
+<dd>
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [o_molfield: 'Hits']];
+</pre>
+</dd>
+
+<dt>Copy fields <tt>IC50</tt> and <tt>Vendor</tt> to output database.</dt>
+<dd>
+<pre>
+    ph4_Search ['dbfile.mdb', 'query.ph4', [o_copyfields: ['IC50','Vendor']]];
+</pre>
+</dd>
+
+</dl>
+</blockquote>
+
+<a name="Search_Options"></a>
+<p><hr noshade="noshade" />
+
+<h3>Search Options</h3>
+
+<p>The complete list of search parameters is as follows:
+
+<p>
+<dl>
+<dt>
+<tt>'dbfile.mdb'</tt>
+
+<dd> The input conformational database of molecular conformations.
+The input can be specified as a single filename or a list of filenames.
+The conformations can be stored either in the molecule field, one
+conformation per entry, or in a separate field of all conformations,
+one molecule per entry.  If stored in the molecule field, conformations
+of the same molecule must be stored in consecutive entries.
+
+<p><dt>
+<tt>'query.ph4'</tt>
+
+<dd> The filename of the pharmacophore query to be used to search the input
+database.
+
+<p><dt>
+<tt>options</tt>
+
+<dd>Vector of optional attribute-value colon-separated pairs:
+
+<p><blockquote>
+
+<dl>
+<p><dt>
+<tt>action: num</tt>
+
+<dd>The method of reporting hits in the Database Viewer of the input database.
+If the input database is not open in a Database Viewer or the value of the
+argument is not specified, no action is taken.  Otherwise, hits are reported as
+follows:
+
+<p>
+0 - No action taken [default]<br />
+1 - Hit entries are selected<br />
+2 - Hit entries are shown, missed entries are hidden<br />
+
+<p><dt>
+<tt>matchsize: num</tt>
+
+<dd>The minimum match size.  If specified, this number overrides the minimum
+match size stored with the query.  If the value is positive, it specifies the
+minimum number of features that must be matched.  If the value is negative, its
+absolute value specifies the maximum number of features that may be unmatched.
+If the value is zero, all features must be matched.  If the value is not
+specified then the query's match size is used.
+
+<p><dt>
+<tt>esel: num</tt>
+
+<dd> A restriction on the input entries.  If the input database is not open in
+a Database Viewer or the value of the argument is not specified, no restriction
+applies.  Otherwise, the input is restricted as follows:
+
+<p>
+0 - No restriction [default]<br />
+1 - Only selected entries will be searched<br />
+2 - Only visible entries will be searched<br />
+
+<p><dt>
+<tt>molfield: 'fieldname'</tt>
+
+<dd> The name of the molecule (ligand) field. If the empty token (<tt>''</tt>)
+is given then the first database field of type <tt>molecule</tt> will be used.
+The default is <tt>''</tt>.
+
+<p><dt>
+<tt>mseqfield: 'fieldname'</tt><br />
+<tt>use_mseqfield: flag</tt>
+
+<dd> The name of the input field containing a pre-calculated molecule
+sequence number and a flag indicating whether or not the field is to be
+used in the calculation. If the flag is nonzero, the search will use the
+molecule sequence field specified.  The default field is name <tt>'mseq'</tt>
+and the default flag is 1. If the flag is zero then the field is not
+used and the molecules will be indexed at runtime.
+
+
+<p><dt>
+<tt>out_dbfile: 'filename'</tt><br />
+<tt>use_out_dbfile: flag</tt>
+
+<dd> The name of the output database. The default name is <tt>'ph4out.mdb'</tt>
+and the default flag is 1.
+
+<p><dt>
+<tt>out_dbv: flag</tt>
+
+<dd> If the argument is non-zero, the search will open the output database in
+a Database Viewer. The default value is 0.
+
+<p><dt>
+<tt>out_append: num</tt>
+
+<dd> The mode in which to open the output database.
+
+<p>
+0 - Overwrite; any previous data will be lost (default)<br />
+1 - Append; any new data will be written to the end of the database<br />
+
+<p><dt>
+<tt>report_file: 'filename'</tt>
+
+<dd> The name or the filehandle of the report file.  If the filename is not
+specified or set to the empty vector then no report file will be written.
+
+<p><dt>
+<tt>firstentkey: entry_key</tt>
+
+<dd> If non-zero, the mdb entry key of the first entry to process
+in the input database.  All previous entries are skipped.
+The default value is 0 (i.e. don't skip any entries).
+
+<p><dt>
+<tt>firstent: num</tt>
+
+<dd> The first entry number (row) to process in the input database.  All
+previous entries are skipped. The default value is 1.  If both
+<tt>firstentkey</tt> and <tt>firstent</tt> are specified, then the search
+starts at (<tt>firstent</tt>-1)-st entry after the entry
+<tt>firstentkey</tt>.
+
+<p><dt>
+<tt>lastent: num</tt>
+
+<dd> The last entry number (row) to process in the input database.  All
+subsequent entries are skipped.  The default is the last entry in the
+database.  If both <tt>firstentkey</tt> and <tt>lastent</tt> are specified,
+then the search ends at (<tt>lastent</tt>-1)-st entry after the entry
+<tt>firstentkey</tt>.
+
+<p><dt>
+<tt>skipmol: num</tt>
+
+<dd> The number of molecules to be skipped at the beginning of the search.
+If either <tt>firstentkey</tt> or <tt>firstent</tt> is specified,
+then the molecules will be skipped starting from the first entry.
+
+<p><dt>
+<tt>nmol: num</tt>
+
+<dd> The number of molecules to be searched.
+If <tt>lastent</tt> is specified, then the search stops when either
+limit is reached.
+
+<p><dt>
+<tt>maxconfhits: num</tt>
+
+<dd> Maximum number of hits to calculate and output per conformation.  All
+further possible hits on the same conformation are skipped.  The default value
+is 1000.
+
+<p><dt>
+<tt>maxmolhits: num</tt>
+
+<dd> Maximum number of hits to calculate and output per molecule.  All further
+possible hits on the same molecule are skipped.  The default value is 100000.
+
+<p><dt>
+<tt>out_maxent: num</tt>
+
+<dd> The maximum number of entries to create in the output database.  All
+further possible hits are skipped. If not specified then there is no maximum
+number of entries. This attribute is left unspecified by default.
+
+<p><dt>
+<tt>o_copyfields: ['field1', 'field2',...]</tt> 
+
+<dd> Vector of tokens specifying the names of the input database fields that
+should be copied to the output database. The default value is <tt>[]</tt>,
+no fields are copied.
+
+<p><dt>
+<tt>o_mseqfield: 'fieldname'</tt><br />
+<tt>use_o_mseqfield: flag</tt>
+
+<dd> The name and usage flag of the molecule sequence field. The usage
+flag indicates whether or not the field will be generated. The molecule
+sequence field contains an integer value that has the properties of a
+molecule sequence. The value of the field starts at 1 and is incremented
+with every new hit molecule. The default field name is <tt>'mseq'</tt>
+and the default flag is 1.
+
+<p><dt>
+<tt>o_molfield: 'fieldname'</tt><br />
+<tt>use_o_molfield: flag</tt>
+
+<dd> The name and usage flag of the molecule field. The usage flag indicates
+whether or not the field will be generated. The molecule field contains the
+conformation found in the input molecule field, rotated and translated to match
+the pharmacophore query. The default field name is <tt>'mol'</tt> and the
+default flag is 1.
+
+<p><dt>
+<tt>o_rmsdfield: 'fieldname'</tt><br />
+<tt>use_o_rmsdfield: flag</tt>
+
+<dd> The name and usage flag of the RMSD field. The usage flag indicates
+whether or not the field will be generated. The RMSD field contains the
+root-mean-square distance between the query features and their matching ligand
+target points. The default field name is <tt>'rmsd'</tt> and the default flag
+is 1.
+
+<p><dt>
+<tt>o_rowfield: 'fieldname'</tt><br />
+<tt>use_o_rowfield: flag</tt>
+
+<dd> The name and usage flag of the row field. The usage flag indicates whether
+or not the field will be generated. The row field contains the entry number of
+the matched conformation in the searched input database. The default field name
+is <tt>'row'</tt> and the default flag is 0.
+
+<p><dt>
+<tt>o_hitmapfield: 'fieldname'</tt><br />
+<tt>use_o_hitmapfield: flag</tt>
+
+<dd> The name and usage flag of the map field. The usage flag indicates whether
+or not the field will be generated. The map field contains a numerical
+representation of the mapping between the query features and their matching
+ligand annotation points.  For each feature of the query, the field stores the
+index of the matched ligand annotation point or 0 if the feature is not matched.
+The default field name is <tt>'hitmap'</tt> and the default flag is 0.
+
+
+</dl></blockquote>
+</dl>
+
+<h2>See Also</h2>
+
+<a href="../../apps/ph4_search.htm">Pharmacophore Search</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

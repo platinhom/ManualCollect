@@ -1,0 +1,1094 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!! 	optfcn.htm
+!! 
+!! 	10-sep-2008 (pl) added FullDEE, Quench, Sample
+!! 	22-mar-2007 (pl) mean field
+!! 	15-sep-2006 (pl) copied from opt_etc.html
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta functions opt_CG, opt_SD, opt_TN, opt_BFGS>
+<meta functions opt_UQO, opt_UQO_MeanField, opt_UQO_DeadEnd>
+<meta functions opt_Quench, opt_UQO_FullDEE, opt_UQO_Sample>
+
+<title>Optimization Functions</title>
+</head>
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Optimization Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    [niter,x,F,g,gnorm] = <a class="fcnlink" href="#opt_CG">opt_CG</a>   [ 'fcn_name', x0, args, options ]
+    [niter,x,F,g,gnorm] = <a class="fcnlink" href="#opt_SD">opt_SD</a>   [ 'fcn_name', x0, args, options ]
+    [niter,x,F,g,gnorm] = <a class="fcnlink" href="#opt_TN">opt_TN</a>   [ 'fcn_name', x0, args, options ]
+    [niter,x,F,g,gnorm] = <a class="fcnlink" href="#opt_BFGS">opt_BFGS</a> [ 'fcn_name', x0, args, options ]
+
+    p           = <a class="fcnlink" href="#opt_UQO_MeanField">opt_UQO_MeanField</a> [ uqo, p,    options ]
+    [uqo, elim] = <a class="fcnlink" href="#opt_UQO_DeadEnd">opt_UQO_DeadEnd</a>   [ uqo, elim, options ]
+
+    [x, F]      = <a class="fcnlink" href="#opt_UQO">opt_UQO</a>           [ uqo,       options ]
+    [x, F]      = <a class="fcnlink" href="#opt_UQO_FullDEE">opt_UQO_FullDEE</a>   [ uqo,       options ]
+    [x, F]      = <a class="fcnlink" href="#opt_UQO_Sample">opt_UQO_Sample</a>    [ uqo, p,    options ]
+    [x, F]      = <a class="fcnlink" href="#opt_UQO_Quench">opt_UQO_Quench</a>    [ uqo, x,    options ]
+
+    uqo = [Iseg, E0, Eself, Eij, Eint]
+</pre>
+
+<h2>Description</h2>
+
+<p>
+The <tt>opt_</tt> functions perform optimization of one kind or another.
+The <tt>opt_CG</tt>, <tt>opt_SD</tt>, <tt>opt_BFGS</tt>, <tt>opt_TN</tt>
+functions perform continuous unconstrained non-linear optimization while
+<tt>opt_UQO</tt> performs a particular discrete quadratic optimization
+over binary vectors.  Each will be described below.
+
+<p><a name="opt_BFGS"></a></p>
+<p><a name="opt_TN"></a></p>
+<p><a name="opt_SD"></a></p>
+<p><a name="opt_CG"></a></p>
+<p><hr noshade="noshade" /></p>
+
+<pre>[niter,x,F,g,gnorm] = <span class="fcndef">opt_CG</span>   [ 'fcn_name', x0, args, options ]
+[niter,x,F,g,gnorm] = <span class="fcndef">opt_SD</span>   [ 'fcn_name', x0, args, options ]
+[niter,x,F,g,gnorm] = <span class="fcndef">opt_TN</span>   [ 'fcn_name', x0, args, options ]
+[niter,x,F,g,gnorm] = <span class="fcndef">opt_BFGS</span> [ 'fcn_name', x0, args, options ]
+</pre>
+
+<p>
+These functions perform unconstrained non-linear optimization of a
+differentiable function using analytic first derivatives.  Each of these
+functions has the same basic structure [Gill&nbsp;1986] [Fletcher&nbsp;1987].
+Let <i>x<sub>k</sub></i> denote the vector of coordinates at step <i>k</i> of
+the procedure and let <i>F</i> be the function to optimize.  Then,
+
+<ol>
+<li>
+<i>Convergence</i>.
+If the convergence criteria are satisfied (see below), then
+<i>x<sub>k</sub></i> is returned.
+<li>
+<i>Search Direction</i>.
+Compute a non-zero vector <i>p<sub>k</sub></i> called the
+<i>search direction</i>.
+<li>
+<i>Step Size</i>.
+Compute a non-zero scalar <i>a</i><sub><i>k</i></sub>, called the
+<i>step size</i>, for which 
+<span class="nobr"><i>F</i>(<i>x<sub>k</sub></i> + <i>a</i><sub><i>k</i></sub>
+<i>p<sub>k</sub></i>) &lt; <i>F</i>(<i>x<sub>k</sub></i>)</span>.
+<li>
+<i>Advance</i>.
+Set <i>x</i><sub><i>k</i>+1</sub> = <i>x<sub>k</sub></i>
+and <i>k</i> = <i>k</i> + 1 and go to Step 1.
+</ol>
+
+<p>
+The step size in Step&nbsp;3 is computed by using a safeguarded bicubic
+interpolation search along the search direction <i>p<sub>k</sub></i>.
+In Step&nbsp;1, the optimization is terminated when any of the following
+three conditions are satisfied:
+
+<ol>
+<li><i>Gradient Test</i>:
+|grad <i>F</i>(<i>x</i><sub><i>k</i></sub>)| &lt; <i>e</i><sub><i>A</i></sub>
+sqrt(<i>n</i>),
+where <i>e</i><sub><i>A</i></sub> is a predefined constant.
+<p>
+<li>
+<i>Iteration Limit Test</i>:
+<i>k</i> &gt; <i>K</i>, where <i>K</i> is a predefined upper 
+limit on the maximum number of iterations.
+<p>
+<li>
+<i>Progress Tests</i>:
+The following three conditions are simultaneously satisfied:
+
+<p><center>
+<i>F</i>(<i>x</i><sub><i>k</i>-1</sub>) - <i>F</i>(<i>x<sub>k</sub></i>)
+        &lt; <i>T</i> (1 + |<i>F</i>(<i>x<sub>k</sub></i>)|)
+
+<br />
+
+|<i>x</i><sub><i>k</i>-1</sub> - <i>x<sub>k</sub></i>| &lt; 
+	<i>T</i><sup> 1/2</sup> (1 + |<i>x<sub>k</sub></i>|)
+
+<br />
+
+|grad <i>F</i>(<i>x<sub>k</sub></i>)| &lt;=
+	<i>T</i><sup> 1/3</sup> (1 + |<i>F</i>(<i>x<sub>k</sub></i>)|)
+</center>
+
+<p>In these conditions, <i>T</i> is a predefined constant indicating the
+number of significant figures in <i>F</i> that are required (the
+<i>function test</i>). For example, if <i>T</i>
+ = 10<sup>-6</sup> then six figures of accuracy are required.</p>
+</li>
+</ol>
+
+<p>
+If the iteration limit is exceeded then it is typically due to a failure
+of the algorithm.  Note that saddle points satisfy criterion 1; the
+input coordinates should  be perturbed slightly and optimization restarted.
+If criterion 3 is satisfied then it is very likely that a local minimum
+has been achieved.
+
+<p>
+The choice of search direction <i>p<sub>k</sub></i> in Step 2 is what
+distinguishes the different nonlinear optimization methods.  The
+Steepest Descent (SD) method (<tt>opt_SD</tt>) always chooses
+<span class="nobr"><i>p<sub>k</sub></i> = - grad <i>F</i>(<i>x<sub>k</sub></i>)</span>;
+that is, the search proceeds along the direction of maximum descent.
+While intuitive, SD is extremely inefficient after a few iterations and
+it is only used when the gradient is extremely high.
+
+The Conjugate Gradients (CG) method (<tt>opt_CG</tt>) improves upon SD by
+choosing the next search direction in a way so as to not undo the progress
+accomplished by the previous step [Gill&nbsp;1986]. CG performs well
+with moderately high gradients; however, it exhibits poor convergence
+properties.
+
+The Broyden-Fletcher-Goldfarb-Shanno (BFGS) method
+(<tt>opt_BFGS</tt>) is an improvement over the CG method and uses an estimate
+of the second derivative to speed up convergence [Fletcher&nbsp;1987].
+
+The Truncated Newton (TN) method (<tt>opt_TN</tt>) is a very efficient
+large-scale nonlinear optimization method known.  It exhibits superlinear
+convergence even in highly nonlinear conditions.  The TN method attempts
+to use curvature information to improve convergence.  The Newton
+direction <i>p</i> satisfies:</p>
+
+<center>
+    <i>G<sub>k</sub></i>(<i>x<sub>k</sub></i>) <i>p</i> =
+	- grad <i>U</i>(<i>x<sub>k</sub></i>)</p>
+</center>
+
+<p>where <i>G<sub>k</sub></i> is the second derivative, or Hessian, of
+<i>F</i>.   These equations are called the Newton equations.
+TN solves the Newton equations approximately using an iterative linear
+equation solver. The iterative linear equation solver (based on the Linear
+Conjugate Gradient method) is terminated after a small number of
+iterations; hence the name Truncated Newton.
+
+<p>The arguments to the different optimizers are the same:
+
+<blockquote>
+<dl>
+<dt><tt>'fcn_name'</tt>
+<dd>The token name of a global function, or the address of a local
+function, to call to evaluate function values and gradients.  The function
+should have the following structure:
+<blockquote><pre>function myfunction [x, args]
+    local  F = ... function value at x;
+    local dF = ... derivative of function at x;
+    return [F, dF];
+endfunction
+</pre></blockquote>
+<p>
+where <tt>x</tt> has the same length as the <tt>x0</tt> argument to the
+<tt>opt_</tt> function
+and <tt>args</tt> is the third argument to the <tt>opt_</tt> function.
+In the above example, one would optimize <tt>myfunction</tt> with a
+call of the form
+<span class="nobr"><tt>opt_TN [#myfunction, x0, args, ...]</tt></span>
+where <tt>x0</tt>
+are the starting coordinates and <tt>args</tt> are arbitrary data for use
+by <tt>myfunction</tt> to evaluate the function value and gradient.
+
+<p>
+<dt><tt>x0</tt>
+<dd>The initial estimate of the optimum, given as a numeric vector.
+
+<p>
+<dt><tt>args</tt>
+<dd>Arbitrary arguments for the function to optimize to use when evaluating
+function values and gradients.
+
+<p>
+<dt><tt>options</tt>
+<dd>
+A tagged vector of options used by the optimizer (see below).
+</dl></blockquote>
+
+<p>
+The return values of the functions are similar.  Each will return a vector
+<tt>[niter,x,F,g,gnorm]</tt> consisting of the number of iterations
+spent in the algorithm (<tt>niter</tt>), the coordinates upon termination
+(<tt>x</tt>), the function value at <tt>x</tt> (<tt>F</tt>), the
+gradient at <tt>x</tt> (<tt>g</tt>) and the norm of <tt>g</tt>
+(<tt>gnorm</tt>).  If <tt>gnorm</tt> is not sufficiently small then it
+is likely that the algorithm failed to converge.
+
+
+<p>
+The <tt>options</tt> argument provides controlling parameters to the
+various methods given in tagged vector form <tt>[attr:value,...]</tt>:
+
+<blockquote><dl>
+<dt><tt>facc:</tt> <i>number</i>
+<dd>Specifies the accuracy (precision) of the computed
+value of the function to be optimized (<tt>fcn_name</tt>).
+Note that <tt>T</tt> is not an estimate of the degree to which the function
+correctly models a real-world situation, but is merely an estimate of the
+numerical accuracy of the computed values. The default value is <tt>1e-12</tt>.
+
+<p>
+<dt><tt>ftest:</tt> <i>number</i>
+<dd>Specifies the convergence test. <tt>r</tt>
+represents the desired number of significant figures in the function
+value at the local minimum. The default is <tt>1e-10</tt>.
+This is the value of <i>T</i> in the <i>Progress Test</i> detailed above.
+
+<p>
+<dt><tt>gtest:</tt> <i>number</i>
+<dd>Specifies the gradient test. If the norm of the
+gradient falls below the given value during the optimization, the
+optimization will stop. The default value of <tt>r</tt> is
+<tt>1e-5</tt>.
+This is the value of <i>e<sub>A</sub></i> in the <i>Gradient Test</i> above.
+
+<p>
+<dt><tt>maxit:</tt> <i>number</i>
+<dd>Specifies the maximum number of major iterations of
+optimization to perform. Each iteration consists of a calculation of
+search direction, a line search, and an update of the estimate of the
+local minimizer <tt>x</tt>. The default value of <tt>n</tt> is
+<tt>1000</tt>.  This is the value of <i>K</i> in the <i>Iteration Limit
+Test</i> above.
+
+<p>
+<dt><tt>maxfeval:</tt> <i>number</i>
+<dd>Specifies the maximum total number of
+evaluations permissible of the function <tt>fcn_name</tt>. If this number
+is exceeded, optimization stops. The default value is <tt>50
+000</tt>.
+
+<p>
+<dt><tt>nsd:</tt> <i>number</i>
+<dd>Specifies the number of initial Steepest Descent
+iterations to perform (not applicable to <tt>opt_SD</tt>). The default
+is <tt>5</tt>.
+
+<p>
+<dt><tt>dump:</tt> <i>number</i>
+<dd>
+Specifies the level of output printing: 0 for no output (the default),
+1 for major iteration output and 2 for full output.
+
+<p>
+<dt><tt>ls_maxstep:</tt> <i>number</i>
+<dd>Specifies the maximum allowable line search
+step size at each iteration. The default is <tt>10</tt>.
+
+<p>
+<dt><tt>checkpoint: 'function_name'</tt>
+<dd>Specifies a function
+(<tt>function_name</tt>) to call at each major iteration that provides a
+way to end the optimization early.  This function is optional.
+If the function <tt>function_name</tt> returns <tt>1</tt>, the
+optimization will terminate, otherwise optimization continues. The
+function should be declared as follows:</p>
+<blockquote><pre>function my_check [iter,x,f,g,gnorm,step,args]
+    // iter is the current iteration
+    // x is an estimate of the minimum
+    // f is the function value at x
+    // g is the gradient at x
+    // gnorm is the norm of the gradient at x
+    // args is auxiliary data
+    ...
+    return 0; 
+endfunction
+</pre></blockquote>
+  
+<p>
+<dt><tt>checkpoint_arg:</tt> <i>value</i>
+<dd>
+Specifies the argument (<tt>value</tt>) to be passed verbatim to the
+checkpoint function (if any) as the checkpoint function's <tt>args</tt>
+parameter. 
+
+</dl>
+</blockquote>
+
+<p>
+<b>Warning!</b> Most of the functions rely on accurate analytical gradients,
+especially <tt>opt_TN</tt>.  If convergence to small gradients cannot be
+achieved then it is quite likely that there is an error computing these
+gradients or that there is a discontinuity in the first derivatives.
+
+<p>
+As simple example, example, consider calculating the vector that has smallest
+squared norm.  One could use <tt>opt_TN</tt> to calculate this value by
+declaring a function similar to
+
+<blockquote><pre>local function my_func [x, args]
+    local value = 0.5 * add sqr x;
+    local gradient = x;
+    return [value, gradient]; 
+endfunction
+</pre></blockquote>
+
+<p>
+and then calling <tt>opt_TN</tt> with
+<blockquote><pre>local [niter,x,f,g,gnorm] = opt_TD [
+    #my_func,      // function to optimize
+    [1,2,-2],      // initial estimate
+    [],            // no arguments to my_func
+    [gtest:1e-6]   // stop when gradient falls below 1e-6
+];
+</pre></blockquote>
+
+<!-- ========================== MEAN FIELD ========================== -->
+
+<p><a name="opt_UQO_MeanField"></a></p>
+<p><hr noshade="noshade" /></p>
+
+<pre>p = <span class="fcndef">opt_UQO_MeanField</span> [ [Iseg, E0, Eself, Eij, Eint], x, options ]
+</pre>
+
+The <tt>opt_UQO_MeanField</tt> function solves weighted mean solution to
+the Unary Quadratic Optimization (UQO) problem which is stated as follows.
+Let <i>G</i> by an <i>n</i> by <i>n</i> symmetric matrix, <i>g</i> an
+<i>n</i>-vector and <i>g</i><sub>0</sub> a scalar.  Let {<i>I<sub>k</sub></i>}
+be an <i>m</i>-partition of {1,...,<i>n</i>}; that is,
+the union of the {<i>I<sub>k</sub></i>} is {1,...,<i>n</i>}, the
+{<i>I<sub>k</sub></i>} are disjoint (non-intersecting) and non-empty.
+The UQO problem is to minimize the function
+<p align=center>
+<i>F</i>(<i>x</i>) = 0.5 <i>x<sup>T</sup></i> <i>G</i> <i>x</i>
+    + <i>g<sup>T</sup></i> <i>x</i> + <i>g</i><sub>0</sub></i>
+</p>
+subject to the constraints that <i>x</i> is in {0,1}<sup><i>n</i></sup>
+(<i>x</i> is binary) and for each <i>k</i> the sum of
+<span class="nobr">{ <i>x<sub>j</sub></i> : <i>j</i> in <i>I<sub>k</sub></i> }</span>
+is 1.  The idea is that each <i>j</i> in <i>I<sub>k</sub></i> represents
+a possible "state" for an "object" <i>k</i>.  Each object can be in exactly
+one state.  Each state of an object interacts with the other objects' states
+according to the quadratic function <i>F</i>.  A solution of the UQO is
+a binary vector <i>x</i> satisfying the constraints that has the
+smallest <i>F</i>(<i>x</i>).
+
+<P>
+The <i>mean field approximation</i> [Lee&nbsp;1994] to the solution is a 
+vector <i>p</i> that satisfies the following equation (with free parameter
+&beta;):
+<p align=center>
+<i>p<sub>k</sub></i> = 
+exp [ - &beta; (<i>Gp</i> + <i>g</i>)<sub><i>k</i></sub> ]
+/
+sum<sub><i>j</i> in <i>I</i>(<i>k</i>) </sub>
+exp [ - &beta; (<i>Gp</i> + <i>g</i>)<sub><i>j</i></sub> ]
+</p>
+<p>
+This vector <i>p</i> minimizes the free energy of a physical system
+in which each alternative in <i>I<sub>k</sub></i> is affected by the
+other alternatives in an average way.  The free parameter &beta;
+is the value of 1/<i>kT</i> with <i>T</i> the temperature and <i>k</i>
+Boltzmann's constant.  In general, there can be multiple solutions to
+the mean field approximation; however, there always
+exists is a value &beta;* such that for all &beta; less
+than &beta;* there is a unique solution to the mean field
+approximation [Labute&nbsp;2006].  The temperature <i>T</i> corresponding
+to &beta;* is called the <i>melting point</i> of the problem.
+Unfortunately, there are no known methods to compute the melting point
+and consequently an upper bound for the free parameter &beta; must be used.
+
+<p>
+The arguments to <tt>opt_UQO_MeanField</tt> are as follows:
+
+<blockquote><dl>
+<dt><tt>Iseg</tt>
+<dd>
+The sizes of the sets in the <i>m</i>-partition; that is,
+<span class="nobr"><tt>Iseg(k)</tt> = |<i>I<sub>k</sub></i>|</span>.
+Furthermore,
+it is assumed that each <i>I<sub>k</sub></i> consists of a contiguous
+sequence of members of {1,...<i>n</i>}.  In other words,
+<i>I</i><sub>1</sub> contains the first |<i>I<sub>k</sub></i>|,
+members of {1,...<i>n</i>}
+<i>I</i><sub>1</sub> contains the next |<i>I<sub>k</sub></i>|
+members of {1,...<i>n</i>}, and so on.
+If <tt>x</tt> is a binary vector then
+<span class="nobr"><tt>s_add [x, Iseg]</tt></span> must be a vector of all ones for
+the constraints to hold.
+<p>
+<dt><tt>E0</tt>
+<dd>The additive constant <i>g</i><sub>0</sub> in the definition of the
+objective function <i>F</i>.
+<p>
+<dt><tt>Eself</tt>
+<dd>The <i>n</i>-vector <i>g</i> in the definition of the objective
+function <i>F</i>.
+<p>
+<dt><tt>Eij</tt><br /><tt>Eint</tt>
+<dd>
+A sparse representation of the symmetric <i>n</i> by <i>n</i> matrix
+<i>G</i> in the definition of the objective function <i>F</i>.
+The length of <tt>Eij</tt> and <tt>Eint</tt> are both <i>n</i>.
+For a given index <tt>r</tt> in {1,...,<i>n</i>} the vector
+<tt>Eij(r)</tt> is a set of indices in {1,...,<i>n</i>}.  The vector
+<tt>Eint(r)</tt> contains a corresponding set of values from <i>G</i>.
+More precisely,
+<span class="nobr"><tt>put [ zero Eself, Eij(r), Eint(r) ]</tt></span>
+is row <tt>r</tt>
+of the matrix <i>G</i>.
+<b>Warning!</b> It is assumed that if <i>i</i> and
+<i>j</i> are in the same <i>I<sub>k</sub></i> then <i>G<sub>ij</sub></i>=0.
+<p>
+<dt><tt>x</tt>
+<dd>An initial approximation to the mean field solution.  If <tt>s</tt> is
+null then 1/|<i>I<sub>k</sub></i>| is used for all members of partition
+<i>k</i>.  The <tt>x</tt> argument should contain non-negative values
+such that <tt>s_add&nbsp;[x,&nbsp;Iseg]</tt> is equal to <tt>[1,1,...]</tt>.
+<p>
+<dt><tt>options</tt>
+<dd>A tagged vector of parameters that affect the performance of the
+algorithm (see below).
+</dl></blockquote>
+
+<p>
+The return value <tt>p</tt> is a mean field approximation similar to <tt>x</tt>
+in that it contains non-negative values
+such that <tt>s_add&nbsp;[p,&nbsp;Iseg]</tt> is equal to <tt>[1,1,...]</tt>.
+
+<p>
+The <tt>options</tt> argument is a tagged vector and contains optional
+parameters that affect the calculation:
+
+<blockquote><dl>
+<dt><tt>beta:</tt> <i>number</i>
+<dd>
+The value of &beta; used in the mean field algorithm.  If a negative
+value is specified then the value of &beta; will be chosen automatically
+to guarantee a unique solution, although the value may be larger than
+the corresponding to the melting point for the problem instance.
+The default is -1.
+<p>
+<dt><tt>maxit:</tt> <i>number</i>
+<dd>
+If more than the given number of iterations have been attempted, the
+algorithm will terminate and the current mean field approximation returned.
+The default is <tt>1000</tt>.
+<p>
+<dt><tt>tol:</tt> <i>number</i>
+<dd>
+A positive value defining the convergence criterion of the iteration
+in addition to the iteration limit.  Smaller values will result in
+more accurate solutions.  The default is 1e-5.
+<p>
+<dt><tt>verbose:</tt> <i>flag</i>
+<dd>
+A boolean value enabling the print of per-iteration convergence information.
+The default is zero (disabled).
+</dl></blockquote>
+
+<p>
+<b>Warning!</b> If <tt>beta</tt> is specified then the uniqueness of the
+solution may not be guaranteed unless the value is greater than temperature
+corresponding to the melting point of the problem.  Additionally, if the
+<tt>Eint</tt> values and/or <tt>Eself</tt> values are very large in
+magnitude then convergence problems may result.
+
+<!-- ========================== DEAD END ========================== -->
+
+<p><a name="opt_UQO_DeadEnd"></a></p>
+<p><hr noshade="noshade" /></p>
+
+<pre>[[Iseg,E0,Eself,Eij,Eint],elim] = <span class="fcndef">opt_UQO_DeadEnd</span> [[Iseg,E0,Eself,Eij,Eint],elim,options]
+</pre>
+
+<p>
+The <tt>opt_UQO_DeadEnd</tt> function eliminates alternatives in a particular
+instance of the Unary Quadratic Optimization UQO (UQO) problem which is stated
+as follows.
+
+Let <i>G</i> by an <i>n</i> by <i>n</i> symmetric matrix, <i>g</i> an
+<i>n</i>-vector and <i>g</i><sub>0</sub> a scalar.  Let {<i>I<sub>k</sub></i>}
+be an <i>m</i>-partition of {1,...,<i>n</i>}; that is,
+the union of the {<i>I<sub>k</sub></i>} is {1,...,<i>n</i>}, the
+{<i>I<sub>k</sub></i>} are disjoint (non-intersecting) and non-empty.
+The UQO problem is to minimize the function
+<p align=center>
+<i>F</i>(<i>x</i>) = 0.5 <i>x<sup>T</sup></i> <i>G</i> <i>x</i>
+    + <i>g<sup>T</sup></i> <i>x</i> + <i>g</i><sub>0</sub></i>
+</p>
+subject to the constraints that <i>x</i> is in {0,1}<sup><i>n</i></sup>
+(<i>x</i> is binary) and for each <i>k</i> the sum of
+<span class="nobr">{ <i>x<sub>j</sub></i> : <i>j</i> in <i>I<sub>k</sub></i> }</span>
+is 1.  The idea is that each <i>j</i> in <i>I<sub>k</sub></i> represents
+a possible "state" for an "object" <i>k</i>.  Each object can be in exactly
+one state.  Each state of an object interacts with the other objects' states
+according to the quadratic function <i>F</i>.  A solution of the UQO is
+a binary vector <i>x</i> satisfying the constraints that has the
+smallest <i>F</i>(<i>x</i>).
+
+<p>
+Alternatives can be eliminated with <i>dead end elimination</i>; that is,
+eliminated when they cannot possibly be part of an optimal UQO solution
+or within a specified cutoff window of the global minimum.  The
+Goldstein Criterion [Goldstein&nbsp;1994] is, perhaps, the simplest effective
+dead end elimination criterion: suppose that <i>r</i> and <i>s</i>
+are two alternatives of a segment <i>I<sub>k</sub></i> and if
+
+<p><center>
+<i>g</i>(<i>r</i>) - <i>g</i>(<i>s</i>) - 
+    sum<sub><i>j</i>&ne;<i>k</i></sub>
+    min {
+	<i>G<sub>ru</sub></i> - <i>G<sub>su</sub></i>
+	| <i>u</i> in <i>I<sub>j</sub></i>
+    }
+> <i>c</i> 
+</center>
+
+<p>
+then alternative <i>r</i> cannot be part of a solution that has 
+<i>F</i>&nbsp;&le;&nbsp;<i>F</i><sub>min</sub>&nbsp;+&nbsp;<i>c</i>.
+
+<p>
+The <tt>opt_UQO_DeadEnd</tt> function has the following arguments:
+
+<blockquote><dl>
+<dt><tt>Iseg</tt>
+<dd>
+The sizes of the sets in the <i>m</i>-partition; that is,
+<span class="nobr"><tt>Iseg(k)</tt> = |<i>I<sub>k</sub></i>|</span>.
+Furthermore,
+it is assumed that each <i>I<sub>k</sub></i> consists of a contiguous
+sequence of members of {1,...<i>n</i>}.  In other words,
+<i>I</i><sub>1</sub> contains the first |<i>I<sub>k</sub></i>|,
+members of {1,...<i>n</i>}
+<i>I</i><sub>1</sub> contains the next |<i>I<sub>k</sub></i>|
+members of {1,...<i>n</i>}, and so on.
+If <tt>x</tt> is a binary vector then
+<span class="nobr"><tt>s_add [x, Iseg]</tt></span> must be a vector of all ones for
+the constraints to hold.
+<p>
+<dt><tt>E0</tt>
+<dd>The additive constant <i>g</i><sub>0</sub> in the definition of the
+objective function <i>F</i>.
+<p>
+<dt><tt>Eself</tt>
+<dd>The <i>n</i>-vector <i>g</i> in the definition of the objective
+function <i>F</i>.
+<p>
+<dt><tt>Eij</tt><br /><tt>Eint</tt>
+<dd>
+A sparse representation of the symmetric <i>n</i> by <i>n</i> matrix
+<i>G</i> in the definition of the objective function <i>F</i>.
+The length of <tt>Eij</tt> and <tt>Eint</tt> are both <i>n</i>.
+For a given index <tt>r</tt> in {1,...,<i>n</i>} the vector
+<tt>Eij(r)</tt> is a set of indices in {1,...,<i>n</i>}.  The vector
+<tt>Eint(r)</tt> contains a corresponding set of values from <i>G</i>.
+More precisely,
+<span class="nobr"><tt>put [ zero Eself, Eij(r), Eint(r) ]</tt></span> is
+row <tt>r</tt> of the matrix <i>G</i>.
+<b>Warning!</b> It is assumed that if <i>i</i> and
+<i>j</i> are in the same <i>I<sub>k</sub></i> then <i>G<sub>ij</sub></i>=0.
+<p>
+<dt><tt>elim</tt>
+<dd>
+An intial vector of flags indicating which alternatives are eliminated (0)
+and which are active (non-zero).
+<p>
+<dt><tt>options</tt>
+<dd>A tagged vector of parameters that affect the performance of the
+algorithm (see below).
+</dl></blockquote>
+
+<p>
+The return values are <tt>[Iseg,E0,Eself,Eij,Eint]</tt> encoding the modified
+problem in which eliminated alternatives have been removed from the
+<tt>[Eij,Eint]</tt> sparse matrix and <tt>Eself</tt> values have been set
+to <tt>REAL_MAX</tt>; and <tt>elim</tt> is the updated mask of eliminated
+alternatives (1 for eliminated and 0 for active).
+
+<p>
+The <tt>options</tt> argument is a tagged vector and contains optional
+parameters that affect the calculation:
+
+<blockquote><dl>
+<dt><tt>cutoff:</tt> <i>number</i>
+<dd>
+Alternatives will be eliminated if they cannot possibly be part of a
+solution that has
+<i>F</i>&nbsp;&le;&nbsp;<i>F</i><sub>min</sub>&nbsp;+&nbsp;<i>c</i>.
+The default is 0.
+<p>
+<dt><tt>elimsingleton:</tt> <i>flag</i>
+<dd>
+Alternative groups with only one uneliminated alternative will be eliminated
+from the interaction matrix <tt>Eij</tt> and <tt>Eint</tt> without changing
+the objective function.  The default is 1.
+<p>
+<dt><tt>maxit:</tt> <i>number</i>
+<dd>
+If more than the given number of iterations to eliminate alternatives, the
+algorithm will terminate and the alternatives will be returned.
+The default is 2<sup>52</sup>.
+<p>
+<dt><tt>verbose:</tt> <i>flag</i>
+<dd>
+A boolean value enabling the print of per-iteration information.
+The default is zero (disabled).
+</dl></blockquote>
+
+<p>
+<b>Note!</b> If <tt>maxit</tt> is set to zero then the
+<tt>opt_UQO_DeadEnd</tt> can be used to rapidly remove alternatives given the
+initial <tt>elim</tt> mask.
+
+<!-- ========================== UQO ========================== -->
+
+<p><a name="opt_UQO"></a></p>
+<p><hr noshade="noshade" /></p>
+
+<pre>[x, F] = <span class="fcndef">opt_UQO</span> [ [Iseg, E0, Eself, Eij, Eint], options ]
+</pre>
+
+<p>
+The <tt>opt_UQO</tt> function solves the Unary Quadratic Optimization
+UQO problem returning an optimal solution and (possibly) enumerating all
+"good" solutions.  The UQO problem is the following.
+
+Let <i>G</i> by an <i>n</i> by <i>n</i> symmetric matrix, <i>g</i> an
+<i>n</i>-vector and <i>g</i><sub>0</sub> a scalar.  Let {<i>I<sub>k</sub></i>}
+be an <i>m</i>-partition of {1,...,<i>n</i>}; that is,
+the union of the {<i>I<sub>k</sub></i>} is {1,...,<i>n</i>}, the
+{<i>I<sub>k</sub></i>} are disjoint (non-intersecting) and non-empty.
+The UQO problem is to minimize the function
+<p align=center>
+<i>F</i>(<i>x</i>) = 0.5 <i>x<sup>T</sup></i> <i>G</i> <i>x</i>
+    + <i>g<sup>T</sup></i> <i>x</i> + <i>g</i><sub>0</sub></i>
+</p>
+subject to the constraints that <i>x</i> is in {0,1}<sup><i>n</i></sup>
+(<i>x</i> is binary) and for each <i>k</i> the sum of
+<span class="nobr">{ <i>x<sub>j</sub></i> : <i>j</i> in <i>I<sub>k</sub></i> }</span>
+is 1.  The idea is that each <i>j</i> in <i>I<sub>k</sub></i> represents
+a possible "state" for an "object" <i>k</i>.  Each object can be in exactly
+one state.  Each state of an object interacts with the other objects' states
+according to the quadratic function <i>F</i>.  A solution of the UQO is
+a binary vector <i>x</i> satisfying the constraints that has the
+smallest <i>F</i>(<i>x</i>).
+<p>
+The UQO is a combinatorial problem and is NP-hard.  Consequently all methods
+to solve the UQO are fundamentally brute force in nature.
+The <tt>opt_UQO</tt> function enumerates all possible solutions of the UQO
+with a depth-first tree search and prunes the search tree for efficiency.
+A <i>mean field</i> technique is used to order the tree so that good solutions
+are likely to be found first.  However, some tuning of the parameters is
+required if reasonable efficiency is to be achieved.  Even with such tuning,
+typical large scale problems will require premature termination or
+approximation techniques which cannot guarantee optimal solutions.
+
+<p>
+The arguments to <tt>opt_UQO</tt> are as follows:
+
+<blockquote><dl>
+<dt><tt>Iseg</tt>
+<dd>
+The sizes of the sets in the <i>m</i>-partition; that is,
+<span class="nobr"><tt>Iseg(k)</tt> = |<i>I<sub>k</sub></i>|</span>.
+Furthermore,
+it is assumed that each <i>I<sub>k</sub></i> consists of a contiguous
+sequence of members of {1,...<i>n</i>}.  In other words,
+<i>I</i><sub>1</sub> contains the first |<i>I<sub>k</sub></i>|,
+members of {1,...<i>n</i>}
+<i>I</i><sub>1</sub> contains the next |<i>I<sub>k</sub></i>|
+members of {1,...<i>n</i>}, and so on.
+If <tt>x</tt> is a binary vector then
+<span class="nobr"><tt>s_add [x, Iseg]</tt></span> must be a vector of all ones for
+the constraints to hold.
+<p>
+<dt><tt>E0</tt>
+<dd>The additive constant <i>g</i><sub>0</sub> in the definition of the
+objective function <i>F</i>.
+<p>
+<dt><tt>Eself</tt>
+<dd>The <i>n</i>-vector <i>g</i> in the definition of the objective
+function <i>F</i>.
+<p>
+<dt><tt>Eij</tt><br /><tt>Eint</tt>
+<dd>
+A sparse representation of the symmetric <i>n</i> by <i>n</i> matrix
+<i>G</i> in the definition of the objective function <i>F</i>.
+The length of <tt>Eij</tt> and <tt>Eint</tt> are both <i>n</i>.
+For a given index <tt>r</tt> in {1,...,<i>n</i>} the vector
+<tt>Eij(r)</tt> is a set of indices in {1,...,<i>n</i>}.  The vector
+<tt>Eint(r)</tt> contains a corresponding set of values from <i>G</i>.
+More precisely,
+<span class="nobr"><tt>put [ zero Eself, Eij(r), Eint(r) ]</tt></span> is
+row <tt>r</tt> of the matrix <i>G</i>.
+<b>Warning!</b> It is assumed that if <i>i</i> and
+<i>j</i> are in the same <i>I<sub>k</sub></i> then <i>G<sub>ij</sub></i>=0.
+<p>
+<dt><tt>options</tt>
+<dd>A tagged vector of parameters that affect the performance of the
+algorithm (see below).
+</dl></blockquote>
+
+<p>
+The function of <tt>opt_UQO</tt> is equivalent to the following recursive
+procedure (in which <i>I</i>(<i>r</i>) denotes the unique subset <i>I</i> that
+contains <i>r</i>):
+
+<blockquote><pre>function Search [iter, r, x, best_F, best_x]</tt>
+    if all members of <tt>x</tt> are non-zero then
+	if F(x) < best_F then [best_F,best_x] = [x, F(x)]; endif
+	if F(x) <= best_F + cutoff then Output [x, F(x)]; endif
+	return [best_F, best_x];
+    endif
+
+    let <tt>s</tt> be the smallest index in {<tt>r+1</tt>,...,<tt>n</tt>} such that <tt>x(</tt><i>I</i>(<tt>s</tt>)<tt>)</tt> is zero
+    if no such s exists then return [best_F, best_x]; endif
+    set <tt>x(</tt><i>I</i>(<tt>j</tt>)<tt>)</tt> = <tt>s</tt>
+
+    compute a lower bound L such that L is less than or equal the optimal value
+    assuming the partial assignment contained in x
+
+    if L > best_F then return [best_F, best_x]; endif
+    return Search [iter+1, s, x, best_F, best_x];
+endfunction
+</pre></blockquote>
+
+<p>
+when invoked with <tt>Search [0, rep[0,n], Inf, rep[0,n]]</tt>.  The above
+procedure outputs all solutions within the <tt>cutoff</tt> threshold of
+the optimal <i>F</i>.  The lower bound <tt>L</tt>
+is obtained from the entries of <tt>Eint</tt> and <tt>Eself</tt> by
+assuming the most optimistic case for each unassigned component of <tt>x</tt>
+without regard to adverse interactions between the unassigned components
+of <tt>x</tt>.
+
+As specified above, the <tt>Search</tt> function will generally search
+a large portion of the search space.  This is because the calculation of
+the lower bound <tt>L</tt> is necessarily (for speed) quite approximate.
+While it is possible to obtain rather good bounds with more complex
+procedures (e.g., [Chazelle&nbsp;2004]) these procedures generally entail
+a prohibitive computational cost.
+
+<p>
+The approach taken in <tt>opt_UQO</tt> is to use the <i>mean field
+approximation</i> to order the selection of indices in the search for
+<tt>s</tt> in the above <tt>Search</tt> procedure.  A probability vector
+<i>p</i> is calculated that is intended to reflect the likelihood that
+a particular index <tt>s</tt> will appear in a minimizer of <i>F</i>
+(see <tt>opt_UQO_MeanField</tt>).
+
+The probabilities are approximate and their effect on performance is
+empirical; however, the mean field tends to order the selection of indices
+<tt>s</tt> so as to produce good solutions earlier than bad solutions.
+By selecting values of <tt>s</tt> that have high probabilities
+<tt>p(s)</tt> first the good solutions will be output earlier.  This means
+that premature termination of <tt>opt_UQO</tt> is a viable strategy in many
+instances.
+In any event, using the mean field approximation as a search ordering does
+not alter the correctness of the <tt>opt_UQO</tt> procedure - only its
+performance in emitting good solutions early.
+
+<p>
+The <tt>options</tt> argument to <tt>opt_UQO</tt> is a tagged vector
+with the following attribute-value pairs considered:
+
+<blockquote><dl>
+<p>
+<dt><tt>cutoff:</tt> <i>number</i>
+<dd>
+As the search proceeds, all solutions with <tt>F(x)</tt> less than or equal
+to <tt>Emin&nbsp;+&nbsp;cutoff</tt> will be output (where <tt>Emin</tt> is the
+smallest value of <tt>F</tt> encountered).  The default is 0.
+<b>Warning!</b> Upon termination solutions with energy greater then
+the global minimum of <i>F</i> plus the <tt>cutoff</tt> may have been output.
+
+<p>
+<dt><tt>deadend</tt> <i>flag</i>
+<dd>
+If true then <tt>opt_UQO_DeadEnd</tt> will be used to perform dead end
+elimination.  The default is 1.
+ 
+<p>
+<dt><tt>emit_fcn:</tt> <i>function_name</i>
+<dt><tt>emit_fcn_arg:</tt> <i>value</i>
+<dd>
+Configurations are output to a given function specified by
+<tt>emit_fcn</tt> (either the token name of a global function or the
+address of a local function).  The function should be declared as follows
+<blockquote><pre>function my_function [x, F, iter, emit_fcn_arg]
+    // x(k) is the selected index of set I[k], 1 <= k <= length Iseg
+    // F is the value of F(x)
+    // iter is the iteration number of the output
+    // arg is the verbatim value of options.emit_fcn_arg
+    return 0;
+endfunction
+</pre></blockquote>
+<p>
+If the <tt>emit_fcn</tt> returns true (non-zero) then the <tt>opt_UQO</tt>
+procedure will be terminated (providing a way to terminate the algorithm
+early).
+
+<p>
+<dt><tt>maxit:</tt> <i>number</i>
+<dd>
+If more than the given number of evaluations of the lower bound <tt>L</tt>
+in the above algorithm have been performed the procedure will be terminated.
+The default is 2<sup>52</sup>.
+
+<p>
+<dt><tt>maxnoemit:</tt> <i>number</i>
+<dd>
+If more than the given number of evaluations of the lower bound <tt>L</tt>
+in the above algorithm have been performed since the occasion of an output of a
+configuration then the procedure will be terminated.
+The default is 2<sup>52</sup>.
+
+<p>
+<dt><tt>beta:</tt> <i>number</i>
+<dd>
+The value of &beta; used in the mean field algorithm
+(see <tt>opt_UQO_MeanField</tt>).  If a negative value is specified then the
+value of &beta; will be chosen automatically to guarantee a unique solution,
+although the value may be larger than the corresponding to the melting
+point for the problem instance.  The default is -1.
+
+<p>
+<dt><tt>verbose:</tt> <i>flag</i>
+<dd>If nonzero then information will be printed to the CLI during the
+calculation.  The default is 0.
+</dl></blockquote>
+
+<p>
+<b>Warning!</b> The default values of the <tt>opt_UQO</tt> options are such
+that there is a guaranteed exhaustive examination of the search space.
+Typical instances of a call to <tt>opt_UQO</tt> should specify a reasonably
+small value of <tt>maxnoemit</tt>, say, 50000, to terminate the algorithm
+prematurely; however, this setting will not guarantee correctness.
+
+<p>
+The return values of <tt>opt_UQO</tt> are the best encountered configuration
+<tt>[x,F]</tt> where <tt>x(k)</tt> is the selected index of set
+<i>I<sub>k</sub></i> and <tt>F</tt> is the value of <i>F</i> at <tt>x</tt>.  
+The returned <tt>x</tt> may be converted to a binary vector with
+<span class="nobr"><tt>put [zero Eself, x, 1]</tt></span>.
+
+<!-- ============================= opt_UQO_FullDEE ======================== -->
+
+<p><a name="opt_UQO_FullDEE"></a></p>
+<p><hr noshade="noshade" /></p>
+
+<pre>[x, F] = <span class="fcndef">opt_UQO_FullDEE</span> [ [Iseg, E0, Eself, Eij, Eint], options ]
+</pre>
+
+<p>
+The <tt>opt_UQO_FullDEE</tt> performs repeated applications of
+<tt>opt_UQO_DeadEnd</tt> and state outer product merging to solve the
+Unary Quadratic Optimization problem.  
+The <tt>[Iseg,E0,Eself,Eij,Eint]</tt> argument is interpreted in the
+same manner as in <tt>opt_UQO</tt>.
+The return value is the solution, <tt>x</tt>, of minimum energy, <tt>F</tt>
+(as in <tt>opt_UQO</tt>).
+The <tt>options</tt> argument is a tagged vector
+<blockquote><dl>
+<dt><tt>verbose</tt>
+<dd>If nonzero then information will be printed to the CLI during the
+calculation.  The default is 0.
+</dl></blockquote>
+<p>
+<b>Warning!</b> Because states are combined and combinatorially expanded,
+care should be taken when using <tt>opt_UQO_FullDEE</tt>.  Memory requirements
+may become prohibitively large.
+
+<!-- ============================= opt_UQO_Sample ========================= -->
+
+<p><a name="opt_UQO_Sample"></a></p>
+<p><hr noshade="noshade" /></p>
+
+<pre>[x, F] = <span class="fcndef">opt_UQO_Sample</span> [ [Iseg, E0, Eself, Eij, Eint], p, options ]
+</pre>
+
+<p>
+The <tt>opt_UQO_Sample</tt> function performs random sampling of solutions
+to a Unary Quadratic Optimization problem specified by
+<tt>[Iseg,E0,Eself,Eij,Eint]</tt> (interpreted in the
+same manner as in <tt>opt_UQO</tt>).
+Solution vectors are sampled according to a probability density <tt>p</tt>
+such as is returned by <tt>opt_UQO_MeanField</tt>.  If <tt>p</tt> is
+the null vector, <tt>opt_UQO_MeanField</tt> is used to obtain the
+probability density.
+The <tt>options</tt> argument is a tagged vector:
+
+<blockquote><dl>
+<p>
+<dt><tt>cutoff:</tt> <i>number</i>
+<dd>
+As the sampling proceeds, all solutions with <tt>F(x)</tt> less than or equal
+to <tt>Emin&nbsp;+&nbsp;cutoff</tt> will be output (where <tt>Emin</tt> is the
+smallest value of <tt>F</tt> encountered).  The default is 0.
+<b>Warning!</b> Upon termination solutions with energy greater then
+the global minimum of <i>F</i> plus the <tt>cutoff</tt> may have been output.
+
+<p>
+<dt><tt>emit_fcn:</tt> <i>function_name</i>
+<dt><tt>emit_fcn_arg:</tt> <i>value</i>
+<dd>
+Configurations are output to a given function specified by
+<tt>emit_fcn</tt> (either the token name of a global function or the
+address of a local function).  The function should be declared as follows
+<blockquote><pre>function my_function [x, F, iter, emit_fcn_arg]
+    // x(k) is the selected index of set I[k], 1 <= k <= length Iseg
+    // F is the value of F(x)
+    // iter is the iteration number of the output
+    // arg is the verbatim value of options.emit_fcn_arg
+    return 0;
+endfunction
+</pre></blockquote>
+<p>
+If the <tt>emit_fcn</tt> returns true (non-zero) then the <tt>opt_UQO</tt>
+procedure will be terminated (providing a way to terminate the algorithm
+early).
+
+<p>
+<dt><tt>maxit:</tt> <i>number</i>
+<dd>
+The number of random samples that will be generated.
+The default is 2<sup>52</sup>.
+
+<p>
+<dt><tt>maxnoemit:</tt> <i>number</i>
+<dd>
+If more than the given number of samples been performed since the occasion
+of an output of a configuration then the procedure will be terminated.
+The default is 2<sup>52</sup>.
+
+<p>
+<dt><tt>beta:</tt> <i>number</i>
+<dd>
+The value of &beta; used in the mean field algorithm
+(see <tt>opt_UQO_MeanField</tt>).  If a negative value is specified then the
+value of &beta; will be chosen automatically to guarantee a unique solution,
+although the value may be larger than the corresponding to the melting
+point for the problem instance.  The default is -1.
+
+<p>
+<dt><tt>verbose:</tt> <i>flag</i>
+<dd>If nonzero then information will be printed to the CLI during the
+calculation.  The default is 0.
+</dl></blockquote>
+
+<p>
+<b>Note!</b> <tt>opt_UQO_Sample</tt> performs best when the probability
+density <tt>p</tt> is very different from the uniform distribution on the
+states.  In addition, <tt>opt_UQO_Quench</tt> can be used in the
+<tt>emit_fcn</tt> to locally optimize the generated solutions; however,
+it is up to the caller to keep track of the optimal quenched solution.
+
+<!-- ============================= opt_UQO_Quench ======================== -- >
+
+<p><a name="opt_UQO_Quench"></a></p>
+<p><hr noshade="noshade" /></p>
+
+<pre>[x, F] = <span class="fcndef">opt_UQO_Quench</span> [ [Iseg, E0, Eself, Eij, Eint], x, options ]
+</pre>
+
+<p>
+The <tt>opt_UQO_Quench</tt> function attempts to find a lower energy
+vector starting from the <tt>x</tt> argument by local exploration of
+nearby vectors.  If <tt>x</tt> is the null vector then the starting
+point is taken from a mean field estimate.
+The <tt>[Iseg,E0,Eself,Eij,Eint]</tt> argument is interpreted in the
+same manner as in <tt>opt_UQO</tt>.
+The return value is the improved solution, <tt>x</tt>, and its
+energy, <tt>F</tt> (as in <tt>opt_UQO</tt>).
+The <tt>options</tt> argument is a tagged vector
+<blockquote><dl>
+<dt><tt>beta</tt>
+<dd>
+The value of &beta; used in the mean field algorithm
+(see <tt>opt_UQO_MeanField</tt>).  If a negative value is specified then the
+value of &beta; will be chosen automatically to guarantee a unique solution,
+although the value may be larger than the corresponding to the melting
+point for the problem instance.  The default is -1.
+<p>
+<dt><tt>verbose</tt>
+<dd>If nonzero then information will be printed to the CLI during the
+calculation.  The default is 0.
+</dl></blockquote>
+
+<p>
+The <tt>beta</tt> option is used only if the input argument, <tt>x</tt>
+is null and otherwise ignored.
+
+<h2>References</h2>
+
+<table border="0" cellpadding="5">
+<tr>
+<td valign="top">[Chazelle&nbsp;2004]
+<td valign="top">
+Chazelle, B., Kingsford, C., Singh, M.;
+A Semidefinite Programming Approach to Side Chain Positioning with New
+Rounding Strategies;
+<i>INFORMS Journal on Computing 16</i> (<b>2004</b>) 380-392.
+<tr>
+<td valign="top">[Fletcher&nbsp;1987]
+<td valign="top">
+Fletcher, R.;
+<i>Practical Methods of Optimization</i>
+(<b>1987</b>) John Wiley & Sons, New York .
+<tr>
+<td valign="top">[Gill&nbsp;1986]
+<td valign="top">
+Gill, P.E., Murray, W., Wright, M.H.;
+<i>Practical Optimization</i>
+(<b>1986</b>) Elsevier Academic Press, New York.
+<tr>
+<td valign="top">[Goldstein&nbsp;1994]
+<td valign="top">
+Goldstein, R.F.;
+Efficient Rotamer Elimination Applied to Protein Side Chains
+and Related Spin Glasses;
+<i>Biophys.&nbsp;J.</i> 66 (<b>1994</b>) 1335-1340.
+<tr>
+<td valign="top">[Labute&nbsp;2006]
+<td valign="top">
+Labute, P.; Protonate3D: Assignment of Ionization States and Hydrogen
+Coordinates to Macromolecular Structures;
+<i>PROTEINS: Struct. Funct. Bioinf.</i> (<b>2008</b>) - in press.
+<tr>
+<td valign="top">[Lee&nbsp;1994]
+<td valign="top">
+Lee, C.; Predicting Protein Mutant Energetics by Self-Consistent Ensemble
+Optimization; <i>J. Mol. Bol. 236</i> (<b>1994</b>) 918-939.
+</table>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

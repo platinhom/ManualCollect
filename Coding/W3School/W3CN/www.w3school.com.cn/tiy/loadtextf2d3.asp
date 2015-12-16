@@ -1,0 +1,21 @@
+<!DOCTYPE HTML>
+<html>
+
+<!-- Mirrored from www.w3school.com.cn/tiy/loadtext.asp?f=html5_form_datalist by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 02 Dec 2015 07:07:59 GMT -->
+<!-- Added by HTTrack --><meta http-equiv="content-type" content="text/html;charset=GB2312" /><!-- /Added by HTTrack -->
+<body>
+
+<form action="http://www.w3school.com.cn/example/html5/demo_form.asp" method="get">
+Webpage: <input type="url" list="url_list" name="link" />
+<datalist id="url_list">
+	<option label="W3School" value="../index.html" />
+	<option label="Google" value="http://www.google.com/" />
+	<option label="Microsoft" value="http://www.microsoft.com/" />
+</datalist>
+<input type="submit" />
+</form>
+
+</body>
+
+<!-- Mirrored from www.w3school.com.cn/tiy/loadtext.asp?f=html5_form_datalist by HTTrack Website Copier/3.x [XR&CO'2014], Wed, 02 Dec 2015 07:07:59 GMT -->
+</html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	smearetc.html
+!!
+!!	07-feb-2001 (ms) added csmear
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions smear, msmear, x_smear, csmear>
+<title>Smear functions: smear...</title>
+
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Smear functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    smeared_v = <a class="fcnlink" href="#smear">smear</a> v 
+    indices = <a class="fcnlink" href="#x_smear">x_smear</a> v 
+    smeared_v = <a class="fcnlink" href="#msmear">msmear</a> [ v, mask ]
+    smeared_v = <a class="fcnlink" href="#csmear">csmear</a> [ v, seg_lengths ]
+</pre>
+
+<p><a name="smear"></a></p>
+<h2>Description</h2>
+
+<pre>
+smeared_v = <span class="fcndef">smear</span> v
+</pre>
+
+Replaces each zero element (<tt>0</tt>) of vector <tt>v</tt>
+with the value of the nearest preceding non-zero element of <tt>v</tt>,
+i.e. the nearest non-zero neighbor on the left.
+Vector <tt>v</tt> must be a flat numerical vector.
+The first element of <tt>v</tt> is always treated as "non-zero",
+regardless its actual value.
+
+<p>For example:
+
+<pre>
+    svl&gt; smear [1,0,0,2,0,3] 
+    [1,1,1,2,2,3] 
+</pre>
+
+<p><a name="x_smear"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+indices = <span class="fcndef">x_smear</span> v
+</pre>
+
+Replaces each zero element (<tt>0</tt>) of vector <tt>v</tt>
+with the index of the nearest preceding non-zero element of <tt>v</tt>,
+i.e. the nearest non-zero neighbor on the left.
+Vector <tt>v</tt> must be a flat numerical vector.
+The first element of <tt>v</tt> is always treated as "non-zero",
+regardless its actual value.
+
+For example:
+<pre>
+    svl&gt; x_smear [1,0,0,2,0,3] 
+    [1,1,1,4,4,6] 
+    svl&gt; x_smear [0,0,0,1,0] 
+    [1,1,1,4,4] 
+</pre>
+
+The following identities hold:
+<pre>
+    x_smear v === smear (x_id v * notnot v)
+    smear v === v[x_smear v]
+</pre>
+
+<p><a name="msmear"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+smeared_v = <span class="fcndef">msmear</span> [v, mask]
+</pre>
+
+<p>Replaces each unmasked element of vector <tt>v</tt>
+with the value of the nearest preceding masked element of <tt>v</tt>,
+i.e.
+the elements of <tt>v</tt> that
+correspond to non-zero values in <tt>mask</tt> are copied into those
+positions immediately to their right that correspond to the zeroes in
+<tt>mask</tt>.
+Vector <tt>mask</tt> must be a flat numerical vector.
+Vector <tt>v</tt> can be of any type, as long as both
+vectors are of the same length, up to unit extension.
+The first element of the mask is always treated as "non-zero",
+regardless its actual value.
+
+<p>For example:
+
+<pre>
+    svl&gt; msmear [[1,2,3,4,5], [1,0,1,0,0]] 
+    [1,1,3,3,3] 
+
+    svl&gt; msmear [["111", 222, '333', [4,4,4], 5.5], [0,0,1,1,0]]
+    [ "111", "111", '333', [4,4,4], [4,4,4] ]
+</pre>
+
+The following identities hold:
+<pre>
+    msmear [v, mask] === v[x_smear mask]
+    smear v === msmear [v, v]
+</pre>
+
+<p><a name="csmear"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+smeared_v = <span class="fcndef">csmear</span> [v, seg_lengths]
+</pre>
+
+<p>Replaces each element of each segment of vector <tt>v</tt>
+with the value of the first element of the segment, where segments
+are groups of consecutive elements of vector <tt>v</tt> of
+lengths given by vector <tt>seg_lengths</tt>.
+Vector <tt>seg_lengths</tt> must be a flat vector of non-negative numbers.
+Vector <tt>v</tt> can be of any type.
+The vector <tt>seg_lengths</tt> is resized so that
+its sum is at least the length of vector <tt>v</tt> (using
+<tt>resizec</tt>).
+
+<p>For example:
+
+<pre>
+    svl&gt; csmear [[1,2,3,4,5], [2,3]] 
+    [1,1,3,3,3] 
+
+    svl&gt; csmear [[1,2,3,4,5], 2] 
+    [1,1,3,3,5] 
+
+    svl&gt; csmear [igen 11, [2,3]] 
+    [1,1,3,3,3,6,6,8,8,8,11]
+</pre>
+
+The following identities hold:
+<pre>
+    csmear [v, counts] === msmear [v, ctom resizec [counts, length v]]
+    msmear [v, mask] === csmear [v, mtoc m]
+</pre>
+
+<h2>See Also</h2>
+
+<a href="introstruct.html">Structural Functions</a>
+
+<p>
+<a class="svl" href="packetc.html">pack</a>
+<a class="svl" href="repetc.html">resizec</a>
+</p>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

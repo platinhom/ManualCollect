@@ -1,0 +1,351 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	mdlq.htm			MDL query functions
+!!
+!!	25-feb-2010 (ac) created
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions mdlq_Open>
+<meta functions mdlq_MatchAll>
+<meta functions mdlq_MatchFirst>
+<meta functions mdlq_MatchAllCTAB>
+<meta functions mdlq_MatchFirstCTAB>
+<meta functions mdlq_MatchFirstCTAB>
+
+<title>MDL Query Functions</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>MDL Query Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    ctx     = <a class="fcnlink" href="#mdlq_Open">mdlq_Open</a>            [qtab, opt]
+    ctx     = <a class="fcnlink" href="#mdlq_Open">mdlq_Open</a>            ctx
+
+    idxlist = <a class="fcnlink" href="#mdlq_MatchAll">mdlq_MatchAll</a>        [ctx, akeys, opt]
+    idx     = <a class="fcnlink" href="#mdlq_MatchFirst">mdlq_MatchFirst</a>      [ctx, akeys, opt]
+
+    idxlist = <a class="fcnlink" href="#mdlq_MatchAllCTAB">mdlq_MatchAllCTAB</a>    [ctx, ctab, opt]
+    idx     = <a class="fcnlink" href="#mdlq_MatchFirstCTAB">mdlq_MatchFirstCTAB</a>  [ctx, ctab, opt]
+
+              <a class="fcnlink" href="#mdlq_Close">mdlq_Close</a>           ctx
+</pre>
+
+<p>The MDL query functions implement searching for substructures using MDL-style
+query features. The query is represented by a connection table datastructure,
+which is a superset of the representation used by other <a class="svl"
+href="ctabfcn.htm">CTAB functions</a>.
+
+<p>If the query is a simple CTAB with no special query features defined, the MDL
+query functions are equivalent to a substructure search, which can be used to
+enumerate all of the ways in which the query structure can be mapped into the
+search structure. The MDL query functions make use of extended CTAB fields,
+which are divided up into 6 distinct blocks.
+
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr>
+<th>Block</tt>
+<th>Index</th>
+<th>Constant</th>
+<th>Description</th>
+</tr>
+
+<tr><td>1</td>
+<td colspan="3" rowspan="3">See <a href="ctabfcn.htm">CTAB functions</a>.
+</td><tr>
+
+<tr><td>2</td></tr>
+
+<tr><td rowspan="4">3</td>
+<td>1</td><td><tt>CTAB_G_KEY</tt></td>
+<td>One of <tt>'A'</tt>, <tt>'V'</tt> or <tt>'G'</tt>, depending on the source
+of the group text.
+</td></tr>
+
+<tr>
+<td>2</td><td><tt>CTAB_G_VAL</tt></td>
+<td>The text associated with the atom, which can be an arbitrary token.
+</td></tr>
+
+<tr>
+<td>3</td><td><tt>CTAB_G_AT1</tt></td>
+<td>The first atom attachment point.
+</td></tr>
+
+<tr>
+<td>4</td><td><tt>CTAB_G_AT2</tt></td>
+<td>The second atom attachment point.
+</td></tr>
+
+
+<tr><td rowspan="4">4</td>
+<td>1</td><td><tt>CTAB_L_NUM</tt></td>
+<td>Defines the block identifier for the atom number lists.
+</td></tr>
+
+<tr>
+<td>2</td><td><tt>CTAB_L_INV</tt></td>
+<td>Boolean indicator of whether the atom list is exclusive. 0 means that the
+atom must be in the list, 1 means that the atom must <i>not</i> be in the list.
+</td></tr>
+
+<tr>
+<td>3</td><td><tt>CTAB_L_ATT</tt></td>
+<td>The atom attachment to which the list refers, which is between 1 and the
+number of atoms in the molecule.
+</td></tr>
+
+<tr>
+<td>4</td><td><tt>CTAB_L_ATOM</tt></td>
+<td>The atomic number for the atom list entry, where 1 is hydrogen, etc.
+</td></tr>
+
+
+<tr><td rowspan="10">5</td>
+<td>1</td><td><tt>CTAB_QA_HMIN</tt></td>
+<td>The minimum number of attached hydrogens for the atom. 0 means no
+constraint, -1 means that the number of hydrogens must be the same as number as
+are drawn explicitly, while &gt;0 specifies the <i>minimum</i> number of
+hydrogen atoms (implicit and explicit).
+</td></tr>
+
+<tr>
+<td>2</td><td><tt>CTAB_QA_DBLSTER</tt></td>
+<td>If set to 1, and the atom is involved in a double bond, then the cis/trans
+stereochemistry is required to match that given in the query.
+</td></tr>
+
+<tr>
+<td>3</td><td><tt>CTAB_QA_INVRET</tt></td>
+<td>Used for reaction matching. If set to 1, the atom stereochemistry must be
+inverted; if set to 2, it must be retained.
+</td></tr>
+
+<tr>
+<td>4</td><td><tt>CTAB_QA_EXACT</tt></td>
+<td>Used for reaction matching. If set to 1, the change on the atom must be
+exactly as shown in the query.
+</td></tr>
+
+<tr>
+<td>5</td><td><tt>CTAB_QA_SUBST</tt></td>
+<td>The heavy atom substitution count, i.e. the number of neighbors which are
+not hydrogen. A value of 0 is associated with no constraint; -1 means that there
+may be no substituents; -2 means that there may be no substituents other
+than those drawn in the query; &gt;0 specifies the exact number of heavy atom
+neighbors required.
+</td></tr>
+
+<tr>
+<td>6</td><td><tt>CTAB_QA_RINGBOND</tt></td>
+<td>The ring bond environment for the atom. A value of 0 means no constraint; -1
+means that the atom must not be in a ring; -2 means that the atom may only
+participate in the rings which are drawn in the query; a value of 2 or more
+specifies the number of attached bonds which may be part of a ring system.
+</td></tr>
+
+<tr>
+<td>7</td><td><tt>CTAB_QA_UNSAT</tt></td>
+<td>If set to 1, then the atom must have at least one double or triple bond
+attached to it.
+</td></tr>
+
+<tr>
+<td>8</td><td><tt>CTAB_QA_LNKREP</tt></td>
+<td>The number of times a link atom may be repeated.
+</td></tr>
+
+<tr>
+<td>9</td><td><tt>CTAB_QA_LNKEXCL1</tt></td>
+<td>The first atom excluded from the link.
+</td></tr>
+
+<tr>
+<td>10</td><td><tt>CTAB_QA_LNKEXCL2</tt></td>
+<td>The second atom excluded from the link.
+</td></tr>
+
+
+<tr><td rowspan="3">6</td>
+<td>1</td><td><tt>CTAB_QB_DBLSTER</tt></td>
+<td>If set to 1, then the stereochemistry of the bond should be considered
+during the search.
+</td></tr>
+
+<tr>
+<td>2</td><td><tt>CTAB_QB_RINGTOPO</tt></td>
+<td>Specifies the required ring topology of the bond. If set to 1, the bond must
+be in a ring. If set to 2, the bond must not be in a ring.
+</td></tr>
+
+<tr>
+<td>3</td><td><tt>CTAB_QB_RCENT</tt></td>
+<td>Used for reaction matching. If set to -1, then the bond is not part of a
+reaction center. If set to &gt;0, then the number is a bitmask, where the lowest
+order bit is always set. Add 2: if the bond must not change. Add 4: if the bond
+may be made or broken. Add 8: if the bond order changes.
+</td></tr>
+
+</table>
+
+<p>In this document, an extended CTAB structure which contains query features is
+labelled <tt>qtab</tt>. For example, the minimum required number of attached
+hydrogens for atom <i>i</i> is accessed by  <tt>qtab(5)(CTAB_QA_HMIN)(i)</tt>.
+
+<p>The MDL query functions do not implement reaction searching or
+stereochemistry constraints, even though the fields are defined for future use.
+
+<!-- ...................................................................... -->
+
+<p><a name="mdlq_Open"></a><a name="mdlq_Close"></a>
+</p><hr noshade="noshade" />
+
+<pre>
+ctx = <span class="fcndef">mdlq_Open</span> [qtab, opt]
+ctx = <span class="fcndef">mdlq_Open</span> ctx
+      <span class="fcndef">mdlq_Close</span> ctx
+</pre>
+
+<p>The query functions are utilized by first creating a context for the query.
+Creation of a query context requires a small amount of overhead, so for
+operations which involve matching queries to multiple search structures should
+retain the query context for the duration of the operation.
+
+<p>A new query context can be opened by providing the <tt>qtab</tt> parameter,
+which is a CTAB datastructure which may optionally contain additional query
+fields, and an <tt>opt</tt> tagged vector. Calling the <tt>mdlq_Open</tt>
+function with an existing context as a parameter increments the reference count,
+while calling <tt>mdlq_Close</tt> decrements the reference count. Resources will
+be deallocated when the reference count reaches zero.
+
+<p>The <tt>qtab</tt> parameter supports use of CTAB atom and bond field types
+which are reserved for queries. In addition, <tt>qtab(3)</tt> defines CTAB
+groups, <tt>qtab(4)</tt> defines atom lists, <tt>qtab(5)</tt> defines 
+atom-specific query fields and <tt>qtab(6)</tt> defines bond-specific query
+fields. Each of these query features is defined by the MDL MOL-file format, and
+can be parsed using the <tt>mdl_ParseCTAB</tt> function.
+
+<p>The following options may be provided when creating a new query context:
+
+<blockquote><dl>
+
+<p><dt><tt>literal_query</tt>
+
+<p><dd>By default, the query operation takes the liberty of interpreting some of
+the fields in the query CTAB structure, particularly aromatic bonds and ylides.
+If this option is set, then the query will be matched literally, e.g. equivalent
+Kekul&eacute; representations of the same aromatic ring or different ylide vs.
+hypervalent bond representations, will not be matched. This can be useful when
+it is known that the query CTAB has already been fully interpreted, or for
+applying transforms to explicit sketch representations.
+
+<p><dt><tt>literal_search</tt>
+
+<p><dd>By default, when searching against CTAB structures, some interpretation
+is done, which is analogous to the interpretation of the query CTAB structure.
+If the literal mode is specified, this interpretation is disabled. This option
+can also be specified in the <tt>mdl_MatchAllCTAB</tt> and
+<tt>mdl_MatchFirstCTAB</tt> functions.
+
+<p><dt><tt>dictionary</tt>
+
+<p><dd>An optional SMARTS dictionary, which can be used to restrict atom
+matches.
+
+<p><dt><tt>CTAB_A_SMARTS</tt>
+
+<p><dd>Atom matches can be further constrained by associating a SMARTS query
+with each atom. The optional <tt>CTAB_A_SMARTS</tt> argument must be an index
+which refers to a column in the atom section, i.e.
+<tt>qtab(1)(opt.CTAB_A_SMARTS)</tt> must be an array of tokens, one per atom. A
+null token ('') has no effect. Values of the form <tt>$(<i>SMARTS</i>)</tt>
+match the string explicitly, where the first atom corresponds to the query atom.
+Values of the form <tt>$<i>DICT</i></tt> refer to entries in the
+<tt>dictionary</tt> parameter.
+
+</dl></blockquote>
+
+<p>Note that the query must be a <i>single connected component</i>. The search
+will fail if there are multiple disconnected pieces.
+
+<!-- ...................................................................... -->
+
+<p><a name="mdlq_MatchAll"></a><a name="mdlq_MatchFirst"></a>
+<a name="mdlq_MatchAllCTAB"></a><a name="mdlq_MatchFirstCTAB"></a>
+</p><hr noshade="noshade" />
+
+<pre>
+idxlist = <span class="fcndef">mdlq_MatchAll</span>        [ctx, akeys, opt]
+idx     = <span class="fcndef">mdlq_MatchFirst</span>      [ctx, akeys, opt]
+
+idxlist = <span class="fcndef">mdlq_MatchAllCTAB</span>    [ctx, ctab, opt]
+idx     = <span class="fcndef">mdlq_MatchFirstCTAB</span>  [ctx, ctab, opt]
+</pre>
+
+<p>Four permutations are available for obtaining a match between a query context
+and a molecule structure. The <tt>mdlq_MatchAll</tt> and
+<tt>mdlq_MatchAllCTAB</tt> functions return <i>all</i> of the possible ways in
+which the query can be mapped onto the search structure, which be a null vector
+if none. <tt>mdlq_MatchFirst</tt> and <tt>mdlq_MatchFirstCTAB</tt> return just
+the first of all possible matches, or a null vector if there are none. The
+latter is most useful for situations where only the presence or absence of a
+match is sought.
+
+<p>Each returned match is a list of indices which is equal in size to the number
+of atoms in the query structure, and each value is an index into the search
+structure, and is between 1 and the number of atoms in the search structure.
+
+<p><tt>mdlq_MatchAll</tt> and <tt>mdlq_MatchFirst</tt> match a molecular
+structure defined by atom keys, while <tt>mdlq_MatchAllCTAB</tt> and
+<tt>mdlq_MatchFirstCTAB</tt> perform the search on a CTAB structure. The two
+search techniques are largely equivalent, but there are some differences in bond
+representation. For searching of CTABs, it is possible to specify the
+<tt>literal_search</tt> flag as an option, which disables interpretation of the
+bond types. This does not apply when using atom keys, however, because bond type
+interpretation is always necessary to compare with a CTAB query.
+
+
+<h2>See Also</h2>
+
+<p>
+<a class="svl" href="ctabfcn.htm">CTAB Functions</a><br />
+<a class="svl" href="mdlq3d.htm">MDL 3D Query Functions</a><br />
+<a class="svl" href="smartsfcn.htm">SMARTS Functions</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>RMS and scripting</TITLE>
+<META NAME="description" CONTENT="RMS and scripting">
+<META NAME="keywords" CONTENT="ug">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ug.css">
+
+<LINK REL="previous" HREF="node202.html">
+<LINK REL="up" HREF="node201.html">
+<LINK REL="next" HREF="node204.html">
+</HEAD>
+
+<BODY BGCOLOR="WHITE">
+<!--Navigation Panel-->
+<A NAME="tex2html3931"
+  HREF="node204.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html3925"
+  HREF="node201.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html3921"
+  HREF="node202.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html3927"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html3929"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html3932"
+  HREF="node204.html">VMD Script Commands for</A>
+<B> Up:</B> <A NAME="tex2html3926"
+  HREF="node201.html">RMS Fit and Alignment</A>
+<B> Previous:</B> <A NAME="tex2html3922"
+  HREF="node202.html">RMS Fit and Alignment</A>
+ &nbsp; <B>  <A NAME="tex2html3928"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html3930"
+  HREF="node251.html">Index</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL>
+<LI><A NAME="tex2html3933"
+  HREF="node203.html#SECTION001542100000000000000">RMSD Computation</A>
+<LI><A NAME="tex2html3934"
+  HREF="node203.html#SECTION001542200000000000000">Computing the Alignment</A>
+<LI><A NAME="tex2html3935"
+  HREF="node203.html#SECTION001542300000000000000">A simulation example script</A>
+</UL>
+<!--End of Table of Child-Links-->
+<HR>
+
+<H2><A NAME="SECTION001542000000000000000"></A>
+<A NAME="ug:scripts:rmsd"></A><A NAME="15962"></A>
+<A NAME="15963"></A>
+<BR>
+RMS and scripting
+</H2>
+
+<P>
+The same actions can be taken on the scripting level. The Text interface 
+also gives you more flexibility through the atom selection mechanism
+allowing to choose the atoms to fit/compare.
+
+<P>
+
+<H3><A NAME="SECTION001542100000000000000"></A>
+<A NAME="15965"></A>
+<A NAME="15966"></A>
+<BR>
+RMSD Computation
+</H3>
+There are two atom selections needed to do an RMSD computation, the
+list of atoms to compare in both molecules.  The first atom of the
+first selection is compared to the first atom of the second selection,
+fifth to fifth, and so on.  The actual order is identical to the order
+from the input PDB file.
+
+<P>
+Once the two selections are made, the RMSD calculation is a matter of
+calling the <TT>measure rmsd</TT> function.  Here's an example:<PRE>
+        set sel1 [atomselect 0 "backbone"]
+        set sel2 [atomselect 1 "backbone"]
+        measure rmsd $sel1 $sel2
+  Info)  10.403014
+</PRE>
+This prints the RMSD between the backbone atoms of molecule 0 with
+those of molecule 1.  You could also use a weighting factor in these
+calculations.  The best way to understand how to do this is to see
+another example:<PRE>
+        set weighted_rmsd [measure rmsd $sel1 $sel2 weight mass]
+  Info)  10.403022
+</PRE>
+
+<P>
+In this case, the weight is determined by the mass of each atom.
+Actually, the term is really one of the standard keywords available to
+an atom selection.  Other ones include index and resid (which would
+both be rather strange to use) as well as charge, beta and occupancy.
+These last terms useful if you want to specify your own values for the
+weighting factors.
+
+<P>
+
+<H3><A NAME="SECTION001542200000000000000"></A>
+<A NAME="15973"></A>
+<BR>
+Computing the Alignment
+</H3>
+
+<P>
+The best-fit alignment is done in two steps.  The first is to compute
+the <IMG
+ WIDTH="43" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img118.png"
+ ALT="$ 4\times4$">
+ matrix transformation that takes one set of coordinates onto
+the other.  This is done with the <TT>measure fit</TT> command.  Assuming the
+same selections as before:<PRE>
+        set transformation_matrix [measure fit $sel1 $sel2]
+Info) {0.971188 0.00716391 0.238206 -13.2877}
+{0.0188176 0.994122 -0.106619 3.25415} {-0.23757 0.108029 0.965345 -2.97617}
+{0.0 0.0 0.0 1.0}
+</PRE>
+As with the RMSD calculation, you could also add an optional <TT>weight
+&lt;keyword&gt;</TT> term on the end.
+
+<P>
+The next step is to apply the matrix to a set of atoms using the move
+command.  So far you have two coordinate sets.  You might think you
+could do something like <TT>$sel1 move $transformation_matrix</TT> to apply
+the matrix to all the atoms of that selection.  You could, but that's
+not the right selection.
+
+<P>
+The thing to recall is that <TT>$sel1</TT> is the selection for the backbone
+atoms.  You really want to move the whole fragment to which it is
+attached, or even the whole molecule.  (This is where the discussion
+earlier comes into play.)  So you need to make a third selection
+containing all the atoms which are to be moved, and apply the
+transformation to those atoms.<PRE>
+        # molecule 0 is the same molecule used for $sel1
+        set move_sel [atomselect 0 "all"]
+        $move_sel move $transformation_matrix
+</PRE>
+
+<P>
+As a more complicated example, say you want to  
+align all of molecule 1 with molecule 9 using only the backbone
+atoms of residues 4 to 10 in both systems.  Here's how:<PRE>
+        # compute the transformation matrix
+        set reference_sel  [atomselect 9 "backbone and resid 4 to 10"]
+        set comparison_sel [atomselect 1 "backbone and resid 4 to 10"]
+        set transformation_mat [measure fit $comparison_sel $reference_sel]
+
+        # apply it to all of the molecule 1
+        set move_sel [atomselect 1 "all"]
+        $move_sel move $transformation_mat
+</PRE>
+
+<P>
+
+<H3><A NAME="SECTION001542300000000000000"></A>
+<A NAME="15985"></A>
+<BR>
+A simulation example script
+</H3>
+
+<P>
+Here's a longer script which you might find useful.  The problem is
+to compute the RMSD between each frame of the simulation and the
+first frame.  Usually in a simulation there is no initial global
+velocity, so the center of mass doesn't move, but because of angular
+rotations and because of numerical imprecisions that slowly build up,
+the script aligns the molecule before computing its RMSD.
+
+<P>
+<A NAME="15986"></A><PRE>
+        # Prints the RMSD of the protein atoms between each \timestep
+        # and the first \timestep for the given molecule id (default: top)
+        proc print_rmsd_through_time {{mol top}} {
+                # use frame 0 for the reference
+                set reference [atomselect $mol "protein" frame 0]
+                # the frame being compared
+                set compare [atomselect $mol "protein"]
+
+                set num_steps [molinfo $mol get numframes]
+                for {set frame 0} {$frame &lt; $num_steps} {incr frame} {
+                        # get the correct frame
+                        $compare frame $frame
+
+                        # compute the transformation
+                        set trans_mat [measure fit $compare $reference]
+                        # do the alignment
+                        $compare move $trans_mat
+                        # compute the RMSD
+                        set rmsd [measure rmsd $compare $reference]
+                        # print the RMSD
+                        puts "RMSD of $frame is $rmsd"
+                }
+        }
+</PRE>
+  To use this, load a molecule with an animation
+(for example, <TT>$VMDDIR/proteins/alanin.DCD</TT> from the VMD distribution).
+Then run <TT>print_rmsd_through_time</TT>.  Example output is shown here:<PRE>
+vmd &gt; print_rmsd_through_time
+RMSD of 0 is 0.000000
+RMSD of 1 is 1.060704
+RMSD of 2 is 0.977208
+RMSD of 3 is 0.881330
+RMSD of 4 is 0.795466
+RMSD of 5 is 0.676938
+RMSD of 6 is 0.563725
+RMSD of 7 is 0.423108
+RMSD of 8 is 0.335384
+RMSD of 9 is 0.488800
+RMSD of 10 is 0.675662
+RMSD of 11 is 0.749352
+ [...]
+</PRE>
+
+<P>
+<HR>
+<!--Navigation Panel-->
+<A NAME="tex2html3931"
+  HREF="node204.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html3925"
+  HREF="node201.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html3921"
+  HREF="node202.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html3927"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html3929"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html3932"
+  HREF="node204.html">VMD Script Commands for</A>
+<B> Up:</B> <A NAME="tex2html3926"
+  HREF="node201.html">RMS Fit and Alignment</A>
+<B> Previous:</B> <A NAME="tex2html3922"
+  HREF="node202.html">RMS Fit and Alignment</A>
+ &nbsp; <B>  <A NAME="tex2html3928"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html3930"
+  HREF="node251.html">Index</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+vmd@ks.uiuc.edu
+</ADDRESS>
+</BODY>
+</HTML>

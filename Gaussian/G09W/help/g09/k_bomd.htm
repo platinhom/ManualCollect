@@ -1,0 +1,269 @@
+<html><head>
+<title></title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style type="text/css">
+<!--
+
+p {
+	font-family: "Times New Roman", Times, serif;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+}
+
+div#tipDiv {
+    padding:4px;
+    color:#000; font-size:11px; line-height:1.2;
+    background-color:#CCCCFF; border:1px solid #0000FF;
+    width:250px;
+}
+-->
+</style>
+<script src="dw_event.js" type="text/javascript"></script>
+<script src="dw_viewport.js" type="text/javascript"></script>
+<script src="dw_tooltip.js" type="text/javascript"></script>
+<script src="dw_tooltip_aux.js" type="text/javascript"></script>
+<script src="refs_inc.js" type="text/javascript"></script>
+</head><body>
+<h1>BOMD</h1>
+<h3><font size="-1" color="#222222">DESCRIPTION</font></h3>
+<p>This keyword requests a classical trajectory calculation <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Bunker71" class="showTip Bunker71">Bunker71</a>, <a href="refs.htm#Raff85" class="showTip Raff85">Raff85</a>, <a href="refs.htm#Hase91" class="showTip Hase91">Hase91</a>, <a href="refs.htm#Thompson98" class="showTip Thompson98">Thompson98</a>]</font> using a Born-Oppenheimer molecular dynamics model (first described in <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Helgaker90" class="showTip Helgaker90">Helgaker90</a>, <a href="refs.htm#Uggerud92" class="showTip Uggerud92">Uggerud92</a>]</font>; see <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Bolton98" class="showTip Bolton98">Bolton98</a>]</font> for an extended review article). The implementation in Gaussian 09 <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Chen94" class="showTip Chen94">Chen94</a>, <a href="refs.htm#Millam99" class="showTip Millam99">Millam99</a>, <a href="refs.htm#Li00" class="showTip Li00">Li00</a>]</font> extends the usual methodology by using a very accurate Hessian based algorithm that incorporates a predictor step on the local quadratic surface followed by a corrector step. The latter uses a fifth-order polynomial or a rational function fitted to the energy, gradient and Hessian at the beginning and end points of each step. This method for generating the correction step enables an increase in the step size of a factor of 10 or more over previous implementations.</p>
+<p>The selection of the initial conditions using quasi-classical fixed normal mode sampling and the final product analysis are carried out in the same manner as in the classical trajectory program VENUS <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Hase96" class="showTip Hase96">Hase96</a>]</font>. Alternatively, initial Cartesian coordinates and velocities may be read in.</p>
+<p>Note that the <b><font color="#0000FF">ADMP</font></b> method provides equivalent functionality at substantially lower computational cost at the Hartree-Fock and DFT levels.</p>
+<h3><font size="-1" color="#222222">REQUIRED INPUT</font></h3>
+<p>All <b><font color="#0000FF">BOMD</font></b> jobs must specify the number of dissociation paths; for many jobs, this value will be zero (a blank line is also allowed), and no other <b><font color="#0000FF">BOMD</font></b> input will be used. In this case, the trajectory is integrated for a fixed number of steps, as specified by the program default of 100 or the value of the <b><font color="#0000FF">MaxPoints</font></b> option.</p>
+<p>If <font face="Times New Roman, Times, serif" size="3"><i>NPath</i></font> is set to &ndash;1, the dissociation pathways will be detected automatically and a gradient criteria (Hartree/Bohr) will be used in place of the usual fragmentation pathway and stopping criteria.</p>
+<p>When the number of dissociation paths is greater than zero, the full <b><font color="#0000FF">BOMD</font></b> job input has the following general structure:</p>
+<table border="0">
+<tr valign="top"><td align="left"><font face="Times New Roman, Times, serif" size="3"><i>NPath</i></font></td><td align="left"> </td><td align="left"><font face="Times New Roman, Times, serif" color="#CC0000"><i>Number of dissociation paths (maximum=20)</i></font></font></td></tr>
+<tr valign="top"><td align="left"><font face="Times New Roman, Times, serif" size="3"><i>IFrag</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>1</i></font></sub>, &hellip;, <font face="Times New Roman, Times, serif" size="3"><i>IFrag</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>NAtoms</i></font></sub></td><td align="left"> </td><td align="left"><font face="Times New Roman, Times, serif" color="#CC0000"><i>Fragmentation information</i></font></font></td></tr>
+<tr valign="top"><td align="left">&hellip;</td><td align="left">     </td><td align="left">&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Repeated NPath times</i></font></font></td></tr>
+<tr valign="top"><td align="left">[<font face="Times New Roman, Times, serif" size="3"><i>R1, R2, R3, R4, G5, ITest, IAtom, JAtom, R6</i></font></td><td align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </td><td align="left"><font face="Times New Roman, Times, serif" color="#CC0000"><i>Optional stopping criteria (ReadStop option)</i></font></font></td></tr>
+<tr valign="top"><td align="left">&hellip;]</td><td align="left">     </td><td align="left">&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Repeated NPath times</i></font></font></td></tr>
+<tr valign="top"><td align="left">[<font face="Times New Roman, Times, serif" size="3"><i>Estart,DelE,SBeta,Ef,DPert,IFlag</i></font>]</td><td align="left"> </td><td align="left"><font face="Times New Roman, Times, serif" color="#CC0000"><i>Optional simulated annealing params. (SimAnneal)</i></font></font></td></tr>
+<tr valign="top"><td align="left">[<font face="Times New Roman, Times, serif" size="3"><i>Mode-num, VibEng(Mode-num), &hellip;</i></font>]</td><td align="left"> </td><td align="left"><font face="Times New Roman, Times, serif" color="#CC0000"><i>Optional initial normal mode energies (NSample)</i></font></font></td></tr>
+<tr valign="top"><td align="left">[<font face="Times New Roman, Times, serif" size="3"><i>Initial velocity for atom 1: x y z</i></font></td><td align="left"> </td><td align="left"><font face="Times New Roman, Times, serif" color="#CC0000"><i>Optional initial velocities</i></font></font></td></tr>
+<tr valign="top"><td align="left"><font face="Times New Roman, Times, serif" size="3"><i>Initial velocity for atom 2: x y z</i></font></td><td align="left">      </td><td align="left">&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>(ReadVelocity or ReadMWVelocity)</i></font></font></td></tr>
+<tr valign="top"><td align="left">&hellip; </td><td align="left"> </td><td align="left"> </td></tr>
+<tr valign="top"><td align="left"><font face="Times New Roman, Times, serif" size="3"><i>Initial velocity for atom N: x y z</i></font> </td><td align="left"> </td><td align="left"> </td></tr>
+<tr valign="top"><td align="left">&hellip;]</td><td align="left">     </td><td align="left">&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Entire section is repeated NTraj times</i></font></font></td></tr>
+<tr valign="top"><td align="left">[<font face="Times New Roman, Times, serif" size="3"><i>Atom1, Atom2, E</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>0</i></font></sub>, <font face="Times New Roman, Times, serif" size="3"><i>Len, D</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>e</i></font></sub>, <font face="Times New Roman, Times, serif" size="3"><i>B</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>e</i></font></sub></td><td align="left"> </td><td align="left"><font face="Times New Roman, Times, serif" color="#CC0000"><i>Optional Morse params. for each diatomic product</i></font></font></td></tr>
+<tr valign="top"><td align="left">&hellip;] </td><td align="left"> </td><td align="left"> </td></tr>
+<tr valign="top"><td align="left"> </td><td align="left"> </td><td align="left"><font face="Times New Roman, Times, serif" color="#CC0000"><i>Terminate subsection with a blank line</i></font></font></td></tr>
+</table>
+<p>The input line(s) following <font face="Times New Roman, Times, serif" size="3"><i>NPath</i></font> define the fragmentation information for each path. The value in each position specifies that the corresponding atom belongs to the specified fragment number (i.e., atom <font face="Times New Roman, Times, serif" size="3"><i>i</i></font> belongs to fragment number <font face="Times New Roman, Times, serif" size="3"><i>IFrag</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>i</i></font></sub>). Note that fragment information for each path must begin on a new line, but the ones for any individual path may be continued over as many lines as necessary.</p>
+<p>Stopping criteria are specified next when the <b><font color="#0000FF">ReadStop</font></b> option is specified. Up to six stopping criteria may be specified for each path. A trajectory is terminated when all of the active criteria are satisfied. However, a value of zero for any parameter turns off testing for the corresponding stopping criteria. The stopping criteria tests are defined as follows (default parameter values are in parentheses):</p>
+<ul>
+<li>
+Minimum distance between the centers of mass for any pair of fragments &gt; <font face="Times New Roman, Times, serif" size="3"><i>R1</i></font> (18)
+</li>
+<li>
+Minimum distance between atoms located in different fragments &gt; <font face="Times New Roman, Times, serif" size="3"><i>R2</i></font> (20)
+</li>
+<li>
+Maximum distance between the center of mass and any atom in the same fragment &lt; <font face="Times New Roman, Times, serif" size="3"><i>R3</i></font> (0)
+</li>
+<li>
+The maximum distance between any pair of atoms in the same fragment &lt; <font face="Times New Roman, Times, serif" size="3"><i>R4</i></font> (0)
+</li>
+<li>
+Interfragment gradient &lt; <font face="Times New Roman, Times, serif" size="3"><i>G5</i></font> (10<sup>-6</sup>)
+</li>
+<li>
+If <font face="Times New Roman, Times, serif" size="3"><i>ITest</i></font>=1, distance between atoms <font face="Times New Roman, Times, serif" size="3"><i>IAtom</i></font> and <font face="Times New Roman, Times, serif" size="3"><i>JAtom</i></font> &gt; <font face="Times New Roman, Times, serif" size="3"><i>R6</i></font> (0). Otherwise, distance between atoms <font face="Times New Roman, Times, serif" size="3"><i>IAtom</i></font> and <font face="Times New Roman, Times, serif" size="3"><i>JAtom</i></font> &lt; <font face="Times New Roman, Times, serif" size="3"><i>R6</i></font> (0)
+</li></ul>
+<p>All distances are specified in Bohr, and the units of the gradient <font face="Times New Roman, Times, serif" size="3"><i>G5</i></font> are Hartrees/Bohr.</p>
+<p>Parameters for simulated annealing/fragmentation follow the stopping criteria in the input stream when the <b><font color="#0000FF">SimAnneal</font></b> option is specified:</p>
+<ul>
+<li>
+<font face="Times New Roman, Times, serif" size="3"><i>Estart</i></font> is the desired initial kinetic energy (Hartrees).
+</li>
+<li>
+<font face="Times New Roman, Times, serif" size="3"><i>DelE</i></font> is the energy gain/loss in Hartrees.
+</li>
+<li>
+<font face="Times New Roman, Times, serif" size="3"><i>SBeta</i></font> is the Fermi-Dirac inverse temperature (1/Hartrees).
+</li>
+<li>
+<font face="Times New Roman, Times, serif" size="3"><i>Ef</i></font> is the Fermi energy (wavenumbers): all modes corresponding to a frequency in wavenumbers below <font face="Times New Roman, Times, serif" size="3"><i>Ef</i></font> will be enhanced, while those above <font face="Times New Roman, Times, serif" size="3"><i>Ef</i></font> will be reduced. The reverse will happen if <font face="Times New Roman, Times, serif" size="3"><i>SBeta</i></font> is negative.
+</li>
+<li>
+<font face="Times New Roman, Times, serif" size="3"><i>DPert</i></font> is the size of the random perturbation.
+</li>
+<li>
+<font face="Times New Roman, Times, serif" size="3"><i>IFlag</i></font> determines the algorithm for applying an energy perturbation for simulated annealing (i.e., adding/removing energy from the eigenmodes). It has the following possible values: <b><font color="#0000FF">0</font></b> (weigh each eigencomponent according to its frequency), <b><font color="#0000FF">1</font></b> (add DelE in a random fashion), <b><font color="#0000FF">2</font></b> (combination of 0 and 1), <b><font color="#0000FF">00</font></b> (if near a transition state, add all energy along that mode), and <b><font color="#0000FF">10</font></b> (ignore any nearby transition state).
+</li></ul>
+<p>The next part of the input specifies how much energy is in each normal mode when the <b><font color="#0000FF">NSample</font></b> option is used. For each mode, <font face="Times New Roman, Times, serif" size="3"><i>VibEng</i></font> is the translational energy in kcal/mol in the forward direction along the transition vector. If <font face="Times New Roman, Times, serif" size="3"><i>VibEng</i></font> &lt; 0, then the initial velocity is in the reverse direction. (You can explicitly specify the forward direction using the <b><font color="#0000FF">Phase</font></b> option.)</p>
+<p>Next, the initial velocity for each atom is read if the <b><font color="#0000FF">ReadVelocity</font></b> or <b><font color="#0000FF">ReadMWVelocity</font></b> option is included. Each initial velocity is specified as a Cartesian velocity in atomic units (Bohr/sec) or as a mass-weighted Cartesian velocity (in amu<sup>1/2</sup>*Bohr/sec), respectively. One complete set of velocities is read for each requested trajectory computation.</p>
+<p>Finally, Morse parameter data can be specified for each diatomic product. The Morse parameter data is used to determine the vibrational excitation of diatomic fragments using the EBK quantization rules. It consists of the atomic symbols for the two atoms, the bond length between them (<font face="Times New Roman, Times, serif" size="3"><i>Len</i></font>, in Angstroms), the energy at that distance (<font face="Times New Roman, Times, serif" size="3"><i>E</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>0</i></font></sub> in Hartrees), and the Morse curve parameters <font face="Times New Roman, Times, serif" size="3"><i>D</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>e</i></font></sub> (Hartrees) and <font face="Times New Roman, Times, serif" size="3"><i>B</i></font><sub><font face="Times New Roman, Times, serif" size="3"><i>e</i></font></sub> (Angstroms<sup>-1</sup>). This input subsection is terminated by a blank line.</p>
+<h3><font size="-1" color="#222222">OPTIONS</font></h3>
+<p><b><font color="#0000FF">MaxPoints=<font face="Times New Roman, Times, serif" size="3"><i>n</i></font></font></b><br>
+Specifies the maximum number of steps that may be taken in each trajectory (the default is 100). If a trajectory job is restarted, the maximum number of steps will default to the number specified in the original calculation.
+</p>
+<p><b><font color="#0000FF">Phase=(<font face="Times New Roman, Times, serif" size="3"><i>N1, N2</i></font>[,<font face="Times New Roman, Times, serif" size="3"><i>N3</i></font>[,<font face="Times New Roman, Times, serif" size="3"><i>N4</i></font>]])</font></b><br>
+Defines the phase for the transition vector such that forward motion along the transition vector corresponds to an increase in the specified internal coordinate. If two atom numbers are given, the coordinate is a bond stretch between the two atoms; three atom numbers specify an angle bend and four atoms define a dihedral angle.
+</p>
+<p><b><font color="#0000FF">ReadVelocity</font></b><br>
+Read initial Cartesian velocities from the input stream. Note that the velocities must have the same symmetry orientation as the molecule. This option suppresses the fifth-order anharmonicity correction.
+</p>
+<p><b><font color="#0000FF">ReadMWVelocity</font></b><br>
+Read initial mass-weighted Cartesian velocities from the input stream. Note that the velocities must have the same symmetry orientation as the molecule. This option suppresses the fifth-order anharmonicity correction.
+</p>
+<p><b><font color="#0000FF">SimAnneal</font></b><br>
+Use simulated annealing (the initial velocity is randomly generated). Additional parameters are read in, as described above.
+</p>
+<p>Only one of <b><font color="#0000FF">ReadVelocity</font></b>, <b><font color="#0000FF">ReadMWVelocity</font></b> and <b><font color="#0000FF">SimAnneal</font></b> can be specified.</p>
+<p><b><font color="#0000FF">ReadStop</font></b><br>
+Read in alternative stopping criteria.
+</p>
+<p><b><font color="#0000FF">RTemp=<font face="Times New Roman, Times, serif" size="3"><i>N</i></font></font></b><br>
+Specifies the rotational temperature. The default is to choose the initial rotational energy from a thermal distribution assuming a symmetric top (the temperature defaults to 0 K).
+</p>
+<p><b><font color="#0000FF">NSample=<font face="Times New Roman, Times, serif" size="3"><i>N</i></font></font></b><br>
+Read in initial kinetic energies for the first <font face="Times New Roman, Times, serif" size="3"><i>N</i></font> normal modes (the default is 0). The energies for the remaining modes are determined by thermal sampling by default.
+</p>
+<p><b><font color="#0000FF">NTraj=<font face="Times New Roman, Times, serif" size="3"><i>N</i></font></font></b><br>
+Compute <font face="Times New Roman, Times, serif" size="3"><i>N</i></font> trajectories.
+</p>
+<p><b><font color="#0000FF">Update=<font face="Times New Roman, Times, serif" size="3"><i>n</i></font></font></b><br>
+By default BOMD does second derivatives at every point. Using the <b><font color="#0000FF">Update</font></b> keyword causes the program to perform Hessian updates for <font face="Times New Roman, Times, serif" size="3"><i>n</i></font> gradient points before doing a new analytic Hessian. <b><font color="#0000FF">GradOnly</font></b> requests that only gradients be done and that the Hessian be updated all the time (full second derivatives are not computed). <b><font color="#0000FF">ReCalcFC</font></b> is a synonym for this option.
+</p>
+<p><b><font color="#0000FF">RandomVelocity</font></b><br>
+Randomly generate initial velocities for dynamics without using any second derivative information. This is the default for <b><font color="#0000FF">GradientOnly</font></b> dynamics.
+</p>
+<p><b><font color="#0000FF">StepSize=<font face="Times New Roman, Times, serif" size="3"><i>n</i></font></font></b><br>
+Sets the dynamic step size to <font face="Times New Roman, Times, serif" size="3"><i>n</i></font>*0.0001, in the appropriate units. The default step size is 0.25 amu<sup>1/2</sup>*Bohr except for <b><font color="#0000FF">GradientOnly</font></b> calculations where it is 0.025 femtoseconds.
+</p>
+<p><b><font color="#0000FF">Sample=<font face="Times New Roman, Times, serif" size="3"><i>type</i></font></font></b><br>
+Specifies the type of sampling, where <font face="Times New Roman, Times, serif" size="3"><i>type</i></font> is one of these keywords: <b><font color="#0000FF">Microcanonical</font></b>, <b><font color="#0000FF">Fixed</font></b>, and <b><font color="#0000FF">Local</font></b>. The default is <b><font color="#0000FF">Fixed</font></b> normal mode energy unless <b><font color="#0000FF">RTemp</font></b> was specified, in which case <b><font color="#0000FF">Local</font></b> mode sampling is implied.
+</p>
+<p><b><font color="#0000FF">Restart</font></b><br>
+Restart a trajectory calculation from the checkpoint file. Note that options set in the original job will continue to be in effect and cannot be modified.
+</p>
+<p><b><font color="#0000FF">ReadIsotopes</font></b><br>
+This option allows you to specify alternatives to the default temperature, pressure, frequency scale factor and/or isotopes&mdash;298.15 K, 1 atmosphere, no scaling, and the most abundant isotopes (respectively). It is useful when you want to rerun an analysis using different parameters from the data in a checkpoint file. 
+<br><br>Be aware, however, that all of these can be specified in the route section (<b><font color="#0000FF">Temperature</font></b>, <b><font color="#0000FF">Pressure</font></b> and <b><font color="#0000FF">Scale</font></b> keywords) and molecule specification (<b><font color="#0000FF">Iso=</font></b> parameter), as in this example:
+<pre>
+#T <font face="Times New Roman, Times, serif" size="3"><i>Method</i></font>/6-31G(d) <font face="Times New Roman, Times, serif" size="3"><i>JobType</i></font> <b>Temperature=300.0</b> &hellip;
+
+&hellip;
+
+0 1
+C(<b>Iso=13</b>)
+&hellip;
+</pre>
+<b><font color="#0000FF">ReadIsotopes</font></b> input has the following format:
+<pre>
+<font face="Times New Roman, Times, serif" size="3"><i>temp</i></font> <font face="Times New Roman, Times, serif" size="3"><i>pressure</i></font> [<font face="Times New Roman, Times, serif" size="3"><i>scale</i></font>]</i></font> &nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Values must be real numbers.</i></font></font>
+<font face="Times New Roman, Times, serif" size="3"><i>isotope mass for atom 1</i></font>
+<font face="Times New Roman, Times, serif" size="3"><i>isotope mass for atom 2</i></font>
+&hellip; 
+<font face="Times New Roman, Times, serif" size="3"><i>isotope mass for atom n</i></font>
+</pre>
+</p>
+where <font face="Times New Roman, Times, serif" size="3"><i>temp</i></font>, <font face="Times New Roman, Times, serif" size="3"><i>pressure</i></font>, and <font face="Times New Roman, Times, serif" size="3"><i>scale</i></font> are the desired temperature, pressure, and an optional scale factor for frequency data when used for thermochemical analysis (the default is unscaled). The remaining lines hold the isotope masses for the various atoms in the molecule, arranged in the same order as they appeared in the molecule specification section. If integers are used to specify the atomic masses, the program will automatically use the corresponding actual exact isotopic mass (e.g., 18 specifies <sup>18</sup>O, and Gaussian uses the value 17.99916).
+</p>
+<h3><font size="-1" color="#222222">AVAILABILITY</font></h3>
+<p>All semi-empirical, HF, CASSCF, CIS, MP2 and DFT methods.</p>
+<h3><font size="-1" color="#222222">RELATED KEYWORDS</font></h3>
+<p><b><font color="#0000FF">ADMP</font></b></p>
+<h3><font size="-1" color="#222222">EXAMPLES</font></h3>
+<p>The following sample <b><font color="#0000FF">BOMD</font></b> input file illustrates many of the available options. It will calculate a trajectory for H<sub>2</sub>CO dissociating to H<sub>2</sub> + CO, starting at the transition state. There is one fragmentation pathway: C and O belong to fragment 1, and the two hydrogens belong to fragment 2.</p>
+<p>Stopping criteria are also specified in this example job. The trajectory will be stopped if the distance between the centers of mass of H<sub>2</sub> and CO exceed 13 Bohr, the closest distance between H<sub>2</sub> and CO exceeds 11 Bohr, all atoms in a fragment are less than 1.3 Bohr from the center of mass of the fragment, any atom in the fragment is less than 2.5 Bohr from all other atoms in the fragment, the gradient for the separation of the fragments is less than 0.0000005 Hartree/Bohr, and the distance between atoms 1 and 3 is greater than 12.8 Bohr.</p>
+<p>The initial kinetic energy along the transition vector is 5.145 kcal/mol, in the direction of the products (the forward direction is characterized by an increase in the larger C-H distance). The Morse parameters for H<sub>2</sub> and CO are specified to determine the vibrational excitation of the product diatomics; they were computed in a previous calculation. The calculation will be carried out at 300 K.</p>
+<pre>
+# HF/3-21G BOMD(Phase=(1,3),RTemp=300,NSample=1,ReadStop) Geom=Crowd
+ 
+HF/3-21G dissociation of H2CO --&gt; H2 + CO
+ 
+0 1
+C
+O 1 r1
+H 1 r2 2 a
+H 1 r3 3 b 2 180.
+ 
+r1 1.15275608
+r2 1.74415774
+r3 1.09413376
+a 114.81897892
+b 49.08562961
+ 
+1
+1 1 2 2
+13.0 11.0 1.3 2.5 0.0000005 1 1 3 12.8
+1 5.145
+C O -112.09329898 1.12895435 0.49458169 2.24078955
+H H -1.12295984 0.73482237 0.19500473 1.94603924
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Final blank line</i></font></font>
+</pre>
+<p>Note that all six stopping criteria are used here only for illustrative purposes. In most cases, one or two stopping criteria are sufficient.</p>
+<p>At the beginning of a <b><font color="#0000FF">BOMD</font></b> calculation, the parameters used for the job are displayed in the output:</p>
+<pre>
+ TRJ-TRJ-TRJ-TRJ-TRJ-TRJ-TRJ-TRJ-TRJ-TRJ-TRJ-TRJ-TRJ-TRJ-TRJ-TRJ-TRJ
+ -------------------------------------------------------------------
+ INPUT DATA FOR L118
+ -------------------------------------------------------------------
+ 
+ General parameters:
+ Max. points for each Traj.   =     100
+ Total Number of Trajectories =       1
+ Random Number Generator Seed =  398465
+ Trajectory Step Size         =   0.250 sqrt(amu)*bohr
+
+ Sampling parameters:
+ Vib Energy Sampling Option   = Thermal sampling
+   Vib Sampling Temperature   =     300.0 K
+   Sampling direction         = Forward
+ Rot Energy Sampling Option   = Thermal distribution (symmetric top)
+   Rot Sampling Temperature   =     300.0 K
+ Start point scaling criteria =       1.000D-05 Hartree
+ &hellip;
+ 
+ Reaction Path  1
+ ****************
+ Fragment  1    center   1 ( C )   2 ( O )
+ Fragment  2    center   3 ( H )   4 ( H )
+ Termination criteria:
+   The CM distances are larger than 13.000 bohr
+   The min atomic distances among fragments are larger than 11.0 bohr
+   The max atomic and CM distances in frags are shorter than 1.3 bohr
+   The max atomic distances in fragments are shorter than 2.500 bohr
+   The change of gradient along CM is less than 5.00D-07 Hartree/bohr
+   Distance between atom center 1 ( C ) and 3 ( H ) is GE 12.800 bohr
+ 
+ Morse parameters for diatomic fragments:
+            E0            Re            De            Be
+ C  O   -112.0932990     1.1289544      0.4945817      2.2407896
+ H  H     -1.1229598     0.7348224      0.1950047      1.9460392
+---------------------------------------------------------------------
+</pre>
+<p>The initial kinetic energies for the normal modes appear at the beginning of each trajectory step:</p>
+<pre>
+ -------------------------------------------------------
+          Thermal Sampling of Vibrational Modes
+ Mode     Wavenumber     Vib. quant.#  Energy (kcal/mol)
+ -------------------------------------------------------
+    1     -2212.761                        5.14500
+    2       837.330            0           1.19702
+    3      1113.182            0           1.59137
+    4      1392.476            0           1.99064
+    5      2026.859            0           2.89754
+    6      3168.689            0           4.52987
+-------------------------------------------------------
+</pre>
+<p>After the trajectory computation is complete, summary information is displayed in the output:</p>
+<pre>
+ Trajectory summary for trajectory      1
+ Energy/gradient evaluations           76
+ Hessian evaluations                  76
+ 
+ Trajectory summary
+  Time (fs) Kinetic (au) Potent (au) Delta E (au)    Delta A (h-bar)
+  0.000000  0.0214192  -113.0388912   0.0000000    0.0000000000000000
+  1.169296  0.0293490  -113.0468302  -0.0000091    0.0000000000053006
+  2.161873  0.0407383  -113.0582248  -0.0000144    0.0000000000045404
+  &hellip;
+</pre>
+<p>The information is given for each time step in the trajectory. In addition, the output includes geometrical parameters for the atoms in each fragment, the distances between fragments, and the relative mass-weighted velocities for each fragments and between fragments, all reported at each time step. You can also use GaussView or other visualization software to display the trajectory path as an animation.</p>
+<hr><p><font face="Times New Roman, Times, serif" size="-1"><i>Last updated on: 9 Jun 2009</i></font></p>
+</body></html>

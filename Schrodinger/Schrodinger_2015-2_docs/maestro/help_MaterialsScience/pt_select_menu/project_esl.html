@@ -1,0 +1,224 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<link rel="stylesheet" href="../support/help.css" charset="ISO-8859-1" type="text/css" />
+<title>Entry Selection Language (ESL)</title>
+</head>
+<body>
+<table bgcolor="#dcdcdc" border="0" cellspacing="0" width="100%">
+<tr><td>
+<p><img src="../images/common/schrodinger_logo.png" align="left" alt=""
+ border="0" hspace="5" vspace="5" /></p>
+</td></tr>
+<tr><td>
+<h1 class="title">Entry Selection Language (ESL)</h1>
+</td></tr>
+</table>
+
+<ul>
+<li><a href="#projesl0">Why an Entry Selection Language?</a></li>
+<li><a href="#projesl1">Entry Selection Commands</a></li>
+<li><a href="#projesl2">Entry Properties</a></li>
+<li><a href="#projesl3">Logical Operators</a></li>
+<li><a href="#projesl4">Property Comparisons</a></li>
+<li><a href="#projesl5">Examples</a></li>
+<li><a href="#links">Related Topics</a></li>
+</ul>
+
+<a name="projesl0"></a>
+<h2>Why an Entry Selection Language?</h2>
+
+<p>The Entry Selection Language (ESL) is used for selecting entries in a
+Maestro project based on the properties of those entries. ESL expressions
+can be of arbitrary complexity and involve the use of parentheses and
+logical operators. </p>
+
+<a name="projesl1"></a>
+<h2>Entry Selection Commands</h2>
+
+<p>Entry selection can be done with commands in the <span class="GUI">Command
+Input Area</span> of the main window. The three selection commands are:</p>
+<pre>
+entryselectonly <i>ESL-expression</i>
+entryselect <i>ESL-expression</i>
+entryunselect <i>ESL-expression</i>
+</pre>
+
+<a name="projesl2"></a>
+<h2>Entry Properties</h2>
+
+<p>There are a number of properties that can be used in ESL expressions:</p>
+
+<dl>
+<dt>Entry ID</dt>
+<dd><p>The entry ID is the unique identifier for the entry, and is an integer
+assigned by Maestro. The syntax is</p>
+<pre>
+{id|entry|entry_id} <i>name</i>
+</pre>
+</dd>
+<dt>Entry Name</dt>
+<dd><p>The name of the entry is not unique. The syntax for matching by name is </p>
+<pre>
+{name|entry_name} <i>name</i>
+{name_re|entry_re|entry_name_re} <i>name_expression</i>
+</pre>
+<p>For the <code>_re</code> expressions, wildcard characters can be used:
+"*" matches any number of characters, "?" matches any single
+character, "#" matches any single digit. For the <code>entry</code> expression
+only the literal name matches.</p>
+</dd>
+
+<dt>Entry Selection State</dt>
+<dd><p> This allows the selection of entries based on whether or not they
+are already selected. The syntax is:</p>
+<pre>
+selected
+</pre>
+</dd>
+
+<dt>Entry Workspace Inclusion State</dt>
+<dd><p> This allows the selection of entries based on whether or not they
+are already included for display in the Workspace. The syntax is:</p>
+<pre>
+included
+</pre>
+</dd>
+
+<dt>All Entries</dt>
+<dd><p> This is a quick way to select all entries. The syntax is:</p>
+<pre>
+all
+</pre>
+</dd>
+
+</dl>
+<p>Property names can be all upper case or all lower case, but not mixed case.
+</p>
+
+
+<a name="projesl3"></a>
+<h2>Logical Operators</h2>
+
+<p>The following logical operators are supported (in order of decreasing
+priority)</p>
+<pre>
+not
+and or
+</pre>
+<p>At equal levels of priority expressions are evaluated from left to right.
+Parentheses can be used to override the default order of priority.</p>
+
+<a name="projesl4"></a>
+<h2>Property Comparisons</h2>
+
+<p>ESL expressions may also contain comparisons involving entry properties.
+Properties may be defined by their data names or their user names. The data
+names are the names that appear in Maestro files. The user names
+are the names that appear in the heading row of the Project Table. User names
+are specified as</p>
+<pre>
+user(<i>propertyname</i>)
+</pre>
+<p>For example, the &quot;volume&quot; property is specified as</p>
+<pre>
+user(volume)
+</pre>
+<p>The following names</p>
+<pre>
+user(#stars)
+i_qp_#stars
+</pre>
+<p>are equivalent names for properties.</p>
+
+<p>For properties of type integer and real the following comparison operators
+are supported:</p>
+<pre>
+==
+!=
+&lt;
+&gt;
+&lt;=
+&gt;=
+</pre>
+<p>
+For boolean properties the name of the property can be specified and
+will match any entries where that property is true. It is also possible to
+use:</p>
+<pre>
+==
+!=
+</pre>
+<p>in explicit comparisons with the values <code>true</code> and
+<code>false</code>.
+</p>
+
+<p>Comparisons involving string properties have the form:</p>
+<pre>
+<i>property_name</i> <i>string_literal</i>
+</pre>
+<p>for a match of the property name with the string literal.
+For example:</p>
+<pre>
+s_m_string_prop left
+user(string prop) left*
+</pre>
+<p>String literals may include the
+"*", "?" and "#" wildcard characters available for entry names as described
+above.</p>
+
+<a name="projesl5"></a>
+<h2>Examples</h2>
+
+<p>Some examples of ESL expressions are: </p>
+<pre>
+entry anentry
+entry_re ligand*
+entry_re ligprep and selected
+(entry_re lig# and selected ) and not included
+user(volume) &lt; 100.0 and selected
+included and user(#stars) == 2 and user(#amine) == 0
+user(log s) &gt; 0.5 and user(log S) &lt; 1.0
+</pre>
+
+<p>A few examples of the use of ESL to select entries are provided here.</p>
+
+<p>To select only converged, low energy structures:</p>
+<pre>
+entryselectonly user(Minimization Converged-OPLS2005) and
+user(Relative Potential Energy-OPLS2005) &lt;= 5
+</pre>
+
+<p>To select only those compounds with QikProp properties that obey the
+&quot;rule of five&quot;:</p>
+<pre>
+entryselectonly user(donorHB) &lt; 5 and
+user(mol MW) &lt; 500 and
+user(QPlogPo/w) &lt; 5 and
+user(hb accptHB) &lt; 10
+</pre>
+
+<a name="links"></a>
+<h2>Related Topics</h2>
+<ul>
+<li><a href="../project_facility/project_overview.html">Project Facility</a></li>
+<li><a href="../project_facility/project_table.html">Project Table</a></li>
+<li><a href="esd.html">Entry Selection Dialog Box</a></li>
+<li><a href="../project_facility/sort_project_table.html">Sorting the Project Table</a></li>
+</ul>
+<hr />
+<table width="100%">
+<tr><td><p class="small"><a href="../support/legal_notice.html" target="LegalNoticeWindow">Legal Notice</a></p></td>
+<td>
+<table align="right">
+<tr><td><p class="small">
+File: pt_select_menu/project_esl.html<br />
+Last updated: 20 Jun 2014
+</p></td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

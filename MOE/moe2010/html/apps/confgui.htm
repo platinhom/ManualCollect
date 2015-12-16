@@ -1,0 +1,1214 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<!--
+!!	confgui.htm		Conformation Import
+!!
+!!	31-aug-2009 (kg) new panels, small edits
+!!	06-oct-2008 (kk) small edits
+!!  	10-sep-2007 (jd) packed conformations
+!!  	15-dec-2002 (pl) updated options and panel
+!!  	17-feb-2002 (pl) created
+!!-->
+
+<title>Conformation Import</title>
+
+<meta panel Conformation Import>
+
+<meta main_keywords conformational search, stochastic />
+
+<meta keywords forcefield, fragment, refinement, molecular mechanics, MM />
+<meta keywords minimization, iteration, gradient, test, analysis, limit >
+<meta keywords chiral constraint, potential setup, strain />
+<meta keywords smp, wash, filter, duplicate />
+
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Conformation Import</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Methodology">Methodology Overview</a></li>
+<li><a href="#Running">Running Conformation Import</a>
+    <ul>
+    <li><a href="#MMSettings">Molecular Mechanics Settings</a></li>
+    <li><a href="#Filters">Filters on Input Structures</a></li>
+    <li><a href="#Constraints">Constraints on Output Conformations</a></li>
+    </ul></li>
+<li><a href="#Output">Output Analysis</a>
+    <ul>
+    <li><a href="#OutputConfDb">Output Conformation Database</a></li>
+    <li><a href="#LogDb">Log Database</a></li>
+    <li><a href="#NewFragDb">New Fragment Database</a></li>
+    </ul></li>
+</ul>
+
+<p>
+The purpose of Conformation Import is to calculate low-energy conformations
+of a collection of molecules and store them in a Molecular Database.  MOE
+Molecular Database files or MDL SD files containing drawings of molecules
+are typically used as input.  The algorithms used were designed for
+speed, especially for combinatorial libraries.
+When run on a <a href="../install/smp_inst.htm">MOE/smp</a> multi-processor,
+Conformation Import will automatically execute in multi-processor mode.
+</p>
+
+<p> The main characteristics
+of Conformation Import are:
+</p>
+
+<ul>
+<li><i>Forcefield-Based</i>.  
+A molecular force field is used as the basis to determine low energy
+conformations (as opposed to rule-based methods). 
+</li>
+
+<li><i>Fragment Approach</i>.
+Molecules are divided into overlapping fragments whose conformations
+are determined independently prior to assembly.  For speed, the conformations
+of these fragments are saved for future use.
+</li>
+
+<li><i>Systematic Search</i>.
+The conformational search is systematic (as opposed to stochastic).
+The resulting conformations are reproducible.
+</li>
+</ul>
+
+<p>
+In this document we present an overview of the underlying methodology as
+well as instructions on how to run the application.
+</p>
+<!-- METHODOLOGY -->
+
+<a name="Methodology"></a>
+<h2>Methodology Overview</h2>
+
+<p>
+Conformation Import calculates low energy conformations of a collection
+of molecules.  The processing of these molecules (typically in SDF or MDB
+files) proceeds in stages.  The following diagram is a depiction of these
+stages:
+</p>
+<p>
+<center><img src="confgui/method.png"></center>
+</p>
+<p>
+The main stages of the calculation are as follows:
+
+<ol>
+<li>
+<i>Wash and Filter</i>.  Many compound collections (especially from compound
+suppliers) contain either undesirable compounds or compounds drawn in
+undesirable ways.  The Wash and Filter stage makes conservative changes to the
+molecules: salts and solvent are removed, (acids) bases are (de)protonated, and
+compounds are rejected (skipped) according to filtering rules such as the <a
+href="http://en.wikipedia.org/wiki/Lipinski's_Rule_of_Five"
+target="_blank">Lipinski rule-of-five</a> or the presence of reactive groups.
+The washing and filtering operation are configurable.
+</li>
+
+<li>
+<i>Fragment</i>.
+Input molecules are divided into overlapping fragments.  The idea is to
+fragment the molecules so that each fragment's conformations can be determined
+independently. Rigid-body superpositions (on the intersections of the fragments)
+are used to assemble fragment conformations into full molecular conformations.
+</li>
+
+<li>
+<i>Fragment Conformations</i>.
+The conformations of the fragments are determined by a thorough stochastic
+conformational search.  The results of this search are stored in a fragment
+database for future use.  For each fragment in the molecule a lookup is
+made in the fragment conformation database.  If the fragment is not in
+the database it is converted to a carbon skeleton and another lookup
+is attempted.  If no skeleton exists then a stochastic search is performed.
+If a skeleton exists then the fragment's conformations are determined
+by refining (energy minimizing) skeleton conformations.
+</li>
+
+<li>
+<i>Conformation Assembly and Constraints</i>.
+The input molecule conformations are built by assembling the conformations
+of its fragments.  Rigid-body superposition is used to position the
+conformations of the fragments.  Conformations are rejected if there is
+a bad van der Waals contact.  Conformations are also rejected if they contain
+certain undesirable group conformations such as <i>cis</i> amides (see below).
+</li>
+
+<li>
+<i>Strain Energy Estimation</i>.
+The strain energy of each conformation is estimated by summing the
+strain energies of subset fragments that overlap by three or fewer atoms.
+Finally, the conformation and the strain energy are written to the output
+database.
+
+</ol>
+
+<p>
+<b>Stochastic Search</b>.
+For the present work we chose a stochastic conformational search algorithm.
+The search gives excellent performance when compared to other methods that
+produce energy minimized conformations (such as a systematic search that
+steps through all rotatable bonds at certain increments).  Stochastic search is
+a simple and efficient method to search both chain, ring and enantiomer
+conformations.  The following is a description of the algorithm used:
+</p>
+<blockquote>
+<p>
+
+<b>Input</b>: a molecule represented by a molecular graph and a collection of
+chiral constraints.  
+<br>
+<b>Output</b>: the collection of unique conformations with a
+strain energy for each conformation.
+
+<dl>
+<dt>
+<b>Parameters</b>:
+<dd>
+<br>
+a)&nbsp;<tt>mmFailureLimit</tt> - if a new conformation is not generated
+after <tt>mmFailureLimit</tt> consecutive attempts then the algorithm
+will terminate;
+
+<p>b)&nbsp;<tt>mmSuperposeRMSD</tt> - if two conformers superpose with a root
+mean square distance (RMSD) to <tt>mmSuperposeRMSD</tt> or less then they are
+considered the same;
+<p>c)&nbsp;<tt>mmGradientTestMM</tt> - energy minimization will terminate if the
+root mean square gradient falls below <tt>mmGradientTestMM</tt>;
+<p>d) <tt>mmStrainLimit</tt> - if a conformation's strain energy exceeds
+<tt>mmStrainLimit</tt> then it is discarded.
+</dl>
+
+<p><b>Step 1</b> [Initialize].
+Initialize the conformation list, <i>C</i>, to empty.  Set the failure counter
+<i>f</i> to zero.  Compute a spanning tree, <i>T</i>, of the molecular graph.
+For each edge, <i>e</i>, of the spanning tree let <i>R<sub>e</sub></i> be the
+smaller of the two connected subtrees of atoms obtained by deleting <i>e</i>
+from the tree; thus, to rotate about bond <i>e</i> the atoms in
+<i>R<sub>e</sub></i> must be rotated.
+
+<p><b>Step 2</b> [Embed].
+
+Obtain a set of 3D coordinates (ignoring chiral constraints)
+using the Embed3D algorithm (see below).
+
+<p><b>Step 3</b> [Perturb].
+Randomly invert all chiral centers and non-planar atoms with three or more
+heavy neighbors.  For each edge, <i>e</i>, in the spanning tree <i>T</i>,
+rotate the atoms in the set <i>R<sub>e</sub></i> about the bond <i>e</i>
+by a random angle chosen uniformly in the interval [0,360] degrees.  For
+each atom in the molecule add a small random displacement (dx,dy,dz)
+chosen uniformly in the cube [0,0.0001]<sup>3</sup> to its coordinates.
+This small perturbation helps prevent the case of unwanted co-planar
+atoms.
+
+<p><b>Step 4</b> [Minimize].
+Energy minimize on the resulting set of coordinates.  Stop
+the minimization when the root mean square gradient falls below
+<tt>mmGradientTestMM</tt>.
+
+<p><b>Step 5</b> [Reject].
+If the conformation fails any one of several quality checks
+(see below) then it is rejected.  If the conformation superposes to an RMSD of
+<tt>mmSuperposeRMSD</tt> or less with a conformation in the conformation
+list <i>C</i>, then it is rejected.  If the molecule is rejected then increase
+the failure counter <i>f</i> by one.  If <i>f</i> exceeds the
+<tt>mmFailureLimit</tt> parameter, go to Step&nbsp;7.  If <i>f</i> does not
+exceed <tt>mmFailureLimit</tt>, return to Step&nbsp;3.
+
+<p><b>Step 6</b> [Save].
+Add the coordinates of the atoms and the potential energy of
+the coordinates to the conformation list, <i>C</i>.  Set the failure
+counter, <i>f</i>, to zero.  Return to Step&nbsp;3.
+
+<p><b>Step 7</b> [Termination].
+Save the conformation list <i>C</i> and terminate
+the algorithm.
+</blockquote>
+
+<p>
+In Step&nbsp;5 of the algorithm several checks are made regarding the quality, or
+plausibility, of the conformation.  A candidate conformation is rejected if
+any of the following hold: a) a bond length differs by more than 0.4 angstroms
+from the force field equilibrium; b) an atom is not contained in the smallest
+convex volume containing its immediately bonded neighbors; c) a chiral
+constraint is violated.  These tests ensure that, for example, bonds do not
+lie on different sides of a ring or that an atom with four neighbors is well
+placed "in the middle".  (These examples are routinely observed in
+conformational searches that admit very highly strained conformations for
+refinement.)
+
+<p>
+The termination criteria in Step&nbsp;5 can be interpreted as follows. Upon
+termination there have been L=<tt>mmFailureLimit</tt> consecutive attempts to
+generate a new configuration and each has failed.  By way of analogy to coin
+tossing, we can estimate the probability that there exists a configuration not
+yet seen.  Using the coin tossing analogy, a biased coin has been tossed L
+times and each time "heads" was observed.  The Bayes estimate for the
+probability of observing "heads" is (#heads+1)/(#tosses+2).  If L "heads" are
+observed in L tosses then the probability of observing "heads" is
+(L+1)/(L+2); thus the probability of observing "tails" (or, analogously,
+a new configuration) is 1/(L+2). At L = 18 this probability is 5%.
+
+<p>
+Step&nbsp;3 of the algorithm computes an initial set of 3D coordinates of a
+molecule when given a molecular graph.  Chiral constraints are ignored for
+the embedding since chirality is part of the StochasticSearch algorithm.  The
+Embed3D algorithm is used to effect the embedding:
+
+<p>
+<blockquote>
+<b>Algorithm Embed3D</b>
+
+<p>
+<b>Input</b>: a molecular graph with <i>n</i> atoms.
+
+<br>
+<b>Output</b>: a reasonable 3D conformation (Cartesian coordinates for
+each atom).
+
+<p><b>Step 1</b>.
+Calculate two <i>n</i> by <i>n</i> matrices L and U the estimate of lower
+and upper the bounds
+of the inter-atomic distances; that is, for atoms <i>i</i> and <i>j</i> we
+estimate L<i><sub>ij</sub></i> and U<i><sub>ij</sub></i> such that in any
+conformation, the distance, <i>d</i>, between atoms <i>i</i> and <i>j</i>
+satisfies L<i><sub>ij</sub></i> < <i>d</i> &lt; U<i><sub>ij</sub></i>.
+
+<p> <b>Step 2</b>.
+Calculate a random inter-atomic distance matrix D such that
+D<i><sub>ji</sub></i> = D<i><sub>ij</sub></i> = L<i><sub>ij</sub></i>
++ X<i><sub>ij</i></sub> where <i>i</i>&lt;<i>j</i> and X<i><sub>ij</sub></i>
+is a random number chosen uniformly in the interval
+[L<i><sub>ij</sub></i>,U<i><sub>ij</sub></i>].
+
+<p> <b>Step 3</b>.
+Obtain an initial set of coordinates using the least-squares linear embedding
+method.  Briefly, assuming that D is the distance matrix of a set of points,
+a dot product matrix, A, is derived from D (A<i><sub>ij</sub></i> is the dot
+product of the coordinate vectors of points <i>i</i> and <i>j</i> assuming the
+points' centroid is at the origin).  A is then diagonalized and the first
+three eigenvectors scaled by the square root of the associated eigenvalues
+are retained as the coordinate estimates.
+
+<p> <b>Step 4</b>.
+Energy minimize the coordinates obtained in Step&nbsp;3.  If the resulting
+conformation passes quality checks described above then the algorithm
+terminates; otherwise go to Step&nbsp;2. 
+</blockquote>
+
+<p>
+In practice, Embed3D is fast (especially for molecular fragments) and only
+one or two iterations of the algorithm are required (even for bridge systems
+and fused ring systems).
+
+<p>
+<b>Duplicate Conformations</b>.
+Conformation Import outputs conformations that are intended to be unique
+up to both rigid-body superposition and molecular symmetry (graph symmetry).
+If <i>x</i> and <i>y</i> are two conformations of a molecule and <i>x</i>
+can be superposed onto <i>y</i> under some symmetry then only one of the two
+need be retained.  For example, CCF<sub>3</sub> has six conformations
+(neglecting hydrogens) - three rotations about the CC bond times two
+pseudo-chiral states.  For most applications, however, only one conformation
+need be considered.  A hypothetical thermodynamic average, A, has the form
+<p>
+<center><img src="confgui/eqn_a1.png"></center>
+<p>
+where <i>f</i> is a function of a conformation, <i>x</i>, and <i>E(x)</i>
+is the energy of the conformation.  Let X denote an equivalence class of
+conformations induced by <i>n</i> molecular symmetries.  If <i>f</i> and
+<i>E</i> are invariant under molecular symmetries then we have that
+<p>
+<center><img src="confgui/eqn_a2.png"></center>
+<p>
+where <i>f(X)</i> denotes <i>f</i> evaluated at any member of X (all are
+equal) and <i>E(X)</i> denotes E evaluated at any member of X (all are equal).
+Hence, only one member of a symmetry class need be used.  CCF<sub>3</sub> has
+six symmetries; using only one conformation from the symmetry classes gives
+the same result for A.
+<P>
+Conformation import uses the following algorithm to determine if two
+conformations are equivalent:
+
+<p>
+<blockquote>
+<b>Algorithm EquivalentConformations</b>
+
+<p>
+<b>Input</b>: a molecular graph on <i>n</i> atoms and two conformations
+<i>x</i> and <i>y</i> assumed to satisfy any chiral constraints.
+
+<br>
+<b>Output</b>:
+a Boolean value of True if the conformations are equivalent and False
+otherwise.  A single parameter <tt>mmSuperposeRMSD</tt> is the tolerance used
+for detecting equal configurations of coordinates.
+
+<p> <b>Step 1</b>.
+Compute the set P&nbsp;=&nbsp;{p<i><sub>i</sub></i>} of all molecular
+symmetries.  This is done using the AtomSymmetry algorithm (see below).
+
+<p> <b>Step 2</b>.
+Generate two sets of conformations X and Y each obtained by applying all
+molecular automorphisms in P to <i>x</i> and <i>y</i>.
+
+<p> <b>Step 3</b>.
+For each <i>x<sub>i</sub></i> in X and <i>y<sub>j</sub></i> in Y, minimize
+the function
+<p>
+<center><img src="confgui/eqn_sup.png"></center>
+<p>
+over all rotation matrices <i>R</i> and translation vectors <i>t</i> and let
+<i>d</i> be the optimum value.  If <i>d</i> is less than the square of
+<tt>mmSuperposeRMSD</tt> for any (<i>i,j</i>) combination then return False;
+otherwise return True.
+</blockquote>
+
+<p>
+A molecular symmetry is an invertible mapping from atoms to atoms that
+preserves the bonding structure and atom type.  Such a mapping can be
+represented as a permutation vector <i>p</i> wherein atom <i>i</i> is mapped
+to <i>p<sub>i</sub></i>.  The first step in calculating all molecular graph
+symmetries is the calculation of the symmetry class of each atom.
+This is done as follows.
+<p>
+<blockquote>
+<b>Algorithm AtomSymmetry</b>
+
+<p>
+<b>Input</b>: a molecular graph with <i>n</i> atoms.  
+<br>
+<b>Output</b>: an <i>n</i>-vector,
+<i>c</i>, of integers such that atoms <i>i</i> and <i>j</i> are symmetric if
+<i>c<sub>i</sub>&nbsp;=&nbsp;c<sub>j</sub></i>.
+
+<p><b>Step 1</b>.
+For each atom <i>i</i> compute the triple
+<i>T<sub>i</sub>&nbsp;=&nbsp;(Z<sub>i</sub>,Q<sub>i</sub>,H<sub>i</sub>)</i>
+where
+<i>Z<sub>i</sub></i> is the atomic number of atom <i>i</i>,
+<i>Q<sub>i</sub></i> is the number of non-hydrogen neighbors of atom <i>i</i>,
+and
+<i>H<sub>i</sub></i> is the number of hydrogen atoms attached to atom <i>i</i>.
+
+<p> <b>Step 2</b>.
+Set <i>c<sub>i</sub></i> to be position of the first occurrence of
+<i>T<sub>i</sub></i> in the lexicographically sorted list
+(<i>T</i><sub>1</sub>,.,<i>T<sub>n</sub></i>).
+
+<p> <b>Step 3</b>.
+Set <i>d = c</i>.
+
+<p> <b>Step 4</b>.
+For each atom <i>i</i> set <i>L<sub>i</sub></i> to be the lexicographically
+sorted list {<i>c<sub>p</sub>, c<sub>q</sub>, c<sub>r</sub></i>, ...}
+where <i>p, q, r, ...</i> are bonded neighbors of atom <i>i</i>.
+
+<p> <b>Step 5</b>.
+Set <i>c<sub>i</sub></i> to be the position of the first occurrence
+(<i>c<sub>i</sub>,T<sub>i</sub></i>) in the lexicographically sorted list
+(<i>(c<sub>1</sub>,L<sub>1</sub>),.,(c<sub>n</sub>,L<sub>n</sub>)</i>).
+
+<p> <b>Step 6</b>.
+If <i>d</i> is equal to <i>c</i> then output <i>c</i> and stop; otherwise,
+go to Step&nbsp;3.
+</blockquote>
+
+<p>
+Formally, the algorithm runs in time O(<i>n</i><sup>2</sup> log <i>n</i>),
+however, in practice the running time is substantially less.  The above
+algorithm applied to diethyl sulfone produces:
+<p>
+<center><img src="confgui/c4so2.gif"></center>
+<p>
+where the subscript on each atom <i>i</i> is the value of <i>c<sub>i</sub></i>.
+The use of atomic number, heavy neighbor count and attached hydrogen count,
+(Z,Q,H), has the desirable property that the symmetry codes are invariant to
+different resonance structures of common functional groups.  For example,
+this algorithm correctly classifies the oxygen atoms in carboxylate and
+nitro groups as symmetric, as well as all of the nitrogen atoms in tetrazolium.
+<p>
+Suppose that a molecular graph has an atom symmetry vector <i>c</i> (as
+produced by the AtomSymmetry algorithm).  Let D be the graph distance matrix
+of the molecular graph; that is, D<i><sub>ij</sub></i> is the length of the
+shortest path in the graph between atoms <i>i</i> and <i>j</i>.  Consider
+a permutation <i>p</i> that maps <i>i</i> into <i>p(i)</i>.  The permutation
+<i>p</i> is called a molecular symmetry if
+a)&nbsp;<i>c<sub>i</sub>&nbsp;=&nbsp;c<sub>p(i)</sub></i> for all <i>i</i> - the
+atom symmetry number is preserved; and
+b)&nbsp;D<i><sub>ij</sub></i>&nbsp;=&nbsp;D<i><sub>p(i)p(j)</sub></i> for all
+<i>i</i> and <i>j</i> - the connectivity is preserved.  Diethyl sulfone
+has the following set of molecular symmetries:
+<p>
+<center>
+<table>
+<tr>
+<td><img src="confgui/c4so2_s.gif">
+<td>
+[1,2,3,4,5,6,7]<br>
+[1,2,3,5,4,6,7]<br>
+[7,6,3,4,5,2,1]<br>
+[7,6,3,5,4,2,1]
+</table>
+</center>
+<p>
+Here, the subscript on each atom is <i>i</i>, its number.  Each of the four
+molecular symmetries preserves the atomic chemical type and the
+connectivity of the molecule.  Permuting the coordinates of a conformation
+by a molecular symmetry produces another conformation (possibly inverting
+chirality) that has the same energy if a pair-wise potential is used.
+
+<p>
+To summarize,  Conformation Import uses a method based upon
+stochastic search of fragments followed by the assembly of fragment
+conformations to produce molecular conformations unique up to rigid-body
+superposition and molecular symmetry.  For speed, a fragment database is used
+to store (for re-use) the calculated fragment conformations.
+
+
+<!-- MAIN PANEL -->
+
+<a name="Running"></a>
+<h2>Running Conformation Import</h2>
+
+<p>
+To run Conformation Import, perform the following:
+<ol>
+<li>Select and configure the force field using
+<span class="menu">Window | Potential Setup</span> in the MOE window.  
+<a href="../moe/pot.htm">All-atom force fields</a> are recommended.
+</li>
+<p>
+<li>Open the panel using one of the following methods:
+
+<ol type=i>
+<li>Use the <span class="menu">MOE | File | Open</span> command in the MOE
+window and
+select either an MDL SD file (<tt>mdl_sdf</tt>) or a MOE Molecular Database
+(<tt>moe_mdb</tt>).  Then press the
+<span class="menu">Import Conformations</span> operation on the right.
+<li>Open the panel using
+<span class="menu">MOE | Compute | Conformations | Conformation Import</span>
+and then <b>Add</b> the input files to the list.
+</ol>
+
+
+</ol>
+
+<p>
+The following panel will appear: 
+
+<p>
+<center><img src="confgui/conf_ui.png" alt="Config GUI" /></center>
+</p>
+
+<p>
+The panel controls have the following meanings.
+</p>
+
+<table cellpadding="5" width="100%">
+<tr>
+<td valign="top"><b>Output Database</b>
+<td>
+The file name of the molecular database that will hold the output
+conformations.  This file is created anew for each run of Conformation Import.
+
+<tr>
+<td valign="top"><b>Split Output Database</b>
+<td valign="top">
+The output from a conformational search can become quite large.
+In order to keep the databases to a reasonable size, you can choose
+to split the output into several databases.  The size of each output
+database will be determined by the value specified in the text field,
+given in Megabytes.  If this value is less than 1 megabyte then 
+the output will be sent to a single database.
+
+<p>Multiple output databases will be automatically named using the
+<b>Output Database</b> string concatenated with the numbers <tt>001</tt>,
+<tt>002</tt>, etc.
+
+<tr>
+<td valign="top"><b>Refine&nbsp;Output Conformations</b>
+<td>If turned on then conformations are energy minimized before
+being written to the output database.  The strain energy for each
+conformation will be calculated using the minimized structure.
+
+<!--
+<tr>
+<td valign="top"><b>Packed Conformations</b>
+<td>If turned on then the output database will contain one complete molecule
+per entry; all of the conformations for that molecule will be packed
+into a separate field. Otherwise, each conformation of each molecule will
+be written to a separate entry.
+-->
+
+<tr>
+<td valign="top"><b>Limits</b>
+<td>
+The <b>Strain</b> value imposes a limit on the strain energy of output
+conformations.  Conformations with a strain energy (estimated) exceeding
+the specified value will be discarded.  The default is 4&nbsp;kcal/mol.
+<p>
+The <b>Conformations</b> value imposes a limit on the total number of
+conformations output for a given compound.  If more conformations are
+generated then high energy conformations will be discarded so that the
+total number is less than or equal to the specified value.  The default
+is 250.  If the limit is exceeded for a particular compound an entry will
+be written to the log database.
+<tr>
+<td valign="top"><b>MM Settings...</b>
+<td>
+The underlying Molecular Mechanics parameters used for the lowest level
+conformational search and other refinement procedures can be changed by
+pressing the <b>MM&nbsp;Settings...</b> button.  The parameters are explained
+later in this document.
+<tr>
+<td valign="top"><b>Input Files</b>
+<td>
+The list displays the filenames and apparent file types of the files that
+are used as a source of input compounds.  Conformation Import will process
+them in the order specified.  Press the <b>Add</b> button to add a file
+to the list.  The <b>Up</b>, <b>Down</b>, <b>First</b> and <b>Last</b>
+buttons change the order of files selected in the list.  Files that appear
+with a type of <b>???</b> will not be processed.  Legal file types
+are MDL SD files (<tt>mdl_sdf</tt>), MOE MDB files (<tt>moe_mdb</tt>) and
+files containing SMILES strings, one per line (<tt>smiles</tt>).
+<tr>
+<td valign="top"><b>Input Filters</b>
+<td>
+Input compounds are modified and/or omitted according to various filters
+summarized in the text.  To change these settings, press the <b>Change...</b>
+button to the right of the text.  The filters are explained later in this
+document.
+
+<p>To clear all the filters press <b>Clear</b>.  In order to turn
+a filter on again, the Input Filters panel must be used to turn on
+the toggle buttons and set the numeric value associated with the filter.
+
+<tr>
+<td valign="top"><b>Constraints</b>
+<td>
+Output conformations are constrained according to certain criteria
+summarized in the text.  To change these settings, press the <b>Change...</b>
+button to the right of the text.  The constraints are explained later in this
+document.
+<tr>
+<td valign="top"><b>Log Database</b>
+<td>
+During the calculation, entries will be written to the specified database
+(provided that a file name is given).   Compounds for which the conformational
+search algorithm failed to produce conformations, filtered compounds or
+compounds for which the Conformation Limit is exceeded will be output.
+If the <b>Write Filtered Compounds to Log</b> checkbox is turned off then
+filtered compounds will not be written.
+<tr>
+<td valign="top"><b>New Fragments</b>
+<td>
+During the calculation, the conformations of molecular fragments not previously
+encountered will be written to the specified database (provided that a file
+name is specified).  This output can be saved for future use.  If the
+specified file exists then it will be used as-is.  If the specified file
+does not exist it will be created.  On multi-processors each processor
+will open/create its own version of this file (the processor number will
+be appended to the file name).  If the <b>Reset New Fragment Files</b>
+checkbox is turned on then any pre-existing fragment files will be deleted
+prior to the calculation.
+
+</table>
+
+<p>
+After input of files and adjustment of the various parameters and settings,
+press the <b>OK</b> button to begin the calculation.
+
+<!-- MM SETTINGS -->
+
+<a name="MMSettings"></a>
+<h3>Molecular Mechanics Settings</h3>
+
+<p><img src="confgui/mmset.png" class="floatright" alt="MM Settings" />
+
+At the lowest level, Conformation Import uses a Stochastic Conformational
+Search (SCS) algorithm on portions of molecules (fragments).  The results of
+these searches can be saved for re-use in other compounds.  Briefly, the
+SCS algorithm works as follows.  A random conformation is generated and
+refined using energy minimization.  If the conformation is new (not seen
+in a previous iteration) then it is retained in a list.  If SCS fails to
+generate a new conformation after a specific number of consecutive attempts
+then the algorithm terminates.
+
+<p>The parameters for this Stochastic Conformational Search are specified using
+the <b>MM&nbsp;Settings...</b> button on the main Conformation Input panel.
+The options in this panel have the following meanings.
+
+<p>
+<b>Stochastic Search Strain Limit</b> (<tt>mmStrainLimit</tt>).
+When a Stochastic Conformational Search is performed, only those conformations
+with a strain energy less than the specified value (in kcal/mol) will be
+retained (the default is 7.0).  <b>Note:</b> this strain is different from the
+strain limit imposed on output conformations; it is used for molecular
+fragments subjected to a stochastic search or other refinement using
+energy minimization.
+
+<p>
+<b>Superpose RMSD Test</b> (<tt>mmSuperposeRMSD</tt>).
+Two conformations are judged to be the same if they superpose to a 
+root mean square distance (RMSD) less than the specified value
+(default 0.15 angstroms).
+ 
+<p>
+<b>Conformation Limit</b> (<tt>mmConformationLimit</tt>).
+At most the specified number of conformations (default 300) output
+from the SCS will be retained.  <b>Note:</b> this limit is not applied to output
+conformations after final assembly.
+
+<p>
+<b>Stochastic Search Failure Limit</b> (<tt>mmFailureLimit</tt>).
+If no new conformations are generated after the specified number
+of consecutive attempts (default 30) then the SCS algorithm will terminate.
+
+<p>
+<b>Stochastic Search Iteration Limit</b> (<tt>mmIterationLimit</tt>).
+At most the specified number of attempts (default 500) to generate
+conformations will be made in the SCS algorithm.
+
+<p>
+<b>Energy Minimization Iteration Limit</b> (<tt>mmIterationLimitMM</tt>).
+When refining conformations using energy minimization the specified value
+(default 200) will be used to limit the number of non-linear optimization
+steps.
+
+<p>
+<b>Energy Minimization Gradient Test</b> (<tt>mmGradientTestMM</tt>).
+In the SCS, or other refinement using energy minimization, the non-linear
+optimization will be terminated when the root mean square gradient falls
+below the specified value (default 0.01).
+
+<!-- FILTERS -->
+
+<a name="Filters"></a>
+<h3>Filters on Input Structures</h3>
+
+<p>
+<img src="confgui/filter.png" class="floatright" alt="Filters" />
+Often, collections of chemical structures contain undesirable compounds such
+as reactive groups or overly flexibly compounds.  In addition, entries in
+compound collections often contain salts or solvent which must be removed
+prior to conformational analysis.  For these reasons, Conformation Import
+provides a number of filters on the input structures which have the effect
+of modifying, or sometimes removing, input structure according to specific
+criteria.
+
+<p>A summary of these filters is displayed in the
+main Conformation Import panel labeled by <b>Input Filters:</b>.  The
+constraints may be changed by pressing the <b>Change...</b> button to
+the right of the summary.
+
+
+<p>
+<b>Deprotonate Acids and Protonate Bases</b> (<tt>filterAcidBase</tt>).
+If enabled then common acids will be deprotonated and common bases will be
+protonated.  This modification of protonation state is conservative.  Two
+acids or two bases will be left unchanged if they are related by a 1-4
+interaction.  By default, this filter is enabled.
+
+<p>
+<b>Omit Compounds with Transition Metals</b> (<tt>filterTransitionMetal</tt>).
+If enabled then compounds containing transition metals (after removal
+of salts and solvent) will be omitted from the conformational analysis.
+(An entry will be written to the log database.)  By default, this filter
+is enabled.
+
+<p>
+<b>Omit Compounds with 9-Rings or Larger</b> (<tt>filterBigRing</tt>).
+If enabled then compounds containing rings of size 9 or more will be
+omitted from the conformational analysis.
+(An entry will be written to the log database.)  By default, this filter
+is enabled.
+
+<p>
+<b>Omit Compounds with d-Hybridized Atoms</b> (<tt>filterDHybridization</tt>).
+If enabled then compounds containing atoms that are <i>d</i>-hybridized
+will be omitted from the conformational analysis.
+(An entry will be written to the log database.)  By default, this filter
+is enabled.
+
+<p>
+<b>Omit Compounds with Reactive Groups</b> (<tt>filterReactive</tt>).
+If enabled then compounds containing reactive groups will be omitted from the
+conformational analysis.
+(An entry will be written to the log database.)  By default, this filter
+is enabled.  The filter considers the following to be reactive groups:
+formyl halide, acyl halide, formaldehyde, aliphatic (thio)ester, aliphatic
+(thio)ketone, alkyl imine, alkyl halide, anhydride, aziridine,
+azide, 1,2-dicarbonyl, epoxide, halo-pyrimidine, isocynate, michael acceptor,
+perhalo-ketone, phosphonate ester, sulfonate ester, sulfonyl halide, thiol,
+(thio)urea, vinyl ketone, peroxide, thioperoxide, N-N/O/S single bond,
+beta heterosubstituted carbonyl, phosphorus with lone pairs.
+
+<p>
+<b>Molecular Weight Limit</b> (<tt>filterWeightLimit</tt>).
+Input compounds with a molecular weight greater than the specified value
+(default 600) will be omitted from conformational analysis.
+(An entry will be written to the log database.)
+
+<p>
+<b>Donor/Acceptor Limit</b> (<tt>filterDonorAcceptor</tt>).
+Input compounds with a total count hydrogen bond donors and acceptors
+greater than the specified value (default 12)
+will be omitted from the conformational analysis.
+(An entry will be written to the log database.)
+
+<p>
+<b>Chiral Center Limit</b> (<tt>filterChiralLimit</tt>).
+Input compounds with more than the specified value of chiral centers
+(default 4) 
+will be omitted from the conformational analysis.
+(An entry will be written to the log database.)
+
+<p>
+<b>Unconstrained Chiral Center Limit</b> (<tt>filterFreeChiralLimit</tt>).
+Input compounds with more than the specified value of unconstrained chiral
+centers (default 3) will be omitted from the conformational analysis.
+(An entry will be written to the log database.)
+Conformation Import will search all unconstrained chiral states; this can
+produce very large numbers of conformations if there are too many
+unconstrained chiral centers (as is often seen in compound collections).
+
+<p>
+<b>Rotatable Bond Limit</b> (<tt>filterRotatableBondLimit</tt>).
+Input compounds with more than the specified value of rotatable bonds
+(default 7)
+will be omitted from the conformational analysis.
+(An entry will be written to the log database.)
+
+<p>
+<b>Single Bond Chain Limit</b> (<tt>filterSingleChainLimit</tt>).
+Input compounds containing a chain of single bonds longer than the specified
+value (default 6)
+will be omitted from the conformational analysis.
+(An entry will be written to the log database.)
+
+<p>
+<b>LogP Lower Limit</b> (<tt>filterLogPLow</tt>).
+Input compounds that have a logP (octanol/water) lower than the specified
+value (default -4.0)
+will be omitted from the conformational analysis.  The Wildman &amp; Crippen
+model of logP is used.
+(An entry will be written to the log database.)
+
+<p>
+<b>LogP Upper Limit</b> (<tt>filterLogPHigh</tt>).
+Input compounds that have a logP (octanol/water) higher than the specified
+value (default 8.0)
+will be omitted from the conformational analysis.  The Wildman &amp; Crippen
+model of logP is used.
+(An entry will be written to the log database.)
+
+
+
+<p><span class="tip">Tip!
+If a filter is turned off then its associated numeric bound is set
+to an invalid value (usually zero).  When turning the filter on
+again, the numeric value must be set to a valid value
+in order for the filter to be turned on.
+</span></p>
+
+<!-- CONSTRAINTS -->
+
+<a name="Constraints"></a>
+<h3>Constraints on Output Conformations</h3>
+
+<p>
+<img src="confgui/constr.png" class="floatright" alt="Constraints" />
+Although some file formats (such as SD files) have provisions for assigning
+the <i>cis/trans</i> state of a double bond, it is rare to see such
+specifications used.  As a result, a number of constraints are provided for
+using the <i>input drawing of the structure to decide the state</i>.
+In addition, constraint options are provided for ensuring that certain
+groups adopt preferred conformations to the exclusion of others (e.g.
+amides and esters).
+A summary of these constraints is displayed in the
+main Conformation Import panel labeled by <b>Constraints:</b>.  The
+constraints may be changed by pressing the <b>Change...</b> button to
+the right of the summary.
+
+<p>
+<b>Use Input Drawing to Determine C=C cis/trans</b> (<tt>forceOriginalCC</tt>).
+This constraint applies to all non-ring double bonds between carbon
+atoms and all non-ring double bonds not covered by the
+other constraints on double bonds (<tt>forceOriginalCN</tt> and
+<tt>forceOriginalNN</tt> below).
+If enabled, this constraint will ensure that the output conformations retain
+the <i>cis/trans</i> state of the input drawing.  By default, this constraint
+is enabled since chemists tend to draw the state accurately.
+If disabled, then the two states will be treated as
+conformations and compete (energetically).
+
+<p>
+<b>Use Input Drawing to Determine C=N cis/trans</b> (<tt>forceOriginalCN</tt>).
+This constraint applies to all non-ring
+double bonds in which exactly one of the double bonded atoms is a nitrogen with
+exactly two heavy neighbors: <tt>-C=N-, &gt;C=N-, &gt;[N+]=N-</tt> etc.
+If enabled, this constraint will ensure that the output conformations retain
+the <i>cis/trans</i> state of the input drawing.  By default, this constraint
+is disabled since a)&nbsp;there are few reactions in which the <i>cis/trans</i>
+state can be easily controlled; and c)&nbsp;chemists do not tend to draw the
+state inaccurately.  If disabled, then the two states will be treated as
+conformations and compete (energetically).
+
+<p>
+<b>Use Input Drawing to Determine N=N cis/trans</b> (<tt>forceOriginalNN</tt>).
+This constraint applies to all non-ring double bonds between nitrogens with
+exactly two heavy neighbors: <tt>-N=N-</tt>
+(whether or not protonated).  If enabled, this constraint will ensure that
+the output conformations retain the <i>cis/trans</i> state of the input
+drawing.  By default, this constraint is disabled since a)&nbsp;the <i>cis</i>
+state has a high energy relative to the <i>trans</i> state making it
+thermodynamically less accessible; b)&nbsp;there are few reactions in which
+the <i>cis/trans</i> state can be easily controlled; and c)&nbsp;chemists
+do not tend to draw the state inaccurately.  If disabled, then the two states
+will be treated as conformations and compete (energetically).
+
+<p>
+<table width=100% border=0>
+<tr>
+<td valign="top">
+<b>Enforce trans (thio)Amide</b> (<tt>forceTransAmide</tt>).
+If enabled then output conformations of amides and thio-amides will be
+constrained to have the <i>trans</i> state.  Although <i>cis</i> states
+appear in the crystallographic data, they are rare and it is often
+preferable to omit them from conformational analysis.  The constraint
+applies to the <tt>O/S=C-N-H</tt> torsion (independent of substituents
+on the <tt>C=O/S</tt> carbon). By default this constraint is enabled.
+<td valign="top">
+<img src="confgui/amide.gif" align="right" alt="Amide" />
+</tr>
+</table>
+
+<p>
+<table width=100% border=0>
+<tr>
+<td valign="top">
+<b>Enforce trans (thio)Ester</b> (<tt>forceTransEster</tt>).
+If enabled then output conformations of esters and thio-esters will be
+constrained to have the <i>trans</i> state.  The <i>cis</i> state is
+extremely rare in crystallographic data and it is often preferable to omit
+it from conformational analysis.  The constraint applies to the
+<tt>R-C-O/S-R</tt> torsion.  By default this constraint is enabled.
+<td valign="top">
+<img src="confgui/ester.gif" align="right" alt="Ester" />
+</tr>
+</table>
+
+<p>
+<table width=100% border=0>
+<tr>
+<td valign="top">
+<b>Enforce trans Conjugated (thio)Ester</b>
+(<tt>forceTransConjugatedEster</tt>).
+If enabled then output conformations of conjugated esters and thio-esters will
+be constrained to have the <i>trans</i> state.  The <i>cis</i> state is
+extremely rare in crystallographic data and it is often preferable to omit
+it from conformational analysis.  The constraint applies to the
+<tt>C-O/S-*=*</tt> torsion provided that the double bonded atom attached
+to the <tt>O/S</tt> has exactly two heavy neighbors.  By default this
+constraint is enabled.
+<td valign="top">
+<img src="confgui/jester.gif" align="right" alt="JEster" />
+</tr>
+</table>
+
+<p><b>Constrain unconstrained chiral centers from 3D geometry</b>.
+If enabled, constraints based on existing 3D geometry will be added to
+unconstrained chiral centers.  By default this constraint is disabled.
+
+<p>
+<table width=100% border=0>
+<tr>
+<td valign="top">
+<b>Enforce trans Vinyl</b> (<tt>forceTransVinyl</tt>).
+If enabled then output conformations of single bonds between vinylic
+carbons with two heavy neighbors will be constrained to have the
+<i>trans</i> state.  Out-of-plane torsions are extremely rare in
+crystallographic data and it is often preferable to omit
+them from conformational analysis.  The constraint applies to the
+<tt>C=C-C=C</tt> torsion.  By default this constraint is enabled.
+<td valign="top"><img src="confgui/vinyl.gif" align="right" alt="Vinyl" />
+</tr>
+</table>
+
+<p><b>Constrain sp3 rings to have chair conformation only</b>.
+If enabled then sp3 6,7,8-rings will be constrained
+to have chair conformation only.
+
+<p>
+<b>Fragment Strain Limit</b> (<tt>fragStrainLimit</tt>).  This constraint
+ensures that no molecular fragment used in assembling final molecular
+conformations has a strain greater than the specified value
+(the default is 4).  Fragment conformations are filtered <i>prior</i> to
+assembly; this means that the lower the value the more likely it is that
+there will be a failure to produce molecular conformations (e.g. all
+low-strain fragment conformations result in steric clashes).
+
+<!-- OUTPUT -->
+
+<a name="Output"></a>
+<h2>Output Analysis</h2>
+
+<p>
+Conformation Import produces three kinds of output databases:
+
+<ol>
+<li>
+<i>Output Conformation Database</i>.
+This database contains the output conformations, strain energies and
+molecular numbers for each successful input molecule.
+<p>
+<li>
+<i>Log Database</i>.
+This database contains a record for each molecule that was rejected due
+to input filters as well as molecules for which the Conformation Import
+algorithm failed.
+<p>
+<li>
+<i>New Fragment Database</i>.
+If, during the course of Conformation Import, a new fragment is detected, then
+its conformations will be stored in the New Fragment Database for re-use.
+This database can be used in subsequent Conformation Import calculations.
+</ol>
+
+<a name="OutputConfDb">
+<h3>Output Conformation Database</h3>
+<p>
+The Output Conformation Database is specified in the <b>Output&nbsp;Database</b>
+field.  Conformations will be written
+to the specified database which will be created at the start of calculation.
+This database can become very large, so it is recommended to split the
+output database
+(default).  In all cases, it is advisable to verify that appropriate disk
+space is available (approximately 300 bytes per conformation are required).
+Note that running on a
+<a href="../install/smp_inst.htm">MOE/smp</a>
+multi-processor has no effect on the
+number of output conformation databases produced.
+<p>
+<center><img src="confgui/conf_out.png" alt="Output DB"/></center>
+
+<p>The fields in the Output Conformation Database have the following meaning:
+<p>
+<table class="titlebar" width=100%>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<tr>
+<td><tt>mol</tt>
+<td><tt>molecule</tt>
+<td>
+A molecular conformation.  For a particular molecule, the conformations are
+sorted by strain energy. (Strain energies are calculated with enantiomer
+classes.)
+<tr>
+<td><tt>mseq</tt>
+<td><tt>int</tt>
+<td>
+The molecular sequence number.  The molecule sequence number is the sequence
+number in the input molecule collection.  Different molecule sequence numbers
+are assigned to different molecules.  On a MOE/smp multi-processor the
+sequence numbers may not appear in increasing order.
+<tr>
+<td><tt>E</tt>
+<td><tt>float</tt>
+<td>
+The strain energy of the conformation in kcal/mol.  The strain energy is
+calculated as the energy of the conformation minus the smallest conformation
+energy in the molecule's enantiomer class.  The value of the strain energy
+is generally an underestimate; that is, the strain energy as measured by
+a force field calculation will generally be higher.
+</table>
+
+<!--
+<p>If <b>Packed Conformations</b> is enabled then the following fields
+are created instead:
+<p>
+<table cellpadding=5 width=100% border=1>
+<tr>
+<td bgcolor="#cccccc"><b>Name</b>
+<td bgcolor="#cccccc"><b>Type</b>
+<td bgcolor="#cccccc"><b>Description</b>
+<tr>
+<td><tt>mol</tt>
+<td><tt>molecule</tt>
+<td>Input molecule.
+<tr>
+<td><tt>mseq</tt>
+<td><tt>int</tt>
+<td>
+The molecular sequence number.  The molecule sequence number is the sequence
+number in the input molecule collection.  Different molecule sequence numbers
+are assigned to different molecules.  On a MOE/smp multi-processor the
+sequence numbers may not appear in increasing order.
+<tr>
+<td><tt>mol:conf</tt>
+<td><tt>bytes</tt>
+<td>Binary compressed conformation field containing the multiple conformation
+coordinates of the atoms in the <tt>mol</tt> field. The energies of each
+conformation are also stored in this field.
+</table>
+-->
+
+<a name="LogDb">
+<h3>Log Database</h3>
+<p>
+The Log Database contains information regarding molecules that were a)&nbsp;
+rejected by the input filters and b)&nbsp;molecules for which the
+Conformation Import Algorithm Failed.  A single log file is produced (even
+if Conformation Import is run on a MOE/smp multi-processor).
+<p>
+<center><img src="confgui/conf_log.png" alt="Log DB"/></center>
+
+<p>The fields in the Log Database have the following meaning:
+<p>
+<table class="titlebar" cellpadding=5 width=100% border=1>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<tr>
+<td><tt>mol</tt>
+<td><tt>molecule</tt>
+<td>
+The input molecule that was skipped.  The conformation or drawing will be that
+of the input file.
+<tr>
+<td><tt>mseq</tt>
+<td><tt>int</tt>
+<td>
+The molecular sequence number.  The molecule sequence number is the sequence
+number in the input molecule collection.  Different molecule sequence numbers
+are assigned to different molecules.  On a MOE/smp multi-processor the
+sequence numbers may not appear in increasing order.
+<tr>
+<td><tt>code</tt>
+<td><tt>char</tt>
+<td>
+A character code describing the reason that the molecule was not included
+in the output database.  This code refers to either an input filter or
+an algorithm failure or other information.
+<p>
+Codes starting with "<tt>filter:</tt>" refer to an intentional filtering
+of the molecule by an input filter rule.  The reason for filtering will
+appear after the colon; for example, <tt>filter:weight</tt> refers to the
+molecular weight filter.
+<p>
+Codes starting with "<tt>fail:</tt>" refer to a failure of the Conformation
+Import algorithm (internal technical failure).  Molecules in the Log Database
+with <tt>fail:</tt> codes must be searched with an alternative algorithm.
+<p>
+The code "<tt>outputConformationLimit</tt>" is an annotation indicating that
+the associated molecule's conformation list was truncated and only a
+sampling of low energy conformations were written to the Output Conformation
+Database.
+</table>
+
+<a name="NewFragDb">
+<h3>New Fragment Database</h3>
+<p>
+The New Fragment Database contains the conformations of new molecular fragments
+discovered during the current, or a past, Conformation Import calculation.
+When Conformation Import is run on a MOE/smp multi-processor there will
+be a separate New Fragment Database for each processor.  These separate
+databases will be named by appending the processor number to the supplied
+name in <b>New&nbsp;Fragments</b> field in the graphical interface. <b>Note:</b> 
+The Fragment Database is a packed database. You can convert it to a regular 
+database from the Database Viewer.
+Choose <span class="menu">DBV | Save As</b></span> and 
+check the <b>Conformations</b> option.
+
+<p>
+<center><img src="confgui/conf_unk.png" alt="New Fragments DB" /></center>
+
+<p>The fields in the New Fragments Database have the following meaning:
+<p>
+<table class="titlebar" cellpadding=5 width=100% border=1>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<tr>
+<td><tt>mol</tt>
+<td><tt>molecule</tt>
+<td>
+A molecular fragment discovered during a Conformation Import calculation.
+<tr>
+<td><tt>hash</tt>
+<td><tt>int</tt>
+<td>
+An internal integer vector used to rapidly locate molecular fragments
+during the Conformation Import Calculation.  This field must be present
+in order for Conformation Import to use the fragment database.
+<tr>
+<td><tt>freq</tt>
+<td><tt>int</tt>
+<td>
+The frequency of occurrence of the fragment.  This is the number of times
+that the fragment was used subsequent to its creation.  This field can be
+used to retain popular fragments in subsequent calculations.
+<tr>
+<td><tt>mol:conf</tt>
+<td><tt>bytes</tt>
+<td>
+Binary compressed conformation field containing the multiple conformation
+coordinates of the atoms in the <tt>mol</tt> field. The strain energies
+in kcal/mol of each conformation are also stored in this field.
+The strain energy is calculated as the energy of the conformation minus
+the smallest conformation energy in the fragment's enantiomer class.
+</table>
+
+<!-- SEE ALSO -->
+
+<h2>See Also</h2>
+
+<a href="../moe/pot.htm">MOE Potential Energy Model</a><br />
+<a href="../apps/confsrch.htm">Generating and Analyzing Conformations</a><br />
+<a href="ph4_guide.htm">Introduction to Pharmacophores in MOE</a><br />
+<a href="ph4_search.htm">Pharmacophore Search</a><br />
+<a href="../moe/gui/mainwin.htm">MOE Window</a><br />
+<a href="../mdb/db.htm">Molecular Database Viewer</a><br />
+<a href="../install/smp_inst.htm">MOE/smp</a>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

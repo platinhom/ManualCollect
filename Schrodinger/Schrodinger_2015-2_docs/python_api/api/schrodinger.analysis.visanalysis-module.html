@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>schrodinger.analysis.visanalysis</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >2015-2Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="schrodinger-module.html">Package&nbsp;schrodinger</a> ::
+        <a href="schrodinger.analysis-module.html">Package&nbsp;analysis</a> ::
+        Package&nbsp;visanalysis
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="schrodinger.analysis.visanalysis-module.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== PACKAGE DESCRIPTION ==================== -->
+<h1 class="epydoc">Package visanalysis</h1><p class="nomargin-top"></p>
+<h1 class="heading">Introduction</h1>
+    <p>Molecular structures reside in a three-dimensional world and 
+    naturally enough give rise to three-dimensional data. Much of this data
+    can be represented on a three-dimensional grid of points and 
+    visualised, either via isosurfaces, or more recently by advanced 
+    volumetric rendering options built into packages such as PyMol and 
+    Maestro. Currently however, the Schrodinger Python APIs do not provide 
+    an easy method of generating or handling such data. This library seeks 
+    to address this deficiency by providing a simple method of creating and
+    handling three-dimensional 'volumetric-data' as well as code to allow 
+    such data to be exported to packages such as PyMol and Maestro for 
+    visualisation.</p>
+    <h2 class="heading">Handling Three-Dimensional Data</h2>
+      <p>Three-dimensional arrays are trivially handled in most programming
+      languages, Python is no exception to this, with the Numpy array class
+      providing all of the basic functionality that we require in terms of 
+      low-level data allocation and manipulation. However, like most 
+      implementations, the Numpy array class only allows data points to 
+      reside on zero-based, integer indices, something which is 
+      inconvenient when we need to be able to manipulate data in terms of 
+      real-world coordinates, which will frequently involve fractional 
+      values. Consequently we need to generate the concept of 
+      world-coordinates and array-coordinates, with their associated 
+      coordinate-frames.</p>
+      <h3 class="heading">Array Coordinates</h3>
+        <p>Array-coordinates are integer coordinates specifying a given 
+        offset in the array. The set of valid array coordinates is bounded 
+        by zero at the lower end and the size of the array at the upper 
+        end. The size of the array is denoted as <code>N</code> throughout 
+        the code.</p>
+      <h3 class="heading">World Coordinates</h3>
+        <p>World-coordinates are floating-point coordinates representing a 
+        position in space. The set of valid world coordinates is not bound 
+        by anything, however, only a certain fraction of world-coordinates 
+        will correspond to a valid array-coordinate. In reality there are 
+        three classes of world-coordinate specification:</p>
+        <ol start="1">
+          <li>
+            <b>Directly mappable world-coordinate</b>. A directly mappable 
+            world-coordinate corresponds precisely to a valid location in 
+            array-coordinates. The value of the data at this location can 
+            be found by reading the underlying array directly.
+          </li>
+          <li>
+            <b>Interpolatable world-coordinate</b>. An interpolatable 
+            world-coordinate corresponds to a location that is in the 
+            bounds of the array-coordinates, but which does not correspond 
+            to a valid array coordinate, i.e. it lies between valid 
+            array-coordinates. A value cannot be retrieved directly from 
+            the underlying array in this case, however a valid value may be
+            found via interpolation.
+          </li>
+          <li>
+            <b>Invalid world-coordinate</b>. An invalid world-coordinate 
+            corresponds to a location that lies outside of the bounds of 
+            the array-coordinates. A value cannot be retrieved directly 
+            from the underlying array in this case, additionally no value 
+            can be found via interpolation. Such situations may be handled 
+            by returning a default value (frequently zero) or by raising an
+            error condition.
+          </li>
+        </ol>
+    <h2 class="heading">Converting Between Coordinate-Frames</h2>
+      <p>Naturally it will be necessary to convert between the 
+      array-coordinate frame and the world-coordinate frame (and back 
+      again). Fortunately this is very simple as naturally enough there is 
+      a linear relationship between them:</p>
+      <p><i class="math">world = resolution * array + origin</i></p>
+      <p><i class="math">array = ( world - origin ) / resolution</i></p>
+      <p>Of course in creating these conversions we have introduced the 
+      notion of resolution and the origin. These concepts are simple 
+      enough, the resolution specifies how quickly the world-coordinate 
+      changes for a change in the array-coordinate, while the origin moves 
+      the array-coordinate around the world-coordinate frame.</p>
+  <h1 class="heading">Code Examples</h1>
+    <h2 class="heading">Format Conversion</h2>
+      <h3 class="heading">Loading a .vis File for Access in Python</h3>
+        <p>The VolumeDataIO module contains the required functionality. Two
+        lines of code are required:</p>
+<pre class="literalblock">
+   import volumedataio as vdio
+   volumeData = vdio.LoadVisFile( &quot;filename.vis&quot; )
+   # ...use the volumeData object
+</pre>
+      <h3 class="heading">Conversion to CCP4 Format</h3>
+        <p>Pymol cannot read Maestro .vis files natively, it can however 
+        manipulate .ccp4 file with ease. The conversion of a .vis file to a
+        .ccp4 file can be accomplished as follows:</p>
+<pre class="literalblock">
+   import volumedataio as vdio
+   volumeData = vdio.LoadVisFile( &quot;filename.vis&quot; )
+   vdio.SaveCCP4File( volumeData, &quot;filename.ccp4&quot; )
+</pre>
+      <h3 class="heading">Accessing Basic VolumeData Properties</h3>
+        <p>Basic properties of a <code><a 
+        href="schrodinger.analysis.visanalysis.volumedata.VolumeData-class.html"
+        class="link">VolumeData</a></code> object can be retrieved as 
+        follows:</p>
+<pre class="literalblock">
+   # Assume that we have an initialised VolumeData instance called 
+   # volumeData
+   print &quot;volumeData X-Axis Resolution: %f&quot; %      volumeData.CoordinateFrame.X.resolution
+   print &quot;volumeData Y-Axis Resolution: %f&quot; %      volumeData.CoordinateFrame.Y.resolution
+   print &quot;volumeData Z-Axis Resolution: %f&quot; %      volumeData.CoordinateFrame.Z.resolution
+   print &quot;volumeData X-Axis Origin: %f&quot; %          volumeData.CoordinateFrame.X.origin
+   print &quot;volumeData Y-Axis Origin: %f&quot; %          volumeData.CoordinateFrame.Y.origin
+   print &quot;volumeData Z-Axis Origin: %f&quot; %          volumeData.CoordinateFrame.Z.origin
+</pre>
+        <p>Accessing the Underlying Data:</p>
+<pre class="literalblock">
+   # Assume that we have an initialised VolumeData instance called 
+   # volumeData
+
+   # Access by valid array-coordinate (fast, but limited)
+   print &quot;Array-coordinate access %f&quot; %            volumeData.getData()[ x ][ y ][ z ]
+
+   # Access by array-coordinate (slow, but utterly safe, performs 
+   # interpolation )
+   print &quot;Array-coordinate access %f &quot; %           volumeData.getAtArrayCoordinate( ( x, y, z ) )
+
+   # Access by world-coordinate (slow, but utterly safe, performs 
+   # interpolation ).
+   print &quot;World-coordinate access %f&quot; %            volumeData.getAtWorldCoordinate( ( x, y, z ) )
+
+   # Setting data-points
+
+   # All at once, theNewDataArray must be a correctly sized 3D-array.
+   volumeData.setData( theNewDataArray )
+
+   # Individually.
+   volumeData.getData()[ x ][ y ][ z ] = value
+</pre>
+      <h3 class="heading">Create a vdW-Mask Around a Molecule</h3>
+        <p>A vdW-mask stores 1.0 for all positions within the vdW-surface 
+        of a molecule and 0.0 for all other positions. It is a useful 
+        concept when marking out regions of interest and for higher-level 
+        analyses and visualisations:</p>
+<pre class="literalblock">
+   import volumedataio as vdio
+   import volumedatastructureutils as vdsutils
+   import schrodinger.structure as structure
+
+   st = structure.StructureReader( &quot;test.mae&quot; ).next()
+
+   # The volumedatastructureutils module allows us to generate
+   # bounding-box information from a structure easily. 
+   # NOTE: We have to specify the resolution, in this case 0.5A.
+   # We also extend the overall VolumeData object by 3.0A in all
+   # directions. This allows for the vdW-radii of the atoms. 
+
+   N, resolution, origin = vdsutils.BoundingInformation( 
+                                           st, 
+                                           resolution = ( 0.5, 0.5, 0.5 ), 
+                                           extend = ( 3.0, 3.0, 3.0 ) )
+
+   mask = vdsutils.VDWMask( st, 
+                                            N = N, 
+                                            resolution = resolution, 
+                                            origin = origin )
+
+   vdio.SaveVisFile( mask, &quot;mask.vis&quot; )
+</pre>
+      <h3 class="heading">Analysing a Conformational-Ensemble</h3>
+        <p><code><a 
+        href="schrodinger.analysis.visanalysis.volumedata.VolumeData-class.html"
+        class="link">VolumeData</a></code> objects can be used to visualise
+        the actual volume occupied by a conformational-ensemble:</p>
+<pre class="literalblock">
+   import volumedata as vd
+   import volumedataio as vdio
+   import volumedatastructureutils as vdsutils
+   import numpy as np
+   import schrodinger.structure as structure
+
+   # Find the bounding-box of the conformational-ensemble. We'll assume 
+   # that there is some basic alignment of the structures in 3D-space. 
+
+   N, resolution, origin =         vdsutils.BoundingInformationL( 
+                   structure.StructureReader( &quot;test-confs.mae&quot; ), 
+                   resolution = ( 0.5, 0.5, 0.5 ), 
+                   extend = ( 3.0, 3.0, 3.0 ) )
+
+   # Create the accumulator volume in accordance with the calculated 
+   # bounding information. This accumulator volume will show the 
+   # regions of space occupied by the ensemble.
+
+   accumulator = vd.VolumeData( N = N, 
+                                   resolution = resolution, 
+                                                   origin = origin )
+
+   # Loop across the ensemble once more, calculate the quantities
+   # needed to evaluate Boltzmann fractions.
+   fractionAccumulator = 0.0
+   fractions = list()
+   for st in structure.StructureReader( &quot;test-confs.mae&quot; ):
+           energy = st.property[ &quot;r_mmod_Relative_Potential_Energy-OPLS3&quot; ]
+           fraction = np.exp( -energy / (0.0083144621 * 300 ) )
+           fractionAccumulator += fraction
+           fractions.append( fraction )
+
+   # Now perform the accumulation of the volumes.
+   for i, st in            enumerate( structure.StructureReader( &quot;test-confs.mae&quot; ) ):
+       
+           mask = vdsutils.VDWMask( st, 
+                                                   N = N, 
+                                                   resolution = resolution, 
+                                                   origin = origin )
+           mask *= fractions[ i ] / fractionAccumulator
+           accumulator += mask
+
+   vdio.SaveVisFile( accumulator, &quot;test-confs.vis&quot; )
+</pre>
+      <h3 class="heading">Manipulating SiteMap Volumes</h3>
+        <p>Differences between SiteMaps can be important for locating 
+        regions where proteins have varying requirements:</p>
+<pre class="literalblock">
+   import volumedataio as vdio
+   import volumedatautils as vdutils
+   import numpy as np
+
+   # Load the hydrophobic maps for the two proteins (SiteMaps are made 
+   # up of many maps types, but this will suffice for an example).
+   pdkPhob = vdio.LoadVisFile( &quot;PDK1_site_1_phob.vis&quot; )
+   gsk3Phob = vdio.LoadVisFile( &quot;GSK3_site_1_phob.vis&quot; )
+
+   # Make the two maps consistent.
+   pdkPhob, gsk3Phob =             vdutils.MakeConsistent( 
+                   [ pdkPhob, gsk3Phob ], 
+                   resolutionMode = &quot;highest&quot;, 
+                   interpolationOrder = 2, 
+                   oobMethod = &quot;constant&quot;, 
+                   oobConstant = 0.0 )
+
+   # Subtract the maps, then form the absolute difference.
+   difference = vdutils.CreateLike( pdkPhob )
+   difference.setData( pdkPhob.getData() - gsk3Phob.getData() )
+   difference.setData( np.fabs( difference.getData() ) )
+
+   # Save the resulting difference map.
+   vdio.SaveVisFile( difference, &quot;PDK-GSK3-phob-diff.vis&quot; )
+</pre>
+
+<!-- ==================== SUBMODULES ==================== -->
+<a name="section-Submodules"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Submodules</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Submodules"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+  <tr><td class="summary">
+  <ul class="nomargin">
+    <li> <strong class="uidlink"><a href="schrodinger.analysis.visanalysis.vdaxis-module.html">schrodinger.analysis.visanalysis.vdaxis</a></strong>    </li>
+    <li> <strong class="uidlink"><a href="schrodinger.analysis.visanalysis.vdcoordinateframe-module.html">schrodinger.analysis.visanalysis.vdcoordinateframe</a></strong>    </li>
+    <li> <strong class="uidlink"><a href="schrodinger.analysis.visanalysis.vdexception-module.html">schrodinger.analysis.visanalysis.vdexception</a></strong>    </li>
+    <li> <strong class="uidlink"><a href="schrodinger.analysis.visanalysis.volumedata-module.html">schrodinger.analysis.visanalysis.volumedata</a></strong>    </li>
+    <li> <strong class="uidlink"><a href="schrodinger.analysis.visanalysis.volumedataio-module.html">schrodinger.analysis.visanalysis.volumedataio</a></strong>    </li>
+    <li> <strong class="uidlink"><a href="schrodinger.analysis.visanalysis.volumedatastructureutils-module.html">schrodinger.analysis.visanalysis.volumedatastructureutils</a></strong>    </li>
+    <li> <strong class="uidlink"><a href="schrodinger.analysis.visanalysis.volumedatautils-module.html">schrodinger.analysis.visanalysis.volumedatautils</a></strong>    </li>
+  </ul></td></tr>
+</table>
+
+<br />
+<!-- ==================== VARIABLES ==================== -->
+<a name="section-Variables"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Variables</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Variables"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="__package__"></a><span class="summary-name">__package__</span> = <code title="None">None</code><br />
+      hash(x)
+    </td>
+  </tr>
+</table>
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >2015-2Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Sat May  9 06:30:39 2015
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

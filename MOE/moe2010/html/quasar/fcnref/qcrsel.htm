@@ -1,0 +1,261 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	qcrsel.htm	QuaSAR-Reagent FcnRef
+!!
+!!	10-feb-2004 (al) Updated for new options
+!!	12-jan-2001 (al) Updated after unifying interface with cdgen
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions QuaSAR_Reagent, QuaSAR_Reagent_Wizard>
+<title>QuaSAR_CombiDesign</title>
+</head>
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>QuaSAR_CombiDesign</h2>
+<hr noshade="noshade" />
+
+
+<h2>Syntax</h2>
+
+<pre>
+    QuaSAR-Reagent [ 
+	scaff_file:	'c_database',
+	use_scaff_file:	flag,
+	rgp_files:	['r1_database','r2_database', ...],
+	ports:		portnames,
+	weight_lo:	weight_lo_limit,
+	weight_hi:	weight_hi_limit,
+	logp_lo:	logp_lo_limit,
+	logp_hi:	logp_hi_limit,
+	donacc_lo:	donacc_lo_limit,	
+	donacc_hi:	donacc_hi_limit,
+	rot_lo:		rotbond_lo_limit,
+	rot_hi:		rotbond_hi_limit
+	rsel_iter:	iteration_limit,
+	rsel_c:		'output_c_database',
+	rsel_r:		'output_rgp_database_prefix',
+	model_file:	'model_filename',
+	ref_db:		'reference_database_filename',
+	act_field:	'activity_fieldname',
+	useth_lo:	flag,
+	thresh_lo:	lower_threshold,
+	useth_hi:	flag,
+	thresh_hi:	upper_threshold
+    ]
+
+    <a class="fcnlink" href="#QuaSAR_Reagent">QuaSAR_Reagent</a> []
+
+    options = <a class="fcnlink" href="#QuaSAR_Reagent_Wizard">QuaSAR_Reagent_Wizard</a> []
+</pre>
+
+<h2>Description</h2>
+
+<p><span class="fcndef">QuaSAR_Reagent</span>
+counts the number of times a central group or
+R-group appears in an active compound.  A Monte Carlo integration is used to
+perform the counting and a model is used to determine the probability that
+a compound is active.  Pleas consult the chapter on
+<a href="../qcrsel.htm">QuaSAR-Reagent</a>
+for more detailed information on the calculation.
+
+<p>Supported options are:
+
+<p><dl>
+<dt><tt>scaff_file:</tt> <i>filename</i>
+<dd>Filename token (enclosed in single quotes) of the database that defines
+central (scaffold) compounds.  Each of these compounds must have terminal
+atoms (<i>ports</i>) with names of the form "Ax", where x is a digit.
+These atoms indicate points of attachment on the compound where R-group
+substitution will take place.
+
+<p>
+<dt><tt>use_scaff_file:</tt> <i>flag</i>
+<dd>If <span class="nobr"><i>flag</i> <> 0</span> (default) then the scaffold database
+specified by <tt>scaff_file</tt> is used.  Otherwise if 0, the molecule
+currently loaded in MOE is used as the scaffold.
+
+<p>
+<dt><tt>rgp_files:</tt> <i>filenames</i>
+<dd>
+The names (tokens) of the R-group database files.  The order of the
+filenames determines which file is associated with which substitution
+point on the scaffold molecule, specified in the <tt>ports</tt> options.
+
+<p>Each R-group molecule must have exactly one terminal atom named "A0",
+which marks the attachment point to the scaffold.  A bidentate R-group
+must also contain an atom named "A1".
+
+<p>
+<dt><tt>ports:</tt> <i>portnames</i>
+<dd>
+The names of the attachment point marker atoms or <i>ports</i> on the
+scaffold molecules.  These atoms are terminal atoms with special names of
+the form "Ax", x is a digit.  Associated with each port is the corresponding
+R-group database specified in the <tt>rgp_files</tt> option.  Note that
+for bidentate R-groups, two ports must be specified.  For example,
+
+<pre>
+    ['A1', ['A2','A3']]
+</pre>
+
+specifies one monodentate and one bidentate connection to the scaffold.
+
+<p><b>Note:</b> You must set the value of <tt>ports</tt> otherwise no
+substitution will be done.
+
+<p><dt>
+<tt>weight_lo:</tt> <i>lo_num</i><br />
+<tt>weight_hi:</tt> <i>hi_num</i>
+<dd>Random member of the virtual library spanned by the source databases
+will be rejected (not used in the calculation) if its molecular weight falls
+below <i>lo_num</i> or exceeds <i>hi_num</i>.  The defaults are 0 and 500.
+
+<p><dt>
+<tt>logp_lo:</tt> <i>lo_num</i><br />
+<tt>logp_hi:</tt> <i>hi_num</i>
+<dd>Random member of the virtual library spanned by the source databases
+will be rejected (not used in the calculation) if its logP (octanol/water)
+value falls below <i>lo_num</i> or exceeds <i>hi_num</i>.  The defaults
+are -2 and 5.
+
+<p><dt>
+<tt>donacc_lo:</tt> <i>lo_num</i><br />
+<tt>donacc:</tt> <i>hi_num</i>
+<dd>Random member of the virtual library spanned by the source databases
+will be rejected (not used in the calculation) if its number of hydrogen bond
+acceptors plus its number of hydrogen bond donors falls
+below <i>lo_num</i> or exceeds <i>hi_num</i>.  The defaults are 1 and 10.
+
+<p><dt>
+<tt>rot_lo:</tt> <i>lo_num</i><br />
+<tt>rot_hi:</tt> <i>hi_num</i>
+<dd>Random member of the virtual library spanned by the source databases
+will be rejected (not used in the calculation) if its number of rotatable
+bonds falls below <i>lo_num</i> or exceeds <i>hi_num</i>.  The defaults
+are 0 and 5.
+
+<p><dt><tt>rsel_iter:</tt> <i>num</i>
+<dd>The number of samples taken from the virtual library is calculated as
+<i>num</i> times the number of compounds in the largest source database.
+
+<p><dt><tt>rsel_c:</tt> <i>filename</i>
+<dd>Filename token (single quotes) of the output database for the
+central or scaffold source database, i.e. the
+database that will be created into which the central group information
+is written.  The default is <tt>'qcrsel_c.mdb'</tt>.
+
+<p><dt>
+<tt>rsel_r:</tt> <i>output_rgp_database_prefix</i>
+<dd>A token used for naming the output R-group database files.
+The names of the output R-group databases will be the names of the
+source R-group databases prefixed first by the name of the attachment
+point and then by this token.
+
+<p><dt><tt>model_file:</tt> <i>filename</i>
+<dd>Filename token (single quotes) of a model to be used
+to evaluate the probability that a virtual library compound is active.
+The model can be of any of the recognized model types:
+linear and binary QSAR, pharmacophore, fingerprint, or composite
+(MOE model).
+
+<p><b>Note:</b> The model must generate values in the range [0..1].
+You must specify a valid model in order for the application to run.
+
+<p><dt><tt>ref_db:</tt> <i>filename</i>
+<dd>The name of an optional reference database used for assessing the
+predictive accuracy of the model.  When a reference database name
+is supplied, the model predictions will be adjusted to reflect
+the accuracy of prediction over the specified database.
+
+<p>The database must contain activity data, and the <tt>act_field</tt>
+option and at least one of the thresholds <tt>thresh_lo</tt> or
+<tt>thresh_hi</tt> must be specified.
+
+<p><dt><tt>act_field:</tt> <i>fieldname</i>
+<dd>The name of the numeric field containing activity data in the
+reference database.
+
+<p><dt><tt>useth_lo:</tt> <i>flag</i>
+<dd>If <span class="nobr"><i>flag</i> <> 0</span>, a lower threshold will be applied
+to the values in the activity field specified by <tt>act_field</tt>,
+otherwise no lower threshold is used.
+Default is 0.
+
+<p><dt><tt>thresh_lo:</tt> <i>lo_val</i>
+<dd>If <tt>useth_lo</tt> is set, then <i>lo_val</i> is applied as a lower
+threshold to the values in the activity field.  For an entry in the
+database to be considered active, its activity value must be greater
+than or equal to <i>lo_val</i>.  If <tt>thresh_hi</tt> is also used,
+both lower and upper threshold criteria must be satisfied for the
+entry to be considered active.
+
+<p><dt><tt>useth_hi:</tt> <i>flag</i>
+<dd>If <span class="nobr"><i>flag</i> <> 0</span>, an upper threshold will be applied
+to the values in the activity field specified by <tt>act_field</tt>,
+otherwise no upper threshold is used.
+Default is 0.
+
+<p><dt><tt>thresh_hi:</tt> <i>hi_val</i>
+<dd>If <tt>useth_hi</tt> is set, then <i>hi_val</i> is applied as a upper
+threshold to the values in the activity field.  For an entry in the
+database to be considered active, its activity value must be less
+than <i>hi_val</i>.  If <tt>thresh_lo</tt> is also used,
+both lower and upper threshold criteria must be satisfied for the
+entry to be considered active.
+
+</dl>
+
+<p>When called with a null argument, <tt>QuaSAR_Reagent[]</tt> opens
+the QuaSAR-Reagent panel.  The user may then edit the calculation
+options in the panel. Pressing OK will initiate the calculation.
+In MOE/batch entering <tt>QuaSAR_Reagent[]</tt> must be invoked with the
+<tt>qsar_model</tt> option specified.
+
+<p><a name="QuaSAR_Reagent_Wizard"></a></p>
+<p><span class="fcndef">QuaSAR_Reagent_Wizard</span><tt>[]</tt>
+displays the QuaSAR-Reagent
+options panel, and returns a tagged vector of all the option values
+(including those entered by the user) upon pressing the Reagent
+panel OK button. No calculation is performed.  The tagged vector may be
+passed to <tt>QuaSAR_Reagent</tt>.</p>
+
+<h2>See Also</h2>
+
+<a href="../qcrsel.htm">QuaSAR-Reagent Panel</a><br />
+<a href="../modcomp.htm">Model-Composer</a><br />
+<a href="../model.htm">QuaSAR-Model</a><br />
+<a href="../../apps/ph4_intro.htm">Pharmacophore Models</a><br />
+<a href="../../mdb/fpmodel.htm">Fingerprint Models</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

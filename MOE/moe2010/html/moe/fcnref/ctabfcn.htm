@@ -1,0 +1,597 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	ctab.htm			CTAB functions
+!!
+!!	02-mar-2010 (ac) added mdl_ParseCTAB function
+!!	19-feb-2010 (al) corrected CTAB_B_STEREO in ctab_Extract
+!!	24-sep-2008 (kk) copy edit
+!!  	10-sep-2008 (ac) added ctab_uext, ctab_NormalizeStereo
+!! 	03-mar-2008 (ac) added ctab_aMask
+!!	22-jun-2006 (pl) created
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions CTAB_*>
+<meta functions ctab_Extract>
+<meta functions ctab_ExtractFromSMI>
+<meta functions ctab_aMask>
+<meta functions ctab_uext>
+<meta functions ctab_NormalizeStereo>
+<meta functions mdl_ParseCTAB>
+
+<title>CTAB Connection Table Functions</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>CTAB Connection Table Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    ctab = [atom_data, bond_data]
+
+    ctab = <a class="fcnlink" href="#mdl_ParseCTAB">mdl_ParseCTAB<a> [lines, is_query]
+
+    ctab = <a class="fcnlink" href="#ctab_Extract">ctab_Extract</a> [atoms, options]
+    ctab = <a class="fcnlink" href="#ctab_ExtractFromSMI">ctab_ExtractFromSMI</a> smiles_token
+    
+    ctab = <a class="fcnlink" href="#ctab_uext">ctab_uext</a> ctab
+    ctab = <a class="fcnlink" href="#ctab_aMask">ctab_aMask</a> [ctab, mask]
+    ctab = <a class="fcnlink" href="#ctab_NormalizeStereo">ctab_NormalizeStereo</a> ctab
+</pre>
+
+<h2>Description</h2>
+
+<p>
+The Connection Table (CTAB) data structure is intended to encode chemical
+structures.  Its primary purpose is to capture small molecule chemistry
+although there is nothing to prevent large structure encoding.  The CTAB
+structure encodes atom information and bond information.  There are no
+provisions for chain or residue annotations.
+
+<p>
+The CTAB data structure is a vector of length 2 (or more), consisting of atom
+information and bond information: <tt>ctab&nbsp;=&nbsp;[atom,bond]</tt>.
+The atom component is a vector of properties with each property containing
+a single scalar value for each atom.  The number of atoms encoded in
+a CTAB data structure is determined by <tt>l_length&nbsp;ctab(1)</tt>.
+Each property <tt>k</tt> is contained in the vector <tt>ctab(1)(k)</tt>.
+The predefined constants prefixed by <tt>CTAB_A_</tt> are normally used
+to access the elements of the atom component.
+
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr>
+<th>Index</th>
+<th>Constant</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="baseline" align="right">1
+<td valign="baseline"><tt>CTAB_A_X</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The <i>x</i> coordinate of the position of each atom.
+<tr>
+<td valign="baseline" align="right">2
+<td valign="baseline"><tt>CTAB_A_Y</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The <i>y</i> coordinate of the position of each atom.
+<tr>
+<td valign="baseline" align="right">3
+<td valign="baseline"><tt>CTAB_A_Z</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The <i>z</i> coordinate of the position of each atom.
+<tr>
+<td valign="baseline" align="right">4
+<td valign="baseline"><tt>CTAB_A_SYM</tt>
+<td valign="baseline"><i>token</i>
+<td valign="baseline">The symbol of each atom, normally the element symbol.  Some
+SVL functions require or return correct element symbols, others may not.
+<tr>
+<td valign="baseline" align="right">5
+<td valign="baseline"><tt>CTAB_A_MASS</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The isotope number of each atom; for example, 14 for Carbon 14.
+A value of 0 means unspecified (normally interpreted as the standard most
+naturally occurring isotope).
+<tr>
+<td valign="baseline" align="right">6
+<td valign="baseline"><tt>CTAB_A_CHARGE</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The integral formal charge of each atom.
+<tr>
+<td valign="baseline" align="right">7
+<td valign="baseline"><tt>CTAB_A_STEREO</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The integral stereochemistry code for each atom (see below).
+A value of 0 means a non stereoactive atom;
+3 (<tt>CTAB_AS_OTHER</tt>) means that the atom is stereoactive but its
+chirality is unknown or a mixture.
+10 (<tt>CTAB_BS_GEOM</tt>) means that the stereochemistry is defined
+by the atomic coordinates.
+Other values may appear in special circumstances.
+<tr>
+<td valign="baseline" align="right">8
+<td valign="baseline"><tt>CTAB_A_HCOUNT</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The number of implicit hydrogen atoms attached to each atom.
+A value of -1 means unspecified (normally interpreted as fully populated
+according to standard valence conventions for closed shell systems).
+<tr>
+<td valign="baseline" align="right">9
+<td valign="baseline"><tt>CTAB_A_RADICAL</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The radical count of each atom.  A value of 0 means no
+radical, otherwise the number contains the number of unpaired electrons
+about each atom.
+<tr>
+<td valign="baseline" align="right">10
+<td valign="baseline"><tt>CTAB_A_APO</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The attachment point number of each atom.  A value of -1
+means no attachment point.  The attachment point number most often contains
+the MDL CTAB "APO" annotation on atoms.
+<tr>
+<td valign="baseline" align="right">11
+<td valign="baseline"><tt>CTAB_A_RGROUP</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The R-group number of each atom; for example, 2 for R2.  A
+value of -1 means no R-group number.
+<tr>
+<td valign="baseline" align="right">12
+<td valign="baseline"><tt>CTAB_A_NUM</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The number ID of each atom most often used in reaction
+annotation.  A value of 0 means no number.
+</table>
+
+<p>
+Stereoactive atoms are assigned a parity value of "even" (value 2) or "odd"
+(value 1) intended to encode the 4-point chirality of an atom.
+Values other than 1 or 2 can appear in the <tt>CTAB_A_STEREO</tt> field
+in certain specialized circumstances (e.g., SMILES parsing); however, the
+following convention is considered as standard.
+The convention used is MDL convention (which is the same as the database MOL
+convention in MOE).  Parity is determined from 3D coordinates by ordering
+the atoms bonded neighbors by their index in the atom list, with the exception
+of hydrogen atoms which are always treated as if they appeared after
+all non-hydrogen atoms (preserving the order of the hydrogen atoms themselves).
+The bonded neighbors about a stereoactive atom are arranged in a
+"steering wheel" from with the fourth position oriented downward:
+<p align=center><img src="ctabfcn/chir_par.gif"></p>
+<p>
+If the geometric direction of the first three atoms is anti-clockwise, the
+parity is even (2); if it is clockwise, the parity is odd (1).
+For 3-coordinated centers, a fictitious fourth neighbor is assumed to be
+located at position 4.
+
+<p>
+The bond component of a CTAB data structure encodes connectivity, bond order
+and bond-based stereochemistry of a chemical structure.
+The bond component <tt>ctab(2)</tt> is a vector of properties with each
+property containing a single scalar value for each bond.
+Bonds appear once in the bond component; that is, if atoms A and B are bonded
+then the unordered pair {A,B} will appear once in the bond component of the
+CTAB structure.
+The number of bonds in a CTAB is given by <tt>l_length&nbsp;ctab(2)</tt>.
+Each property <tt>k</tt> is contained in the vector <tt>ctab(2)(k)</tt>.  The
+predefined constants prefixed by <tt>CTAB_B_</tt> are normally used to
+access the elements of the bond component.
+
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr>
+<th>Index</th>
+<th>Constant</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="baseline" align="right">1
+<td valign="baseline"><tt>CTAB_B_FROM</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The index of one of the atoms involved in the bond.
+<tr>
+<td valign="baseline" align="right">2
+<td valign="baseline"><tt>CTAB_B_TO</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The index of the other of the atoms involved in the bond.
+The <tt>FROM</tt> atom and <tt>TO</tt> atom must be distinct (no self bonds)
+and must be between 1 and <tt>l_length&nbsp;ctab(1)</tt>.
+<tr>
+<td valign="baseline" align="right">3
+<td valign="baseline"><tt>CTAB_B_TYPE</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The bond order of the bond.  Zero is intended to mean
+a statement of proximity between atoms but otherwise not to be treated
+as an electron pair sharing bond.  Values between 1 and 4 are used to denote
+single, double, triple and quadruple bonds respectively.  Other values
+are used in special circumstances; in particular 11 (<tt>CTAB_BT_ARO</tt>) is
+used for aromatic bonds.
+<tr>
+<td valign="baseline" align="right">4
+<td valign="baseline"><tt>CTAB_B_STEREO</tt>
+<td valign="baseline"><i>number</i>
+<td valign="baseline">The stereochemical assignment for a bond.
+A value of 0 means no stereochemistry.  On Double bonds,
+11 (<tt>CTAB_BS_ODD</tt>) and 12 (<tt>CTAB_BS_EVEN</tt>) are used
+according to the convention described below.  For single bonds,
+1 (<tt>CTAB_BS_UP</tt>) means an up wedge bond and
+2 (<tt>CTAB_BS_DOWN</tt>) means an down wedge bond.
+10 (<tt>CTAB_BS_GEOM</tt>) means that the stereochemistry is defined
+by the atomic coordinates.
+Other values may appear is special circumstances.
+</table>
+
+<p>
+Bond stereochemistry is intended to encode E/Z type stereochemistry.  The
+encoding assigns a parity (even or odd) based on the 3D geometric arrangement
+of atoms about a double bond.
+Suppose that atoms A and B are double bonded and each has two single bonded
+neighbors.
+Further suppose that atom A has a lower index than atom B in the atom
+component of the CTAB data structure.
+Sighting down the axis from A to B, rotate by 90 degrees clockwise the single
+bonded neighbors of B.  Order the neighbors of A and B in the
+sequence [A1,A2,B1,B2] with A1 having a lower index than A2 and B1 having
+a lower index than B2.  Then, use the <tt>CTAB_A_STEREO</tt> convention
+except that 11 (<tt>CTAB_BS_ODD</tt>) is used for parity 1 and
+12 (<tt>CTAB_BS_EVEN</tt>) is used for parity 2.
+Hydrogen atoms are always treated as if they appeared after
+all non-hydrogen atoms (preserving the order of the hydrogen atoms themselves).
+
+
+<p><a name="mdl_ParseCTAB"></a></p><p>
+<hr noshade="noshade" />
+<pre>
+ctab = <span class="fcndef">mdl_ParseCTAB</span> [lines, is_query]
+</pre>
+
+<p>Invoking <tt>mdl_ParseCTAB</tt> is the preferred method for obtaining
+a CTAB structure from an MDL MOL file. The fields used in the CTAB data
+structure overlap a large subset of the fields available in MDL MOL files,
+thus there is a close correspondence between the two formats.  The function
+takes an array of strings as an argument,
+each of which corresponds to a line in the MOL
+file.  Note that since the first 3 lines of a MOL file are header information,
+they should not be included in <tt>lines</tt>.
+Lines beyond the end block are ignored. Both
+V2000 and V3000 MOL files can be parsed using this function.
+</p>
+
+<p>The following SVL code converts a raw MDL CTAB block into a structured CTAB
+representation:
+
+<pre>
+    lines = [
+	"  2  1  0  0  0  0  0  0  0  0999 V2000",
+	"    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0",
+	"    1.5000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0",
+	"  1  2  1  0  0  0  0",
+	"M  END"
+    ];
+    ctab = mdl_ParseCTAB [lines, 0];
+</pre>
+
+<p>To load an existing MOL file called <tt>something.mol</tt>, the following
+syntax can be used:
+
+<pre>
+    lines = freadb ['something.mol', 'line', INT_MAX];
+    ctab = mdl_ParseCTAB [drop [lines, 3], 0];
+</pre>
+
+<p>The <tt>is_query</tt> parameter controls whether or not additional MDL query
+features are included in the result. When non-zero, the returned CTAB
+has additional fields. These are described in <a href="mdlq.htm">MDL
+Query Functions</a>.
+
+
+<p><a name="ctab_Extract"></a></p><p><hr noshade="noshade" />
+<pre>ctab = <span class="fcndef">ctab_Extract</span> [atoms, options]</pre>
+<p>
+The <tt>ctab_Extract</tt> function converts atomic data in the main MOE
+system to CTAB format.  It is intended to for use on whole molecules.
+Application to molecular fragments may not give predictable results.
+If the input <tt>atoms</tt> argument consists of a set of unique atom
+keys then the resulting CTAB will contain the information with the
+atom order in the order given by <tt>atoms</tt>.  If the <tt>atoms</tt>
+argument contains chain or residue keys then the argument is converted
+to atoms with <tt>uniq&nbsp;cat&nbsp;oAtoms&nbsp;atoms</tt>.  Only bonds
+between atoms given by <tt>atoms</tt> will be contained in the resulting
+CTAB structure.  The <tt>options</tt> argument is a tagged vector containing
+flags that affect the returned CTAB:
+<blockquote><dl>
+<dt><tt>aro</tt> : <i>flag</i>
+<dd>
+If non-zero then aromatic bonds (<tt>CTAB_BT_ARO)</tt>) will be returned
+as the bond type for aromatic bonds.  Otherwise, alternating only single
+and double bond types will be returned.  The default is 1.
+<p>
+<dt><tt>fcharge</tt> : <i>flag</i>
+<dd>
+If non-zero then calculated formal charges will be returned in the
+<tt>CTAB_A_CHARGE</tt> field using <tt>aFCharge</tt>; otherwise, the
+atomic <tt>aIon</tt> values will be returned.  The default is 0.
+<p>
+<dt><tt>heavy</tt> : <i>flag</i>
+<dd>
+If non-zero then hydrogen and lone pair atoms will be removed from the
+<tt>atoms</tt> list (<tt>aAtomicNumber atoms > 1</tt>).  The default is 0.
+<p>
+<dt><tt>rgroup</tt> : <i>flag</i>
+<dd>
+If non-zero then atoms with <tt>aName atoms</tt> in the set
+{<tt>A0</tt>,<tt>A1</tt>,...,<tt>A9</tt>} will be assigned
+<tt>CTAB_A_RGROUP</tt> values of 0 through 9, respectively.  Otherwise,
+atoms will be assigned a <tt>CTAB_A_RGROUP</tt> value of -1.
+The default is 0.
+<p>
+<dt><tt>xvalence</tt> : <i>flag</i>
+<dd>
+If non-zero then bond orders will be modified so as to use extended valence
+notation on sulfur, phosphorus, arsenic and tellurium atoms; for example,
+double bond notation for sulfones.  The default is 1.
+</dl></blockquote>
+<p>
+The following values are returned for the CTAB atom fields
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr>
+<th>Field</th>
+<th>Value Assigned</th>
+</tr>
+<tr>
+<td valign="baseline"><tt>CTAB_A_X, CTAB_A_Y, CTAB_A_Z</tt>
+<td valign="baseline"><tt>aPos atoms</tt>
+<tr>
+<td valign="baseline"><tt>CTAB_A_SYM</tt>
+<td valign="baseline"><tt>aElement atoms</tt>
+<tr>
+<td valign="baseline"><tt>CTAB_A_MASS</tt>
+<td valign="baseline">0
+<tr>
+<td valign="baseline"><tt>CTAB_A_CHARGE</tt>
+<td valign="baseline">Either <tt>aIon atoms</tt> or <tt>aFCharge atoms</tt>
+according to <tt>options.rgroup</tt>
+<tr>
+<td valign="baseline"><tt>CTAB_A_STEREO</tt>
+<td valign="baseline">0, 1 or 2 depending on <tt>aForceRS atoms</tt> for
+atoms with non-zero <tt>aRSChiral</tt>
+<tr>
+<td valign="baseline"><tt>CTAB_A_HCOUNT</tt>
+<td valign="baseline"><tt>aHCount atoms</tt> less the number of attached hydrogen
+atoms in the <tt>atoms</tt> vector
+<tr>
+<td valign="baseline"><tt>CTAB_A_RADICAL</tt>
+<td valign="baseline">0
+<tr>
+<td valign="baseline"><tt>CTAB_A_APO</tt>
+<td valign="baseline">-1
+<tr>
+<td valign="baseline"><tt>CTAB_A_RGROUP</tt>
+<td valign="baseline">-1 or 0 through 9 according to <tt>options.group</tt>
+<tr>
+<td valign="baseline"><tt>CTAB_A_NUM</tt>
+<td valign="baseline">0
+</table>
+<p>
+The following values are returned for the CTAB bond fields
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr>
+<th>Field</th>
+<th>Value Assigned</th>
+</tr>
+<tr>
+<td valign="baseline"><tt>CTAB_B_FROM, CTAB_B_TO</tt>
+<td valign="baseline">Bonds between atoms with indices <i>i</i> and <i>j</i>
+with <i>i</i>&nbsp;&lt;&nbsp;<i>j</i>.
+<tr>
+<td valign="baseline"><tt>CTAB_B_TYPE</tt>
+<td valign="baseline">
+1, 2 or 3; 11 (<tt>CTAB_BT_ARO</tt>) if aromatic and
+<tt>options.aro</tt> is true.<br />
+If <tt>options.xvalence</tt> is true then
+extended valence notation will be returned.
+<tr>
+<td valign="baseline"><tt>CTAB_B_STEREO</tt>
+<td valign="baseline">0, 11 or 12
+on double bonds between <i>sp</i><sup>2</sup> atoms
+with E/Z stereochemistry.
+</table>
+
+<p>
+For example, the settings used for conversion of atom data to standard
+SMILES strings are:
+<blockquote><pre>local ctab = ctab_Extract [Atoms[], [
+    aro:      1,     // allow aromatic bond notation
+    fcharge:  1,     // use calculated formal charges
+    rgroup:   0,     // disable R-group extensions
+    heavy:    1,     // suppress hydrogen atoms
+    xvalence: 1      // used extended valence notation for sulfones
+]];
+</pre></blockquote>
+
+<p><a name="ctab_ExtractFromSMI"></a></p><p><hr noshade="noshade" />
+<pre>ctab = <span class="fcndef">ctab_ExtractFromSMI</span> smiles_token</pre>
+<p>
+The <tt>ctab_ExtractFromSMI</tt> parses a single valid smiles token and
+returns a CTAB data structure.  The parser allows for extended SMILES
+atom properties, notably for R-groups, radicals and reaction numbering.
+The following values are returned for the CTAB atom fields
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr>
+<th>Field</th>
+<th>Value Assigned</th>
+<tr>
+<td valign="baseline"><tt>CTAB_A_X,CTAB_A_Y,CTAB_A_Z</tt>
+<td valign="baseline">0
+<tr>
+<td valign="baseline"><tt>CTAB_A_SYM</tt>
+<td valign="baseline">The element symbol from the SMILES string
+(first letter always upper case).<br />
+<tt>'LP'</tt> is returned for <tt>'[#0]'</tt>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_MASS</tt>
+<td valign="baseline">The isotope number; e.g., 14 for <tt>'[14C]'</tt> and
+0 for <tt>'C'</tt> and <tt>'[C]'</tt>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_CHARGE</tt>
+<td valign="baseline">The formal charge; e.g., 1 for <tt>'[N+]'</tt> and
+0 for <tt>'N'</tt> and <tt>'[N]'</tt>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_STEREO</tt>
+<td valign="baseline">
+0, 15 for <tt>'@'</tt> (<tt>CTAB_AS_SMI_ADJ_CCW</tt>) or 16 for <tt>'@@'</tt>
+(<tt>CTAB_AS_SMI_ADJ_CW</tt>).<br />
+The values may not be identical to those in the SMILES string but will
+encode the same stereochemistry. The implied adjacency list order of a
+stereoactive atom <i>i</i> will be the order of appearance of the atom's
+neighbors in the CTAB bonds component considering only those bonds involving
+atom <i>i</i>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_HCOUNT</tt>
+<td valign="baseline">The implicit hydrogen count as determined in bracketed
+atoms or -1 if outside brackets or unspecified inside brackets.  For example,
+3 for <tt>'[CH3]'</tt> and -1 for <tt>'C'</tt> and <tt>'[C]'</tt>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_RADICAL</tt>
+<td valign="baseline">The radical count in extended SMILES.  For example,
+1 for <tt>'[C.]'</tt> and 0 for <tt>'C'</tt> and <tt>'[C]'</tt>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_APO</tt>
+<td valign="baseline">-1
+<tr>
+<td valign="baseline"><tt>CTAB_A_RGROUP</tt>
+<td valign="baseline">The R-group number in extended SMILES.  For example,
+5 for <tt>'[CR5]'</tt> and -1 for <tt>'C'</tt> and <tt>'[C]'</tt>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_NUM</tt>
+<td valign="baseline">The atom number in reaction numbering notation.  For example,
+5 for <tt>'[C:5]'</tt> and 0 for <tt>'C'</tt> and <tt>'[C]'</tt>.
+</table></center>
+<p>
+The following values are returned for the CTAB bond fields
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr>
+<th>Field</th>
+<th>Value Assigned</th>
+</tr>
+<tr>
+<td valign="baseline"><tt>CTAB_B_FROM,CTAB_B_TO</tt>
+<td valign="baseline">Bonds between atoms with indices <i>i</i> and <i>j</i>.
+<tr>
+<td valign="baseline"><tt>CTAB_B_TYPE</tt>
+<td valign="baseline">
+1 through 4 and <tt>CTAB_BT_ARO</tt> according to the bond symbol in
+the SMILES string.  The <tt>'$'</tt> symbol is used for quadruple bonds.
+For example, 1 for <tt>'C-C'</tt>, 2 for <tt>'C=C'</tt>, 3 for <tt>C#C</tt>,
+4 for <tt>C$C</tt> and <tt>CTAB_BT_ARO</tt> for <tt>'c:c'</tt>.
+Zero bond orders are not returned.
+<tr>
+<td valign="baseline"><tt>CTAB_B_STEREO</tt>
+<td valign="baseline">0, 13 (<tt>CTAB_BS_IDX_ODD</tt>)
+or 14 (<tt>CTAB_BS_IDX_EVEN</tt>)
+The values may not be identical to those in the SMILES string but will
+encode the same stereochemistry.  The encoding is similar to the standard
+notation except that hydrogen atoms are not considered highest in index.
+</table>
+
+<p><a name="ctab_uext"></a></p><p><hr noshade="noshade" />
+<pre>ctab = <span class="fcndef">ctab_uext</span> ctab</pre>
+
+<p>The <tt>ctab_uext</tt> function performs unit extension of the elements
+of a CTAB data structure.  Upon return, all elements of <tt>ctab(1)</tt>
+will have a length equal to <tt>l_length&nbsp;ctab(1)</tt>.  Similarly
+for <tt>ctab(2)</tt>.  This function should be used prior to subscripting
+elements of a <tt>ctab</tt> structure.
+
+<p><a name="ctab_aMask"></a></p><p><hr noshade="noshade" />
+<pre>ctab = <span class="fcndef">ctab_aMask</span> [ctab, mask]</pre>
+
+<p>The <tt>ctab_aMask</tt> function returns a new CTAB data structure which
+contains only the atoms indicated by the mask. If the mask is all true, then the
+input data is returned. If the mask is all false, then a CTAB data structure
+with no atoms is returned.
+
+<p>For the returned value, the atom order is the same as for the input. Bonds
+for which either or both of the atoms are no longer present are removed, and the
+remaining bonds are renumbered. The atom column data is not modified at all,
+with the exception of atom-centered which may invert due to the masking
+operation.  Atom-centered stereochemistry does not become incorrect due
+to deleting atoms, but it may become irrelevant, which the caller must
+attend to; similarly, the implicit hydrogen count is the responsibility
+of the caller.  Bond-centered stereochemistry is renumbered if necessary,
+since removal of atoms can cause the parity to become inverted.
+
+<p><a name="ctab_NormalizeStereo"></a></p><p><hr noshade="noshade" />
+<pre>ctab = <span class="fcndef">ctab_NormalizeStereo</span> [ctab]</pre>
+<p>
+The <tt>ctab_NormalizeStereo</tt> function is used to convert the possible
+multiple representations of stereochemistry in a CTAB structure into
+a standard form.   The standard form for the atom block is
+<tt>CTAB_AS_NONE</tt> (0), <tt>CTAB_AS_EVEN</tt>, <tt>CTAB_AS_ODD</tt>
+or <tt>CTAB_AS_OTHER</tt>; the standard form for the bond block is
+<tt>CTAB_BS_NONE</tt> (0), <tt>CTAB_BS_EVEN</tt>, <tt>CTAB_BS_ODD</tt>
+or <tt>CTAB_BS_UNK</tt>.
+Wedge annotations (<tt>CTAB_BS_UP</tt> and <tt>CTAB_BS_DOWN</tt>) in the
+bond stereo block will be cleared if there is a single atom with
+a <tt>CTAB_AS_Z</tt> coordinate with magnitude greater than 1e-6.
+Wedge annotations will also be cleared on non-single bonds.
+
+<h2>See Also</h2>
+
+<p>
+<a class="svl" href="protomer.htm">ctab_EnumerateProtomers</a><br />
+<a class="svl" href="protomer.htm">ctab_ProtomerUnique</a><br />
+<a class="svl" href="washmol.htm">WashMoleculeCTAB</a>
+</p>
+
+<p>
+<a class="svl" href="extract.htm">mol_Extract</a><br />
+<a class="svl" href="mol.htm">mol_aMask</a><br />
+<a class="svl" href="atom_p.htm">aForceRS</a>
+</p>
+
+<p>
+<a href="atom.htm">Atom Properties</a><br />
+<a href="mdlq.htm">MDL Query Functions</a>
+</p>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

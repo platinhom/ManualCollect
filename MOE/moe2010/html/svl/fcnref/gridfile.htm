@@ -1,0 +1,433 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--	gridfile.htm	Binary grid file functions
+!!	in $MANSRC/moemanuals/svl/fcnref
+!!
+!!	01-may-2008 (jl) created
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions fread_GRID>
+<meta functions fwrite_GRID>
+
+<meta fileformat .grid>
+
+<title>Binary Grid File Functions</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Binary Grid File Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    [[shape, grid1, ...], [title, label1, ...], blob] = <a class="fcnlink" href="#fread_GRID">fread_GRID</a> file
+
+    <a class="fcnlink" href="#fwrite_GRID">fwrite_GRID</a> [file, [shape, grid1, ...], [title, label1, ...], blob];
+</pre>
+
+<h2>Description</h2>
+
+<p>An SVL binary grid file contains SVL grid information (shape, data) and
+optionally a file title, individual grid labels and application-specific
+binary data.  The grid file format is described <a href="#format">below</a>.
+
+<p><a name="fread_GRID"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[[shape, grid1, ...], [title, label1, ...], blob] = <span class="fcndef">fread_GRID</span> file
+</pre>
+
+<p><tt>fread_GRID</tt> reads one or more data grids from <tt>file</tt>
+specified as a file number or (token) filename.  All the resulting grids
+will be of the same shape <tt>shape</tt>.  The file may have a
+<tt>title</tt>, and/or individual grids may have associated <tt>label</tt>s.
+Any application-specific binary data will be read and returned in
+<tt>blob</tt>.
+
+<p>Examples:
+
+<pre>
+    svl> [shape, grid] = first fread_GRID filenum
+</pre>
+
+<p>reads the first grid from the file specified by <tt>filenum</tt>,
+while
+
+<pre>
+    svl> [shape, grid1, grid2] = first fread_GRID filenum
+</pre>
+
+<p>reads the first two grids from the file.
+
+<pre>
+    svl> [[s, g1, g2], names, blob] = fread_grid 'filename'
+    svl> title  = first names;
+    svl> labels = dropfirst names;
+</pre>
+
+<p>Reads two grids of shape <tt>s</tt> from the file specified by
+<tt>'filename'</tt>.  <tt>title</tt> is the file title,
+<tt>labels</tt> are the individual grid titles, and
+<tt>blob</tt> is the application-specific binary data.  The user is
+responsible for encoding/decoding the data in <tt>blob</tt>.
+
+<p><a name="fwrite_GRID"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">fwrite_GRID</span> [file, [shape, grid1, ...], [title, label1, ...], blob];
+</pre>
+
+<p><tt>fwrite_GRID</tt> writes the specified data grids of shape
+<tt>shape</tt> to <tt>file</tt> specified as a file number or (token)
+filename.  More than one grid can be written, but all must be
+of the same shape.
+The file <tt>title</tt>, each <tt>label</tt>, and the application-specific
+data, <tt>blob</tt>, are written if provided.
+
+<p>Examples:
+
+<pre>
+    svl> fwrite_GRID [filenum, [shape, grid]]
+</pre>
+
+<p>writes a single grid to the file specified by <tt>filenum</tt>.
+
+<pre>
+    svl> fwrite_GRID ['filename', [s, g1, g2], ['gradient', 'xgrad', 'ygrad'], blob]
+</pre>
+
+<p>writes two grids of shape <tt>s</tt> to the file specified by
+<tt>'filename'</tt>.  The file title is <tt>'gradient'</tt>, and
+the grids <tt>g1</tt> and <tt>g2</tt> are labeled
+<tt>'xgrad'</tt> and <tt>'ygrad'</tt>, respectively.
+
+<p><hr noshade="noshade" />
+
+<a name="format">
+<h3>Grid File Format</h3>
+</a>
+
+An SVL binary grid file is composed for four sections:
+
+<ol>
+<li>A header, in which specific file-related
+information is stored;
+<li>A shape section, in which the grid dimensions are described;
+<li>The grid data, organized in accordance with the shape information; and
+<li>Additional application-specific data.
+</ol>
+
+<p>
+All integers are written in 4-byte LSB first values
+(int4l), and all floating point numbers are written in IEEE 4-byte LSB first
+values (IEEE4l) or IEEE 8-byte LSB first values (IEEE8l).  This avoids
+problems when moving grid files between different architectures.
+
+<p>The four sections of the file are described below.  The
+sections must appear in the file in the order given, and the
+information in each must appear in the exact order given
+in the tables.
+
+<h3>Header Information</h3>
+
+<table class="titlebar" border="1" valign="right" cellpadding="5">
+<tr>
+<th>Entry</th>
+<th>Format</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="right">ID Token
+<td valign="right">5 characters
+<td valign="right">'#grid'
+</tr>
+<tr>
+<td valign="right">Format Version
+<td valign="right">7 characters
+<td valign="right">'2008.03'
+</tr>
+<tr>
+<td valign="right">File Magic Number
+<td valign="right">IEEE4l
+<td valign="right">2008.03
+</tr>
+<tr>
+<td valign="right">Future Expansion
+<td valign="right">4 int1
+<td valign="right">0&nbsp;0&nbsp;0&nbsp;0
+</tr>
+<tr>
+<td valign="right">File Title Length (<i>N</i>)
+<td valign="right">int4l
+<td valign="right"># of characters in title token
+</tr>
+<tr>
+<td valign="right">File Title
+<td valign="right"><i>N</i> characters
+<td valign="right">title token (optional)
+</tr>
+</table>
+
+<p>If the File Title is to be omitted, the File Title Length
+must be set to 0.
+
+<h3>Shape Information</h3>
+
+<table class="titlebar" border=1 valign="right" cellpadding="5">
+<tr>
+<th>Entry</th>
+<th>Format</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="right"># Dimensions
+<td valign="right">int4l
+<td valign="right"># of dimensions in grid
+</tr>
+<tr>
+<td valign="right"># Ticks_<i>i</i>
+<td valign="right">int4l
+<td valign="right"># of ticks in dimension <i>i</i>
+</tr>
+<tr>
+<td valign="right">Tick_coords_<i>i</i>
+<td valign="right">IEEE4l
+<td valign="right">tick coordinate values for dimension <i>i</i>; there
+must be # Ticks_<i>i</i> such values
+</tr>
+</tr>
+</table>
+
+<p># Ticks_<i>i</i> and Tick_coords_<i>i</i> are given for each dimension
+in the grid; the fields are interleaved.  For example, in the grid file
+for a 2D grid (line breaks inserted for readability):
+
+<blockquote>
+    ...header...<br />
+    2<br />
+    # Ticks_1<br />
+    Tick_coords_1<br />
+    # Ticks_2<br />
+    Tick_coords_2<br />
+    ...grid data...
+</blockquote>
+
+<p>All grids in a given grid file have the same shape.
+
+<h3>Grid Information</h3>
+
+<table class="titlebar" border=1 valign="right" cellpadding="5">
+<tr>
+<th>Entry</th>
+<th>Format</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="right"># Grids
+<td valign="right">int4l
+<td valign="right"># of grids in the file
+</tr>
+<tr>
+<td valign="right">Grid_<i>i</i> Label Length
+<td valign="right">int4l
+<td valign="right"># of characters in grid label token (<i>N</i>)
+</tr>
+<tr>
+<td valign="right">Grid_<i>i</i> Label 
+<td valign="right"><i>N</i> characters
+<td valign="right">label token (optional)
+</tr>
+<tr>
+<td valign="right">Grid_<i>i</i> Data
+<td valign="right">IEEE8l
+<td valign="right">value at each gridpoint
+</tr>
+</tr>
+</table>
+
+<p>The grid data is written to the file beginning at the origin of the grid
+box, with the highest dimension incrementing the fastest. For example,
+for a 3D grid where <i>x</i> is dimension #1 with <i>N<sub>x</sub></i>
+ticks, <i>y</i> is dimension #2 with <i>N<sub>y</sub></i> ticks, and <i>z</i>
+is dimension #3 with <i>N<sub>z</sub></i> ticks, the data must be arranged
+as follows (line breaks inserted for readability):
+
+<blockquote>
+<table border="0" valign="right" cellpadding="0">
+
+<tr>
+<td valign="top">x=1
+<td valign="top">y=1
+<td valign="top">z=[1..N<sub><i>z</i></sub>]
+</tr>
+
+<tr>
+<td valign="top">x=1
+<td valign="top">y=2
+<td valign="top">z=[1..N<sub><i>z</i></sub>]
+</tr>
+
+<tr>
+<td valign="top">&nbsp;
+<td valign="top">...
+<td valign="top">&nbsp;
+</tr>
+
+<tr>
+<td valign="top">x=1
+<td valign="top">y=N<sub><i>y</i></sub>
+<td valign="top">z=[1..N<sub><i>z</i></sub>]
+</tr>
+
+<tr>
+<td valign="top">&nbsp;
+<td valign="top">&nbsp;
+<td valign="top">&nbsp;
+</tr>
+
+<tr>
+<td valign="top">x=2
+<td valign="top">y=1
+<td valign="top">z=[1..N<sub><i>z</i></sub>]
+</tr>
+
+<tr>
+<td valign="top">x=2
+<td valign="top">y=2
+<td valign="top">z=[1..N<sub><i>z</i></sub>]
+</tr>
+
+<tr>
+<td valign="top">&nbsp;
+<td valign="top">...
+<td valign="top">&nbsp;
+</tr>
+
+<tr>
+<td valign="top">x=2
+<td valign="top">y=N<sub><i>y</i></sub>
+<td valign="top">z=[1..N<sub><i>z</i></sub>]
+</tr>
+
+<tr>
+<td valign="top">&nbsp;
+<td valign="top">&nbsp;
+<td valign="top">&nbsp;
+</tr>
+
+<tr>
+<td valign="top">x=N<sub><i>x</i></sub>
+<td valign="top">y=1
+<td valign="top">z=[1..N<sub><i>z</i></sub>]
+</tr>
+
+<tr>
+<td valign="top">x=N<sub><i>x</i></sub>
+<td valign="top">y=2
+<td valign="top">z=[1..N<sub><i>z</i></sub>]
+</tr>
+
+<tr>
+<td valign="top">&nbsp;
+<td valign="top">...
+<td valign="top">&nbsp;
+</tr>
+
+<tr>
+<td valign="top">x=N<sub><i>x</i></sub>
+<td valign="top">y=N<sub><i>y</i></sub>
+<td valign="top">z=[1..N<sub><i>z</i></sub>]
+</tr>
+
+</table>
+</blockquote>
+
+<p>The three grid entries are repeated for each grid contained in the file.
+For example, in a file containing two grids (line breaks inserted
+for readability):
+
+<blockquote>
+...shape information...<br />
+2<br />
+Grid_1 Label Length<br />
+Grid_1 Label<br />
+Grid_1 Data<br />
+Grid_2 Label Length<br />
+Grid_2 Label<br />
+Grid_2 Data<br />
+...application-specific information...
+</blockquote>
+
+<p>
+If a Grid Label is to be omitted, the corresponding
+Grid Label Length must be set to 0.
+
+<h3>Application-Specific Binary Information</h3>
+
+<table class="titlebar" border=1 valign="right" cellpadding="5">
+<tr>
+<th>Entry</th>
+<th>Format</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="right">Binary Blob Length
+<td valign="right">int4l
+<td valign="right"># of bytes of binary data (<i>N</i>)
+</tr>
+<tr>
+<td valign="right">Binary Blob
+<td valign="right"><i>N</i> int1
+<td valign="right">binary data (optional)
+</tr>
+</tr>
+</table>
+
+<p>If no application-specific information is present, the Binary Blob
+Length must be set to 0.
+
+<h2>See Also</h2>
+
+<p>
+<a href="grididx.htm">Grid Functions</a><br />
+<a href="gridval.htm">SVL Multidimensional Grids</a><br />
+
+<p>
+<a class="svl" href="freadb.html">freadb</a><br />
+<a class="svl" href="freadb.html">fwriteb</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

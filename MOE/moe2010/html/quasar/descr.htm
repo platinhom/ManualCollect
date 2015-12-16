@@ -1,0 +1,2365 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	descr.htm	QuaSAR-Descriptors chapter
+!!
+!!	07-oct-2010 (al) added mutagenic
+!!	30-aug-2010 (sg) mention SCF energy for AM1_E, PM3_E, MNDO_E
+!!	24-nov-2009 (al) fixed KierA3
+!!	29-oct-2009 (pl) added rsynth
+!!	06-nov-2008 (jl) corrected vsurf cut/paste typo
+!!	05-nov-2008 (ms) corrected HTML errors
+!!	07-oct-2008 (kk) minor edit
+!!	01-oct-2008 (pl) added VolSurf descriptors
+!!	05-jul-2004 (pl) added logS
+!!	02-apr-2004 (pl) chirality, ring, nmol, lip_* descriptors, bcut
+!!	31-jan-2004 (pl) added mopac descriptors
+!!	18-jan-2001 (al) updated for 2001.01
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<title>Calculate Descriptors</title>
+
+<meta panel QuaSAR-Descriptor>
+<meta index entry="descriptor" subentry="calculating">
+<meta index entry="descriptor" subentry="SVL programming">
+<meta index entry="properties" subentry="calculating">
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Calculate Descriptors</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Intro">Introduction</a>
+<li><a href="#Calc">Running the Calculation</a>
+<li><a href="#2D">2D Molecular Descriptors</a>
+    <ul>
+    <li><a href="#Notation">Notation and Terminology</a>
+    <li><a href="#PhysProp">Physical Properties</a>
+    <li><a href="#VSA">Subdivided Surface Areas</a>
+    <li><a href="#Counts">Atom Counts and Bond Counts</a>
+    <li><a href="#KH">Kier&Hall Connectivity and Kappa Shape Indices</a>
+    <li><a href="#Matrix">Adjacency and Distance Matrix Descriptors</a>
+    <li><a href="#PH4">Pharmacophore Feature Descriptors</a>
+    <li><a href="#Charge">Partial Charge Descriptors</a>
+    </ul>
+<li><a href="#3D">3D Molecular Descriptors</a>
+    <ul>
+    <li><a href="#Energy">Potential Energy Descriptors</a>
+    <li><a href="#MOPAC">MOPAC Descriptors</a>
+    <li><a href="#Volume">Surface Area, Volume and Shape Descriptors</a>
+    <li><a href="#Charge3D">Conformation Dependent Charge Descriptors</a>
+    </ul>
+<li><a href="#SVL">Adding New Descriptors with SVL</a>
+<li><a href="#SVLCommands">SVL Commands</a>
+<li><a href="#References">References</a>
+</ul>
+
+<p><a name="Intro"></a> </p>
+<h2>Introduction</h2>
+
+<p>
+The purpose of QuaSAR-Descriptor is to calculate properties of molecules
+that serve as numerical descriptions or characterizations of molecules in
+other calculations such as QSAR, diversity analysis or combinatorial library
+design.  In principle, because any molecular property may be used as a
+molecular descriptor, there is no single calculation procedure for
+QuaSAR-Descriptor. Rather, QuaSAR-Descriptor is a forum for the calculation
+of many descriptors.
+
+<p>
+A QuaSAR-Descriptor calculation proceeds as follows.  Given a molecular
+database with a molecule field, a set of numerical properties will be
+calculated for each molecule and stored in the database. Every descriptor
+is given a unique name, or code, which identifies the descriptor. These
+codes are used as database field names. QuaSAR-Descriptor will overwrite
+fields with names identical to descriptor codes.
+
+<p>Descriptors are partitioned into <i>classes</i>.  Each class indicates
+what is assumed by the descriptor calculators about the molecule
+presented:
+
+<ul>
+<li><b>2D</b>.  2D descriptors only use the atoms and connection information
+of the molecule for the calculation.  3D coordinates and individual
+conformations are not considered.
+<p>
+<li><b>i3D</b>.  Internal 3D descriptors use 3D coordinate information about
+each molecule; however, they are invariant to rotations and translations of
+the conformation.
+<p>
+<li><b>x3D</b>.  External 3D descriptors also use 3D coordinate information
+but also require an absolute frame of reference (e.g. molecules docked into
+the same receptor).
+</ul>
+
+<p><b>Warning!</b>
+Most descriptors assume that the molecule stored in the database is
+drawn correctly, with the exception of potentially missing hydrogens.
+Counter-ions, salts, and other artifacts will be included in the descriptor
+calculations.
+
+<p><b>Warning!</b>
+Both the i3D and the x3D descriptors <b>require that the database hold
+reasonable conformations of the stored molecules</b>.  The MOE
+3D converter can be used to create reasonable conformations and can
+be invoked with
+<span class="menu">DBV | Compute | Energy Minimize</span>
+in the Database Viewer.
+Alternatively, the conformations can be imported from some other
+3D structure converter.  Also, the 3D descriptors will not add or remove
+any atoms prior to calculation.
+
+<a name="Calc"></a><h2>Running the Calculation</h2>
+
+<p>Unless interaction energy descriptors are to be calculated, it is
+a good idea to clear MOE of any molecular objects.  Some descriptors
+require this condition while others are slowed down if many objects are
+loaded.  You can clear MOE of loaded atoms with
+<span class="nobr"><b>MOE | File | Close</b></span>.
+You can then open and run QuaSAR-Descriptor in a variety of ways: 
+
+<ul>
+<li>In the MOE Window, choose
+<span class="menu">MOE | Compute | QuaSAR | Calculate Descriptors</span>.
+The <span class="menu">Calculate Descriptors: Select a Database</span>
+panel is displayed. You must select a molecular database before the 
+<span class="menu">Calculate Descriptors</span> panel appears. 
+This method allows you to calculate descriptors without having to open the
+Database Viewer.
+
+<p><li>Open the database in the Database Viewer and choose
+<span class="menu">Compute | Descriptors | Calculate</span>. 
+This command is grayed out if there is no molecule field in the database.
+This way, the Calculate Descriptors panel
+is already set to the database for which you want to calculate descriptors.
+
+</ul>
+
+<p>When invoked from a menu, the following panel appears:
+
+<p align="center">
+<img src="descr/descr_panel.png" alt="Calculate Descriptors Panel">
+</p>
+
+<p>
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="baseline"><b>Database File</b>
+<td valign="baseline">
+Path and filename of the database into which molecular descriptors will
+be calculated. This field cannot be changed.  To calculate descriptors
+for another database, re-issue the QuaSAR-Descriptor command for the new
+database.
+<tr>
+<td valign="baseline"><b>Selected Entries Only</b>
+<td valign="baseline">
+Calculates descriptors on selected entries in the Database Viewer only.
+<tr>
+<td valign="baseline"><b>Molecule Field</b>
+<td valign="baseline">
+Option menu listing all the molecular fields in the database.
+Choose the field containing the molecules for which descriptors
+will be calculated.
+<tr>
+<td valign="baseline"><b>Auto Select</b>
+<td valign="baseline">
+The Database Fields, Selected Database Fields and Clear Selection buttons
+are fast ways to manipulate the selected descriptors in the list:
+<ul>
+<li><b>Database Fields</b> selects the descriptors that have codes
+identical to a field name of a numeric field in the database.  Note:
+Descriptor codes already selected will remain selected.
+
+<p><li><b>Selected Database Fields</b> selects the descriptors that have
+codes identical to a field name of a selected numeric field in the
+Database Viewer.  Note: Descriptor codes already selected will remain
+selected.
+
+<p><li><b>Clear Selection</b> deselects all descriptors in the list.
+</ul>
+<tr>
+<td valign="baseline"><b>Descriptors Selected</b>
+<td valign="baseline">
+Shows the number of descriptors selected for calculation. Note that, depending
+on the Class and Filter contents, not all available descriptors will be
+displayed in the list (see below).  In other words, some descriptors may not
+be displayed even though they have been selected.
+<tr>
+<td valign="baseline"><b>Class</b>
+<td valign="baseline">
+The display of descriptors in the descriptor list may be restricted to a
+particular descriptor class by pressing on the corresponding Class button.
+The All button displays all classes. 2D and 3D descriptors are explained in
+the following sections.
+<tr>
+<td valign="baseline"><b>Filter</b>
+<td valign="baseline">
+The contents of the Filter text field restricts the display of descriptors in
+the list.  If no filter is specified, then no restriction other than the Class
+is made.  If a filter is specified, then in addition to the restrictions
+imposed by Class, only those lines in the list with text containing each of the
+words in the Filter text field will be displayed.  For example, if the Filter
+text is "don," the display is restricted to lines that contain the three
+consecutive letters (case insensitive) "don".  If the Filter text is "don
+atom," the display is restricted to lines that contain the substring "don" as
+well as the substring "atom" (not necessarily in that order).
+
+<p>
+The Apply button applies the filter to the list.  Pressing <tt>Enter</tt>
+in the Filter text field will also apply the filter to the list.  In
+general, it is not necessary to press <tt>Enter</tt> or Apply because the
+list will update automatically.
+
+<p>The Clear button deletes all characters from the Filter text.
+
+</table>
+
+<p>Select the molecular descriptors to calculate and press <b>OK</b>.
+The calculation may take some time depending on the nature of the
+descriptors and the size of the database.  A log of the calculation will
+be printed to the SVL Commands window. 
+
+
+<a name="2D"></a><h2>2D Molecular Descriptors</h2>
+<p>
+2D molecular descriptors are defined to be numerical properties that can be
+calculated from the connection table representation of a molecule (e.g.
+elements, formal charges and bonds, but not atomic coordinates). 2D
+descriptors are, therefore, not dependent on the conformation of a molecule
+and are most suitable for large database studies.
+
+<a name="Notation"><h3>Notation and Terminology</h3>
+
+<p>Many descriptors make use of several fundamental quantities that can
+be computed from a chemical structure. This section will define these
+fundamental quantities.  For purposes of illustration, the
+following chemical structure will be used:
+
+<P ALIGN="CENTER"><IMG SRC="descr/notation.gif" WIDTH=274 HEIGHT=138></P>
+
+<p>The fundamental quantities of a chemical structure depend solely on the
+structure <i>as drawn</i>, i.e. no modifications to the structure are
+implied with the exception of the addition or subtraction of hydrogen atoms
+to full valence.
+
+<p><i>Z</i> denotes the <i>atomic number</i> of an atom; lone pair
+pseudo-atoms (LP) are given an atomic number of 0.  <i>Heavy atoms</i> are
+atoms that have an atomic number strictly greater than 1 (not H nor LP).
+A <i>trivial atom</i> is an LP pseudo-atom or a hydrogen with exactly one
+heavy neighbor.  In the reference structure, H<sub>1</sub>, LP<sub>1</sub>
+and LP<sub>2</sub> are trivial.
+
+<p>The <i>hydrogen count</i>, <i>h</i>, of an atom is the number of hydrogens
+to which it is (or should be) attached.  This count includes all hydrogen
+atoms that are necessary to fill valence.  In the reference structure, F
+has <i>h</i>&nbsp;=&nbsp;0, N has <i>h</i>&nbsp;=&nbsp;1 and O<sub>1</sub>
+has <i>h</i>&nbsp;=&nbsp;1.
+
+<p>The <i>heavy degree, d</i>, of an atom is the number of heavy atoms to
+which it is bonded.  That is, <i>d</i> is the number of bonded neighbors of
+the atom in the hydrogen suppressed graph.  In the reference structure, F
+has <i>d</i>&nbsp;=&nbsp;1, C<sub>6</sub> has <i>d</i>&nbsp;=&nbsp;3 and
+N has <i>d</i>&nbsp;=&nbsp;2.
+
+
+<a name="PhysProp"><h3>Physical Properties</h3>
+
+<p>The following physical properties can be calculated from the connection
+table (with no dependence on conformation) of a molecule:</P>
+
+<center>
+<table class="titlebar" border="1" width="90%" cellpadding="5">
+
+<tr>
+<th>Code</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>apol</tt>
+<td valign="baseline">
+Sum of the atomic polarizabilities (including implicit hydrogens) with
+polarizabilities taken from [CRC&nbsp;1994].</td>
+<tr>
+<td valign="baseline"><tt>bpol</tt>
+<td valign="baseline">
+Sum of the absolute value of the difference between atomic polarizabilities of
+all bonded atoms in the molecule (including implicit hydrogens) with
+polarizabilities taken from [CRC&nbsp;1994].</td>
+<tr>
+<td valign="baseline"><tt>density</tt>
+<td valign="baseline">
+Molecular mass density: <tt>Weight</tt> divided by <tt>vdw_vol</tt>
+(amu/&Aring;<sup>3</sup>).
+<tr>
+<td valign="baseline"><tt>FCharge</tt>
+<td valign="baseline">
+Total charge of the molecule (sum of formal charges).
+<tr>
+<td valign="baseline"><tt>mr</tt>
+<td valign="baseline">
+Molecular refractivity (including implicit hydrogens).  This property is
+calculated from an 11 descriptor linear model [MREF&nbsp;1998] with
+<i>r</i><sup>2</sup>&nbsp;=&nbsp;0.997, RMSE&nbsp;=&nbsp;0.168 on 1,947 small
+molecules.</td>
+<tr>
+<td valign="baseline"><tt>SMR</tt>
+<td valign="baseline">
+Molecular refractivity (including implicit hydrogens).  This property is
+an atomic contribution model [Crippen&nbsp;1999] that assumes the correct
+protonation state (washed structures).  The model was trained on ~7000
+structures and results may vary from the <tt>mr</tt> descriptor.
+<tr>
+<td valign="baseline"><tt>Weight</tt>
+<td valign="baseline">
+Molecular weight (including implicit hydrogens) in atomic mass units
+with atomic weights taken from [CRC&nbsp;1994].</td>
+<tr>
+<td valign="baseline"><tt>logP(o/w)</tt>
+<td valign="baseline">
+Log of the octanol/water partition coefficient (including implicit hydrogens).
+This property is calculated from a linear atom type model [LOGP&nbsp;1998]
+with <i>r</i><sup>2</sup>&nbsp;=&nbsp;0.931, RMSE=0.393 on 1,827 molecules.
+<tr>
+<td valign="baseline"><tt>logS</tt>
+<td valign="baseline">
+Log of the aqueous solubility (mol/L).
+This property is calculated from an atom contribution linear atom type model
+[Hou&nbsp;2004] with <i>r</i><sup>2</sup>&nbsp;=&nbsp;0.90, ~1,200 molecules.
+<tr>
+<td valign="baseline"><tt>mutagenic</tt>
+<td valign="baseline">
+Indicator of the presence of potentially toxic groups.
+A non-zero value indicates
+that the molecule contains a mutagenic group. The table of
+mutagenic groups is based on the Kazius set [Kazius&nbsp;2005].
+<tr>
+<td valign="baseline"><tt>reactive</tt>
+<td valign="baseline">
+Indicator of the presence of reactive groups.  A non-zero value indicates
+that the molecule contains a reactive group. The table of
+reactive groups is based on the Oprea set [Oprea&nbsp;2000] and includes
+metals, phospho-, N/O/S-N/O/S single bonds, thiols, acyl halides, Michael
+Acceptors, azides, esters, etc.
+<tr>
+<a name="rsynth"></a>
+<td valign="baseline"><tt>rsynth</tt>
+<td valign="baseline">
+A value in [0,1] indicating the synthetic reasonableness, or feasibility,
+of the chemical structure.  A value of 0 means it is unlikely that the molecule
+can be synthesized while a value of 1 means that it is likely that the
+molecule can be synthesized.  The value reflects the fraction of heavy atoms
+in the molecule that can be traced back to starting materials fragments
+resulting from retrosynthetic disconnection rules.
+This molecular descriptor can also be calculated on molecules and
+databases using the SVL
+<a class="svl" href="../moe/fcnref/rsynthfcn.htm">Retrosynth*</a>
+function calls.
+</tr>
+<tr>
+<td valign="baseline"><tt>SlogP</tt>
+<td valign="baseline">
+Log of the octanol/water partition coefficient (including implicit hydrogens).
+This property is an atomic contribution model [Crippen&nbsp;1999] that
+calculates logP from the given structure; i.e. the correct protonation state
+(washed structures).  Results may vary from the <tt>logP(o/w)</tt>
+descriptor.  The training set for SlogP was ~7000 structures.
+<tr>
+<td valign="baseline"><tt>TPSA</tt>
+<td valign="baseline">
+Polar surface area (&Aring;<sup>2</sup>) calculated using group
+contributions to approximate
+the polar surface area from connection table information only. The
+parameterization is that of Ertl <i>et al.</i> [Ertl&nbsp;2000].
+<tr>
+<td valign="baseline"><tt>vdw_vol</tt>
+<td valign="baseline">
+van der Waals volume (&Aring;<sup>3</sup>)
+calculated using a connection table approximation.
+<tr>
+<td valign="baseline"><tt>vdw_area</tt>
+<td valign="baseline">
+Area of van der Waals surface (&Aring;<sup>2</sup>)
+calculated using a connection table
+approximation.
+</table>
+</center>
+
+<a name="VSA"></a><h3>Subdivided Surface Areas</h3>
+
+<p>The Subdivided Surface Areas are descriptors based on an approximate
+accessible van der Waals surface area (in &Aring;<sup>2</sup>) calculation
+for each atom,
+<i>v<sub>i</sub></i> along with some other atomic property,
+<i>p<sub>i</sub></i>.  The <i>v<sub>i</sub></i> are calculated using
+a connection table approximation.  Each descriptor in a series is
+defined to be the sum of the <i>v<sub>i</sub></i> over all atoms <i>i</i>
+such that <i>p<sub>i</sub></i> is in a specified range (<i>a</i>,<i>b</i>).
+<p>
+In the descriptions to follow, <i>L<sub>i</sub></i> denotes the contribution
+to logP(o/w) for atom <i>i</i> as calculated in the <tt>SlogP</tt>
+descriptor [Crippen&nbsp;1999].  <i>R<sub>i</sub></i> denotes the
+contribution to Molar Refractivity for atom <i>i</i> as calculated in the
+<tt>SMR</tt> descriptor [Crippen&nbsp;1999].  The ranges were determined
+by percentile subdivision over a large collection of compounds.
+</p>
+
+<center>
+<table class="titlebar" border="1" width="90%" cellpadding="5">
+
+<tr>
+<th width="15%">Code</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>SlogP_VSA0</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>L<sub>i</sub></i> &lt;= -0.4.
+<tr>
+<td valign="baseline"><tt>SlogP_VSA1</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>L<sub>i</sub></i> is in (-0.4,-0.2].
+<tr>
+<td valign="baseline"><tt>SlogP_VSA2</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>L<sub>i</sub></i> is in (-0.2,0].
+<tr>
+<td valign="baseline"><tt>SlogP_VSA3</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>L<sub>i</sub></i> is in (0,0.1].
+<tr>
+<td valign="baseline"><tt>SlogP_VSA4</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>L<sub>i</sub></i> is in (0.1,0.15].
+<tr>
+<td valign="baseline"><tt>SlogP_VSA5</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>L<sub>i</sub></i> is in (0.15,0.20].
+<tr>
+<td valign="baseline"><tt>SlogP_VSA6</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>L<sub>i</sub></i> is in (0.20,0.25].
+<tr>
+<td valign="baseline"><tt>SlogP_VSA7</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>L<sub>i</sub></i> is in (0.25,0.30].
+<tr>
+<td valign="baseline"><tt>SlogP_VSA8</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>L<sub>i</sub></i> is in (0.30,0.40].
+<tr>
+<td valign="baseline"><tt>SlogP_VSA9</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>L<sub>i</sub></i> &gt; 0.40.
+<tr>
+<td valign="baseline"><tt>SMR_VSA0</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>R<sub>i</sub></i> is in [0,0.11].
+<tr>
+<td valign="baseline"><tt>SMR_VSA1</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>R<sub>i</sub></i> is in (0.11,0.26].
+<tr>
+<td valign="baseline"><tt>SMR_VSA2</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>R<sub>i</sub></i> is in (0.26,0.35].
+<tr>
+<td valign="baseline"><tt>SMR_VSA3</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>R<sub>i</sub></i> is in (0.35,0.39].
+<tr>
+<td valign="baseline"><tt>SMR_VSA4</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>R<sub>i</sub></i> is in (0.39,0.44].
+<tr>
+<td valign="baseline"><tt>SMR_VSA5</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>R<sub>i</sub></i> is in (0.44,0.485].
+<tr>
+<td valign="baseline"><tt>SMR_VSA6</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>R<sub>i</sub></i> is in (0.485,0.56].
+<tr>
+<td valign="baseline"><tt>SMR_VSA7</tt>
+<td valign="baseline">
+Sum of <i>v<sub>i</sub></i> such that <i>R<sub>i</sub></i> &gt; 0.56.
+
+</table>
+</center>
+
+
+<a name="Counts"></a><h3>Atom Counts and Bond Counts</h3>
+
+<p>The atom count and bond count descriptors are functions of the counts of
+atoms and bonds (subdivided according to various criteria).
+</p>
+
+<center>
+<table class="titlebar" border="1" width="90%" cellpadding="5">
+
+<tr>
+<th width="15%">Code</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>a_aro</tt>
+<td valign="baseline">
+Number of aromatic atoms.</TD>
+<tr>
+<td valign="baseline"><tt>a_count</tt>
+<td valign="baseline">
+Number of atoms (including implicit hydrogens).  This is calculated as the
+sum of (1&nbsp;+&nbsp;<i>h<sub>i</i></sub>) over all non-trivial
+atoms <i>i</i>.</TD>
+<tr>
+<td valign="baseline"><tt>a_heavy</tt>
+<td valign="baseline">
+Number of heavy atoms
+#{<i>Z<sub>i</i></sub>&nbsp;|&nbsp;<i>Z<sub>i</i></sub>&nbsp;&gt;&nbsp;1}.</TD>
+<tr>
+<td valign="baseline"><tt>a_ICM</tt>
+<td valign="baseline">
+Atom information content (mean).  This is the entropy of the element
+distribution in the molecule (including implicit hydrogens but not lone pair
+pseudo-atoms).  Let <i>n<sub>i</i></sub> be the number of occurrences of
+atomic number <i>i</i> in the molecule.  Let
+<i>p<sub>i</i></sub>&nbsp;=&nbsp;<i>n<sub>i</i></sub>&nbsp;/&nbsp;<i>n</i>
+where <i>n</i> is the sum of the <i>n<sub>i</i></sub>.  The value of
+<tt>a_ICM</tt> is the negative of the sum over all <i>i</i> of
+<i>p<sub>i</i></sub>&nbsp;log&nbsp;<i>p<sub>i</i></sub>.</TD>
+<tr>
+<td valign="baseline"><tt>a_IC</tt>
+<td valign="baseline">
+Atom information content (total).  This is calculated to be
+<tt>a_ICM</tt> times <i>n</i>.</TD>
+<tr>
+<td valign="baseline"><tt>a_nH</tt>
+<td valign="baseline">
+Number of hydrogen atoms (including implicit hydrogens).  This is calculated
+as the sum of <i>h<sub>i</i></sub> over all non-trivial atoms <i>i</i> plus
+the number of non-trivial hydrogen atoms.</TD>
+<tr>
+<td valign="baseline"><tt>a_nB</tt>
+<td valign="baseline">
+Number of boron atoms:
+#{<i>Z<sub>i</i></sub>&nbsp;|&nbsp;<i>Z<sub>i</i></sub>&nbsp;=&nbsp;5}.</TD>
+<tr>
+<td valign="baseline"><tt>a_nC</tt>
+<td valign="baseline">
+Number of carbon atoms:
+#{<i>Z<sub>i</i></sub>&nbsp;|&nbsp;<i>Z<sub>i</i></sub>&nbsp;=&nbsp;6}.</TD>
+<tr>
+<td valign="baseline"><tt>a_nN</tt>
+<td valign="baseline">
+Number of nitrogen atoms:
+#{<i>Z<sub>i</i></sub>&nbsp;|&nbsp;<i>Z<sub>i</i></sub>&nbsp;=&nbsp;7}.</TD>
+<tr>
+<td valign="baseline"><tt>a_nO</tt>
+<td valign="baseline">
+Number of oxygen atoms:
+#{<i>Z<sub>i</i></sub>&nbsp;|&nbsp;<i>Z<sub>i</i></sub>&nbsp;=&nbsp;8}.</TD>
+<tr>
+<td valign="baseline"><tt>a_nF</tt>
+<td valign="baseline">
+Number of fluorine atoms:
+#{<i>Z<sub>i</i></sub>&nbsp;|&nbsp;<i>Z<sub>i</i></sub>&nbsp;=&nbsp;9}.</TD>
+<tr>
+<td valign="baseline"><tt>a_nP</tt>
+<td valign="baseline">
+Number of phosphorus atoms:
+#{<i>Z<sub>i</i></sub>&nbsp;|&nbsp;<i>Z<sub>i</i></sub>&nbsp;=&nbsp;15}.</TD>
+<tr>
+<td valign="baseline"><tt>a_nS</tt>
+<td valign="baseline">
+Number of sulfur atoms:
+#{<i>Z<sub>i</i></sub>&nbsp;|&nbsp;<i>Z<sub>i</i></sub>&nbsp;=&nbsp;16}.</TD>
+<tr>
+<td valign="baseline"><tt>a_nCl</tt>
+<td valign="baseline">
+Number of chlorine atoms:
+#{<i>Z<sub>i</i></sub>&nbsp;|&nbsp;<i>Z<sub>i</i></sub>&nbsp;=&nbsp;17}.</TD>
+<tr>
+<td valign="baseline"><tt>a_nBr</tt>
+<td valign="baseline">
+Number of bromine atoms:
+#{<i>Z<sub>i</i></sub>&nbsp;|&nbsp;<i>Z<sub>i</i></sub>&nbsp;=&nbsp;35}.</TD>
+<tr>
+<td valign="baseline"><tt>a_nI</tt>
+<td valign="baseline">
+Number of iodine atoms:
+#{<i>Z<sub>i</i></sub>&nbsp;|&nbsp;<i>Z<sub>i</i></sub>&nbsp;=&nbsp;53}.</TD>
+<tr>
+<td valign="baseline"><tt>b_1rotN</tt>
+<td valign="baseline">
+Number of rotatable single bonds.  Conjugated single bonds are not included
+(e.g. ester and peptide bonds).
+<tr>
+<td valign="baseline"><tt>b_1rotR</tt>
+<td valign="baseline">
+Fraction of rotatable single bonds: <tt>b_1rotN</tt> divided by
+<tt>b_heavy</tt>.</TD>
+<tr>
+<td valign="baseline"><tt>b_ar</tt>
+<td valign="baseline">
+Number of aromatic bonds.</TD>
+<tr>
+<td valign="baseline"><tt>b_count</tt>
+<td valign="baseline">
+Number of bonds (including implicit hydrogens).  This is calculated as the
+sum of (<i>d<sub>i</i></sub>/2&nbsp;+<i>&nbsp;h<sub>i</i></sub>) over all
+non-trivial atoms <i>i</i>.</TD>
+<tr>
+<td valign="baseline"><tt>b_double</tt>
+<td valign="baseline">
+Number of double bonds.  Aromatic bonds are not considered to be double
+bonds.</TD>
+<tr>
+<td valign="baseline"><tt>b_heavy</tt>
+<td valign="baseline">
+Number of bonds between heavy atoms.</TD>
+<tr>
+<td valign="baseline"><tt>b_rotN</tt>
+<td valign="baseline">
+Number of rotatable bonds. A bond is rotatable if it has order 1, is not in a
+ring, and has at least two heavy neighbors.
+<tr>
+<td valign="baseline"><tt>b_rotR</tt>
+<td valign="baseline">
+Fraction of rotatable bonds: <tt>b_rotN</tt> divided by <tt>b_heavy</tt>.</TD>
+<tr>
+<td valign="baseline"><tt>b_single</tt>
+<td valign="baseline">
+Number of single bonds (including implicit hydrogens).  Aromatic bonds are
+not considered to be single bonds.</TD>
+<tr>
+<td valign="baseline"><tt>b_triple</tt>
+<td valign="baseline">
+Number of triple bonds.  Aromatic bonds are not considered to be
+triple bonds.</TD>
+<tr>
+<td valign="baseline"><tt>chiral</tt>
+<td valign="baseline">
+The number of chiral centers.
+<tr>
+<td valign="baseline"><tt>chiral_u</tt>
+<td valign="baseline">
+The number of unconstrained chiral centers.
+<tr>
+<td valign="baseline"><tt>lip_acc</tt>
+<td valign="baseline">
+The number of O and N atoms.
+<tr>
+<td valign="baseline"><tt>lip_don</tt>
+<td valign="baseline">
+The number of OH and NH atoms.
+<tr>
+<td valign="baseline"><tt>lip_druglike</tt>
+<td valign="baseline">
+One if and only if <tt>lip_violation</tt> &lt; 2 otherwise zero.
+<tr>
+<td valign="baseline"><tt>lip_violation</tt>
+<td valign="baseline">
+The number of violations of Lipinski's Rule of Five [Lipinski&nbsp;1997].
+<tr>
+<td valign="baseline"><tt>nmol</tt>
+<td valign="baseline">
+The number of molecules (connected components).
+<tr>
+<td valign="baseline"><tt>opr_brigid</tt>
+<td valign="baseline">
+The number of rigid bonds from [Oprea&nbsp;2000].
+<tr>
+<td valign="baseline"><tt>opr_leadlike</tt>
+<td valign="baseline">
+One if and only if <tt>opr_violation</tt> &lt; 2 otherwise zero.
+<tr>
+<td valign="baseline"><tt>opr_nring</tt>
+<td valign="baseline">
+The number of ring bonds from [Oprea&nbsp;2000].
+<tr>
+<td valign="baseline"><tt>opr_nrot</tt>
+<td valign="baseline">
+The number of rotatable bonds from [Oprea&nbsp;2000].
+<tr>
+<td valign="baseline"><tt>opr_violation</tt>
+<td valign="baseline">
+The number of violations of Oprea's lead-like test [Oprea&nbsp;2000].
+<tr>
+<td valign="baseline"><tt>rings</tt>
+<td valign="baseline">
+The number of rings.
+<tr>
+<td valign="baseline"><tt>VAdjMa</tt>
+<td valign="baseline">
+Vertex adjacency information (magnitude):
+1&nbsp;+&nbsp;log<sub>2</sub>&nbsp;<i>m</i> where <i>m</i> is the number
+of heavy-heavy bonds.  If <i>m</i> is zero, then zero is returned.</TD>
+<tr>
+<td valign="baseline"><tt>VAdjEq</tt>
+<td valign="baseline">
+Vertex adjacency information (equality):
+-(1-<i>f</i>)log<sub>2</sub>(1-<i>f</i>)&nbsp;-&nbsp;<i>f&nbsp;</i>log<sub>2</sub>&nbsp;<i>f</i>
+where <i>f</i> = (<i>n</i><sup>2</sup>&nbsp;-&nbsp;<i>m</i>)&nbsp;/&nbsp;<i>n</i><sup>2</sup>,
+<i>n</i> is the number of heavy atoms and <i>m</i> is the number of
+heavy-heavy bonds.  If <i>f</i> is not in the open interval (0,1), then 0 is
+returned.</TD>
+</table>
+
+</center>
+
+
+<a name="KH"></a><h3>Kier&Hall Connectivity and Kappa Shape Indices</h3>
+
+<p>For a heavy atom <i>i</i> let
+<span class="nobr">
+<i>v<sub>i</sub></i> = (<i>p<sub>i</sub></i> - <i>h<sub>i</sub></i>) /
+(<i>Z<sub>i</sub></i> - <i>p<sub>i</sub></i> - 1)
+</span>
+where <i>p<sub>i</sub></i> is the number of
+s and p valence electrons of atom <i>i</i>.  The Kier and Hall chi
+connectivity indices are calculated from the heavy atom degree
+<i>d<sub>i</sub></i> (number of heavy neighbors) and <i>v<sub>i</sub></i>.
+The Kier and Hall kappa molecular shape indices [Hall&nbsp;1991] compare
+the molecular graph with minimal and maximal molecular graphs, and are
+intended to capture different aspects of molecular shape.  In the following
+description, <em>n</em> denotes the number of atoms in the hydrogen
+suppressed graph, <em>m</em> is the number of bonds in the hydrogen
+suppressed graph and <em>a</em> is the sum of
+(<em>r<sub>i</sub></em>/<em>r<sub>c</sub></em> - 1) where
+<em>r<sub>i</sub></em> is the covalent radius of atom <em>i</em>, and
+<em>r<sub>c</sub></em> is the covalent radius of a carbon atom.  Also, let
+<em>p</em><sub>2</sub> denote the number of paths of length 2 and
+<em>p</em><sub>3</sub> the number of paths of length 3.
+</p>
+
+
+<center>
+<table class="titlebar" border="1" width="90%" cellpadding="5">
+
+<tr>
+<th width="15%">Code</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>chi0</tt>
+<td valign="baseline">
+Atomic connectivity index (order 0) from [Hall&nbsp;1991] and [Hall&nbsp;1977].
+This is calculated as the sum of 1/sqrt(<i>d<sub>i</i></sub>) over all heavy
+atoms <i>i</i> with <i>d<sub>i</i></sub>&nbsp;&gt;&nbsp;0.</TD>
+<tr>
+<td valign="baseline"><tt>chi0_C</tt>
+<td valign="baseline">
+Carbon connectivity index (order 0).  This is calculated as the sum of
+1/sqrt(<i>d<sub>i</i></sub>) over all carbon atoms <i>i</i> with
+<i>d<sub>i</i></sub>&nbsp;&gt;&nbsp;0.</TD>
+<tr>
+<td valign="baseline"><tt>chi1</tt>
+<td valign="baseline">
+Atomic connectivity index (order 1) from [Hall&nbsp;1991] and [Hall&nbsp;1977].
+This is calculated as the sum of 1/sqrt(<i>d<sub>i</sub>d<sub>j</i></sub>)
+over all bonds between heavy atoms <i>i</i> and <i>j</i> where
+<i>i</i>&nbsp;&lt;&nbsp;<i>j</i>.</TD>
+<tr>
+<td valign="baseline"><tt>chi1_C</tt>
+<td valign="baseline">
+Carbon connectivity index (order 1).  This is calculated as the sum of
+1/sqrt(<i>d<sub>i</sub>d<sub>j</i></sub>) over all bonds between carbon atoms
+<i>i</i> and <i>j</i> where <i>i</i>&nbsp;&lt;&nbsp;<i>j</i>.</TD>
+<tr>
+<td valign="baseline"><tt>chi0v</tt>
+<td valign="baseline">
+Atomic valence connectivity index (order 0) from [Hall&nbsp;1991] and
+[Hall&nbsp;1977].  This is calculated as the sum of
+1/sqrt(<i>v<sub>i</i></sub>) over all heavy atoms <i>i</i> with
+<i>v<sub>i</i></sub>&nbsp;&gt;&nbsp;0.</TD>
+<tr>
+<td valign="baseline"><tt>chi0v_C</tt>
+<td valign="baseline">
+Carbon valence connectivity index (order 0).  This is calculated as the sum
+of 1/sqrt(<i>v<sub>i</i></sub>) over all carbon atoms <i>i</i> with
+<i>v<sub>i</i></sub>&nbsp;&gt;&nbsp;0.</TD>
+<tr>
+<td valign="baseline"><tt>chi1v</tt>
+<td valign="baseline">
+Atomic valence connectivity index (order 1) from [Hall&nbsp;1991] and
+[Hall&nbsp;1977].  This is calculated as the sum of
+1/sqrt(<i>v<sub>i</sub>v<sub>j</i></sub>) over all bonds between heavy atoms
+<i>i</i> and <i>j</i> where <i>i</i>&nbsp;&lt;&nbsp;<i>j</i>.</TD>
+<tr>
+<td valign="baseline"><tt>chi1v_C</tt>
+<td valign="baseline">
+Carbon valence connectivity index (order 1).  This is calculated as the sum
+of 1/sqrt(<i>v<sub>i</sub>v<sub>j</i></sub>) over all bonds between carbon
+atoms <i>i</i> and <i>j</i> where <i>i</i>&nbsp;&lt;&nbsp;<i>j</i>.</TD>
+<tr>
+<td valign="baseline"><tt>Kier1</tt>
+<td valign="baseline">
+First kappa shape index:
+(<em>n</em>-1)<sup>2</sup>&nbsp;/<em>&nbsp;m</em><sup>2</sup> [Hall&nbsp;1991].
+<tr>
+<td valign="baseline"><tt>Kier2</tt>
+<td valign="baseline">
+Second kappa shape index:
+(<em>n</em>-1)<sup>2</sup>&nbsp;/<em>&nbsp;m</em><sup>2</sup> [Hall&nbsp;1991].
+<tr>
+<td valign="baseline"><tt>Kier3</tt>
+<td valign="baseline">
+Third kappa shape index: (<i>n</i>-1)&nbsp;(<i>n</i>-3)<sup>2</sup>
+/<i> p</i><sub>3</sub><sup>2</sup> for odd <i>n</i>, and
+(<i>n</i>-3)&nbsp;(<i>n</i>-2)<sup>2</sup>&nbsp;/<i>&nbsp;p</i><sub>3</sub><sup>2</sup>
+for even <i>n</i> [Hall&nbsp;1991].
+<tr>
+<td valign="baseline"><tt>KierA1</tt>
+<td valign="baseline">
+First alpha modified shape index:
+<i>s</i>&nbsp;(<em>s</em>-1)<sup>2</sup>&nbsp;/<em>&nbsp;m</em><sup>2</sup>
+where <i>s</i>&nbsp;=&nbsp;<i>n</i>&nbsp;+&nbsp;<i>a</i> [Hall&nbsp;1991].
+<tr>
+<td valign="baseline"><tt>KierA2</tt>
+<td valign="baseline">
+Second alpha modified shape index:
+<i>s</i>&nbsp;</em>(<em>s</em>-1)<sup>2</sup>&nbsp;/<em>&nbsp;m</em><sup>2</sup>
+where <i>s</i>&nbsp;=&nbsp;<i>n</i>&nbsp;+&nbsp;<i>a</i> [Hall&nbsp;1991].
+<tr>
+<td valign="baseline"><tt>KierA3</tt>
+<td valign="baseline">
+Third alpha modified shape index:
+(<em>s</em>-1)&nbsp;(<em>s</em>-3)<sup>2</sup> /<em>
+p</em><sub>3</sub><sup>2</sup> for odd <em>n</em>, and
+(<em>s</em>-3)&nbsp;(<em>s</em>-2)<sup>2</sup>&nbsp;/<em>&nbsp;p</em><sub>3</sub><sup>2</sup>
+for even <em>n</em> where
+<i>s</i>&nbsp;=&nbsp;<i>n</i>&nbsp;+&nbsp;<i>a</i> [Hall&nbsp;1991].
+<tr>
+<td valign="baseline"><tt>KierFlex</tt>
+<td valign="baseline">
+Kier molecular flexibility index:
+(<tt>KierA1</tt>) (<tt>KierA2</tt>)&nbsp;/&nbsp;<em>n</em> [Hall&nbsp;1991].
+<tr>
+<td valign="baseline"><tt>zagreb</tt>
+<td valign="baseline">
+Zagreb index: the sum of <i>d<sub>i</i></sub><sup>2</sup> over all heavy
+atoms <i>i</i>.</TD>
+</table>
+</center>
+
+<a name="Matrix"></a><h3>Adjacency and Distance Matrix Descriptors</h3>
+
+<p>The <i>adjacency matrix</i>, <i>M</i>, of a chemical structure is defined
+by the elements [<i>M<sub>ij</i></sub>] where <i>M<sub>ij</i></sub> is 1 if
+atoms <i>i</i> and <i>j</i> are bonded and zero otherwise.  The <i>distance
+matrix</i>, <i>D</i>, of a chemical structure is defined by the elements
+[<i>D<sub>ij</i></sub>] where <i>D<sub>ij</i></sub> is the length of the
+shortest path from atoms <i>i</i> to <i>j</i>; zero is used if atoms <i>i</i>
+and <i>j</i> are not part of the same connected component.  The adjacency
+matrix of CH3CH=O is displayed on the left and its distance matrix is
+displayed on the right (below):
+
+<p><center><table>
+<tr>
+<td>
+<pre>C1      0 1 1 1 1 0 0      0 1 1 1 1 2 2      
+H2      1 0 0 0 0 0 0      1 0 2 2 2 3 3      
+H3      1 0 0 0 0 0 0      1 2 0 2 2 3 3      
+H4      1 0 0 0 0 0 0      1 2 2 0 2 3 3      
+C5      1 0 0 0 0 1 1      1 2 2 2 0 1 1      
+H6      0 0 0 0 1 0 0      2 3 3 3 1 0 2      
+O7      0 0 0 0 1 0 0      2 3 3 3 1 2 0      
+</pre>
+</td>
+<td>
+<IMG SRC="descr/matrix.gif" WIDTH=129 HEIGHT=108>
+</td>
+</table></center>
+
+<p>Petitjean [Petitjean 1992] defines the <b>eccentricity</b> of a vertex
+to be the longest path from that vertex to any other vertex in the graph.
+The graph <b>radius</b> is the smallest vertex eccentricity in the
+graph and the graph <b>diameter</b> as the largest vertex eccentricity.
+These values are calculated using the distance matrix and are used for
+several descriptors described below.
+
+
+<p>The following descriptors are calculated from the distance and
+adjacency matrices of the heavy atoms:
+</p>
+
+<center>
+<table class="titlebar" border="1" width="90%" cellpadding="5">
+
+<tr>
+<th width="15%">Code</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>balabanJ</tt>
+<td valign="baseline">
+Balaban's connectivity topological index [Balaban&nbsp;1982].
+
+<tr>
+<td valign="baseline">
+<tt>BCUT_PEOE_0<br>BCUT_PEOE_1<br>BCUT_PEOE_2<br>BCUT_PEOE_3</tt>
+<td valign="baseline">
+The BCUT descriptors [Pearlman&nbsp;1998] are calculated from the eigenvalues
+of a modified adjacency matrix.  Each <i>ij</i> entry of the adjacency matrix
+takes the value 1/sqrt(<i>b<sub>ij</sub></i>) where <i>b<sub>ij</sub></i>
+is the formal bond order between bonded atoms <i>i</i> and <i>j</i>.
+The diagonal takes the value of the PEOE partial charges.
+The resulting eigenvalues are sorted and the smallest, 1/3-ile, 2/3-ile
+and largest eigenvalues are reported.
+
+<tr>
+<td valign="baseline">
+<tt>BCUT_SLOGP_0<br>BCUT_SLOGP_1<br>BCUT_SLOGP_2<br>BCUT_SLOGP_3</tt>
+<td valign="baseline">
+The BCUT descriptors using atomic contribution to logP (using the Wildman
+and Crippen SlogP method) instead of partial charge.
+
+<tr>
+<td valign="baseline">
+<tt>BCUT_SMR_0<br>BCUT_SMR_1<br>BCUT_SMR_2<br>BCUT_SMR_3</tt>
+<td valign="baseline">
+The BCUT descriptors using atomic contribution to molar refractivity (using
+the Wildman and Crippen SMR method) instead of partial charge.
+
+<tr>
+<td valign="baseline"><tt>diameter</tt>
+<td valign="baseline">
+Largest value in the distance matrix [Petitjean&nbsp;1992].
+
+<tr>
+<td valign="baseline"><tt>petitjean</tt>
+<td valign="baseline">
+Value of (<tt>diameter</tt>&nbsp;-&nbsp;<tt>radius</tt>) /
+<tt>diameter</tt>.
+
+<tr>
+<td valign="baseline">
+<tt>GCUT_PEOE_0<br>GCUT_PEOE_1<br>GCUT_PEOE_2<br>GCUT_PEOE_3</tt>
+<td valign="baseline">
+The GCUT descriptors are calculated from the eigenvalues of a modified
+graph distance adjacency matrix.  Each <i>ij</i> entry of the adjacency matrix
+takes the value 1/sqr(<i>d<sub>ij</sub></i>) where <i>d<sub>ij</sub></i>
+is the (modified) graph distance between atoms <i>i</i> and <i>j</i>.
+The diagonal takes the value of the PEOE partial charges.
+The resulting eigenvalues are sorted and the smallest, 1/3-ile, 2/3-ile
+and largest eigenvalues are reported.
+
+<tr>
+<td valign="baseline">
+<tt>GCUT_SLOGP_0<br>GCUT_SLOGP_1<br>GCUT_SLOGP_2<br>GCUT_SLOGP_3</tt>
+<td valign="baseline">
+The GCUT descriptors using atomic contribution to logP (using the Wildman
+and Crippen SlogP method) instead of partial charge.
+
+<tr>
+<td valign="baseline">
+<tt>GCUT_SMR_0<br>GCUT_SMR_1<br>GCUT_SMR_2<br>GCUT_SMR_3</tt>
+<td valign="baseline">
+The GCUT descriptors using atomic contribution to molar refractivity (using
+the Wildman and Crippen SMR method) instead of partial charge.
+
+<tr>
+<td valign="baseline"><tt>petitjeanSC</tt>
+<td valign="baseline">Petitjean graph Shape Coefficient
+as defined in [Petitjean&nbsp;1992]:
+(<tt>diameter</tt>&nbsp;-&nbsp;<tt>radius</tt>) /
+<tt>radius</tt>.
+
+<tr>
+<td valign="baseline"><tt>radius</tt>
+<td valign="baseline">
+If <em>r<sub>i</sub></em> is the largest matrix entry in row <em>i</em> of
+the distance matrix <em>D</em>, then the radius is defined as the smallest
+of the <em>r<sub>i</sub></em> [Petitjean&nbsp;1992].
+<tr>
+<td valign="baseline"><tt>VDistEq</tt>
+<td valign="baseline">
+If <em>m</em> is the sum of the distance matrix entries then
+<tt>VdistEq</tt> is defined to be the sum of
+log<sub>2</sub>&nbsp;<em>m&nbsp;-&nbsp;p<sub>i</sub></em>&nbsp;log<sub>2</sub>&nbsp;<em>p<sub>i</sub></em>&nbsp;/&nbsp;<i>m</i>
+where <i>p<sub>i</i></sub> is the number of distance matrix entries equal
+to <i>i</i>.
+<tr>
+<td valign="baseline"><tt>VDistMa</tt>
+<td valign="baseline">
+If <em>m</em> is the sum of the distance matrix entries then
+<tt>VDistMa</tt> is defined to be the sum of
+log<sub>2</sub>&nbsp;<em>m&nbsp;-&nbsp;D<sub>ij</sub></em>&nbsp;log<sub>2</sub>&nbsp;<em>D<sub>ij</sub></em>&nbsp;/&nbsp;<em>m</em>
+over all <em>i</em> and <em>j</em>.
+<tr>
+<td valign="baseline"><tt>wienerPath</tt>
+<td valign="baseline">
+Wiener path number: half the sum of all the distance matrix entries as
+defined in [Balaban&nbsp;1979] and [Wiener&nbsp;1947].
+<tr>
+<td valign="baseline"><tt>wienerPol</tt>
+<td valign="baseline">
+Wiener polarity number: half the sum of all the distance matrix entries
+with a value of 3 as defined in [Balaban&nbsp;1979].
+</table>
+</center>
+
+
+<a name="PH4"></a><H3>Pharmacophore Feature Descriptors</H3>
+
+<p>The Pharmacophore Atom Type descriptors consider only the heavy atoms
+of a molecule and assign a type to each atom.  That is, hydrogens are
+suppressed during the calculation.  The atom typing mechanism
+is located in the file <tt>$MOE/lib/svl/ph4.svl/ph4type.svl</tt> which
+is a rule-based system for assigning pharmacophore features to atoms.
+The feature set is Donor, Acceptor, Polar (both Donor and Acceptor),
+Positive (base), Negative (acid), Hydrophobe and Other.  Assignments
+may take into account implied protonation, deprotonation, keto/enol
+considerations and tautomerism at a biologically relevant pH.  For example,
+-COOH will be typed in its deprotonated form regardless of how the
+structure is stored.
+</p>
+
+<center>
+<table class="titlebar" border="1" width="90%" cellpadding="5">
+
+<tr>
+<th width="15%">Code</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>a_acc</tt>
+<td valign="baseline">
+Number of hydrogen bond acceptor atoms (not counting acidic atoms but counting
+atoms that are both hydrogen bond donors and acceptors such as -OH).
+<tr>
+<td valign="baseline"><tt>a_acid</tt>
+<td valign="baseline">
+Number of acidic atoms.
+<tr>
+<td valign="baseline"><tt>a_base</tt>
+<td valign="baseline">
+Number of basic atoms.
+<tr>
+<td valign="baseline"><tt>a_don</tt>
+<td valign="baseline">
+Number of hydrogen bond donor atoms (not counting basic atoms but counting
+atoms that are both hydrogen bond donors and acceptors such as -OH).
+<tr>
+<td valign="baseline"><tt>a_hyd</tt>
+<td valign="baseline">
+Number of hydrophobic atoms.
+
+<tr>
+<td valign="baseline"><tt>vsa_acc</tt>
+<td valign="baseline">
+Approximation to the sum of VDW surface areas
+(&Aring;<sup>2</sup>) of pure hydrogen bond
+acceptors (not counting acidic atoms and atoms that are both
+hydrogen bond donors and acceptors such as -OH).
+<tr>
+<td valign="baseline"><tt>vsa_acid</tt>
+<td valign="baseline">
+Approximation to the sum of VDW surface areas of acidic atoms
+(&Aring;<sup>2</sup>).
+<tr>
+<td valign="baseline"><tt>vsa_base</tt>
+<td valign="baseline">
+Approximation to the sum of VDW surface areas of basic atoms
+(&Aring;<sup>2</sup>).
+<tr>
+<td valign="baseline"><tt>vsa_don</tt>
+<td valign="baseline">
+Approximation to the sum of VDW surface areas of pure hydrogen bond
+donors (not counting basic atoms and atoms that are both
+hydrogen bond donors and acceptors such as -OH)
+(&Aring;<sup>2</sup>).
+<tr>
+<td valign="baseline"><tt>vsa_hyd</tt>
+<td valign="baseline">
+Approximation to the sum of VDW surface areas of hydrophobic atoms
+(&Aring;<sup>2</sup>).
+<tr>
+<td valign="baseline"><tt>vsa_other</tt>
+<td valign="baseline">
+Approximation to the sum of VDW surface areas 
+(&Aring;<sup>2</sup>) of atoms typed as
+&quot;other&quot;.
+<tr>
+<td valign="baseline"><tt>vsa_pol</tt>
+<td valign="baseline">
+Approximation to the sum of VDW surface areas
+(&Aring;<sup>2</sup>)
+of polar atoms (atoms that
+are both hydrogen bond donors and acceptors), such as -OH.
+
+</table>
+</center>
+
+
+<a name="Charge"></a><h3>Partial Charge Descriptors</h3>
+
+<p>Descriptors that depend on the partial charge of each atom of a chemical
+structure require calculation of those partial charges.  An unfortunate
+complication is the fact that there are numerous methods of calculating
+partial charges.  Rather than enforce a particular method, MOE provides
+several versions of most of the charge-dependent descriptors.  The only
+difference between these variants is the source of the partial charges.
+The following variants are supported: PEOE, Q (described below).
+
+<p><B>PEOE</B>.  The Partial Equalization of Orbital Electronegativities
+(PEOE) method of calculating atomic partial charges [Gasteiger&nbsp;1980] is
+a method in which charge is transferred between bonded atoms until equilibrium.
+To guarantee convergence, the amount of charge transferred at each iteration
+is damped with an exponentially decreasing scale factor. The amount of
+charge transferred, <i>dq<sub>ij</i></sub>, between atoms <i>i</i> and <i>j</i>
+when <i>X<sub>i</i></sub>&nbsp;&gt;&nbsp;<i>X<sub>j</i></sub> is
+
+<P ALIGN="CENTER"><i>dq<sub>ij</i></sub> =
+(1/2<i><sup>k</i></sup>)&nbsp;(<i>X<sub>i</i></sub> - <i>X<sub>j</i></sub>)
+/ <i>X<sub>j</sub><sup>+</sup></i></P>
+
+<p>where <i>X<sub>j</i></sub><sup>+</sup> is the electronegativity of the
+positive ion of atom <i>j</i>; <i>X<sub>i</i></sub> is the electronegativity of
+atom <i>i</i> (quadratically dependent on partial charge); and <i>k</i> is the
+iteration number of the algorithm.  Electronegativity values are determined by
+parameterization found in the SVL source code file
+<tt>$MOE/lib/svl/calc.svl/charge.svl</tt>.  The PEOE charges depend only on the
+connectivity of the input structures: elements, formal charges and bond orders.
+Descriptors using the PEOE charges are prefixed with <tt>PEOE_</tt>.
+
+<p><B>Q</B>.  Descriptors prefixed with <tt>Q_</tt> use the partial charges
+stored with each structure in the database.  In other words, no
+partial charge calculation is made and it is assumed that some external
+program has been used to calculate the atomic partial charges.
+This dependence can be a subtle source of error if, for example, the wrong
+charges are stored when descriptors are recalculated (e.g. when
+evaluating QSAR models on novel structures).
+
+<p>Partial charges from forcefields can be used by energy minimizing
+the database structures (which will store the charges), then using the
+<tt>Q_</tt> variant of the descriptors.
+
+<p><b>Warning!</b> Most partial charge methods require that all hydrogens
+be explicit in the stored structures.  This can be a source of error when
+recalculating descriptors on novel structures during QSAR model evaluation.
+
+<p>Let <i>q<sub>i</sub></i> denote the partial charge of atom <i>i</i>
+as defined above.  Let <i>v<sub>i</sub></i> be the van der Waals surface
+area
+(&Aring;<sup>2</sup>)
+of atom <i>i</i> (as calculated by a connection table approximation).
+The following descriptors are calculated:
+</p>
+
+<center>
+<table class="titlebar" border="1" width="90%" cellpadding="5">
+
+<tr>
+<th width="15%">Code</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>Q_PC+<br>PEOE_PC+</tt>
+<td valign="baseline">
+Total positive partial charge: the sum of the positive <i>q<sub>i</sub></i>.
+<tt>Q_PC+</tt> is identical to <tt>PC+</tt> which has been retained for
+compatibility.
+<tr>
+<td valign="baseline"><tt>Q_PC-<br>PEOE_PC-</tt>
+<td valign="baseline">
+Total negative partial charge: the sum of the negative <i>q<sub>i</sub></i>.
+<tt>Q_PC-</tt> is identical to <tt>PC-</tt> which has been retained for
+compatibility.
+<tr>
+<td valign="baseline"><tt>Q_RPC+<br>PEOE_RPC+</tt>
+<td valign="baseline">
+Relative positive partial charge: the largest positive <i>q<sub>i</sub></i>
+divided by the sum of the positive <i>q<sub>i</sub></i>.
+<tt>Q_RPC+</tt> is identical to <tt>RPC+</tt> which has been retained for
+compatibility.
+<tr>
+<td valign="baseline"><tt>Q_PRC-<br>PEOE_RPC-</tt>
+<td valign="baseline">
+Relative negative partial charge: the smallest negative <i>q<sub>i</sub></i>
+divided by the sum of the negative <i>q<sub>i</sub></i>.
+<tt>Q_RPC-</tt> is identical to <tt>RPC-</tt> which has been retained for
+compatibility.
+
+<tr>
+<td valign="baseline"><tt>Q_VSA_POS<br>PEOE_VSA_POS</tt>
+<td valign="baseline">
+Total positive van der Waals surface area.  This is the sum of the
+<i>v<sub>i</sub></i> such that <i>q<sub>i</sub></i> is non-negative.  The
+<i>v<sub>i</sub></i> are calculated using a connection table approximation.
+<tr>
+<td valign="baseline"><tt>Q_VSA_NEG<br>PEOE_VSA_NEG</tt>
+<td valign="baseline">
+Total negative van der Waals surface area.  This is the sum of the
+<i>v<sub>i</sub></i> such that <i>q<sub>i</sub></i> is negative.  The
+<i>v<sub>i</sub></i> are calculated using a connection table approximation.
+<tr>
+<td valign="baseline"><tt>Q_VSA_PPOS<br>PEOE_VSA_PPOS</tt>
+<td valign="baseline">
+Total positive polar van der Waals surface area.  This is the sum of the
+<i>v<sub>i</sub></i> such that <i>q<sub>i</sub></i> is greater than 0.2.
+The <i>v<sub>i</sub></i> are calculated using a connection
+table approximation.
+<tr>
+<td valign="baseline"><tt>Q_VSA_PNEG<br>PEOE_VSA_PNEG</tt>
+<td valign="baseline">
+Total negative polar van der Waals surface area.  This is the sum of the
+<i>v<sub>i</sub></i> such that <i>q<sub>i</sub></i> is less than -0.2.
+The <i>v<sub>i</sub></i> are calculated using a connection
+table approximation.
+<tr>
+<td valign="baseline"><tt>Q_VSA_HYD<br>PEOE_VSA_HYD</tt>
+<td valign="baseline">
+Total hydrophobic van der Waals surface area.  This is the sum of the
+<i>v<sub>i</sub></i> such that |<i>q<sub>i</sub></i>| is less than or equal
+to 0.2.
+The <i>v<sub>i</sub></i> are calculated using a connection
+table approximation.
+<tr>
+<td valign="baseline"><tt>Q_VSA_POL<br>PEOE_VSA_POL</tt>
+<td valign="baseline">
+Total polar van der Waals surface area.  This is the sum of the
+<i>v<sub>i</sub></i> such that |<i>q<sub>i</sub></i>| is greater than 0.2.
+The <i>v<sub>i</sub></i> are calculated using a connection
+table approximation.
+
+<tr>
+<td valign="baseline"><tt>Q_VSA_FPOS<br>PEOE_VSA_FPOS</tt>
+<td valign="baseline">
+Fractional positive van der Waals surface area.  This is the sum of the
+<i>v<sub>i</sub></i> such that <i>q<sub>i</sub></i> is non-negative
+divided by the total surface area.  The
+<i>v<sub>i</sub></i> are calculated using a connection table approximation.
+<tr>
+<td valign="baseline"><tt>Q_VSA_FNEG<br>PEOE_VSA_FNEG</tt>
+<td valign="baseline">
+Fractional negative van der Waals surface area.  This is the sum of the
+<i>v<sub>i</sub></i> such that <i>q<sub>i</sub></i> is negative
+divided by the total surface area.  The
+<i>v<sub>i</sub></i> are calculated using a connection table approximation.
+<tr>
+<td valign="baseline"><tt>Q_VSA_FPPOS<br>PEOE_VSA_FPPOS</tt>
+<td valign="baseline">
+Fractional positive polar van der Waals surface area.  This is the sum of the
+<i>v<sub>i</sub></i> such that <i>q<sub>i</sub></i> is greater than 0.2
+divided by the total surface area.
+The <i>v<sub>i</sub></i> are calculated using a connection
+table approximation.
+<tr>
+<td valign="baseline"><tt>Q_VSA_FPNEG<br>PEOE_VSA_FPNEG</tt>
+<td valign="baseline">
+Fractional negative polar van der Waals surface area.  This is the sum of the
+<i>v<sub>i</sub></i> such that <i>q<sub>i</sub></i> is less than -0.2
+divided by the total surface area.
+The <i>v<sub>i</sub></i> are calculated using a connection
+table approximation.
+<tr>
+<td valign="baseline"><tt>Q_VSA_FHYD<br>PEOE_VSA_FHYD</tt>
+<td valign="baseline">
+Fractional hydrophobic van der Waals surface area.  This is the sum of the
+<i>v<sub>i</sub></i> such that |<i>q<sub>i</sub></i>| is less than or equal
+to 0.2 divided by the total surface area.
+The <i>v<sub>i</sub></i> are calculated using a connection
+table approximation.
+<tr>
+<td valign="baseline"><tt>Q_VSA_FPOL<br>PEOE_VSA_FPOL</tt>
+<td valign="baseline">
+Fractional polar van der Waals surface area.  This is the sum of the
+<i>v<sub>i</sub></i> such that |<i>q<sub>i</sub></i>| is greater than 0.2
+divided by the total surface area.
+The <i>v<sub>i</sub></i> are calculated using a connection
+table approximation.
+
+<tr>
+<td valign="baseline"><tt>PEOE_VSA+6</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+greater than 0.3.
+<tr>
+<td valign="baseline"><tt>PEOE_VSA+5</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+in the range [0.25,0.30).
+<tr>
+<td valign="baseline"><tt>PEOE_VSA+4</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+in the range [0.20,0.25).
+<tr>
+<td valign="baseline"><tt>PEOE_VSA+3</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+in the range [0.15,0.20).
+<tr>
+<td valign="baseline"><tt>PEOE_VSA+2</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+in the range [0.10,0.15).
+<tr>
+<td valign="baseline"><tt>PEOE_VSA+1</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+in the range [0.05,0.10).
+<tr>
+<td valign="baseline"><tt>PEOE_VSA+0</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+in the range [0.00,0.05).
+<tr>
+<td valign="baseline"><tt>PEOE_VSA-0</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+in the range [-0.05,0.00).
+<tr>
+<td valign="baseline"><tt>PEOE_VSA-1</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+in the range [-0.10,-0.05).
+<tr>
+<td valign="baseline"><tt>PEOE_VSA-2</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+in the range [-0.15,-0.10).
+<tr>
+<td valign="baseline"><tt>PEOE_VSA-3</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+in the range [-0.20,-0.15).
+<tr>
+<td valign="baseline"><tt>PEOE_VSA-4</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+in the range [-0.25,-0.20).
+<tr>
+<td valign="baseline"><tt>PEOE_VSA-5</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+in the range [-0.30,-0.25).
+<tr>
+<td valign="baseline"><tt>PEOE_VSA-6</tt>
+<td valign="baseline">Sum of <i>v<sub>i</sub></i> where <i>q<sub>i</sub></i> is
+less than -0.30.
+</table>
+</center>
+
+
+<a name="3D"></a> <h2>3D Molecular Descriptors</h2>
+
+<p>There are two types of 3D molecular descriptors: those that depend
+on internal coordinates only and those that depend on absolute
+orientation. 3D molecular descriptors are classified as
+&quot;i3D&quot; for internal coordinate dependent 3D and &quot;x3D&quot;
+for external coordinate dependent. A good example is the dipole
+moment: the magnitude of the dipole moment does not depend on absolute
+orientation in space; however, the <em>x</em> component of the dipole
+moment does depend on absolute orientation.
+
+<p><b>Note:</b> All the 3D descriptors operate on structures found
+in the database as is; that is, no hydrogens are added or removed.
+Furthermore, most descriptors assume that partial charges are stored with the
+structures in the database.
+
+<a name="Energy"><h3>Potential Energy Descriptors</h3>
+
+<p>The energy descriptors use the MOE potential energy model to calculate
+energetic quantities (in kcal/mol) from stored 3D conformations.
+The currently loaded forcefield is used along with the current potential
+setup as defined in the <a href="../moe/pot.htm">Potential Setup</a>
+panel.  Most of the energy descriptors belong to the i3D class; that is,
+they depend on internal coordinates alone and not on an external reference
+frame.  Descriptors that rely on an external reference frame are clearly
+indicated in the list below.  To use the potential energy descriptors:
+
+<ol>
+<li>
+Open <b>
+<span class="nobr">MOE | Window | Potential Setup</span></b> and select an
+appropriate forcefield.
+
+<p><li> Decide on which weights should be set to 0; for example, if the
+solvation model is not required, set its weight to 0.  It is not sufficient to
+disable the term with the Enable/Disable checkbox.  Terms with zero weights
+will not play a role in any of the descriptor calculations.
+See <a class="svl" href="../moe/fcnref/potfcn.htm#potSetup">potSetup</a>
+for more details.
+</li>
+
+<p><li> Decide on which terms should be enabled.  A number of energy
+descriptors will honor the state of the enabled flags (see below).
+
+</ol>
+
+<p>One remaining issue is that of partial charges.  The internal coordinate
+energy descriptors assume that if the partial charges stored in the
+database are essentially zero, then the potential model charges will be
+calculated prior to calculating the energy.  If the partial charges are
+not essentially zero, then they are left as is for the descriptor calculation.
+In this way, partial charges calculated with an external program will be
+left undisturbed whereas molecules with no charges will be given those
+recommended by the forcefield.
+</p>
+
+<center>
+<table class="titlebar" border="1" width="90%" cellpadding="5">
+
+<tr>
+<th width="15%">Code</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>E</tt>
+<td valign="baseline">
+Value of the potential energy.  The state of all term enable flags
+will be honored (in addition to the term weights).  This means that the
+current potential setup accurately reflects what will be calculated.</TD>
+<tr>
+<td valign="baseline"><tt>E_ang</tt>
+<td valign="baseline">
+Angle bend potential energy.  In the Potential Setup panel, the
+term enable (Bonded) flag is ignored, but the term weight is applied.</TD>
+<tr>
+<td valign="baseline"><tt>E_ele</tt>
+<td valign="baseline">
+Electrostatic component of the potential energy.  In the Potential Setup
+panel, the term enable flag is ignored, but the term weight is applied.</TD>
+<tr>
+<td valign="baseline"><tt>E_nb</tt>
+<td valign="baseline">
+Value of the potential energy with all bonded terms disabled.
+The state of the non-bonded term enable flags will be honored (in
+addition to the term weights).</TD>
+<tr>
+<td valign="baseline"><tt>E_oop</tt>
+<td valign="baseline">
+Out-of-plane potential energy.  In the Potential Setup panel, the term
+enable (Bonded) flag is ignored, but the term weight is applied.</TD>
+<tr>
+<td valign="baseline"><tt>E_sol</tt>
+<td valign="baseline">
+Solvation energy.  In the Potential Setup panel, the term enable
+parameter (Solvation menu) is ignored, but the term weight is applied.</TD>
+<tr>
+<td valign="baseline"><tt>E_stb</tt>
+<td valign="baseline">
+Bond stretch-bend cross-term potential energy.  In the Potential Setup
+panel, the term enable (Bonded) flag is ignored,
+but the term weight is applied.</TD>
+<tr>
+<td valign="baseline"><tt>E_str</tt>
+<td valign="baseline">
+Bond stretch potential energy.  In the Potential Setup panel, the term
+enable (Bonded) flag is ignored, but the term weight is applied.</TD>
+<tr>
+<td valign="baseline"><tt>E_strain</tt>
+<td valign="baseline">
+Local strain energy: the current energy minus the value of the energy
+at a near local minimum.  The current energy is calculated as for the
+<tt>E</tt> descriptor.  The local minimum energy is the value of the
+<tt>E</tt> descriptor after first performing an energy minimization. 
+Current chirality is preserved and charges are left undisturbed during
+minimization.  The structure in the database is not modified (results
+of the minimization are discarded).</TD>
+<tr>
+<td valign="baseline"><tt>E_tor</tt>
+<td valign="baseline">
+Torsion (proper and improper) potential energy.  In the Potential Setup
+panel, the term enable (Bonded) flag is ignored,
+but the term weight is applied.</TD>
+<tr>
+<td valign="baseline"><tt>E_vdw</tt>
+<td valign="baseline">
+van der Waals component of the potential energy.  In the Potential Setup
+panel, the term enable flag is ignored, but the term weight is applied.</TD>
+<tr>
+<td valign="baseline"><tt>E_rele</tt>
+<td valign="baseline">
+Electrostatic interaction energy (external reference frame: x3d) between the
+stored molecule and the atoms currently loaded. 
+The term enable flag is ignored, but the term weight is applied. 
+Partial charges are assumed to be correct in the database molecule as well
+as on the currently loaded atoms.</TD>
+
+<tr>
+<td valign="baseline"><tt>E_rnb</tt>
+<td valign="baseline">
+Non-bonded interaction energy (external reference frame: x3d) between the
+stored molecule and a "receptor" currently loaded in MOE.  It is similar to
+the other E_r* calls in that it is an interaction energy term.
+
+<tr>
+<td valign="baseline"><tt>E_rsol</tt>
+<td valign="baseline">
+Solvation free energy difference (external reference frame: x3d).  Let
+<i>L</i> be the free energy of solvation of the stored molecule (ligand),
+<i>R</i> be the free energy of solvation of the atoms currently loaded
+(receptor), and <i>G</i> be the free energy of solvation of the <i>RL</i>
+complex.  Consequently, the returned value is
+<i>G</i>&nbsp;-&nbsp;<i>L</i>&nbsp;-&nbsp;<i>R</i>.
+The term enable flag is ignored, but the term weight is applied.
+Partial charges are assumed to be correct in the database molecule as well
+as on the currently loaded atoms.</TD>
+
+<tr>
+<td valign="baseline"><tt>E_rvdw</tt>
+<td valign="baseline">
+van der Waals interaction energy (external reference frame: x3d) between
+the stored molecule and the atoms currently loaded.
+The term enable flag is ignored, but the term weight is applied.</TD>
+</table>
+</center>
+
+<a name="MOPAC"><h3>MOPAC Descriptors</h3>
+
+<p>The MOPAC [MOPAC] descriptors are calculated by the
+version of <a href="../apps/scf.htm#MOPAC">MOPAC</a> distributed with MOE.
+</p>
+
+<center>
+<table class="titlebar" border="1" width="90%" cellpadding="5">
+
+<tr>
+<th width="15%">Code</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>AM1_dipole</tt><br>
+<td>The dipole moment calculated using the AM1 Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>AM1_E</tt><br>
+<td>The total SCF energy (kcal/mol) calculated using the AM1
+Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>AM1_Eele</tt><br>
+<td>The electronic energy (kcal/mol) calculated using the AM1
+Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>AM1_HF</tt><br>
+<td>The heat of formation (kcal/mol) calculated using the AM1
+Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>AM1_IP</tt><br>
+<td>The ionization potential (kcal/mol) calculated using the AM1
+Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>AM1_LUMO</tt><br>
+<td>The energy (eV) of the Lowest Unoccupied Molecular Orbital calculated using
+the AM1 Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>AM1_HOMO</tt><br>
+<td>The energy (eV) of the Highest Occupied Molecular Orbital calculated using
+the AM1 Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>MNDO_dipole</tt><br>
+<td>The dipole moment calculated using the MNDO Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>MNDO_E</tt><br>
+<td>The total SCF energy (kcal/mol) calculated using the MNDO
+Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>MNDO_Eele</tt><br>
+<td>The electronic energy (kcal/mol) calculated using the MNDO
+Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>MNDO_HF</tt><br>
+<td>The heat of formation (kcal/mol) calculated using the MNDO
+Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>MNDO_IP</tt><br>
+<td>The ionization potential (kcal/mol) calculated using the MNDO
+Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>MNDO_LUMO</tt><br>
+<td>The energy (eV) of the Lowest Unoccupied Molecular Orbital 
+calculated using the MNDO Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>MNDO_HOMO</tt><br>
+<td>The energy (eV) of the Highest Occupied Molecular Orbital 
+calculated using the MNDO Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>PM3_dipole</tt><br>
+<td>The dipole moment calculated using the PM3 Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>PM3_E</tt><br>
+<td>The total SCF energy (kcal/mol) calculated using the PM3
+Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>PM3_Eele</tt><br>
+<td>The electronic energy (kcal/mol) calculated using the PM3
+Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>PM3_HF</tt><br>
+<td>The heat of formation (kcal/mol) calculated using the PM3
+Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>PM3_IP</tt><br>
+<td>The ionization potential (kcal/mol) calculated using the PM3
+Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>PM3_LUMO</tt><br>
+<td>The energy (eV) of the Lowest Unoccupied Molecular Orbital 
+calculated using the PM3 Hamiltonian [MOPAC].
+</tr>
+
+<tr>
+<td valign="baseline"><tt>PM3_HOMO</tt><br>
+<td>The energy (eV) of the Highest Occupied Molecular Orbital 
+calculated using the PM3 Hamiltonian [MOPAC].
+</tr>
+
+</table>
+</center>
+
+<a name="Volume"><h3>Surface Area, Volume and Shape Descriptors</h3>
+
+<p>The following descriptors depend on the structure connectivity and
+conformation (dimensions are measured in &Aring;).
+The <tt>vsurf_</tt> descriptors are similar to the VolSurf descriptors
+[Cruciani&nbsp;2000]; these descriptors have been shown to be useful
+in pharmacokinetic property prediction.
+The <tt>pmi1</tt>, <tt>pmi2</tt>, and <tt>pmi3</tt> descriptors
+are calculated after [Sauer&nbsp;2003].
+</p>
+
+<center>
+<table class="titlebar" border="1" width="90%" cellpadding="5">
+
+<tr>
+<th width="15%">Code</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>ASA</tt>
+<td valign="baseline">
+Water accessible surface area calculated using a radius of 1.4 A for
+the water molecule.  A polyhedral representation is used for each atom
+in calculating the surface area.
+<tr>
+<td valign="baseline"><tt>dens</tt>
+<td valign="baseline">
+Mass density: molecular weight divided by van der Waals volume as
+calculated in the <tt>vol</tt> descriptor.
+<tr>
+<td valign="baseline"><tt>glob</tt>
+<td valign="baseline">
+Globularity, or inverse condition number (smallest eigenvalue divided by the
+largest eigenvalue) of the covariance matrix of atomic coordinates.  A
+value of 1 indicates a perfect sphere while a value of 0 indicates a two-
+or one-dimensional object.
+<tr>
+<td valign="baseline"><tt>pmi</tt></td>
+<td valign="baseline">
+Principal moment of inertia.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>pmiX</tt>
+<td valign="baseline">
+<em>x</em> component of the principal moment of inertia (external coordinates).
+<tr>
+<td valign="baseline"><tt>pmiY</tt>
+<td valign="baseline">
+<em>y</em> component of the principal moment of inertia (external coordinates).
+<tr>
+<td valign="baseline"><tt>pmiZ</tt>
+<td valign="baseline">
+<em>z</em> component of the principal moment of inertia (external coordinates).
+</tr>
+
+<tr>
+<td valign="baseline"><tt>pmi1</tt></td>
+<td valign="baseline">
+First diagonal element of diagonalized moment of inertia tensor.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>pmi2</tt></td>
+<td valign="baseline">
+Second diagonal element of diagonalized moment of inertia tensor.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>pmi3</tt></td>
+<td valign="baseline">
+Third diagonal element of diagonalized moment of inertia tensor.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>npr1</tt></td>
+<td valign="baseline">
+Normalized PMI ratio <tt>pmi1</tt>/<tt>pmi3</tt>.
+</td>
+</tr>
+<tr>
+<td valign="baseline"><tt>npr2</tt></td>
+<td valign="baseline">
+Normalized PMI ratio <tt>pmi2</tt>/<tt>pmi3</tt>.
+</td>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>rgyr</tt>
+<td valign="baseline">
+Radius of gyration.
+<tr>
+<td valign="baseline"><tt>std_dim1</tt>
+<td valign="baseline">
+Standard dimension 1: the square root of the largest eigenvalue of the
+covariance matrix of the atomic coordinates.
+A standard dimension is equivalent to the standard deviation along
+a principal component axis.
+<tr>
+<td valign="baseline"><tt>std_dim2</tt>
+<td valign="baseline">
+Standard dimension 2: the square root of the second largest eigenvalue of the
+covariance matrix of the atomic coordinates.
+A standard dimension is equivalent to the standard deviation along
+a principal component axis.
+<tr>
+<td valign="baseline"><tt>std_dim3</tt>
+<td valign="baseline">
+Standard dimension 3: the square root of the third largest eigenvalue of the
+covariance matrix of the atomic coordinates.
+A standard dimension is equivalent to the standard deviation along
+a principal component axis.
+<tr>
+<td valign="baseline"><tt>vol</tt>
+<td valign="baseline">
+van der Waals volume calculated using a grid approximation (spacing 0.75 A).
+<tr>
+<td valign="baseline"><tt>VSA</tt>
+<td valign="baseline">
+van der Waals surface area.  A polyhedral representation is used for each atom
+in calculating the surface area.
+<tr>
+<td valign="baseline"><tt>vsurf_V</tt>
+<td valign="baseline">Interaction field volume
+<tr>
+<td valign="baseline"><tt>vsurf_S</tt>
+<td valign="baseline">Interaction field surface area
+<tr>
+<td valign="baseline"><tt>vsurf_R</tt>
+<td valign="baseline">Surface rugosity
+<tr>
+<td valign="baseline"><tt>vsurf_G</tt>
+<td valign="baseline">Surface globularity
+<tr>
+<td valign="baseline"><tt>vsurf_W*</tt>
+<td valign="baseline">Hydrophilic volume (8 descriptors)
+<tr>
+<td valign="baseline"><tt>vsurf_IW*</tt>
+<td valign="baseline">Hydrophilic integy moment (8 descriptors)
+<tr>
+<td valign="baseline"><tt>vsurf_CW*</tt>
+<td valign="baseline">Capacity factor (8 descriptors)
+<tr>
+<td valign="baseline"><tt>vsurf_EWmin*</tt>
+<td valign="baseline">Lowest hydrophilic energy (3 descriptors)
+<tr>
+<td valign="baseline"><tt>vsurf_DW*</tt>
+<td valign="baseline">Contact distances of vsurf_EWmin (3 descriptors)
+<tr>
+<td valign="baseline"><tt>vsurf_D*</tt>
+<td valign="baseline">Hydrophobic volume (8 descriptors)
+<tr>
+<td valign="baseline"><tt>vsurf_ID*</tt>
+<td valign="baseline">Hydrophobic integy moment (8 descriptors)
+<tr>
+<td valign="baseline"><tt>vsurf_EDmin*</tt>
+<td valign="baseline">Lowest hydrophobic energy (3 descriptors)
+<tr>
+<td valign="baseline"><tt>vsurf_DD*</tt>
+<td valign="baseline">Contact distances of vsurf_DDmin (3 descriptors)
+<tr>
+<td valign="baseline"><tt>vsurf_HL*</tt>
+<td valign="baseline">Hydrophilic-Lipophilic (2 descriptors)
+<tr>
+<td valign="baseline"><tt>vsurf_A</tt>
+<td valign="baseline">Amphiphilic moment
+<tr>
+<td valign="baseline"><tt>vsurf_CP</tt>
+<td valign="baseline">Critical packing parameter
+<tr>
+<td valign="baseline"><tt>vsurf_Wp*</tt>
+<td valign="baseline">Polar volume (8 descriptors)
+<tr>
+<td valign="baseline"><tt>vsurf_HB*</tt>
+<td valign="baseline">H-bond donor capacity (8 descriptors)
+</table>
+</center>
+
+<a name="Charge3D"><h3>Conformation Dependent Charge Descriptors</h3>
+
+<p>The following descriptors depend upon the stored partial charges of the
+molecules and their conformations.  Accessible surface area refers to
+the water accessible surface (in &Aring;<sup>2</sup>)
+area using a probe radius of 1.4&nbsp;&Aring;.
+Let <i>q<sub>i</sub></i> denote the partial charge of atom <i>i</i>.
+</p>
+
+
+<center>
+<table class="titlebar" border="1" width="90%" cellpadding="5">
+
+<tr>
+<th width="15%">Code</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>ASA+</tt>
+<td valign="baseline">
+Water accessible surface area of all atoms with positive partial charge
+(strictly greater than 0).
+<tr>
+<td valign="baseline"><tt>ASA-</tt>
+<td valign="baseline">
+Water accessible surface area of all atoms with negative partial charge
+(strictly less than 0).
+<tr>
+<td valign="baseline"><tt>ASA_H</tt>
+<td valign="baseline">
+Water accessible surface area of all hydrophobic
+(|<em>q<sub>i</sub></em>|&lt;0.2) atoms.
+<tr>
+<td valign="baseline"><tt>ASA_P</tt>
+<td valign="baseline">
+Water accessible surface area of all polar
+(|<em>q<sub>i</sub></em>|&gt;=0.2) atoms.
+<tr>
+<td valign="baseline"><tt>DASA</tt>
+<td valign="baseline">
+Absolute value of the difference between <tt>ASA+</tt> and <tt>ASA-</tt>.
+<tr>
+<td valign="baseline"><tt>CASA+</tt>
+<td valign="baseline">
+Positive charge weighted surface area, <tt>ASA+</tt> times
+max { <em>q<sub>i</sub></em> &gt; 0 } [Stanton&nbsp;1990].
+<tr>
+<td valign="baseline"><tt>CASA-</tt>
+<td valign="baseline">
+Negative charge weighted surface area, <tt>ASA-</tt> times
+max { <em>q<sub>i</sub></em> &lt; 0 } [Stanton&nbsp;1990].
+<tr>
+<td valign="baseline"><tt>DCASA</tt>
+<td valign="baseline">
+Absolute value of the difference between <tt>CASA+</tt> and <tt>CASA-</tt>
+[Stanton&nbsp;1990].
+
+<tr>
+<td valign="baseline"><tt>dipole</tt>
+<td valign="baseline">
+Dipole moment calculated from the partial charges of the molecule.
+<tr>
+<td valign="baseline"><tt>dipoleX</tt>
+<td valign="baseline">
+The <em>x</em> component of the dipole moment (external coordinates).
+<tr>
+<td valign="baseline"><tt>dipoleY</tt>
+<td valign="baseline">
+The <em>y</em> component of the dipole moment (external coordinates).
+<tr>
+<td valign="baseline"><tt>dipoleZ</tt>
+<td valign="baseline">
+The <em>z</em> component of the dipole moment (external coordinates).
+
+<tr>
+<td valign="baseline"><tt>FASA+</tt>
+<td valign="baseline">
+Fractional <tt>ASA+</tt> calculated as <tt>ASA+</tt> / <tt>ASA</tt>.
+<tr>
+<td valign="baseline"><tt>FASA-</tt>
+<td valign="baseline">
+Fractional <tt>ASA-</tt> calculated as <tt>ASA-</tt> / <tt>ASA</tt>.
+<tr>
+<td valign="baseline"><tt>FCASA+</tt>
+<td valign="baseline">Fractional <tt>CASA+</tt> calculated as
+<tt>CASA+</tt> / <tt>ASA</tt>.
+<tr>
+<td valign="baseline"><tt>FCASA-</tt>
+<td valign="baseline">
+Fractional <tt>CASA-</tt> calculated as <tt>CASA-</tt> / <tt>ASA</tt>.
+<tr>
+<td valign="baseline"><tt>FASA_H</tt>
+<td valign="baseline">
+Fractional <tt>ASA_H</tt> calculated as <tt>ASA_H</tt> / <tt>ASA</tt>.
+<tr>
+<td valign="baseline"><tt>FASA_P</tt>
+<td valign="baseline">Fractional <tt>ASA_P</tt> calculated as
+<tt>ASA_P</tt> / <tt>ASA</tt>.
+
+</table>
+</center>
+
+<h2><a name="SVL">Adding New Descriptors with SVL</a></h2>
+
+<p>
+Descriptor calculation is handled by a module that searches the MOE system for
+SVL functions satisfying a specific naming convention.  Each such function
+is responsible for calculating a descriptor or family of related descriptors.
+Typically, such functions are located in their own SVL source code file which
+must be loaded in the system prior to running the QuaSAR applications.
+Adding a descriptor involves writing a file containing SVL functions for
+registering and calculating the descriptor value, and then loading that file
+into the system:
+
+<ol>
+<li>
+Create a file called, say, <tt>mydesc.svl</tt>, that conforms to the
+Calculate Descriptors conventions described below.
+<p>
+<li>
+Load the descriptor module into MOE with <tt>load'mydesc.svl'</tt>.
+Note that if the <span class="nobr"><b>Calculate Descriptors</b></span>
+panel is up when you load or re-load a
+descriptor file, the panel will not reflect the changes.  Close the panel
+and re-open it to see the new descriptors.  This also applies to
+other applications that use QuaSAR descriptors.
+</ol>
+
+<p>Here is an example of a descriptor file (explanations follow):
+
+<pre>
+#svl
+//      mydesc.svl            sample new descriptors
+//
+
+#set title	'My Descriptors'       // title of module
+#set class	'QuaSAR'               // module class of descriptors
+
+function QuaSAR_list_MyDescriptors [] = tr [
+    [ 'Caro',   'Number of aromatic C',   '2D', [] ],
+    [ 'C=O',    'Number of carbonyl C',   '2D', [] ]
+];
+
+function QuaSAR_calc_MyDescriptors [db_mol, codes, parms]
+    local desc = zero codes;
+
+	// load the database molecule into MOE as objects
+
+    local chains = mol_Create db_mol;
+    local atoms = cat cAtoms chains;
+
+	// calculate the individual descriptors and assign
+	// them to the corresponding positions in the return vector
+
+    (desc | codes == 'C=O' ) = add sm_Match ['C=O', atoms];
+    (desc | codes == 'Caro') = add sm_Match ['c',   atoms];
+
+    oDestroy chains;          // destroy created objects
+    return desc;
+endfunction
+</pre>
+
+<p>The header of the module is typical of SVL program files: a line
+containing <tt>#svl</tt>, then a comment header, followed by SVL compiler
+directives:
+
+<pre>
+#svl
+//      mydesc.svl            sample new descriptors
+//
+
+#set title	'My Descriptors'       // title of module
+#set class	'QuaSAR'               // module class of descriptors
+</pre>
+
+<p>The <tt>#set title</tt> directive assigns a title to the SVL module,
+which will appear in the Modules and Tasks window, and gives some
+indication as to the contents of the source code file.  The <tt>#set class</tt>
+directive assigns a class (group of related SVL files) to the module.
+Descriptor modules are usually put in the <tt>QuaSAR</tt> class.  This
+ensures that all descriptor modules are listed together in the Modules
+and Tasks window.
+
+<p>The descriptor file must contain two global functions that, together,
+a) define the descriptor to the rest of the system; and b) calculate the
+descriptor when given a molecule.  A naming convention is used to
+identify these functions (the SVL file can define other functions if
+needed):
+
+<ul>
+<li>The function that declares the descriptors to the rest of the system
+must start with the prefix <tt>QuaSAR_list_</tt>.  This function takes
+no parameters and returns a table of information detailing the set of
+descriptors that can be calculated with the associated calculation function.
+<p>
+<li>The function that calculates the descriptors must start with the
+prefix <tt>QuaSAR_calc_</tt>.  This function is passed a molecule (in
+database format) and a set of descriptor codes to calculate.  It must
+return the calculated descriptors.
+</ul>
+
+<p>The suffix of the list and calculate functions must be the same.  Any set of
+characters can be used, but the two functions must be unique with respect to
+all other global symbols (i.e. choose descriptive names).  In the
+example file (<tt>mydesc.svl</tt> above), the list function is
+<tt>QuaSAR_list_MyDescriptors</tt>:
+
+<pre>
+    function QuaSAR_list_MyDescriptors [] = tr [
+	[ 'Caro',   'Number of aromatic C',   '2D', [] ],
+	[ 'C=O',    'Number of carbonyl C',   '2D', [] ]
+    ];
+</pre>
+
+<p>List functions must return a table of data detailing which descriptors
+the calculate function can calculate.  This table is a vector of lists
+of the form:
+
+<pre>
+    [code, description, class, parm]
+</pre>
+
+<p>Each of the elements of this vector must have the same length.  The
+elements are interpreted as follows:
+
+<ul>
+<li>
+<tt>code(i)</tt> is a token defining the descriptor code in the QuaSAR
+system.  This identifier must be unique amongst all other descriptors.
+Example identifiers are <tt>'chi0'</tt> and <tt>'dipole'</tt>.
+<p>
+<li>
+<tt>description(i)</tt> is a token containing a short, one-line description
+of the descriptor which will appear in the 
+<span class="nobr"><b>Calculate Descriptors</b></span>
+panel.  Examples
+are <tt>'Principal moment of inertia'</tt> and
+<tt>'Number of carbon atoms'</tt>.
+<p>
+<li>
+<tt>class(i)</tt> is a token containing the class of the descriptor and
+accepts values such as <tt>'2D'</tt>, <tt>'i3D'</tt> or <tt>'x3D'</tt>.
+<p>
+<li>
+<tt>parm(i)</tt> is reserved for future use and should be set to the
+null vector <tt>[]</tt>.
+</ul>
+
+<p>In the example, the list function is written so that each
+descriptor calculated by the calculation function is described on one
+line of the form:
+
+<pre>
+    [ 'Caro',   'Number of aromatic C',   '2D', [] ],
+</pre>
+
+<p>and the <tt>tr</tt> operator is used to convert this transposed
+representation into the correct form for the QuaSAR system.
+
+<p>The calculation function associated with the list function is
+<tt>QuaSAR_calc_MyDescriptors</tt>.  The association is created by using the
+common suffix <tt>MyDescriptors</tt>.  A calculation function must be declared
+as:
+
+<pre>
+    function QuaSAR_calc_<b>name</b> [db_mol, codes, parms]
+	// .... body of function ....
+    endfunction
+</pre>
+
+<p>where
+
+<dl>
+<dt><tt>name</tt>
+<dd>Name used in the <tt>QuaSAR-List</tt> function. In this example, it would
+be <tt>MyDescriptors</tt>.
+
+<p><dt><tt>db_mol</tt> 
+<dd>SVL vector representation of a molecule in the
+form returned by
+<a href="../moe/fcnref/extract.htm"><tt>mol_Extract</tt></a>.
+
+<p><dt><tt>codes</tt> 
+<dd>Specifies which descriptors are to be calculated and
+is in the form of a vector of tokens.  The calculation function may assume
+that each of the passed codes is contained in the set advertised
+by the list function.  Duplicate codes are allowed to appear in the
+passed <tt>codes</tt> vector.
+
+<p><dt><tt>parms</tt> 
+<dd>Reserved for future use and currently set to
+a vector of nulls equal in length to <tt>codes</tt>.
+</dl>
+
+<p>The calculation function must return a vector <tt>desc</tt> equal in
+length to <tt>codes</tt> such that <tt>desc(i)</tt> is the value of the
+descriptor specified by <tt>code(i)</tt>.  The calculation function
+must be designed to accept more than one code at a time.
+In the example, the calculation function handles two descriptors.
+To handle multiple occurrences of descriptor codes, the following logic
+is typically used:
+
+<pre>
+    function QuaSAR_calc_MyDescriptors [db_mol, codes, parms]
+	local desc = zero codes;
+
+	// .... create molecule ....
+
+	(desc | codes == 'C=O' ) = add sm_Match ['C=O', atoms];
+	(desc | codes == 'Caro') = add sm_Match ['c',   atoms];
+
+	// .... destroy molecule ....
+
+	return desc;
+    endfunction
+</pre>
+
+<p>The initialization of <tt>desc</tt> creates a zero vector of equal
+length to <tt>codes</tt>.  Once the descriptors have been calculated,
+they are assigned to the correct locations with code of the form:
+
+<pre>    (desc | codes == 'mydesc') = value_of_mydesc;
+</pre>
+
+<p>The remainder of the calculation function handles the creation and
+destruction of the molecular objects in MOE.  However, if the descriptor can be
+calculated solely from the <tt>db_mol</tt> argument, then there is no need to
+create molecular objects.  The <tt>a_heavy</tt> descriptor (number of heavy
+atoms) is a good example of a descriptor that can be calculated directly from
+the <tt>db_mol</tt> parameter.
+
+<a name="SVLCommands"></a><h2>SVL Commands</h2>
+
+<a class="svl" href="fcnref/descrfcn.htm">QuaSAR_DescriptorMDB</a><br />
+<a class="svl" href="fcnref/descrfcn.htm">QuaSAR_Descriptor_List</a><br />
+<a class="svl" href="fcnref/descrfcn.htm">DescriptorExprSyntax</a><br />
+<a class="svl" href="fcnref/descrfcn.htm">DescriptorExprCodes</a><br />
+<a class="svl" href="fcnref/descrfcn.htm">DescriptorExprEval</a>
+
+<a name="References"><h2>References</h2>
+
+<table width=100% cellpadding="5" border="0">
+<tr>
+<td valign="baseline">[Balaban&nbsp;1979]
+<td valign="baseline">
+Balaban, A.T.; Five New Topological Indices for the Branching of Tree-Like
+Graphs; <i>Theoretica Chimica Acta</i> <i>53</i> (<b>1979</b>) 355&ndash;375.
+</tr>
+<tr>
+<td valign="baseline">[Balaban&nbsp;1982]
+<td valign="baseline">
+Balaban, A.T.; Highly Discriminating Distance-Based Topological Index;
+<i>Chemical Physics Letters</i> <i>89 No.&nbsp;5</i> (<b>1982</b>)
+399&ndash;404.
+</tr>
+<tr>
+<td valign="baseline">[CRC&nbsp;1994]
+<td valign="baseline">
+<i>CRC Handbook of Chemistry and Physics</i>. CRC Press (1994).
+</tr>
+<tr>
+<td valign="baseline">[Crippen&nbsp;1999]
+<td valign="baseline">
+Wildman, S.A., Crippen, G.M.; Prediction of Physiochemical Parameters by
+Atomic Contributions; <i>J. Chem. Inf. Comput. Sci.</i> <i>39
+No.&nbsp;5</i> (<b>1999</b>) 868&ndash;873.
+</tr>
+
+<tr>
+<td valign="baseline">[Cruciani&nbsp;2000]
+<td valign="baseline">
+Cruciani, G., Crivori, P., Carrupt, P.-A., Testa, B.;
+Molecular Fields in Quantitative Structure-Permeation Relationships:
+the VolSurf Approach;
+<i>J. Mol. Struct. (Theochem) 503</i> (<b>2000</b>) 17&ndash;30.
+</tr>
+<tr>
+<td valign="baseline">[Gasteiger&nbsp;1980]
+<td valign="baseline">
+Gasteiger, J., Marsili, M.; Iterative Partial Equalization
+of Orbital Electronegativity - A Rapid Access to Atomic
+Charges; <i>Tetrahedron</i> <i>36</i> (<b>1980</b>) 3219.
+</tr>
+<tr>
+<td valign="baseline">[Ertl&nbsp;2000]
+<td valign="baseline">
+Ertl, P., Rohde, B., Selzer, P.; Fast Calculation of Molecular Polar Surface
+Area as a Sum of Fragment-Based Contributions and Its Application to the
+Prediction of Drug Transport Properties; <i>J. Med. Chem.</i> <i>43</i>
+(<b>2000</b>) 3714&ndash;3717.
+</tr>
+<tr>
+<td valign="baseline">[Hall&nbsp;1991]
+<td valign="baseline">
+Hall, L.H., Kier, L.B.; The Molecular Connectivity Chi Indices and Kappa
+Shape Indices in Structure-Property Modeling; <i>Reviews of Computational
+Chemistry</i> <i>2</i> (<b>1991</b>).
+</tr>
+<tr>
+<td valign="baseline">[Hall&nbsp;1977]
+<td valign="baseline">
+Hall, L.H., Kier, L.B.; The Nature of Structure-Activity Relationships and Their
+Relation to Molecular Connectivity; <i>Eur. J. Med. Chem</i>
+<i>12</i> (<b>1977</b>) 307.
+</tr>
+<tr>
+<td valign="baseline">[Hou&nbsp;2004]
+<td valign="baseline">
+Hou, T.J., Xia, K., Zhang, W., Xu, X.J.;
+ADME Evaluation in Drug Discovery. 4. Prediction of Aqueous Solubility Based on
+Atom Contribution Approach;
+<i>J. Chem. Inf. Comput. Sci.</i> <i>44</i> (<b>2004</b>) 266&ndash;275.
+</tr>
+
+<tr>
+<td valign="baseline">[Kazius&nbsp;2005]
+<td valign="baseline">
+Kazius, J., McGuire, R., Bursi, R.;
+Derivation and Validation of Toxicophores for Mutagenicity Prediction;
+<i>J. Med. Chem.</i> <i>48</i> (<b>2005</b>) 312&ndash;320.
+</tr>
+
+<tr>
+<td valign="baseline">[Lipinski&nbsp;1997]
+<td valign="baseline">
+Lipinski, C.A., Lombardo, F., Dominy, B.W. and Feeney, P.J.;
+Experimental and Computational Approaches to Estimate Solubility
+and Permeability in Drug Discovery and Development Settings;
+<i>Adv. Drug Deliv. Rev. 23</i> (<b>1997</b>) 3&ndash;25.
+</tr>
+<tr>
+<td valign="baseline">[LOGP&nbsp;1998]
+<td valign="baseline">
+Labute, P.; MOE LogP(Octanol/Water) Model <i>unpublished</i>. Source code
+in <tt>$MOE/lib/svl/quasar.svl/q_logp.svl</tt> (1998).
+</tr>
+
+<tr>
+<td valign="baseline">[MOPAC]
+<td valign="baseline">
+Stewart, J.J.P.; <i>MOPAC Manual (Seventh Edition)</i>; 1993.
+</tr>
+
+<tr>
+<td valign="baseline">[MREF&nbsp;1998]
+<td valign="baseline">
+Labute, P.; MOE Molar Refractivity Model <i>unpublished</i>.  Source code
+in <tt>$MOE/lib/svl/quasar.svl/q_mref.svl</tt> (1998).
+</tr>
+<tr>
+<td valign="baseline">[Oprea&nbsp;2000]
+<td valign="baseline">
+Oprea, Tudor I.; Property Distribution of Drug-Related Chemical
+Databases; <i>J. Comp. Aid. Mol. Des.</i> <i>14</i> (<b>2000</b>) 251&ndash;264.
+</tr>
+<tr>
+<td valign="baseline">[Pearlman&nbsp;1998]
+<td valign="baseline">
+Pearlman, R.S., Smith, K.M.;
+Novel Software Tools for Chemical Diversity;
+<i>Persp. Drug. Disc. Des. 9/10/11</i> (<b>1998</b>) 339&ndash;353.
+</tr>
+<tr>
+<td valign="baseline">[Petitjean&nbsp;1992]
+<td valign="baseline">
+Petitjean, M.; Applications of the Radius-Diameter Diagram to the
+Classification of Topological and Geometrical Shapes of Chemical
+Compounds; <i>J. Chem. Inf. Comput. Sci.</i> <i>32</i>
+(<b>1992</b>) 331&ndash;337.
+</tr>
+
+<tr>
+<td valign="baseline">[Sauer&nbsp;2003]
+<td valign="baseline">
+Sauer, W.H.B. and Schwarz, M.K.;
+Molecular Shape Diversity of
+Combinatorial Libraries: A Prerequisite for Broad Bioactivity;
+<i>J. Chem. Inf. Comput. Sci. 43</i>, (<b>2003</b>) 987&ndash;1003.
+</tr>
+
+<tr>
+<td valign="baseline">[Stanton&nbsp;1990]
+<td valign="baseline">
+Stanton, D., Jurs, P.;
+Development and Use of Charged Partial Surface-Area Structural Descriptors
+in Computer-Assisted Quantitative Structure-Property Relationship Studies;
+<i>Anal. Chem. 62</i> (<b>1990</b>) 2323&ndash;2329.
+</tr>
+<tr>
+<td valign="baseline">[Wiener&nbsp;1947]
+<td valign="baseline">
+Wiener, H.; Structural Determination of Paraffin Boiling Points; <i>Journal
+of the American Chemical Society</i> <i>69</i> (<b>1947</b>) 17&ndash;20.
+</tr>
+
+</table>
+
+<h2>See Also</h2>
+
+<p>
+<a href="../moe/fcnref/rsynthfcn.htm">Synthetic Feasibility Functions</a>
+</p>
+
+<p>
+<a href="model.htm">QuaSAR-Model</a><br />
+<a href="qsar.htm">QuaSAR Overview</a><br />
+<a href="../tutorials/quasar_tut.htm">QuaSAR Tutorial</a>
+</p>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!--
+--- UCSF Chimera Copyright ---
+Copyright (c) 2008-2013 Regents of the University of California.
+All rights reserved.  This software provided pursuant to a
+license agreement containing restrictions on its disclosure,
+duplication and use.  This notice must be embedded in or
+attached to all copies, including partial copies, of the
+software or any revisions or derivations thereof.
+--- UCSF Chimera Copyright ---
+-->
+
+<html><head>
+<title>perframe</title>
+</head><body>
+<font size="-1">
+<a href="../framecommand.html" target="_top">Chimera Commands Index</a>
+</font>
+
+<h3><a href="usageconventions.html">Usage</a>:
+<BR><b>perframe</b> &nbsp;<i>operation</i>&nbsp;
+[&nbsp;<b>range</b>&nbsp;&nbsp;<i>start,end</i>[<i>,step</i>]]<font size="-1"><sub>M</sub></font>&nbsp;
+[&nbsp;<b>frames</b>&nbsp;<i>N</i>&nbsp;]
+[&nbsp;<b>interval</b>&nbsp;<i>K</i>&nbsp;]
+[&nbsp;<b>zeroPadWidth</b>&nbsp;<i>width</i>]
+[&nbsp;<b>showCommands</b>&nbsp;true|false&nbsp;]
+</h3>
+<h3><a href="usageconventions.html">Usage</a>:
+ <BR><b>~perframe</b></h3>
+<p>
+The <b>perframe</b> command specifies operations to be executed
+at each subsequent display frame, until
+a specified number of frames has elapsed, 
+the end of a value range has been reached, or all per-frame operations 
+have been discontinued collectively with <b>~perframe</b>.
+Multiple per-frame operations can be active simultaneously.
+See the
+<a href="http://www.cgl.ucsf.edu/chimera/data/movie-howto-mar2012/movie_examples
+.html#contour"
+target="_blank">video mini-examples</a>.
+See also:
+<a href="set.html#maxframerate"><b>set maxFrameRate</b></a>,
+<a href="../movies.html#moviecommands">movie-related commands</a>,
+<a href="../../ContributedSoftware/movie/movie.html#per-frame">per-frame
+scripts</a> in
+<a href="../../ContributedSoftware/movie/framemovie.html"
+target="_top"><b>MD Movie</b></a>
+</p><p>
+A per-frame <i>operation</i> consists of one or more
+<a href="../framecommand.html" target="_top">Chimera commands</a>, usually
+with embedded substitution arguments ($1, $2, <i>etc.</i>).
+If multiple commands are included, they should be combined into a single line
+with semicolon separators. If <i>operation</i> contains any spaces, it
+should be enclosed in double quotes.
+Alternatively, <i>operation</i> can be a previously defined single-word alias
+(defined using the <a href="alias.html"><b>alias</b></a> command, with
+<b>^</b> before the name to indicate a beginning-of-line alias).
+During execution, substitution arguments in <i>operation</i> 
+are replaced by the values of variables described in 
+<b>range</b> specifications and/or a frame counter that starts at 1.
+</p><p>
+The number of frames <i>N</i> at which to perform <i>operation</i> 
+can be indicated
+directly with the <b>frames</b> option or indirectly with <b>range</b>,
+where the substituted value will proceed from <i>start</i> to
+<i>end</i> in increments of <i>step</i>.  If <i>step</i> is omitted, it will be
+calculated from the number of <b>frames</b> <i>N</i> (if supplied), otherwise
+assumed to be +1 if <i>start</i> &lt; <i>end</i>, or &ndash;1 if <i>start</i>
+&gt; <i>end</i>.  
+The number of frames specified directly will win if it conflicts
+with the number of frames calculated from range information.
+If the end of the range is reached before the frames are complete,
+the substituted value will stay the same (equal to <i>end</i>)
+for the remaining frames.
+A range can be given for each substitution argument in <i>operation</i>, 
+and multiple ranges will be used in order.
+If no range is given, the frame count will be substituted for $1.
+</p><p>
+The <b>interval</b> option allows executing <i>operation</i> 
+at every <i>K</i><sup>th</sup> frame instead of every frame.
+Execution will start at the first frame and occur <i>N</i> times 
+regardless of the interval <i>K</i> 
+(where <i>N</i> is specified directly or indirectly, as explained above), 
+but the total number of frames to elapse will vary:
+<i>K</i>(<i>N</i> &ndash; 1) + 1.
+The frame count for substitution purposes will only include frames at which
+<i>operation</i> is executed, from 1 to <i>N</i>.
+</p><p>
+The <b>zeroPadWidth</b> option allows padding the substituted value 
+with leading zeroes up to <i>width</i> digits; 
+this is typically used to generate output filenames from frame counts.
+</p><p>
+The <b>showCommands</b> option (default <b>false</b>) can be used to echo each
+expanded command to the <a href="../reply.html"><b>Reply Log</b></a>
+for debugging purposes.
+</p><p>
+Option keywords for <b>perframe</b> can be truncated to unique strings
+and their case does not matter.
+</p><p>
+Examples:
+</p><p>
+The following saves X3D files named 001.x3d, 002.x3d, ... 180.x3d 
+as a structure is rotated in 2&deg; increments about the Y axis:
+<blockquote>
+<b><a href="alias.html">alias</a>
+^getx3d <a href="export.html">export</a> $1.x3d</b>
+<br>
+<b>perframe getx3d zeropad 3; <a href="roll.html">roll</a> y 2 180;
+<a href="wait.html">wait</a>; ~perf</b>
+</blockquote>
+The following saves PDB files named 001.pdb, 002.pdb, ... 360.pdb 
+as a structure is rotated in 1&deg; increments about the Y axis:
+<blockquote>
+<b>perframe "<a href="turn.html">turn</a> y 1;
+<a href="write.html">write</a> #0 ~/Desktop/$1.pdb" frames 360 zero 3</b>
+</blockquote>
+The following gradually changes a map contour level:
+<blockquote>
+<b>perframe "<a href="volume.html">volume</a> #0 level $1" 
+range 2.5,0.5 frames 50</b>
+</blockquote>
+The following displays individual sidechains (hiding all others)
+along a protein ribbon, going to the next sidechain
+every 10<sup>th</sup> frame:
+<blockquote>
+<b><a href="ribbon.html">ribbon</a></b>
+<br>
+<b>perframe "<a href="display.html">~disp</a> protein; 
+<a href="display.html">disp</a> :$1" range 17,355 interval 10</b>
+</blockquote>
+The following was used to &ldquo;walk&rdquo;
+a DNA-binding motor protein along a DNA molecule by 
+superimposing the backbone of template DNA in the protein structure 
+onto successive segments of the longer DNA:
+<blockquote>
+<b>perframe "<a href="match.html">match</a> 
+&nbsp;#0:1-5.T@P &nbsp;#1:$1-$2.A@P" range 3,85 range 7,89</b>
+</blockquote>
+The following re-evaluates hydrogen bonding between two molecules 
+as they are gradually changed from a previously saved position 
+named <b>undocked</b> to a previously saved position named <b>docked</b>.  
+<blockquote>
+<b><a href="alias.html">alias</a> 
+^evalhb <a href="hbonds.html">hb</a> intramod false line 2</b>
+<br>
+<b><a href="reset.html">reset</a> undocked</b>
+<br>
+<b>perframe evalhb; <a href="reset.html">reset</a> docked 40;
+<a href="wait.html">wait</a>; ~perf</b>
+</blockquote>
+</p>
+</body></html> 

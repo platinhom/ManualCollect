@@ -1,0 +1,1313 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<link rel="stylesheet" href="../support/help.css" charset="ISO-8859-1" type="text/css" />
+<title>Atom Specification Language (ASL)</title>
+</head>
+<body>
+<table bgcolor="#dcdcdc" border="0" cellspacing="0" width="100%">
+<tr><td>
+<p><img src="../images/common/schrodinger_logo.png" align="left" alt=""
+ border="0" hspace="5" vspace="5" /></p>
+</td></tr>
+<tr><td>
+<h1 class="title">Atom Specification Language (ASL)</h1>
+</td></tr>
+</table>
+
+<ul>
+<li><a href="#asl1">Why an atom specification language?</a></li>
+<li><a href="#asl2">The Hierarchy</a></li>
+<li><a href="#asl3">Atom Specification</a></li>
+<li><a href="#asl4">Operators</a></li>
+<li><a href="#asl5">Operator Priority</a></li>
+<li><a href="#asl6">Implicit Operators</a></li>
+<li><a href="#asl7">Creating New Sets from Existing Ones</a></li>
+<li><a href="#asl8">Matching of PDB atom names</a></li>
+<li><a href="#asl9">Miscellaneous</a></li>
+<li><a href="#asl11">Useful Hints when using ASL with the Project Facility</a></li>
+<li><a href="#asl12">ASL Examples</a></li>
+<li><a href="#links">Related Topics</a></li>
+</ul>
+
+<a name="asl1"></a>
+<h2>Why an atom specification language? </h2>
+
+<ul>
+<li><p>To provide a flexible way to define sets of atoms in complex
+macromolecular systems</p></li>
+
+<li><p>To serve as the basis of the Sets facility in Maestro</p></li>
+
+<li><p>To allow atom specification from textual input, which some users find
+faster then picking atoms from the main window.</p></li>
+</ul>
+
+<a name="asl2"></a>
+<h2>The Hierarchy</h2>
+
+<pre>entry &gt; molecule &gt; chain &gt; residue &gt; atom  </pre>
+
+<p>The atom specification language is made up of five classes. Each
+is listed below [with their minimum acceptable abbreviations shown outside
+the square brackets]</p>
+
+<ul>
+<li><a href="#asl2.5"><code>e[ntry]</code></a><br />
+<p>This is the top level class in the language. The term <i>entry</i> is used
+to mean all the atoms in the Workspace associated with a single entry in
+the current project.</p></li>
+
+<li><a href="#asl2.1"><code>m[olecule]</code></a><br />
+<p>The term <i>molecule</i> is used in
+the normal chemical sense meaning all atoms that are connected by a
+single covalent path.</p></li>
+
+<li><a href="#asl2.2"><code>c[hain]</code></a><br />
+<p>This corresponds to a chain as specified in the PDB file format. Note that
+this chain may be a subset of a molecule (e.g. when chains are linked by
+disulfide linkages)</p></li>
+
+<li><a href="#asl2.3"><code>r[esidue]</code></a><br />
+<p>An arbitrary collection of one or more covalently bound atoms within a
+molecule, such as the monomer units in a polymer or the amino acids in a
+protein.</p></li>
+
+<li><a href="#asl2.4"><code>a[tom]</code></a><br />
+<p>A single atom.</p></li>
+</ul>
+
+<p>Each class is optional. If absent all entities of that type are matched.</p>
+
+<a name="asl3"></a>
+<h2>Atom Specification</h2>
+
+<p>A complete specification is a class name and some property specified by a
+property name and property list.  The syntax is:</p>
+
+<p><i>class<tt>.</tt>property<tt> </tt>propertylist </i></p>
+
+<p>All names of properties and characters in property lists are treated in
+a case insensitive manner. Wildcards are supported for atom and set names.
+A '*'  matches zero or more characters and a '?' matches any single character.
+You can include comments in a specification by placing a '#' character before
+the text you wish to hide.</p>
+
+<p>Items in a property list may be separated by comma, white space or both.
+Ranges (lower-upper) may be used where appropriate. Unterminated ranges are
+taken to include all available numbers.  For example if there are four
+molecules in the system then the specifications:</p>
+<pre>
+mol. 2, 3, 4
+mol. &gt;=2
+mol. 2-4
+mol. &gt;1
+</pre>
+<p>are equivalent. In a similar manner, the following specifications are
+equivalent.</p>
+<pre>
+mol. 1, 2, 3
+mol. &lt;=3
+mol. 1-3
+mol. &lt;4
+</pre>
+
+<p>There are predefined ASL labels for class and property
+designations. The labels, which are typically just the
+words for the actual values they represent, can be
+abbreviated. For example the ASL expression <code>atom.ptype</code>
+could be abbreviated <code>a.pt</code>.</p>
+
+<p>The standard ASL class and property designations are listed
+below. All labels shown below have their minimum acceptable
+abbreviations shown outside the square brackets:</p>
+
+<a name="asl2.5"></a>
+<p><code>e[ntry]</code></p>
+<ul>
+<li><code>i[d]</code> <br />
+<p>The word <code>id</code> can be completely omitted, because this is the
+default. Thus <code>entry.id 234</code> and <code>entry. 234</code> are
+equivalent. Note, however, that the '.' is still required even if
+<code>id</code> is not included. A valid property list is a list of entry
+ids. Wildcard characters are permitted. For example:</p>
+<pre>
+entry.i 123 <br />
+entry.id 123?
+</pre></li>
+
+<li><code>n[ame]</code> <br />
+<p>A valid property list is a list of entry names. Wildcard
+characters are permitted. For example:</p>
+<pre>
+entry.n e1 <br />
+entry.name recep, lig*
+</pre></li>
+<li><code>m[odulo]</code> <br />
+<p>This property can be used to select every <i>n</i>th entry from a set of
+entries. For example, the expression:</p> 
+<pre>
+e.m 10 1
+</pre>
+<p>selects entry number 1, 11, 21, and so on.</p>
+</li>
+<li><code>idm[odulo]</code> <br />
+<p>This property can be used to select every <i>n</i>th entry based on their
+entry ID value. For example, the expression:</p> 
+<pre>
+entry.idmodulo 10 1
+</pre>
+<p>selects entries whose entry ID is 1, 11, 21, and so on.</p>
+</li>
+</ul>
+
+<a name="asl2.1"></a>
+<p><code>m[olecule]</code></p>
+<ul>
+<li><code>[number]</code> <br />
+<p>Because numbers are the only molecular properties specifiable
+using ASL expressions, the word <code>number</code> can be completely omitted
+(i.e. <code>mol.number 1</code> and <code>mol. 1</code> are equivalent). Note,
+however, that the '.' is still required even if the property name is not
+included. A valid property list for this property is a set of
+numbers or a range. For example:</p>
+<pre>mol. 1-4
+mol. 1,2,3,4
+</pre>
+</li>
+<li><code>m[odulo]</code> <br />
+<p>This property can be used to select every <i>n</i>th molecule. For example,
+the expression:</p> 
+<pre>
+mol.modulo 10 1
+</pre>
+<p>selects molecule number 1, 11, 21, and so on.</p>
+</li>
+<li><code>e[ntrynum]</code> <br />
+<p>This property can be used to select a molecule by its entry-relative
+numbering. For example, the expression:</p>
+<pre>
+mol.entrynum 1
+</pre>
+<p>selects the first molecule in each entry.</p>
+</li>
+<li><code>a[toms]</code> <br />
+<p>This property can be used to select a molecule by its size in terms of
+number of atoms. For example, the expression:</p>
+<pre>
+mol.atoms 300
+</pre>
+<p>selects the molecules that have exactly 300 atoms. The expression</p>
+<pre>
+mol.atoms 300-500
+</pre>
+<p>selects molecules with between 300 and 500 atoms. </p>
+</li>
+<li><code>w[eight]</code> <br />
+<p>This property can be used to select a molecule by its molecular weight.
+For example, the expression:</p>
+<pre>
+mol.weight 218.10
+</pre>
+<p>selects a molecule with a molecular weight of exactly 218.10. The
+expression:</p>
+<pre>
+mol.weight &gt;= 300.0
+</pre>
+<p>selects molecules with molecular weight greater than 300.0 </p>
+</li>
+<li><code>m[odulo]</code> <br />
+<p>This property can be used to select every <i>n</i>th molecule. For example,
+the expression:</p>
+<pre>
+mol.mod 10 1
+</pre>
+<p>selects molecule 1, 11, 21 etc. </p>
+</li>
+</ul>
+
+<a name="asl2.2"></a>
+<p><code>c[hain]</code></p>
+<p>This class designation allows you to specify atoms using chain attributes.
+</p>
+
+<ul>
+<li><code>[name]</code> <br />
+<p>Because names are the only chain properties that are specifiable by ASL,
+the word <code>name</code> can be omitted. For example, the expressions
+<code>chain.name A</code> and <code>chain. A</code> are equivalent. Note,
+however, that the '<code>.</code>' is required even if the property name is not
+included. A valid property list for this property is a single character
+representing a PDB chain name. Some examples of equivalent acceptable
+expressions are:</p>
+<pre>
+chain.name A
+chain. A
+c. A
+</pre>
+</li>
+</ul>
+
+<a name="asl2.3"></a>
+<p><code>r[esidue]</code></p>
+<p>This ASL class designation allows you to specify atoms based
+on residue properties. Combine with one of the following property
+specifications.</p>
+<ul>
+<li><code>[number]</code> <br />
+<p>Residue numbers can be
+specified in ASL expressions by specifying only a property list,
+not the property itself. For example,</p>
+<pre>
+res. 1 2 3
+</pre>
+<p>are valid specifications that return atoms in
+residues 1, 2 or 3.</p>
+<p>Residue numbers can be negative, so a range must be clearly distinguished
+from a negative number. For example,
+</p>
+<pre>
+res. 2-4
+</pre>
+selects residues 2 and -4, but either or the following specifies all residues
+from 2 to 4
+<pre>
+res. 2- 4
+res. 2 - 4
+</pre>
+</li>
+<li><code>pt[ype]</code> <br />
+<p>The <code>ptype</code> property designator can be used to specify atoms based
+on the three-letter residue PDB code. This is the default for non-numeric
+characters in the property list, so the expression <code>res. arg</code> and
+<code>res.ptype arg</code> are equivalent. A valid property list for
+<code>ptype</code> is comprised of three-character tokens. For example:</p>
+<pre>
+res.ptype gly,val,ala
+res. gly val ala
+</pre>
+</li>
+<li><code>m[type]</code> <br />
+<p>The <code>mtype</code> designator can be used to specify residues using
+MacroModel one-letter representations. A valid property list for
+<code>mtype</code> contains the MacroModel one-character tokens. For
+example:</p>
+<pre>
+res.mtype g,v,a
+res.m g,v,a
+</pre>
+</li>
+<li><code>sec[ondary_structure]</code> <br />
+<p>This ASL property allows you to specify atoms based on the secondary
+structure type of the residue.
+The property list must consist of one of the following descriptor types:</p>
+<ul>
+<li><code>h[elix]</code> &mdash; returns atoms in helix regions </li>
+<li><code>s[trand]</code> &mdash; returns atoms in strand regions</li>
+<li><code>l[oop]</code> &mdash; returns atoms in loop regions</li>
+</ul>
+
+<p>Syntax examples:</p>
+<pre>
+residue.sec helix
+residue.sec hel, str
+res.sec h l
+</pre>
+</li>
+<li><code>po[larity]</code> <br />
+<p>This ASL property allows you to specify atoms based on residue polarity.
+The property list must consist of one of the following descriptor types:</p>
+<ul>
+<li><code>h[ydrophobic]</code> &#151; returns atoms in hydrophobic residues </li>
+<li><code>pol[ar]</code> &#151; returns atoms in polar residues </li>
+<li><code>pos[itive]</code> &#151; returns atoms in residues with positive formal
+charges</li>
+<li><code>n[egative]</code> &#151; returns atoms in residues with negative formal
+charges</li>
+</ul>
+<p>Syntax examples:</p>
+<pre>
+residue.polarity hydrophobic
+residue.pol pos,neg
+res.pol h pos neg
+</pre>
+</li>
+<li><code>pos[ition]</code> <br />
+<p>The <code>position</code> descriptor allows you to specify atoms by
+fractional position of the residue. The property list must include two real
+numbers representing a fractional range of residue numbers. For example, if
+there are 100 residues numbered from 1-100, the expression:</p>
+<pre>
+residue.pos 0.0 0.1
+</pre>
+<p>returns residues 1 to 10. </p>
+</li>
+<li><code>i[nscode]</code> <br />
+<p>The <code>inscode</code> descriptor allows you to specify atoms by the
+insertion code of the residue. A property list should include one-character
+tokens representing insertion codes. For example:</p>
+<pre>
+residue.inscode a
+residue.num 25
+residue.inscode a
+</pre>
+</li>
+</ul>
+
+<a name="asl2.4"></a>
+<p><code>a[tom]</code></p>
+
+<p>The <code>atom</code> class designator allows you to specify atoms according
+to their characteristics. Use this designator in combination with one of the
+properties described below. Note that property lists containing either ptypes or
+numbers may be used without explicit property specification. For example, the
+following are valid:</p>
+<pre>
+atom. 1,2,3
+atom. CA
+</pre>
+<p>and returns respectively atoms 1,2 and 3 and any alpha carbons.</p>
+<ul>
+<li><code>pt[ype]</code> <br />
+<p>The <code>ptype</code> property specification allows you to designate atoms
+by their PDB atom names. A valid property list consists of acceptable PDB
+names. PDB name is the default property for non-numeric property list components
+and, as such, the word <code>ptype</code> may be omitted. However, the
+'<code>.</code>' is required. The following expressions are equivalent and
+return the backbone atoms in a structure:</p>
+<pre>
+atom.ptype N,CA,C,O
+atom. N,CA,C,O
+a. n,ca,c,o
+</pre>
+<p><b>Note:</b> see below for a discussion of how PDB atom names are specified
+and matched. Wildcards as described above can be applied to ptypes.</p>
+</li>
+
+<li><code>na[me]</code> <br />
+<p>The <code>name</code> property specification allows you to designate atoms by
+name. The property list must contain valid atom names. A valid atom name could
+be a string of any length that:</p>
+<ol>
+<li>has at least one non-digit character </li>
+<li>does not contain control characters </li>
+<li>is enclosed in quotation marks if it contains spaces or equals signs </li>
+<li>may contain wildcards as described above</li>
+</ol>
+<p>Examples:</p>
+<ul>
+<li><code>atom.name the_36th_carbon</code> </li>
+<li><code>atom.na C15, O:66, H-77</code></li>
+<li><code>atom.na C*</code> (returns atoms with name starting with C) </li>
+<li><code>atom.nam ??0*</code> (returns atoms whose names contain <code>0</code>
+(zero) as the third character) </li>
+</ul>
+</li>
+
+<li><code>n[umber]</code> <br />
+The <code>number</code> property specification allows you to designate atoms by
+number. The property list must contain integers or a range of integers. Atom
+number is the default property when property lists contain integers, so the
+<code>number</code> property designator can be omitted. The following
+expressions are equivalent and return the atoms numbered 1, 2, 3, and 4.
+<pre>
+atom.num 1,2,3,4
+a. 1 2 3 4
+atom. 1-4
+</pre>
+</li>
+
+<li><code>mo[lnum]</code> <br />
+<p>The <code>molnum</code> property delineator facilitates atom numbering by
+molecule. The property list must be a list or a range of integers. For example,
+the expression:</p>
+<pre>
+atom.molnum 1
+</pre>
+<p>returns the first atom in each molecule, while the expression</p>
+<pre>
+atom.molnum 1-10
+</pre>
+<p>returns the first 10 atoms in each molecule. </p>
+</li>
+
+<li><code>en[trynum]</code> <br />
+<p>The <code>entrynum</code> property delineator facilitates atom numbering by
+entry. The property list must be a list or a range of integers. For example, the
+expression:</p>
+<pre>
+atom.entrynum 1
+</pre>
+<p>returns the first atom in each entry, while the expression</p>
+<pre>
+atom.entrynum 1-10
+</pre>
+<p>returns the first 10 atoms in each entry. </p>
+</li>
+
+<li><code>m[type]</code> <br />
+<p>This property specification allows you to specify atoms using MacroModel
+atom types. A valid property list for the <code>mtype</code> property
+consists of MacroModel atom types. The following expression is valid
+and specifies sp2 carbons and oxygens.</p>
+<pre>
+atom.mtype C2,O2
+</pre>
+</li>
+
+<li><code>e[lement]</code> <br />
+<p>The <code>element</code> property allows you to specify atoms by element
+type. A valid property list for the element contains standard periodic table
+symbols. The following expression is valid and defines all carbons and
+oxygens.</p>
+<pre>
+atom.ele C,O
+</pre>
+</li>
+
+<li><code>a[ttachments]</code> <br />
+<p>This designator allows you to specify atoms by the number of bonds they
+have. The property list must contain a single integer in the range 1-6, but
+&gt;, &lt;, and = signs may also be used. The expression:</p>
+<pre>
+atom.att 1
+</pre>
+<p>returns all terminal atoms. The expression:</p>
+<pre>
+atom.att &lt;=2
+</pre>
+<p>returns all atoms with 2 or fewer bonds. </p>
+</li>
+
+<li><code>ato[micnumber]</code> <br />
+<p>This designator allows you to specify atoms by their atomic number.
+The property list must contain integers only. Ranges of integers and &gt;, &lt;,
+and = signs may also be used. The expression:</p>
+<pre>
+atom.atomicnum 1
+</pre>
+<p>returns all hydrogen atoms. The expression:</p>
+<pre>
+atom.ato 1-6
+</pre>
+<p>returns all atoms in the range H to C. </p>
+</li>
+
+<li><code>c[harge]</code> <br />
+<p>The <code>charge</code> designator allows you to identify atoms by their
+partial charges. A valid property list contains a value or range of floating
+point values. The expression:</p>
+<pre>
+atom.charge 0.400
+</pre>
+<p>returns atoms with partial charges of 0.400. The expression:</p>
+<pre>
+atom.charge -0.6--0.4
+</pre>
+<p>returns atoms with partial charges -0.6 to -0.4, while</p>
+<pre>
+atom.charge &lt;0.0
+</pre>
+<p>returns atoms with negative partial charges, and </p>
+<pre>
+atom.charge &gt;=0.5
+</pre>
+<p>returns atoms with charges of 0.5 or greater. </p>
+</li>
+
+<li><code>f[ormalcharge]</code> <br />
+<p>The <code>formalcharge</code> designator allows you to identify atoms by
+their formal charges.  A valid property list contains a value or range of
+integer values. The expression:</p>
+<pre>
+atom.formalcharge 0
+</pre>
+<p>returns atoms with formal charges of 0.0. The expression:</p>
+<pre>
+atom.f -2 - -1
+</pre>
+<p>returns atoms with formal charges -2 to -1, while </p>
+<pre>
+atom.formal &lt;0
+</pre>
+<p>returns atoms with negative formal charges, and </p>
+<pre>
+atom.formalcharge &gt;=1
+</pre>
+<p>returns atoms with formal charges of 1 or greater. </p>
+</li>
+
+<li><code>d[isplayed]</code> <br />
+<p>The <code>displayed</code> designator specifies atoms depending on whether or
+not they are currently displayed in Maestro. This descriptor requires no
+property list. For example, the expression:</p>
+<pre>
+atom.displayed
+</pre>
+<p>returns the set of all displayed atoms.</p>
+</li>
+
+<li><code>s[elected]</code> <br />
+<p>The <code>selected</code> designator specifies atoms depending on whether or
+not they are currently selected in Maestro. This descriptor requires no
+property list. For example, the expression:</p>
+<pre>
+atom.selected
+</pre>
+<p>returns the set of all atoms that are selected in the Workspace.</p>
+</li>
+
+</ul>
+
+<h3>Generalized atom properties </h3>
+
+<p>Some structures may have additional properties available. These are
+referenced directly by their data names appended onto the <code>atom.</code>
+class. These properties are either of integer, real, boolean or string type and
+the datanames are encoded as beginning with <code>i_</code>, <code>r_</code>,
+<code>b_</code> or <code>s_</code> respectively. It is possible to use these
+atom properties in conjunction with any other ASL expression. Any atoms that
+don't have these properties associated with them will never match.</p>
+
+<p>Some examples of using the ASL to address these properties are:</p>
+<pre>atom.i_my_integer_prop 1-4
+atom.b_my_boolean_prop
+atom.r_my_real_prop &lt; 4.0
+atom.s_my_string_prop LIG_
+</pre>
+
+
+<a name="asl4"></a>
+<h2>Operators</h2>
+
+<p>A number of operators are supported:</p>
+
+<ul>
+<li><a href="#asl4.1">Boolean AND</a></li>
+<li><a href="#asl4.2">Boolean OR</a></li>
+<li><a href="#asl4.3">Boolean NOT</a></li>
+<li><a href="#asl4.4">fillres</a></li>
+<li><a href="#asl4.4">fillmol</a></li>
+<li><a href="#asl4.6">within</a></li>
+<li><a href="#asl4.6">beyond</a></li>
+<li><a href="#asl4.8">withinbonds</a></li>
+<li><a href="#asl4.9">beyondbonds</a></li>
+</ul>
+
+<ul>
+<a name="asl4.1"></a>
+<li><p>Boolean AND (set intersection)</p>
+<p>The Boolean <code>and</code> operator returns the set of atoms that meets
+all the conditions defined in the ASL specifications. The syntax for
+use of the <code>and</code> operator is:</p>
+
+<p><i>spec1</i><code> and </code><i>spec2</i> </p>
+
+<p>where <i>spec1</i> and <i>spec2</i> are valid atom specifications. For
+example, the expression:</p>
+<pre>
+mol. 1 and atom. CA
+</pre>
+<p>returns the set of all the alpha carbons of molecule 1. The expression:
+</p>
+<pre>
+res.num 1-100 and res. ala
+</pre>
+<p>returns all alanines in residues with numbers in the range 1-100.</p>
+</li>
+
+<a name="asl4.2"></a>
+<li><p>Boolean OR (set union)</p>
+<p>The Boolean <code>or</code> operator returns the set of atoms that meets the
+requirements of the first specification set OR the requirements of the
+second. The syntax for this operations is:</p>
+
+<p><i>spec1</i><code> or </code><i>spec2</i> </p>
+
+<p>where <i>spec1</i> and <i>spec2</i> are valid atom specifications. For
+example, the expression:</p>
+<pre>
+mol. 1 or atom.ptype CA
+</pre>
+<p>returns the set of all atoms that are in molecule number 1, or are
+alpha carbons. The expression:</p>
+<pre>
+res.num 1-100 or res.ptype ala
+</pre>
+<p>returns atoms in all residues with numbers in the range 1-100 and
+any alanines.</p>
+</li>
+
+<a name="asl4.3"></a>
+<li><p>Boolean NOT</p>
+<p>The Boolean <code>not</code> operator returns the set of all atoms that do
+not match the given specification. The syntax for this operation is:</p>
+
+<p><code>not </code><i>spec1</i> </p>
+
+<p>where <i>spec1</i> is a valid atom specification. This returns the set of
+atoms that are not part of those defined by <i>spec1</i>. For example, the
+expression:</p>
+<pre>
+not atom. CA,C,N,O
+</pre>
+<p>returns a set containing all side chain atoms.</p>
+</li>
+
+<a name="asl4.4"></a>
+<li><p><code>fillres</code> and <code>fillmol</code></p>
+
+Two special operations, <code>fillres</code> and <code>fillmol</code>, can be
+used to &quot;fill out&quot; a given atom set so that the new set is defined by
+residue or molecular boundaries. For example:
+<pre>
+fillres atom.num 1,100,40
+</pre>
+<p>returns all the atoms in residues of which atoms 1,100 and 40 are
+members. In a similar way:</p>
+<pre>
+fillmol atom.num 1,100,40
+</pre>
+<p>will return all the atoms in molecules of which atoms 1,100 and 40 are
+members.</p>
+</li>
+
+<a name="asl4.6"></a>
+<li><p><code>within</code> and <code>beyond</code></p>
+<p>The operators <code>within</code> and <code>beyond</code> can be used to
+define sets of atoms based on their proximity to atoms in a previously defined
+set. The syntax for these operators is:</p>
+
+<p><code>within </code><i>distance</i><code> </code><i>spec1</i> <br />
+<code>beyond </code><i>distance</i><code> </code><i>spec2</i> </p>
+
+<p>where <i>spec1</i> and <i>spec2</i> are a valid atom specifications. When
+used with the <code>within</code> operator, the distance is inclusive,
+i.e. atoms that are less than or equal to the specified distance from atoms
+defined by <i>spec1</i> are returned. This includes the atoms being used for
+reference.
+In an expression containing the <code>beyond</code> operator, only atoms farther
+than the specified distance from atoms in <i>spec2</i> are returned. For
+example, the expression:</p>
+<pre>
+within 5.0 mol. 1
+</pre>
+<p>returns the set of all atoms that are within 5&nbsp;&Aring; of molecule
+1. The expression:</p>
+<pre>
+beyond 5.0 mol. 2
+</pre>
+<p>returns all atoms that are farther than 5&nbsp;&Aring; from molecule 2. Thus,
+<code>within</code> and <code>beyond</code> return complementary sets.</p>
+
+<p>The combination of <code>fillres</code> and <code>within</code> or
+<code>beyond</code> is especially powerful.
+For instance, the expression:</p>
+<pre>
+fillres within 5.0 mol. 1
+</pre>
+<p>produces a set containing the atoms of all complete residues that have
+atoms within 5&nbsp;&Aring; of molecule 1, whereas the expression:</p>
+<pre>
+within 5.0 mol. 1
+</pre>
+<p>returns the reference set of all atoms that are within 5&nbsp;&Aring; of
+molecule 1 and those that are part of molecule 1. The expression:</p>
+<pre>
+fillres beyond 5.0 mol. 1
+</pre>
+<p>produces a set containing the atoms of all complete residues that have
+atoms beyond 5&nbsp;&Aring; of molecule 1. This set overlaps with that generated
+by <code>fillres within 5.0 mol. 1</code>: both sets include residues that span
+the 5&nbsp;&Aring; boundary.</p>
+
+<p>The 'and' operator, when used with <code>within</code> and
+<code>beyond</code>, can be used to allow more specificity. For example, in the
+expression:</p>
+<pre>
+mol. 2 and within 5.0 mol. 1
+</pre>
+<p>returns the set of all atoms of molecule 2 that are within 5&nbsp;&Aring;
+of molecule 1.</p>
+</li>
+
+<a name="asl4.8"></a>
+<li><p><code>withinbonds</code> </p>
+
+<p>The <code>withinbonds</code> operator finds all atoms within a certain number of
+bonds of the reference set. The syntax is:</p>
+
+<p><code>withinbonds </code><i>num_bonds</i><code> </code><i>spec</i> </p>
+
+<p>For example, the ASL expression</p>
+<pre>
+withinbonds 4 atom. 1
+</pre>
+<p>finds all the atoms that are within four bonds of atom 1. </p>
+</li>
+
+<a name="asl4.9"></a>
+<li><p><code>beyondbonds</code> </p>
+
+<p>The beyondbonds operator is used to find all atoms beyond a certain number
+of bonds of the reference set. The syntax is:</p>
+
+<p><code>beyondbonds </code><i>num_bonds</i><code> </code><i>spec</i> </p>
+
+<p>For example, the ASL expression</p>
+<pre>
+beyondbonds 4 atom. 1
+</pre>
+<p>finds all the atoms that are in the same molecule as atom 1 but beyond
+four bonds of atom 1. </p>
+</li>
+
+</ul>
+
+<a name="asl5"></a>
+<h2>Operator Priority</h2>
+
+<p>The order of priority of operators is (in decreasing order):</p>
+<ul>
+<li><code>not</code>/<code>fillres</code>/<code>fillmol</code> </li>
+<li><code>and</code>/<code>or</code> </li>
+<li><code>within</code>/<code>beyond</code> </li>
+</ul>
+
+<p>If two equal-priority operators are used in a single ASL expression, they
+are evaluated in the order in which they are encountered, left to right.
+For example, the expression:</p>
+<pre>
+within 5.0 mol. 1 or mol. 2
+</pre>
+<p>returns the set of all atoms that are within 5.0&nbsp;&Aring; of either
+molecule 1 or molecule 2 ('or' has higher priority). The expression:</p>
+<pre>
+not atom.ptype CA,C,O,N and mol. 1
+</pre>
+<p>returns the set of molecule 1 side chain atoms. The following expression
+will define all alpha carbons and atoms in hydrophobic residues of molecule
+1 </p>
+<pre>
+atom.ptype CA or mol. 1 and not res.pol polar
+</pre>
+
+<p>Parentheses can be used to override the order of evaluation. For example, the
+expression</p>
+<pre>
+not (atom.ptype CA,C,O,N or mol. 1)
+</pre>
+<p>produces all atoms either not in the backbone or not in molecule 1.</p>
+
+<a name="asl6"></a>
+<h2>Implicit Operators</h2>
+
+<p>When no operator is specified, the following operations are assumed:</p>
+
+<ul>
+<li>Specifications within a property list have a Boolean OR
+relationship. The following expression returns atoms with PDB names CA or CB.
+<pre>
+atom.ptype CA,CB
+</pre>
+</li>
+
+<li>When multiple classes are included and they appear in order of decreasing
+priority, the <code>and</code> operator is assumed. For example, the following
+expressions are equivalent, and both return the alpha carbons in chain A of
+molecule 1.
+<pre>
+mol. 1 chain. A atom.ptype CA
+mol. 1 and chain. A and atom.ptype CA
+</pre>
+</li>
+</ul>
+
+
+<a name="asl7"></a>
+<h2>Creating New Sets from Existing Ones</h2>
+<p>The names of existing sets may be used in expressions if they are prefixed
+with the word <code>set</code>. For example, if two sets having the names S1 and
+S2 are defined as:</p>
+
+<p>S1: <code>mol. 1</code><br />
+S2: <code>atom.ptype C,O,N,CA</code></p>
+
+<p>the following would be valid atom specifications: </p>
+<pre>
+set S1 and set S2
+set S1 or set S2
+within 5.0 set S1
+</pre>
+
+<a name="asl8"></a>
+<h2>Matching of PDB Atom Names</h2>
+<p>The following strategy must be used to specify atoms using PDB atom names.
+Before matching an unquoted name that begins with a non-numeric
+character, a blank character is inserted in front of it, and it is
+padded with blanks from the right so that there is a total of four
+characters. </p>
+
+<p>Examples:</p>
+<ul>
+<li>Property List: <code>CA,C</code><br />
+Actually Matched: "<code>&nbsp;CA&nbsp;</code>","<code>&nbsp;C&nbsp;&nbsp;</code>" </li>
+
+<li>Property List: <code>CG1,CG2</code>	<br />
+Actually Matched: "<code>&nbsp;CG1</code>","<code>&nbsp;CG2</code>" </li>
+</ul>
+
+<p>Initial blank characters are not added to unquoted names that
+begin with numbers. However, right-padding characters are added so that
+there is a total of four characters. </p>
+
+<p>Example:</p>
+<ul>
+<li>Property List: <code>CA,1HB,2HB</code> <br />
+Actually Matched: "<code> CA </code>","<code>1HB </code>","<code>2HB </code>"</li>
+</ul>
+
+<p>Names with either double or single quotes are treated as is, except that
+they are right-padded if necessary with blanks so that each name has a total
+of four characters.</p>
+
+<p>Examples:</p>
+<ul>
+<li>Property List: <code>CA,"CA"</code> <br />
+Actually Matched: "<code>&nbsp;CA&nbsp;</code>","<code>CA&nbsp;&nbsp;</code>" </li>
+
+<li>Property List: <code>" N A"</code> <br />
+Actually Matched: "<code> N A</code>" </li>
+</ul>
+
+<p>The difference in the first example is significant: the first matches an
+alpha carbon, the second matches a calcium.</p>
+
+<a name="asl9"></a>
+<h2>Miscellaneous</h2>
+
+<ul>
+<li><p>Atoms not yet present in a structure:</p>
+<p>If a structure in the Workspace has only 100 atoms when the ASL
+definition:</p>
+<pre>
+atom.num 1,8,44,101,103
+</pre>
+<p>is issued, Maestro simply matches the atoms numbered 1,8 and 44.
+If additional atoms are subsequently added to the structure, the
+atoms bearing the numbers 101 and 103 are added to the previously
+defined set. </p>
+</li>
+<li><p>Aliasing:</p>
+<p>Maestro allows you to define your own aliases, using either the <span
+class="GUI">Command Input Area</span> or the <span class="GUI">Command
+Aliases</span> panel. Maestro converts all aliases into
+their corresponding commands before performing operations involving the
+aliased commands. It has been left to the user to ensure that aliases produce
+sensible results. Some aliases are supplied with the distribution. They
+are: </p>
+
+<p>Operator: <code>and</code> <br />
+Aliases: <code>intersection</code>, <code>INTERSECTION</code>, <code>&#38;</code> </p>
+
+<p>Operator: <code>or</code> <br />
+Aliases: <code>UNION</code>, <code>union</code>, <code>|</code></p>
+
+<p>Operator: <code>not</code> <br />
+Aliases: <code>!</code> </p>
+
+<p>Class Designator: <code>mol.</code> <br />
+Aliases: <code>MOL</code>, <code>mol</code></p>
+
+<p>Class Designator: <code>atom.</code> <br />
+Aliases: <code>ATOM</code>, <code>atom</code> </p>
+
+<p>Class Designator: <code>res.</code> <br />
+Aliases: <code>RES</code>, <code>res</code></p>
+
+<p>Class Designator: <code>chain.</code> <br />
+Aliases: <code>CHAIN</code>, <code>chain</code></p>
+
+<p>ASL Definition: <code>atom. ca,c,n,h,o</code> <br />
+Aliases: <code>BACKBONE</code>, <code>backbone</code></p>
+
+<p>ASL Definition: <code>not (atom.pt ca,c,n,h,o)</code> <br />
+Aliases: <code>SIDECHAIN</code>, <code>sidechain</code></p>
+
+<p>ASL Definition: <code>"/H2-O3-H2/ or atom.mtype OW"</code> <br />
+Aliases: <code>WATER</code>, <code>water</code></p>
+</li>
+</ul>
+
+<a name="asl11"></a>
+<h2>Useful Hints when using ASL with the Project
+Facility</h2>
+
+<p>The order in which entries are included into and excluded from the Workspace
+affects the molecule numbers.  For example, if you have two entries called
+&quot;A&quot; and &quot;B&quot; and you include into an empty Workspace first A
+and then B, the molecule numbers will be 1 for A and 2 for B; however, if you
+first include B and then A, the molecule numbers will be 1 for B and 2 for
+A. </p>
+
+<p>This means that an expression such as<code> mol. 1</code> matches
+different atoms in each of the above cases. In most cases it makes more sense
+to use entry ids or entry names. </p>
+
+<p>For example, if you have an inhibitor and a
+receptor that are in different entries and wish to have a ribbon appear
+on only the receptor, use the entry name in the ASL expression, not
+the molecule number.  This will ensure that when the receptor is
+included that it, and only it,  will be used to generate the ribbons.
+Different inclusion order of entries in the Workspace now result in
+the same matching atoms.  So for ribbons with a receptor called
+<code>receptor</code> it would be more useful to use <code>entry.name
+receptor</code> as the ASL definition.</p>
+
+<a name="asl12"></a>
+<h2>ASL Examples</h2>
+
+<p>This section gives some examples of the use of the ASL in real-life
+situations. Note that while these examples all use lower-case, the ASL
+expressions themselves are not case sensitive. </p>
+
+<ul>
+<li><a href="#asl12.1">Defining a set to refer to a ligand and/or receptor.</a></li>
+<li><a href="#asl12.2">The set of atoms within a given distance of the
+ligand.</a></li>
+<li><a href="#asl12.3">Sidechain and backbone.</a></li>
+<li><a href="#asl12.4">Atoms of a given type.</a></li>
+<li><a href="#asl12.5">Water molecules.</a></li>
+<li><a href="#asl12.6">Restricting an operation to the atoms that are
+currently displayed in the Workspace.</a></li>
+<li><a href="#asl12.7">Specifying molecules.</a></li>
+<li><a href="#asl12.8">Specifying atoms based on a linear-substructure
+notation.</a></li>
+<li><a href="#asl12.9">Using wildcard characters.</a></li>
+<li><a href="#asl12.10">Using SMARTS expressions.</a></li>
+</ul>
+
+
+<ul>
+<a name="asl12.1"></a>
+<li><p>Defining a set to refer to a ligand and/or
+receptor.</p>
+
+<p>The exact command will depend on the nature of your system. If the ligand
+and the receptor are separate entries then it will suffice to use</p>
+
+<p><code>set ligand entry.name </code><i>ligand_name</i> </p>
+
+<p>where <i>ligand_name</i> is the name of the entry that contains the
+ligand. Similarly</p>
+
+<p><code>set receptor entry.name </code><i>receptor_name</i> </p>
+
+<p>for the receptor with entry called <i>receptor_name</i>. </p>
+
+<p>In order to define sets that will work with multiple ligands it is also
+possible to define the ligand as everything that is not part of the receptor. A
+definition of:</p>
+<pre>
+set ligand not set receptor
+</pre>
+<p>identifies the ligand as anything that is not part of the receptor.</p>
+
+<p>If the ligand and the receptor are part of the same entry then molecule
+numbers are the best way to define the ligand and the receptor. Assuming the
+receptor is molecule 1 and the ligand molecule 2:</p>
+<pre>
+set ligand mol.num 2
+set receptor mol.num 1
+</pre>
+<p>Note however that the use of molecule numbers in set definitions should be
+avoided where possible as these depend on the order in which the project
+entries are included into the Workspace. If it is possible to use entry
+names, then these should be used.</p>
+
+<p>The subsequent examples assume that sets for the receptor and
+the ligand have been defined using one of the methods defined above.
+</p>
+</li>
+
+<a name="asl12.2"></a>
+<li><p>The set of atoms within a given distance of the
+ligand.</p>
+
+<p>One common task is to do something with the set of atoms within
+a given distance of the ligand. For example to only display those atoms
+or to include them in a substructure region for a MacroModel calculation.
+These examples use the <code>displayonlyatom</code> command but the ASL
+that follows can be used with any other command that uses ASL.</p>
+
+<p>To only display atoms within 5.0&nbsp;&Aring; of the ligand:</p>
+<pre>
+displayonlyatom within 5.0 set ligand
+</pre>
+
+<p>A common variation is to display complete residues which have any of
+their atoms within a given distance of the ligand:</p>
+<pre>
+displayonlyatom fillres within 5.0 set ligand
+</pre>
+
+<p>It is also possible to restrict the expression so that it only applies to
+receptor atoms within a given distance of the ligand. Here the Boolean
+<code>and</code> operator is used to restrict the displayed atoms to the
+receptor only:</p>
+<pre>
+displayonlyatom set receptor and fillres within 5.0 set ligand
+</pre>
+
+<p>Because this is a lengthy expression it's often convenient to make
+this into a set itself:</p>
+<pre>
+set active_site set receptor and fillres within 5.0 set ligand
+</pre>
+
+<p>An equivalent form of this is:</p>
+<pre>
+set active_site (! set ligand) &amp; fillres within 5.0 set ligand
+</pre>
+</li>
+
+<a name="asl12.3"></a>
+<li><p>Sidechain and backbone.</p>
+
+<p>The ASL has standard aliases for the definition of side chain and
+backbone atoms in proteins. For example to only display the atoms of
+the backbone:</p>
+<pre>
+displayonlyatom backbone
+</pre>
+
+<p>These aliases can be used with operators to build up more complicated
+expressions. For example to only display the side chains of the receptor: </p>
+<pre>
+displayonlyatom sidechain and set receptor
+</pre>
+
+<p>To display only the side chains of the atoms within 5.0&nbsp;&Aring; of the
+ligand:</p>
+<pre>
+displayonlyatom sidechain and set receptor and fillres within 5.0 set ligand
+</pre>
+</li>
+
+<a name="asl12.4"></a>
+<li><p>Atoms of a given type.</p>
+
+<p>There are a variety of ways to specify atoms of a given type. For example
+to specify all carbons, nitrogens and oxygens the following is used:</p>
+<pre>
+atom.ele C,N,O
+</pre>
+
+<p>To specify non-hydrogen atoms:</p>
+<pre>
+not atom.ele H
+</pre>
+
+<p>To specify the alpha carbons in a protein:</p>
+<pre>
+atom.ptype CA
+</pre>
+
+<p>To specify all sp2 carbons there are two choices. The first relies on
+knowing that the MacroModel atom type for such an atom is <code>C2</code> and
+using:</p>
+<pre>
+atom.mtype C2
+</pre>
+
+<p>The other (assuming no formally charged or radical carbons are present) uses
+the number of attachments to the atom:</p>
+<pre>
+atom.ele C and atom.att 3
+</pre>
+
+<p>To specify polar hydrogens:</p>
+<pre>
+atom.ele H and not /C0-H0/
+</pre>
+<p>or</p>
+<pre>
+atom.ele H and not atom.mtype H1
+</pre>
+</li>
+
+<a name="asl12.5"></a>
+<li><p>Water molecules.</p>
+
+<p>The ASL has a standard alias <code>water</code>. For example to delete all
+water molecules the Maestro command is:</p>
+<pre>
+delete atom water
+</pre>
+
+</li>
+
+<a name="asl12.6"></a>
+<li><p>Restricting an operation to the atoms that are
+currently displayed in the Workspace.</p>
+
+<p>Often you will be working with only a subset of the atoms in the Workspace
+displayed. If an operation is to be performed only on the atoms that are
+displayed then the <code>atom.displayed</code> property can be used. For example
+to change the color to green of all the atoms currently displayed in the
+Workspace and to leave alone the undisplayed Workspace atoms:</p>
+<pre>
+coloratom color=green atom.disp
+</pre>
+
+<p>To only do it for the atoms that are displayed and in the receptor:</p>
+<pre>
+coloratom color=green atom.disp and receptor
+</pre>
+
+</li>
+
+<a name="asl12.7"></a>
+<li><p>Specifying molecules.</p>
+
+<p>All molecules with between 30 and 100 atoms:</p>
+<pre>
+mol.atoms 30-100
+</pre>
+
+<p>All molecules with over 100 atoms:</p>
+<pre>
+mol.atoms &gt; 100
+</pre>
+
+<p>All molecules with a molecular weight over 300:</p>
+<pre>
+mol.weight &gt; 300.0
+</pre>
+
+<p>All molecules that contain a halogen:</p>
+<pre>
+fillmol atom.ele F,Cl,Br,I
+</pre>
+
+</li>
+
+<a name="asl12.8"></a>
+<li><p>Specifying atoms based on a linear-substructure
+notation.</p>
+
+<p>The ASL supports the use of a SMILES-like linear substructure notation
+to specify atoms with a particular bonding arrangement. The atoms are
+referred to by MacroModel atom types, but there are wildcard types that
+can be used to allow the expression to apply to any atoms of a given element
+type.</p>
+
+<p>Some examples: </p>
+
+<p>Any five-membered ring: </p>
+<pre>
+/00-00-00-00-00-1/
+</pre>
+
+<p>Aromatic six-membered carbon rings(C2 is sp2 carbon):</p>
+<pre>
+/C2-C2*C2-C2*C2-C2*1/
+</pre>
+
+<p>Amide groups:</p>
+<pre>
+/C2(*O2)-N2/
+</pre>
+
+<p>Methyl groups:</p>
+<pre>
+/C3(-H1)(-H1)(-H1)/
+</pre>
+
+<p>Water:</p>
+<pre>
+/H2-O3-H2/
+</pre>
+
+<p>Guanidinium group:</p>
+<pre>
+/N2(-H3)-C2(*N4(-H4)(-H4))-N2(-H3)(-H3)/
+</pre>
+
+</li>
+
+<a name="asl12.9"></a>
+<li><p>Using wildcard characters.</p>
+
+<p>Most string-type property values can use wildcard characters. Some
+examples:</p>
+
+<p>All PDB atom names beginning with C</p>
+<pre>
+atom.ptype C*
+</pre>
+
+<p>All forms of the histidine residue:</p>
+<pre>
+res.ptype HI*
+</pre>
+
+<p>All entries that begin with <code>lig</code>:</p>
+<pre>
+entry.name lig*
+</pre>
+</li>
+
+<a name="asl12.10"></a>
+<li><p>Using SMARTS expressions.</p>
+
+<p>The ASL supports the use of a SMARTS expression. All atoms that match this
+expression are considered part of the set. The syntax for this is:</p>
+
+<p><code>smarts. </code><i>smarts_expression</i> </p>
+
+<p>Some examples:</p>
+
+<p>All three-carbon chains</p>
+<pre>
+smarts. CCC
+</pre>
+
+<p>All ring nitrogens:</p>
+<pre>
+smarts. [R] and atom.ele N
+</pre>
+
+<p>All six-membered carbon rings:</p>
+<pre>
+smarts. C1CCCCC1
+</pre>
+</li>
+</ul>
+
+<a name="links"></a>
+<h2>Related Topics</h2>
+<ul>
+
+<li><a href="../project_facility/project_overview.html">Project Facility</a></li>
+<li><a href="../project_facility/project_table.html">Project Table</a></li>
+<li><a href="../pt_select_menu/project_esl.html">Entry Selection Language</a></li>
+<li><a href="../workspace/workspace.html">Workspace</a></li>
+
+</ul>
+<hr />
+<table width="100%">
+<tr><td><p class="small"><a href="../support/legal_notice.html" target="LegalNoticeWindow">Legal Notice</a></p></td>
+<td>
+<table align="right">
+<tr><td><p class="small">
+File: misc/asl.html<br />
+Last updated: 20 Jun 2014
+</p></td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

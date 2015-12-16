@@ -1,0 +1,1346 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	qbct.htm	QuaSAR-Classify chapter
+!!	moemanuals/quasar
+!!
+!!	08-oct-2010 (jd) fixed menu path from DBV
+!!
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<meta panel QuaSAR-Classify>
+<meta panel QuaSAR-Classify Create Tree>
+<meta panel Classification Tree>
+<meta panel Binary Classification Tree>
+<meta index entry="entry name" subentry="subentry name">
+
+<title>QuaSAR-Classify: Binary Classification Trees</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>QuaSAR-Classify</h2>
+<hr noshade="noshade" />
+
+<p><span class="nobr">QuaSAR-Classify</span> is used to build and display binary classification trees, 
+and to use them to classify data.  Binary classification
+trees are used for analyzing data and for predicting data classes.
+
+<p><span class="nobr">QuaSAR-Classify</span> is opened using
+<span class="nobr"><b>MOE | Compute | QuaSAR | QuaSAR-Classify</b></span>
+in the MOE Window or 
+<span class="nobr"><b>DBV | Compute | Model | Classification</b></span>
+in a Database Viewer.
+
+
+<ul>
+<li><a href="#Introduction">Introduction</a>
+<li><a href="#Terminology">Terminology</a>
+<li><a href="#Methodology">Methodology</a>
+    <ul>
+    <li><a href="#TreeGrowing">Tree Growing</a>
+
+      <ul>
+	<li><a href="#SplittingRules">Splitting Rules</a>
+	<li><a href="#MisclassificationRate">Calculating the
+Misclassification Rate</a>
+	<li><a href="#Priors">Using Priors to Weight Classes</a>
+      </ul>
+
+    <li><a href="#TreePruning">Tree Pruning</a>
+    <li><a href="#CrossValidation">Tree Creation Using Cross Validation</a>
+    <li><a href="#RandomTrees">Creating N Trees with Randomly Drawn Data</a>
+    <li><a href="#TreeDisplay">Tree Display and Report</a>
+    <li><a href="#Predicting">Predicting Classes</a>
+    </ul>
+
+<li><a href="#RunningClassify">Running QuaSAR-Classify</a>
+
+    <ul>
+    <li><a href="#RunningCreate">Creating a Binary Classification Tree</a>
+    <li><a href="#RunningPredict">Using a Binary Classification Tree for
+    Prediction</a>
+	</ul>
+
+<li><a href="#PanelReference">QuaSAR-Classify Panel Reference</a>
+<li><a href="#CreatePanelReference">QuaSAR-Classify Create Tree Panel Reference</a>
+<li><a href="#SVL">SVL Commands</a>
+<li><a href="#References">References</a>
+</ul>
+
+<h2><a name="Introduction">Introduction</a></h2>
+
+<p>
+A standard tool in knowledge discovery and data (KDD) mining is the
+decision tree.  Given a set of <i>items</i> (e.g. molecules) with
+associated measurement data (e.g. measured properties), such a
+tree can be used to classify the items according to their measurement
+data.
+
+<p>
+A decision tree is constructed from a training data set for which the
+class of each item is known a priori.  A new item is classified by running
+it through the completed tree: the item enters the tree at the root node
+and falls down the tree from node to node.  At each node (branchpoint), a
+question is posed about the item, and, depending on the outcome, the item
+passes into one branch or another.  The item ultimately drops into a leaf
+node of the tree, which has an associated class assignment.
+
+<p>
+One kind of decision tree is the binary decision tree which is constructed
+by performing binary recursive partitioning on a data set.  The
+partitioning is binary since branchpoints in the tree are yes-no decisions
+that split each node into exactly two (mutually-exclusive) child nodes.
+The partitioning is recursive since each child node after a branching is
+in turn split at the next iteration of the tree-building process.
+
+<p>
+Decision trees are "nonparametric" predictive models.  They use the actual
+training data set itself, rather than a parametrized model that represents
+the data, for making predictions on new data.  A tree-structured approach
+has several advantages over more traditional (i.e. parametric)
+modeling and "global" estimation (e.g. neural networks, polynomial
+networks) approaches:
+
+<ul>
+<li>Both ordered (e.g. real numbers) and categorical
+(e.g. colors) data are handled
+ 
+<li>Local information is captured
+ 
+<li>Sensitivity to outliers is relatively low
+ 
+<li>Selection of variables is automatic
+ 
+<li>Misclassification (error) rates are estimated as part of the
+tree-construction process
+ 
+<li>Results are easy to interpret
+ 
+</ul>
+ 
+<p>
+Decision trees also have some important disadvantages:
+ 
+<ul>
+ 
+<li>Automatic selection of splitting rules is expensive
+ 
+<li>Complex relationships require deeper trees, but
+deeper trees require exponentially greater amounts of data
+ 
+<li>Single-variable splitting rules, which underpin the ease of
+interpretability of trees, may fail to capture and, more importantly, may
+obscure complex dependencies
+
+</ul>
+
+<h2><a name="Terminology">Terminology</a></h2>
+
+<p>
+A <i>tree</i> is a collection of <i>nodes</i> linked together in a
+hierarchical organization.  At the top of the hierarchy is a node
+called the <i>root</i>.
+
+<p>
+A node in a tree can have <i>child</i> nodes; the node itself is then the
+<i>parent</i> of its children.  If a node has two children, the children
+can be referred to as the <i>left child</i> and the <i>right child</i>.  A
+node below the tree root is itself the root of a <i>subtree</i> or
+<i>branch</i> if it has children.  A node without children is a
+<i>leaf</i>.
+
+<p>All nodes have exactly one
+parent (except the root, which has none), and zero or more children.
+
+<p>
+A binary tree is one in which every node has a maximum of two children.
+Binary classification trees are even more restricted: every node has
+exactly zero or two children (also referred to as a <i>full binary
+tree</i>).
+
+<p>
+The <i>depth</i> of the tree is the longest path from the root node to a
+leaf node.  The root node is at depth 0.
+
+<p>
+The data used to construct a binary tree is either <i>ordered</i> or
+<i>categorical</i>:
+
+<ul>
+
+<li> Data values are <i>ordered</i> if they span a wide range of ordered
+values.  Real, integer, and character data are considered to be ordered if
+the number of values taken on is large.
+
+<li> Data values are <i>categorical</i> if they are tokens, or if they
+take on a limited number of unique values (controlled in <span class="nobr">QuaSAR-Classify</span> 
+by the value given in the field <b>Ordered Threshold</b> in the panel).
+
+</ul>
+
+<p>
+In a binary classification tree, each node has associated with it:
+
+<ul>
+
+<li>
+A set of items or <i>cases</i>, with associated measurement data
+(e.g. QSAR descriptor values)
+
+<li>
+Non-leaf nodes only:
+A <i>splitting rule</i> for dividing the cases in the node into two
+children
+
+</ul>
+
+<p>
+The accuracy of a tree refers to how well it classifies
+cases that are dropped through the tree.  It is expressed as a
+<i>misclassification rate</i>, R(T), which measures the proportion
+of cases that are incorrectly classified by tree T.
+
+<h2><a name="Methodology">Methodology</a></h2>
+
+<p>
+A binary classification tree is constructed using two sets of data: a
+training data set, called a <i>learning</i> data set, and a validation
+data set, called a <i>test</i> data set.  The learning data set is used to
+grow an initial, oversized tree, and the test data set is used to prune
+that tree to an optimal size, where optimality is assessed in terms of
+tree size (smaller is better) and accuracy (misclassification rate).
+The two data sets are assumed to be mutually-exclusive and independent.
+
+<p>
+Both learning and test data sets comprise a set of cases,
+each of which has a class and a collection of associated measurement
+data (database fields).  The names of both the class and measurement
+fields must be the same for both learning and test databases.
+
+<p>
+The class data is expected to be drawn from a categorical set of values.
+For instance, it could be binary data: active or inactive.  The
+measurement data can be either ordered or categorical.
+
+<h3><a name="TreeGrowing">Tree Growing</a></h3>
+
+<p>
+The initial tree is grown on the learning data by recursively splitting
+the set of learning data cases along the lines of specific measurement
+data values.  The tree-growing procedure is as follows:
+
+<ol>
+<li>
+Set the root node of the tree to comprise all learning cases.
+
+<p>
+<li>
+Set the "current" node to be the root node.
+
+<p>
+<li>
+Test the current node to see if splitting is still possible.
+
+<p>
+A node cannot be split if all its cases are of the same class, or if
+the number of cases is very small (this latter is controlled in
+<span class="nobr">QuaSAR-Classify</span> by the value of <b>Node Split Size</b>).  In
+<span class="nobr">QuaSAR-Classify,</span> it is also possible to limit splitting by setting a cap
+on the depth of the tree (<b>Max. Tree Depth</b>), i.e. the number
+of splits between the root node and the lowest leaf node.
+
+<p><li>
+Automatically select a splitting rule to divide the current node in two
+mutually-exclusive parts.  Splitting rules are of the following form:
+
+<p>
+  <ul>
+  <li>Is <i>x</i> <= <i>c</i>? (ordered data)
+  <li>Is <i>x</i> == <i>c</i>? (categorical data)
+  </ul>
+
+<p>
+where <i>c</i> is a constant, drawn from measurement data, and <i>x</i> is
+the measurement value of the particular case to which the splitting rule
+is being applied.
+
+<p>
+<i>c</i> is selected from all the measurement data associated with all the
+cases in the node; it is chosen to be the best value for splitting the
+node according to some criterion (described below).
+
+<p>
+<b>Note:</b> In <span class="nobr">QuaSAR-Classify,</span> you can also stipulate that <i>c</i> be
+evaluated from a randomly drawn sample of cases (<b>Use Subsampling</b>)
+when the number of cases in the node exceeds some value (<b>Max. Sample
+Size</b>, which is also the size of the sample drawn).
+
+<p>
+For a given case, if <i>x</i> satisfies the splitting rule, then the case
+falls into the left child, otherwise it falls into the right child.
+
+<p><li>
+Apply the splitting rule to all cases in the current node to obtain
+two child nodes.
+
+<p><li>
+Update the current node to be one of the child nodes.
+
+<p><li>
+Go to 3 and continue until there are no more nodes to split.
+
+<p><li>
+Assign classes to each of the leaves.  The assigned classes are the ones
+which occur most frequently (best represented) in the leaves.  These
+classes are used to calculate the misclassification rate, and to make
+class predictions on other data sets.
+
+</ol> 
+
+<h4><a name="SplittingRules">Splitting Rules</a></h4>
+
+<p>
+Choosing a splitting rule consists of determining the value of <i>c</i>
+which will best divide a node.  The candidate <i>c</i> values are drawn
+from all the measurement data associated with the cases in the node.  For
+a database field containing ordered data (e.g. real values), the
+possible values of <i>c</i> are the midpoints between all adjacent data
+values.  For a field containing categorical data, the possible values of
+<i>c</i> are all the unique data values in that field.
+
+<p>
+A good split, and hence a good candidate <i>c</i>, is one which will
+result in two nodes which are in some sense "purer" in class than
+the parent node.  For example, suppose a node has 9 cases with the
+following classes:
+
+<pre>
+    ['a','a','b','b','b','c','c','d','d']
+</pre>
+
+<p>
+The following could be construed as a good split:
+
+<pre>
+    ['b','b','b']    ['a','a','c','c','d','d']
+</pre>
+
+<p>
+and so could the following:
+
+<pre>
+    ['a','a','b','b','b']    ['c','c','d','d']
+</pre>
+
+<p>
+but not:
+
+<pre>
+    ['a','b','c','d']    ['a','b','b','c','d']
+</pre>
+
+<p>
+Let <i>i</i>(<i>t</i>) be the <i>impurity</i> of a node.
+<i>i</i>(<i>t</i>) is a measure of how much each class is represented in a
+node, and can be calculated using the <i>Gini index of diversity</i>,
+defined to be:
+
+<!-- LATEX qbct/math_ginidiversity \[
+i(t) = \sum_{x \neq y} p(x\mid t)\, p(y\mid t)
+\] ENDLATEX -->
+
+<p>
+<center>
+<img src="qbct/math_ginidiversity.png">
+</center>
+
+<p>
+where:
+
+<p>
+<ul>
+<li><i>t</i>: node <i>t</i> in the tree
+<li><i>x</i>, <i>y</i>: classes
+<li><i>p</i>(<i>x</i> | <i>t</i>), <i>p</i>(<i>y</i> | <i>t</i>): the
+proportion of class <i>x</i> and class <i>y</i> cases, respectively, in
+node <i>t</i>
+
+</ul>
+
+<p>
+The summation is over all pairs of non-equivalent classes in node <i>t</i>.
+
+<p>
+The goodness of a split can be evaluated as the difference between the
+impurity of the node <i>t</i> and the sum of the impurities of the two
+nodes <i>t</i><sub>L</sub> and <i>t</i><sub>R</sub> that would result from
+application of the splitting rule to node <i>t</i>:
+
+<blockquote>
+decrease in impurity = <i>i</i>(<i>t</i>) -
+    <i>p</i><sub>L</sub> <i>i</i>(<i>t</i><sub>L</sub>) -
+    <i>p</i><sub>R</sub> <i>i</i>(<i>t</i><sub>R</sub>)
+</blockquote>
+
+<p>
+where
+
+<p>
+<ul>
+<li><i>t</i>: the parent node
+
+<li><i>i</i>(<i>t</i>): the impurity of node <i>t</i>
+
+<li><i>p</i><sub>L</sub>, <i>p</i><sub>R</sub>:  the proportion of cases
+going to the left (<i>t</i><sub>L</sub>) and right (<i>t</i><sub>R</sub>)
+child nodes
+
+</ul>
+
+<p>
+The best splitting rule is the one which achieves the greatest decrease
+in impurity.
+
+<a name="MisclassificationRate"></a>
+<h4>Calculating the Misclassification Rate</h4>
+
+<p>
+Each leaf in a tree is assigned a class.  The assigned class is the one
+most strongly represented among the cases that are in the given
+leaf.  Any cases in that leaf not belonging to that class are deemed to be
+misclassified.
+
+<p>
+Each leaf <i>t</i> has a <i>node misclassification rate</i> r(<i>t</i>),
+computed as the proportion of cases misclassified in that leaf.
+Suppose a leaf <i>t</i> is assigned class <i>j</i>.  Then its node
+misclassification rate is:
+
+<blockquote>
+r(<i>t</i>) =
+    1&nbsp;-&nbsp;n<sub><i>j</i></sub>&nbsp;/&nbsp;n<sub><i>t</i></sub>
+</blockquote>
+
+<p>
+where n<sub><i>j</i></sub> is the number of class <i>j</i> cases in leaf
+<i>t</i>, and n<sub><i>t</i></sub> is the total number of cases in leaf
+<i>t</i>.
+
+<p>
+The total tree misclassification rate R(T) of tree T is calculated
+to be the total proportion of cases in the learning data set that have been
+misclassified:
+
+<blockquote>
+R(T) = N<sub>misclassified</sub> / N<sub>total</sub>
+</blockquote>
+
+<p>
+where N<sub>misclassified</sub> is the total number of misclassified cases
+and N<sub>total</sub> is the total number of cases in the learning set.
+
+<a name="Priors"></a>
+<h4>Using Priors to Weight Classes</h4>
+
+<p>
+A problem occurs when classes are not equally represented in the learning
+data set.  Suppose a class is strongly over-represented.  Then, a low
+misclassification rate could result for even the root node, resulting in
+an output tree with no splits.  If the under-represented classes are to be
+given equal importance, they must be weighted according to their prior
+likelihoods (expected proportion of representation in the data set).  For
+class <i>j</i>, the weight <i>w<sub>p</sub></i> is:
+
+<blockquote>
+<i>w<sub>p</sub></i> = N<sub>total</sub> / N<sub><i>j</i></sub>
+</blockquote>
+
+<p>
+where N<sub>total</sub> is the total number of cases in the learning
+set, and N<sub><i>j</i></sub> is the total number of class <i>j</i>
+cases in the learning set.
+
+<p>In <span class="nobr">QuaSAR-Classify,</span> you can choose to weight classes either
+equally or according to the prior likelihoods (<b>Use Priors</b>).
+
+<h3><a name="TreePruning">Tree Pruning</a></h3>
+
+<p>
+The initially grown tree generally proves to be unsatisfactory because it
+is too large.  An overly-large tree is very accurate for the learning data
+set, but generally performs poorly for any other data (equivalent to
+over-parametrizing a parametric model).  It is necessary, therefore, to
+obtain a smaller tree from the initial one.  This is accomplished by a
+pruning process.  A sequence of subtrees is constructed from the
+initial tree, and the test data set is used to choose the final output
+tree from this sequence.
+
+<p>
+The sequence of subtrees is created by successive prunings of the initial
+tree.  "Pruning" removes one or more branches of a tree.  The roots of the
+branches to be removed remain part of the pruned tree, becoming leaf
+nodes.  Determining which branches to prune off involves taking both tree
+accuracy and size into consideration.  For this purpose, we use a modified
+tree misclassification rate R<sub>a</sub>(T), in which tree size is
+accounted for by the tree complexity parameter <i>a</i>, a constant:
+
+<blockquote>
+R<sub><i>a</i></sub>(T) = R(T) + <i>a</i>L(T)
+</blockquote>
+
+<p>
+Here L(T) is the number of leaves in tree T.
+
+<p>
+This expression balances the increased inaccuracy of a smaller tree
+against the cost of having a larger tree.  By increasing <i>a</i>,
+i.e. by increasing the penalty for having a larger tree, it is
+possible to find a smaller tree T' for which:
+
+<blockquote>
+R<sub><i>a</i></sub>(T') = R<sub><i>a</i></sub>(T)
+</blockquote>
+
+<p>
+This smaller tree T' is appended to the sequence of pruned subtrees.
+<i>a</i> is then increased again, and T' is subsequently pruned in its turn.
+
+<p>
+Once the sequence of subtrees is generated, the test data cases are
+dropped through each subtree, and the misclassification rate of each
+subtree is calculated.  The subtree that is chosen to be the output tree
+is not necessarily that with the lowest misclassification rate, rather it
+is the smallest tree whose misclassification rate is close to the minimum
+one.  In cases where the misclassification rate is very similar among many
+subtrees, this prevents the selection of a tree that is larger than
+necessary.
+
+<p>
+The following is a summary of the complete pruning process:
+
+<p>
+<ol>
+<li>
+Begin with the initially grown tree T<sub><i>I</i></sub>.
+
+<p>
+<li>
+From T<sub><i>I</i></sub>, construct a sequence of pruned subtrees
+T<sub>1</sub>,...,T<sub>N</sub>, each successively smaller than the
+previous, each being a pruned subtree of the previous tree in the
+sequence.  T<sub>1</sub> is the largest subtree, and has the same
+misclassification rate as T<sub><i>I</i></sub>. T<sub>N</sub> is the
+smallest subtree, and comprises just the root node.
+
+<p>
+<li>
+Evaluate the misclassification rate R(T<sub>k</sub>) of each tree
+T<sub>k</sub> in the sequence of subtrees.  R(T<sub>k</sub>) is estimated
+by dropping the test data set (assumed to be independent of the learning
+data set) through tree T<sub>k</sub> and counting the proportion of
+misclassified cases.
+
+<p>
+<li>
+The best subtree is the smallest tree whose R(T) value is within a
+specified number (<b>Best Tree Thresh.</b>) of <i>standard errors</i> of
+the minimum of all the subtree R(T) values.  The standard error is defined
+to be the square root of the <i>variance</i> Var, defined as follows:
+
+<blockquote>
+Var(<i>p</i>) = <i>p</i>(1-<i>p</i>)/N<sub>test</sub>
+</blockquote>
+
+<p>
+where <i>p</i> is the proportion of correctly classified cases (i.e.
+an estimate of the probability of correct classification) in
+N<sub>test</sub> test cases dropped through the tree.
+
+</ol>
+
+<p>
+Once an output tree has been chosen, it can be saved, and then re-loaded at
+a later time.
+
+<h3><a name="CrossValidation">Tree Creation Using Cross Validation</a></h3>
+
+<p>
+The above tree building methodology assumes that the learning and test
+data sets are mutually-exclusive and independent.  There may, however, be
+insufficient data available for two such data sets.  When this is the
+case, you can use a cross-validation approach (in lieu of a separate
+test data set) to select the best pruned subtree.
+
+<p>
+As before, an initial tree T<sub><i>I</i></sub> is grown on
+the entire data set and a sequence of pruned subtrees is generated.
+The cross-validation phase for choosing the output tree begins with
+building a series of trees, each using a portion of the data as the
+learning set, and the remainder as the test set.  Each learning portion of
+the data set is used to grow an initial tree and to generate a sequence of
+subtrees.  Each corresponding test portion is used to select a best
+subtree from among the generated subtrees.  Finally, the best from among
+all the best subtrees thus selected is used to choose the output tree from
+the sequence of subtrees obtained from T<sub><i>I</i></sub>.
+
+<p>
+The following is a summary of tree building using the cross-validation
+approach:
+
+<ol>
+<li>Grow the initial tree T<sub><i>I</i></sub> on the entire data set,
+and generate its sequence of N pruned subtrees T<sub><i>n</i></sub>,
+<i>n</i> in [1..N].
+
+<p>
+<li>Divide the data set into V mutually-exclusive subsets
+S<sub>1</sub>..S<sub>V</sub>
+
+<p>In <span class="nobr">QuaSAR-Classify,</span> you can specify the number of subsets
+(<b>Subsets</b>, which also determines the subset size), as well as
+whether to draw each subset randomly from the data set (<b>Randomly
+Sampled Subsets</b>).
+
+<p>
+<li>Build V initial trees T<sub><i>j</i></sub>, <i>j</i> in [1..V],
+where each T<sub><i>j</i></sub> is created using all
+data except the S<sub><i>j</i></sub>'th subset.
+
+<p>
+<li>For each T<sub><i>j</i></sub>, generate a sequence of N pruned subtrees
+T<sub><i>jk</i></sub>, <i>k</i> in [1..N].
+
+<p>
+<li>For each sequence of pruned subtrees T<sub><i>jk</i></sub>, find the
+best pruned subtree T<sub><i>jk</i><sup>*</sup></sub> using the
+S<sub><i>j</i></sub>'th subset as test data.
+
+<p>
+<li>From among all the best pruned subtrees
+T<sub><i>jk</i><sup>*</sup></sub>, find the best (call it
+T<sub><i>j</i><sup>*</sup><i>k</i><sup>*</sup></sub>).
+
+<p>
+<li>The output tree is the <i>k</i><sup>*</sup>'th subtree
+of the subtrees T<sub><i>n</i></sub> generated from initial tree
+T<sub><i>I</i></sub>.
+
+</ol>
+
+<a name="RandomTrees"></a>
+<h3>Creating N Trees with Randomly Drawn Data</h3>
+
+<p>An alternative to tree creation using cross-validation is creating
+a number of trees using learning data randomly drawn from the source
+data.  All trees are built using the same size of learning set.  The
+test data for each tree is the data remaining after the learning set
+has been drawn.
+
+<p>The methodology is the same as that for cross-validation, except
+that step <b>2</b> is omitted, and at step <b>3</b>, the initial trees
+T<sub><i>j</i></sub> are created using <i>N</i> randomly drawn data entries.
+At step <b>5</b>, the test data is the remaining data from the original
+data set.
+
+<a name="TreeDisplay"></a>
+<h3>Tree Display and Report</h3>
+
+<p>
+The output tree in <span class="nobr">QuaSAR-Classify</span> is displayed as a horizontal
+dendrogram.  The nodes of the tree are positioned at varying levels of
+indentation, with a deeper level of indentation indicating a deeper level
+in the tree.  Thus, nodes at the same indentation level are at the same
+level in the tree.
+
+<p>
+Each node in the tree (below the root) is either a left or a right child.
+The left child is always listed first in the diagram.  Each node is
+associated with an inequality expression which is the splitting
+condition satisfied by cases in that node.  (Note that the splitting
+rule is applied to the cases in the <i>parent</i> node.) For example:
+
+<pre>
+    ROOT
+	chi0v <= 6.95		(left child of ROOT)
+	    ...			(children of left child of ROOT)
+	chi0v > 6.95		(right child of ROOT)
+	    ...			(children of right child of ROOT)
+</pre>
+
+<p>
+The cases that arrived in the left child of the root node (labeled
+<tt>ROOT</tt>) are those cases in the root whose values of the
+descriptor <tt>chi0v</tt> were less than or equal to 6.95.
+Conversely, those in the right child had values greater than
+6.95.
+
+<p>
+In addition to the splitting condition, leaf nodes also have their
+class assignment and node misclassification rate displayed.
+For example:
+
+<pre>
+    <6> (0.08) chi1v > 2.65
+</pre>
+
+<p>
+This is a leaf node that has been assigned class "6".  The proportion
+of misclassifieds in the node at the time of tree building was 0.08.
+The cases that fall into this node satisfy a split condition on the value
+of <tt>chi1v</tt>.
+
+<a name="Predicting"></a>
+<h3>Predicting Classes</h3>
+
+<p>
+Once a tree has been built, you can use it to classify other data sets
+(called <i>prediction</i> data sets).  Each case in a prediction data set
+is dropped through the tree until it reaches a leaf node.  The class
+of that leaf node is the predicted class of the case.
+
+<p>
+The manner in which a case arrives at a leaf node is as follows.  The case
+begins at the root node of the tree.  Depending on the splitting rule at
+the root node, the case is shunted into either the left or the right
+child.  The case continues down the tree: at each non-leaf node, the node
+splitting condition is applied, and the case falls to the next level in
+the tree.  For example:
+
+<pre>
+    ROOT
+        chi0v <= 6.95
+	    ...
+            chi0v > 3.16
+		...
+                <6> (0.08) chi1v > 2.65	(leaf node)
+	...
+</pre>
+
+<p> A case that falls into the leaf node shown here would have had 3
+splitting rules applied to it.  At the first split, it passes to left
+child, thereafter, it passes into the right.  The case has a <tt>chi0v</tt>
+value between 3.16 and 6.95, and a <tt>chi1v</tt> value greater than 2.65.
+
+<p>
+If the prediction database contains a field whose name is the same as
+that of the class field used in building the tree, the overall
+misclassification rate of the predictions is reported.  Furthermore, the
+tree report (<b>Report</b>) will provide the following information for
+each class:
+
+<ul>
+  <li><i># entries</i>: Number of entries of that class in the prediction
+database
+
+  <li><i># correct</i>: Number of entries correctly predicted as being
+in that class
+
+  <li><i># incorrect</i>: Number of entries of that class incorrectly
+predicted as being in another class
+
+  <li><i># X</i>: Number of entries in another class incorrectly predicted
+as being in that class (false positives)
+
+  <li><i>% correct</i>: Accuracy, taking into account false positives:
+
+<blockquote>
+<i>#&nbsp;correct</i> / <i>#&nbsp;entries</i> - <i>#&nbsp;X</i> /
+(N<sub>total</sub> - <i>#&nbsp;entries</i>)
+</blockquote>
+
+where N<sub>total</sub> is the total number of entries in the prediction
+database.
+
+</ul>
+
+<a name="RunningClassify"></a>
+<h2>Running QuaSAR-Classify</h2>
+
+<p>
+The <span class="nobr">QuaSAR-Classify</span> panel is opened using 
+<span class="nobr"><b>MOE | Compute | QuaSAR | QuaSAR-Classify</b></span>
+or 
+<span class="nobr"><b>DBV | Compute | Model | Classification</b></span>.
+This panel is used to create, display, save, load, and make a report on
+a binary classification tree, as well as to classify data using a binary
+classification tree.
+
+<p>
+The <span class="nobr">QuaSAR-Classify</span> panel is also opened when a binary classification tree file
+is opened from the Open panel <span class="nobr">(<b>MOE | File | Open</b>)</span>.
+
+<p>
+The display area of the <span class="nobr">QuaSAR-Classify</span> panel is empty when it is first
+opened.  Once a tree is created or loaded, it is displayed in the panel.
+
+<p>
+Tree <a href="#RunningCreate">creation</a> and
+<a href="#RunningPredict">class prediction</a> are described below.
+
+<h3><a name="RunningCreate">Creating a Binary Classification Tree</a></h3>
+
+<p>To create a binary classification tree, 
+press the <b>Create</b> button in the <span class="nobr">QuaSAR-Classify</span> panel
+to open the <span class="nobr">QuaSAR-Classify Create Tree</span> panel.
+
+<p>
+<center>
+<img src="qbct/bctcreate.png" alt="QuaSAR-Classify Create Tree Panel">
+</center>
+
+<p>
+Using this panel, take the following steps to create a new tree:
+
+<p>
+<ol>
+<li>
+Specify the "protocol" used to create the binary classification tree.
+The protocol is the tree-growing method. Two protocols are available:
+
+<p>
+<ul>
+<li>Separate Test Sample: Choose this protocol when you have
+separate learning and test data sets.  The data sets can come from
+the same database (turn on <b>Test and Learning Data from
+Same Database</b>) or from different databases.
+
+<li>Cross-Validation: Choose this protocol when you have insufficient
+data for two mutually-exclusive data sets; the learning and test data
+will be drawn from a common data set.
+
+</ul>
+
+<p>
+<li>
+Specify the input learning and test (if any) databases.
+
+<p>
+<li>
+Specify the class field.  This field is assumed to contain categorical
+data.
+
+<p>
+<b>Note:</b> A larger number of classes will result in a longer
+tree-building time.
+
+<p>
+<li>
+Select the descriptor fields (<b>Tree Fields</b>)
+which will be used to generate the
+splitting rules.  A larger number of fields will result in a longer
+tree-building time.
+
+<p>
+<li>
+Press <b>OK</b>. The <span class="nobr">QuaSAR-Classify Create Tree</span> panel is closed. Tree building
+may take some time.  During tree building, progress information is
+reported at the Status line, and the tree display area in the
+<span class="nobr">QuaSAR-Classify</span> panel shows the tree as it is being built.  The final tree
+and its associated R(T) (total tree misclassification rate) are displayed
+in the <span class="nobr">QuaSAR-Classify</span> panel.
+
+<p>
+<center>
+<img src="qbct/bct.png" alt="QuaSAR-Classify Panel">
+</center>
+
+<p>
+You can control the display of a tree by:
+
+<ul>
+<li>
+Double-clicking in the list:
+
+  <ul>
+  <li>Compresses the node if not already compressed,
+i.e. if both of the node's children are displayed, then
+all of the node's subtree is hidden and
+a '+' symbol is prefixed to the node.
+
+  <li>Expands the node if compressed, i.e. if one or both
+of the node's children are hidden, then all of the node's subtree is
+displayed.
+
+  </ul>
+
+<p>
+<li>
+Selecting one or more list items (single-click) and pressing
+<b>Isolate Path</b>. This shows only the nodes in the path from the
+root to the highlighted node(s) in the tree display area.  Nodes with one
+or both children hidden are prefixed by a '+' symbol.
+
+<p><li>
+Press <b>Expand All</b> to display the entire tree.
+</ul>
+<p>
+<li>
+Once the tree is created, you can save it to a file by pressing <b>Save</b> in
+the <span class="nobr">QuaSAR-Classify</span> panel.  This will bring up a file selection box for
+specifying a filename.  The default file extension for tree files is
+<tt>.bct</tt>.
+
+<p><li>
+You can also press <b>Report</b> to open an SVL Text Editor with information
+about the currently loaded tree.
+
+<p>
+<b>Note:</b> The reported value of R(T) is the tree misclassification rate
+calculated during the <i>tree-building</i> phase, i.e.
+it is based on the proportion of misclassified <i>learning</i> data cases.
+
+</ol>
+
+
+
+<a name="RunningPredict"></a>
+<h3>Using a Binary Classification Tree for Prediction</h3>
+
+<p>
+The <span class="nobr">QuaSAR-Classify</span> panel is used for assigning classes to the entries in a
+specified database using the tree that is displayed in the panel.  (If you
+do not have a tree displayed, press <b>Load</b> to load a tree from a tree file
+or press <b>Create</b> to open the <span class="nobr">QuaSAR-Classify Create Tree</span> panel to create a
+new binary classification tree.)
+
+<p>
+Pressing <b>Predict Classes</b> will write the predicted data classes to
+the database.  You can specify whether to do this for all or for only the
+selected entries in the database.  If the database has a class field
+that has the same name as the class field in the database(s)
+used to build the tree, then the prediction misclassification rate will
+be reported, and the tree report will contain additional statistics
+about the accuracy of the predictions.
+
+<p>
+Instead of writing out the predicted data, you can have the entry
+selection in the database reflect the class prediction.  First select
+nodes in the displayed tree and then press <b>Select Entries</b>.  This will
+cause all entries in the database that fall into those highlighted nodes
+to be selected.  The number of entries that were selected is reported in
+the Status line.
+
+<p>
+For example, suppose you have selected the following nodes in a tree:
+
+<p>
+<center>
+<img src="qbct/bct1.png" alt="QuaSAR-Classify Panel">
+</center>
+</p>
+
+<p>Pressing <b>Select Entries</b> will set the selection state of each
+entry in the database.  An entry will be selected if it falls into either
+one of these two nodes, otherwise it will be deselected.  The previous
+entry selections in the database are lost.
+
+<p>
+Note that, for this operation, the selected nodes in the tree need not be
+leaf nodes, and that you may have more than one node selected at a time.
+To select all entries in a database that are predicted to have a certain
+class, select all the leaf nodes of that class in the tree, then press <b>Select
+Entries</b>.
+
+<a name="PanelReference"></a>
+<h2><span class="nobr">QuaSAR-Classify</span> Panel Reference</h2>
+
+<p><span class="nobr">QuaSAR-Classify</span> is opened using
+<span class="nobr"><b>MOE | Compute | QuaSAR | QuaSAR-Classify</b></span>
+or <span class="nobr"><b>DBV | Compute | Model | Classification</b></span>.
+
+
+<p>
+<center>
+<img src="qbct/bct.png" alt="QuaSAR-Classify Panel">
+</center>
+</p>
+
+<table width="100%" cellpadding="5" cellspacing="5">
+
+<tr>
+<td valign="top"><b>Database</b> 
+<td valign="top">
+Database on which to make class predictions.  If you open the
+QuaSAR-Classify panel from within a Database Viewer, the database filename
+will default to that of the file viewed by the Database Viewer.
+Furthermore, if you press <b>Create</b> (to create a new tree), and there is a
+filename entered in the Database text field, the QuaSAR-Classify Create
+Tree panel will use that filename.
+
+<tr>
+<td valign="top"><b>Predict Only Selected Entries</b>
+<td valign="top">
+If on, class predictions are performed for selected entries only.  If off,
+predictions are done on all entries in the specified database.  This
+option applies only when <b>Predict Classes</b> is pressed.
+
+<tr>
+<td valign="top"><b>Prediction Field</b> 
+<td valign="top">
+Name of the field in which to save predicted class values once you press
+<b>Predict Classes</b>.
+
+<tr>
+<td valign="top"><b>Isolate Path</b>
+<td valign="top">
+Shows only the nodes in the path from the root to the highlighted node(s)
+in the tree display area.  Nodes with one or both children hidden are
+prefixed by a '+' symbol.
+
+<tr>
+<td valign="top"><b>Expand All</b>
+<td valign="top">
+Displays the complete tree in the tree display area.
+
+<tr>
+<td valign="top"><b>Predict Classes</b> 
+<td valign="top">
+Predicts the class assignments for entries in the specified database using
+the currently loaded tree.  If <b>Predict Only Selected Entries</b> is on, then
+predictions are made for selected entries only.  Predicted values are
+written to the specified Prediction Field.
+
+<p>
+If the database contains a class field of the same name as the class field
+that was used in building the tree, the misclassification rate of the
+predicted values is reported, both at the Status line and in the tree
+report (press <b>Report</b> after predicting classes).  You can determine which
+class was used to build the tree by looking at the tree report.
+
+<p>
+<b>Note:</b> If the database on which to make predictions is missing
+fields used in the tree, zero values are substituted for all except
+QuaSAR descriptor fields.  QuaSAR descriptor values are calculated if a
+molecule field is present in the database (otherwise, they are also
+substituted with zeroes).
+
+<tr>
+<td valign="top"><b>Select Entries</b>
+<td valign="top">
+In the specified database, selects all entries which fall into the node(s)
+highlighted in the tree display area.  For example, if you select a single
+leaf node, pressing <b>Select Entries</b> will select all entries in the
+specified database which fall into that node, and which hence would be
+predicted to have the class assigned to that node.  All other entries are
+deselected.  The entry selection state is set for all entries in the
+database.
+
+<tr>
+<td valign="top"><b>Status</b>
+<td valign="top">
+Status line which reports progress information during tree building, tree
+misclassification rate (both in building and in prediction when <b>Predict
+Classes</b> is pressed), and number of selected entries when
+<b>Select Entries</b> is pressed.
+
+<tr>
+<td valign="top"><b>Create</b>
+<td valign="top">
+Opens the QuaSAR-Classify Create Tree panel.
+
+<tr>
+<td valign="top"><b>Load</b>
+<td valign="top">
+Opens a file selection box for choosing a tree file to load.
+The default extension for tree files is <tt>.bct</tt>.
+
+<tr>
+<td valign="top"><b>Save</b>
+<td valign="top">
+Opens a file selection box for specifying the filename of a tree file in
+which to save the currently displayed tree.  The default extension for
+tree files is <tt>.bct</tt>.
+
+<tr>
+<td valign="top"><b>Report</b>
+<td valign="top">
+Opens an SVL Text Editor in which a report on the currently
+displayed tree is loaded.
+
+</table>
+
+
+<a name="CreatePanelReference"></a>
+<h2>QuaSAR-Classify Create Tree Panel Reference</h2>
+
+<p>The QuaSAR-Classify Create Tree panel is opened by pressing
+<b>Create</b> in the QuaSAR-Classify panel.
+
+
+<p>
+<center>
+<img src="qbct/bctcreate.png" alt="QuaSAR-Classify Create Tree Panel">
+</center>
+
+<p>
+<table width="100%" cellpadding="5" cellspacing="5">
+
+<tr>
+<td valign="top"><b>Protocol</b>
+<td valign="top">
+Specifies the tree-growing methodology.  The section for specifying
+databases changes according to the protocol selected.
+The default is Cross-Validation.
+
+<tr>
+<td valign="top"><b>Separate Test Sample</b>
+<td valign="top">
+Specifies that learning and test data originate from two distinct data sets.
+<p><img src="qbct/bctpanel4.png" alt="QuaSAR-Classify Separate Test Sample
+Page"> 
+
+<tr>
+<td valign="top"><b>Test and Learning Data from Same Database</b>
+<td valign="top">
+
+When this option is selected, both the learning and test data originate
+from the same database.  In this case, all data in the database is used:
+selected entries comprise the learning set, unselected entries, the test
+set.  It is permissible to have no test set (i.e. all entries
+selected).  No tree is created if there are no selected entries (no
+learning set).
+
+<p><img src="qbct/bctpanel2.png" alt="QuaSAR-Classify Same Database
+Page"> 
+
+<p>When this option is not selected, the learning and test data
+originate from different databases.  You must specify both learning
+and test databases, and you can specify whether to use all or only
+selected entries in either of the learning or test databases.
+
+<tr>
+<td valign="top"><b>Use Random Sample</b>
+<td valign="top">
+
+<p>
+When this option is selected, the learning data is a randomly-drawn sample
+from the source database.   The remaining entries constitute the test data.
+This option is only available when the <b>Test and Learning Data from Same
+Database</b> option is on.
+
+<p><img src="qbct/bctpanel2a.png" alt="QuaSAR-Classify Same Database
+Page"> 
+
+<p>When this option is not selected, the learning data comprises all
+selected entries in the Database Viewer, and the test data, all
+unselected.
+
+<tr>
+<td valign="top"><b>Learning Set Size</b>
+<td valign="top">
+
+<p>The size of the randomly drawn learning data set when
+the <b>Use Random Sample</b> option is on.
+
+<tr>
+<td valign="top"><b>Iterations</b>
+<td valign="top">
+
+<p>The number of trees to create when the <b>Use Random Sample</b> option
+is on.
+
+<tr>
+<td valign="top"><b>Cross-Validation</b>
+<td valign="top">
+
+Specifies that cross-validation will be used.  Learning and test data
+will be drawn from a common data set.
+<p><img src="qbct/bctpanel3.png"> 
+
+<p>Cross-validation should be used when the amount of data might be
+insufficient to provide adequate mutually-exclusive learning and test
+data.  (Note that since cross-validation incurs a significant
+computational cost, it may be inadvisable to use cross-validation when
+operating on very large data sets.)
+
+<tr>
+<td valign="top"><b>Subsets</b>
+<td valign="top">
+Number of subsets to use in the cross-validation protocol.  The input data
+is divided into this number of equally-sized mutually-exclusive subsets
+(therefore this number also specifies the size of each subset).
+
+<p>
+The minimum allowable number of subsets is 2.  The maximum is the number
+of entries in the database (if <b>Use Selected Entries</b> is on, then the
+maximum is the number of selected entries).  When using cross-validation,
+the learning and test data sets are identical.
+
+<tr>
+<td valign="top"><b>Randomly Sampled Subsets</b> 
+<td valign="top">
+If on, each cross-validation subset is randomly drawn from the database.
+The resulting subsets will be mutually-exclusive and of equal size.
+
+<tr>
+<td valign="top"><b>Class Field</b> 
+<td valign="top">
+Name of the field containing the data classes.  The field must exist in
+both learning and test databases.  If a field named <tt>'class'</tt>
+exists in both the learning and test databases, Class Field will default
+to it.
+
+<p>
+The class field is assumed to contain categorical data, i.e. data
+drawn from a limited set of values.  The classes need not be numeric, but
+they must be scalar.
+
+<tr>
+<td valign="top"><b>Tree Fields</b> 
+<td valign="top">
+Names of candidate fields from which the split values in splitting rules
+are drawn.
+
+<p>
+The available fields are listed in the Tree Fields listbox.  The listed
+fields are those common to both the learning and test databases, and
+additionally any QuaSAR descriptor fields found in the learning database.
+Molecules fields are not listed.
+The field data are expected to be scalar.
+
+<!--
+except if generated using MOE's
+<a href="../mdb/ph4intro.htm">fingerprinting</a> functions.
+Fingerprints are scanned one bit at a time, and each bit
+is a potential splitting rule candidate.
+-->
+
+If non-scalar data are encountered, the <!-- except fingerprints -->
+first value in the vector will be used.  If null or invalid
+(NaN, Inf) data are encountered, they are replaced by 0.
+
+<p>
+If no fields are selected, then all fields in the list except the class
+field and fields prefixed by <tt>$</tt> will be used in generating the
+tree.
+
+<tr>
+<td valign="top"><b>Node Split Size</b> 
+<td valign="top">
+Node size splitting criterion used during the tree-growing phase to
+control node splitting.  A node with size less than or equal to the
+specified size will not be split further, i.e. it will become a leaf
+node.  The minimum allowable size is 1.  The default is 10.
+
+<tr>
+<td valign="top"><b>Max. Tree Depth</b> 
+<td valign="top">
+Maximum depth to which the initial tree is grown.  The tree root is at
+depth 0.  The minimum allowable depth is 0.  The default maximum depth is
+10.
+
+<tr>
+<td valign="top"><b>Max. Sample Size</b> 
+<td valign="top">
+Maximum data set size used to determine a node splitting
+rule.  If a node contains more cases than the specified value, a
+randomly drawn set of that size will be used for finding the
+splitting rule.  The minimum allowable sample size is 1.  The default is
+255.
+
+<p>
+This option takes effect only when <b>Use Subsampling</b> is on.
+
+<tr>
+<td valign="top"><b>Use Subsampling</b> 
+<td valign="top">
+If on, a randomly drawn subset is used for determining the node splitting
+rule when the number of cases in a node exceeds <b>Max. Sample Size</b>. If off,
+the <b>Max. Sample Size</b> specification is ignored.  The default is to use
+subsampling.
+
+<tr>
+<td valign="top"><b>Use Priors</b> 
+<td valign="top">
+If on, all classes will be weighted to give them equal importance
+when evaluating splitting rules.  If off, no weighting is done.
+The default is to do the weighting.
+
+<tr>
+<td valign="top"><b>Ordered Threshold</b> 
+<td valign="top">
+Number of unique field values a field must contain to be considered
+ordered.  If the field contains less than the specified number of unique
+values, the field data is considered to be categorical.  Tokens are
+always taken to be categorical.  The minimum
+allowable threshold is 1.  The default is 4.
+
+<tr>
+<td valign="top"><b>Best Tree Thresh.</b> 
+<td valign="top">
+Specifies how the final output tree is to be chosen from the sequence of
+pruned subtrees in the pruning phase.  The chosen tree will be the
+smallest tree that is within the specified number of standard errors away
+from the minimum cost subtree (the subtree with the smallest R(T) value).
+A value of 0 results in the minimum cost subtree being output.  A larger
+value may result in a smaller tree being output.  The default is 1.
+
+</table>
+
+
+<a name="SVL"></a>
+<h2>SVL Commands</h2>
+
+<a class="svl" href="../quasar/fcnref/bctfcn.htm">bct_Tree</a><br />
+<a class="svl" href="../quasar/fcnref/bctfcn.htm">bct_CreateTreeMDB</a><br />
+<a class="svl" href="../quasar/fcnref/bctfcn.htm">bct_PredictMDB</a>
+
+<a name="References"></a>
+<h2>References</h2>
+
+<table width="100%">
+<tr>
+<td valign="top">[Breiman&nbsp;1984]
+<td valign="top">
+Breiman, L., Friedman, J., Olshen, R.A., and Stone, C.J.;
+<i>Classification and Regression Trees</i>;
+Wadsworth Inc., USA (1984).
+ 
+<tr>
+<td valign="top">[Elder&nbsp;1996]
+<td valign="top">
+Elder, J.F. IV, and Pregibon, D.;  A Statistical Perspective on
+Knowledge Discovery in Databases;
+<i>Advances in Knowledge Discovery and Data Mining</i>;
+Fayyad, U.M., Piatetsky-Shapiro, G., Smyth, P., and Uthurusamy, R.
+(Ed.) The AAAI Press, USA (1996), 83&ndash;113.
+
+</table>
+
+
+<h2>See Also</h2>
+
+<p>
+<a href="../quasar/qsar.htm">QuaSAR Overview</a>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

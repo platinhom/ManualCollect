@@ -1,0 +1,1188 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>schrodinger.ui.qt.appframework</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >2015-2Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        <a href="schrodinger-module.html">Package&nbsp;schrodinger</a> ::
+        <a href="schrodinger.ui-module.html">Package&nbsp;ui</a> ::
+        <a href="schrodinger.ui.qt-module.html">Package&nbsp;qt</a> ::
+        Module&nbsp;appframework
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="schrodinger.ui.qt.appframework-module.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== MODULE DESCRIPTION ==================== -->
+<h1 class="epydoc">Module appframework</h1><p class="nomargin-top"></p>
+<pre class="literalblock">
+
+This module provides GUI classes that mimic Maestro panels and dialogs.  The
+main class is AppFramework for running Python applications with a Maestro
+look-and-feel.  It provides a menu, standard buttons (Start, Write, Reset), a
+Start dialog, a Write dialog, a input source selector, and methods for adding
+all the relevant job parameters to a single object (used by the user when
+creating input files and launching jobs).  The StartDialog and WriteDialog
+actually can be used independently of AppFramework, in case a user doesn't
+require a full Maestro-like panel.  There also is an AppDialog class for a
+Maestro-like dialog (i.e., with buttons packed in the lower right corner).
+
+PyQt Note: You can specify the QtDesigner-generated form via the &lt;ui&gt; argument.
+Widgets defined within that form are automatically included in the window. The
+form should be read from the *_ui.py file as follows:
+    import &lt;my_script_ui&gt;
+    ui = my_script_ui.Ui_Form()
+
+
+There are two main ways to use AppFramework -- make an instance of the class,
+or derive your own class from it.  For example...
+
+----------
+class MyGUI(schrodinger.ui.appframework.AppFramework):
+    def __init__(self):
+        buttons = {
+            'start':{'command':self.start,'precommand':self.sanityCheck},
+            'write':{'command':self.write,'precommand':self.sanityCheck},
+            'reset':{'command':self.setDefaults},
+            'close':{'command':self.quit}
+            'help':{'command':self.help}
+        }
+        dialogs = {
+            'start':{'jobname':'myjobname','cpus':True,'njobs':True},
+            'write':{'jobname':'myjobname'}
+        }
+        schrodinger.ui.appframework.AppFramework.__init__(
+            self,
+            ui = my_script_ui.Ui_Form(),
+            title=&quot;My application&quot;,
+            buttons=buttons,
+            dialogs=dialogs,
+            inputframe={
+                'support_mae' : True,
+            }
+        )
+
+    def start(self):
+    def write(self):
+    def sanityCheck(self):
+    def reset(self):
+    def quit(self):
+    def help(self):
+----------
+
+...or...
+
+----------
+my_app = schrodinger.ui.appframework.AppFramework(
+    title = &quot;My application&quot;,
+    ui = my_script_ui.Ui_Form(),
+    buttons = {
+        'start':{'command':start_app,'precommand':sanity_check},
+        'write':{'command':write_app,'precommand':sanity_check},
+        'reset':{'command':set_app_defaults},
+        'close':{'command':quit_app},
+        'help':{'command':help_app}
+    },
+    dialogs = {
+        'start':{'jobname':'myjobname','cpus':True,'njobs':True},
+        'write':{'jobname':'myjobname'}
+    },
+    inputframe={
+        'filetypes':[('Maestro Files','*.mae'),('SD Files','*.sdf')]
+    }
+
+def start_app():
+def write_app():
+def sanity_check():
+def reset_app():
+def set_app_defaults():
+def quit_app():
+def help_app():
+----------
+
+Of course, the second approach could be done within a class of its own, with
+the button callback functions being methods of the class.
+
+
+The AppFramework is configured via button and dialog dictionaries.  Each key
+is a button or dialog type, and the value is a further dictionary of the
+configurable attributes of the button/dialog.  The most critical attribute of
+buttons is the callback command.  AppFramework calls this command when the
+button is pressed, though it may take other actions first (e.g., bringing up
+a dialog).  The dictionary for a particular dialog is used as keyword
+arguments when creating the *Dialog instance.  The 'inputframe' is an
+additional AppFramework GUI element that is configured separately from the
+buttons and dialogs, but also through a dictionary.  Menus (not shown in the
+examples) also can be configured (see the AppFramework documentation).
+
+AppFramework places key job information (e.g., the jobname and host from the
+StartDialog) into a JobParameters object that is stored as the 'jobparam'
+attribute.  When the user's start or write method is called, retrieve the
+needed job information from that object.
+
+AppFramework provides a method for application-specific job data to be placed
+into the JobParameters object.  Suppose the user's GUI is modular, with
+several frames responsible for various parameters of the job.  Any object
+that has a 'setup' method can be registered with the AppFramework object, and
+this method will be called as part of the setup cascade that occurs when the
+Start or Write button is pressed.  To register an object, append the object to
+the AppFramework's 'setup' list.  The JobParameters object will be passed to
+the registered object via the 'setup' method.  The 'setup' method should
+return True if the setup cascade should continue (i.e., there are no
+problems).
+
+See the AppFramework, *Dialog, and JobInputFrame classes for explanations of
+the various AppFramework configuration options.
+
+The StartDialog can be used directly.  For example...
+
+----------
+sd = schrodinger.ui.appframework.StartDialog(
+    parent_frame,
+    jobname='myjobname',
+    title='My application',
+    cpus=True
+)
+sd_params = sd.activate()
+----------
+
+The 'sd_params' is a StartDialogParams object whose attributes are the job
+parameters set up via the StartDialog.  In AppFramework, the StartDialogParams
+attributes are copied into the JobParameters object.
+
+
+Once you have setup the AppFramework you can add your own widgets to the
+central area with 'addCentralWidget()'. Typically you'd create a QWidget
+(QFrame or QGroupBox) containing everything you need and add that just once.
+If QtDesigner was used to create a layout, then instead of using
+addCentralWidget(), give the form to the constructor via the 'ui' argument.
+
+Copyright Schrodinger, LLC. All rights reserved.
+
+</pre>
+
+<!-- ==================== CLASSES ==================== -->
+<a name="section-Classes"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Classes</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Classes"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.AppDockWidget-class.html" class="summary-name">AppDockWidget</a><br />
+      A DockWidget that calls the parent class's closeEvent when closing
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.AppFramework-class.html" class="summary-name">AppFramework</a><br />
+      The AppFramework class is basically a hull for applications.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.ColoredTableItem-class.html" class="summary-name">ColoredTableItem</a>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.ConfigDialog-class.html" class="summary-name">ConfigDialog</a><br />
+      Toplevel Qt widget that mimics the Maestro Start dialog.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.CustomProgressBar-class.html" class="summary-name">CustomProgressBar</a><br />
+      Class for a custom progress bar (at the bottom of some panels).
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.DialogParameters-class.html" class="summary-name">DialogParameters</a><br />
+      Class for holding dialog parameters.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.DontShowAgainDialog-class.html" class="summary-name">DontShowAgainDialog</a><br />
+      Dialog that displays information for the user and contains a Don't 
+        Show This again checkbox
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.GPGPUConfigDialog-class.html" class="summary-name">GPGPUConfigDialog</a><br />
+      This Config Dialog supports enumerating GPGPU's and allowing the 
+        user to select which GPGPU(s) they'd like to use.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.Gpu-class.html" class="summary-name">Gpu</a>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.Host-class.html" class="summary-name">Host</a><br />
+      Extension of jobcontrol.Host class with GPUs.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.JobInputFrame-class.html" class="summary-name">JobInputFrame</a><br />
+      An application input source selection widget.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.JobInputParams-class.html" class="summary-name">JobInputParams</a><br />
+      A class to store the state of the JobInputFrame, and to control 
+        behavior needed to create access to structure files.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.JobParameters-class.html" class="summary-name">JobParameters</a><br />
+      Class for holding job parameters.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.JobStatusToolButton-class.html" class="summary-name">JobStatusToolButton</a>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.JobTable-class.html" class="summary-name">JobTable</a>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.MonitorDropdown-class.html" class="summary-name">MonitorDropdown</a><br />
+      A menu-derived object which exists solely as an adapter to allow 
+        the mini- monitor to be dropped out of the job status toolbutton.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.MultiGPGPUConfigDialog-class.html" class="summary-name">MultiGPGPUConfigDialog</a><br />
+      Subclass for selecting multiple GPGPU's
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.MultiHostSelector-class.html" class="summary-name">MultiHostSelector</a><br />
+      Widget that contains a table for selecting multiple hosts.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.MultiHostTableModel-class.html" class="summary-name">MultiHostTableModel</a><br />
+      Model for the hosts table.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.PopUpWidget-class.html" class="summary-name">PopUpWidget</a>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.ReadDialog-class.html" class="summary-name">ReadDialog</a><br />
+      Dialog allowing user to specify a file to read in.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.StartDialog-class.html" class="summary-name">StartDialog</a>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.StartDialogParams-class.html" class="summary-name">StartDialogParams</a><br />
+      A collection of parameter values from the StartDialog class.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.TestApp-class.html" class="summary-name">TestApp</a><br />
+      Class for testing AppFramework outside of Maestro.
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework.WriteDialog-class.html" class="summary-name">WriteDialog</a><br />
+      Toplevel Qt  widget that mimics the Write dialog.
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework._EntryField-class.html" class="summary-name" onclick="show_private();">_EntryField</a><br />
+      A special composite widget which contains a labeled line edit 
+        field.
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework._ToolButton-class.html" class="summary-name" onclick="show_private();">_ToolButton</a>
+    </td>
+  </tr>
+</table>
+<!-- ==================== FUNCTIONS ==================== -->
+<a name="section-Functions"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Functions</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Functions"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="filter_string_from_supported"></a><span class="summary-sig-name">filter_string_from_supported</span>(<span class="summary-sig-arg">support_mae</span>,
+        <span class="summary-sig-arg">support_sd</span>,
+        <span class="summary-sig-arg">support_pdb</span>)</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="format_list_to_filter_string"></a><span class="summary-sig-name">format_list_to_filter_string</span>(<span class="summary-sig-arg">filetypes</span>)</span><br />
+      Converts Tkinter-style file types list to Qt-style filter string</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">list</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.ui.qt.appframework-module.html#get_hosts" class="summary-sig-name">get_hosts</a>(<span class="summary-sig-arg">ncpus</span>=<span class="summary-sig-default">True</span>,
+        <span class="summary-sig-arg">excludeGPGPUs</span>=<span class="summary-sig-default">True</span>)</span><br />
+      Return a list of Host objects for use in config dialogs.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">str</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.ui.qt.appframework-module.html#get_next_jobname" class="summary-sig-name">get_next_jobname</a>(<span class="summary-sig-arg">prefix</span>,
+        <span class="summary-sig-arg">starting_num</span>=<span class="summary-sig-default">1</span>)</span><br />
+      Given a job name prefix, choose the next available job name based on 
+      the names of existing files in the CWD.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.ui.qt.appframework-module.html#get_workspace_structure" class="summary-sig-name">get_workspace_structure</a>()</span><br />
+      Returns the Workspace structure.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.ui.qt.appframework-module.html#help_dialog" class="summary-sig-name">help_dialog</a>(<span class="summary-sig-arg">topic</span>,
+        <span class="summary-sig-arg">product</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">Maestro</code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">parent</span>=<span class="summary-sig-default">None</span>)</span><br />
+      Display a help dialog (or a warning dialog if no help can be found).</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="is_jobname_retain_set"></a><span class="summary-sig-name">is_jobname_retain_set</span>()</span><br />
+      Returns True if the &quot;Retain last job name used&quot; option is 
+      set in Maestro preferences.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.ui.qt.appframework-module.html#make_desres_about_button" class="summary-sig-name">make_desres_about_button</a>(<span class="summary-sig-arg">parent</span>)</span><br />
+      Generate the about button with copyright information for DESRES 
+      panels.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.ui.qt.appframework-module.html#make_desres_layout" class="summary-sig-name">make_desres_layout</a>(<span class="summary-sig-arg">product_text</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">flip</span>=<span class="summary-sig-default">False</span>)</span><br />
+      Generate a QLayout containing the Desres logo and Schrodinger product
+      info</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="schrodinger.ui.qt.appframework-module.html#question" class="summary-sig-name">question</a>(<span class="summary-sig-arg">msg</span>,
+        <span class="summary-sig-arg">button1</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">OK</code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">button2</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">Cancel</code><code class="variable-quote">'</code></span>,
+        <span class="summary-sig-arg">parent</span>=<span class="summary-sig-default">0</span>,
+        <span class="summary-sig-arg">title</span>=<span class="summary-sig-default"><code class="variable-quote">'</code><code class="variable-string">Question</code><code class="variable-quote">'</code></span>)</span><br />
+      Display a prompt dialog window with specified text.</td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="test"></a><span class="summary-sig-name">test</span>()</span></td>
+          <td align="right" valign="top">
+            
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+</table>
+<!-- ==================== VARIABLES ==================== -->
+<a name="section-Variables"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Variables</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-Variables"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="BOTTOM_DOCK_AREA"></a><span class="summary-name">BOTTOM_DOCK_AREA</span> = <code title="8">8</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="BOTTOM_TOOLBUTTON_HEIGHT"></a><span class="summary-name">BOTTOM_TOOLBUTTON_HEIGHT</span> = <code title="24">24</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="CRITICAL"></a><span class="summary-name">CRITICAL</span> = <code title="'critical'"><code class="variable-quote">'</code><code class="variable-string">critical</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework-module.html#DESRES_COPYRIGHT_INFO" class="summary-name">DESRES_COPYRIGHT_INFO</a> = <code title="'''Desmond Molecular Dynamics System, Copyright (c) 2004-2014 D. E. Sh\
+aw Research.
+Portions of Desmond Software, Copyright (c) Schrodinger, LLC.
+All rights reserved.'''"><code class="variable-quote">'</code><code class="variable-string">Desmond Molecular Dynamics System, Co</code><code class="variable-ellipsis">...</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="DISP_APPEND"></a><span class="summary-name">DISP_APPEND</span> = <code title="'Append new entries'"><code class="variable-quote">'</code><code class="variable-string">Append new entries</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="DISP_FLAG_FIT"></a><span class="summary-name">DISP_FLAG_FIT</span> = <code title="'fit'"><code class="variable-quote">'</code><code class="variable-string">fit</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="DISP_FLAG_SEPARATOR"></a><span class="summary-name">DISP_FLAG_SEPARATOR</span> = <code title="':'"><code class="variable-quote">'</code><code class="variable-string">:</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="DISP_IGNORE"></a><span class="summary-name">DISP_IGNORE</span> = <code title="'Do not incorporate'"><code class="variable-quote">'</code><code class="variable-string">Do not incorporate</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework-module.html#DISP_NAMES" class="summary-name">DISP_NAMES</a> = <code title="OrderedDict([('append', 'Append new entries'), ('ignore', 'Do not inco\
+rporate')])">OrderedDict([('append', 'Append new entries'), ('<code class="variable-ellipsis">...</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="FILE"></a><span class="summary-name">FILE</span> = <code title="'file'"><code class="variable-quote">'</code><code class="variable-string">file</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="HELP_BUTTON_HEIGHT"></a><span class="summary-name">HELP_BUTTON_HEIGHT</span> = <code title="22">22</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="INCLUDED_ENTRIES"></a><span class="summary-name">INCLUDED_ENTRIES</span> = <code title="'included_entries'"><code class="variable-quote">'</code><code class="variable-string">included_entries</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="INCLUDED_ENTRY"></a><span class="summary-name">INCLUDED_ENTRY</span> = <code title="'included_entry'"><code class="variable-quote">'</code><code class="variable-string">included_entry</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="INFORMATION"></a><span class="summary-name">INFORMATION</span> = <code title="'information'"><code class="variable-quote">'</code><code class="variable-string">information</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="LEFT_DOCK_AREA"></a><span class="summary-name">LEFT_DOCK_AREA</span> = <code title="1">1</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="LOCALHOST"></a><span class="summary-name">LOCALHOST</span> = <code title="'localhost'"><code class="variable-quote">'</code><code class="variable-string">localhost</code><code class="variable-quote">'</code></code><br />
+      hash(x)
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="LOCALHOST_GPU"></a><span class="summary-name">LOCALHOST_GPU</span> = <code title="'localhost-gpu'"><code class="variable-quote">'</code><code class="variable-string">localhost-gpu</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a href="schrodinger.ui.qt.appframework-module.html#PYHELP_ERROR_MSG" class="summary-name">PYHELP_ERROR_MSG</a> = <code title="'The help topic for this panel could not be found.'"><code class="variable-quote">'</code><code class="variable-string">The help topic for this panel could not be</code><code class="variable-ellipsis">...</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="RIGHT_DOCK_AREA"></a><span class="summary-name">RIGHT_DOCK_AREA</span> = <code title="2">2</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="SELECTED_ENTRIES"></a><span class="summary-name">SELECTED_ENTRIES</span> = <code title="'selected_entries'"><code class="variable-quote">'</code><code class="variable-string">selected_entries</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="TOP_DOCK_AREA"></a><span class="summary-name">TOP_DOCK_AREA</span> = <code title="4">4</code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="WARNING"></a><span class="summary-name">WARNING</span> = <code title="'warning'"><code class="variable-quote">'</code><code class="variable-string">warning</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="WORKSPACE"></a><span class="summary-name">WORKSPACE</span> = <code title="'workspace'"><code class="variable-quote">'</code><code class="variable-string">workspace</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="__package__"></a><span class="summary-name">__package__</span> = <code title="'schrodinger.ui.qt'"><code class="variable-quote">'</code><code class="variable-string">schrodinger.ui.qt</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr class="private">
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="_version"></a><span class="summary-name">_version</span> = <code title="'$Revision: 1.32 $'"><code class="variable-quote">'</code><code class="variable-string">$Revision: 1.32 $</code><code class="variable-quote">'</code></code>
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+        <a name="maestro"></a><span class="summary-name">maestro</span> = <code title="None">None</code><br />
+      hash(x)
+    </td>
+  </tr>
+</table>
+<!-- ==================== FUNCTION DETAILS ==================== -->
+<a name="section-FunctionDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Function Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-FunctionDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="get_hosts"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">get_hosts</span>(<span class="sig-arg">ncpus</span>=<span class="sig-default">True</span>,
+        <span class="sig-arg">excludeGPGPUs</span>=<span class="sig-default">True</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Return a list of Host objects for use in config dialogs. Note these 
+  are a subclass of jobcontrol.Host which has additional features for text 
+  labels and accounting for GPUs.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>ncpus</code></strong> (bool) - whether host text labels should include number of processors</li>
+        <li><strong class="pname"><code>excludeGPGPUs</code></strong> (bool) - whether to exclude GPU hosts from the list</li>
+    </ul></dd>
+    <dt>Returns: list</dt>
+        <dd>a list of Host objects</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="get_next_jobname"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">get_next_jobname</span>(<span class="sig-arg">prefix</span>,
+        <span class="sig-arg">starting_num</span>=<span class="sig-default">1</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Given a job name prefix, choose the next available job name based on 
+  the names of existing files in the CWD.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>starting_num</code></strong> (int) - The smallest number to append to the job name</li>
+    </ul></dd>
+    <dt>Returns: str</dt>
+        <dd>The completed job name</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="get_workspace_structure"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">get_workspace_structure</span>()</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Returns the Workspace structure. If only one entry is in workspace, 
+  then the properties are included as well.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<a name="help_dialog"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">help_dialog</span>(<span class="sig-arg">topic</span>,
+        <span class="sig-arg">product</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">Maestro</code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">parent</span>=<span class="sig-default">None</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Display a help dialog (or a warning dialog if no help can be 
+  found).</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>topic</code></strong> (str) - The topic to display help for</li>
+        <li><strong class="pname"><code>help_product</code></strong> - The help product to access.  Defaults to &quot;Maestro&quot;.</li>
+        <li><strong class="pname"><code>parent</code></strong> (QWidget) - The parent of the warning dialog.  If not given, no parent is 
+          used.</li>
+        <li><strong class="pname"><code>product</code></strong> (str)</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="make_desres_about_button"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">make_desres_about_button</span>(<span class="sig-arg">parent</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Generate the about button with copyright information for DESRES 
+  panels.</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>parent</code></strong> (QWidget) - The parent widget (the panel)</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="make_desres_layout"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">make_desres_layout</span>(<span class="sig-arg">product_text</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string"></code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">flip</span>=<span class="sig-default">False</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Generate a QLayout containing the Desres logo and Schrodinger product 
+  info</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>product_text</code></strong> (str) - Name of Schrodinger product to add opposite the DESRES logo</li>
+        <li><strong class="pname"><code>flip</code></strong> (bool) - whether to reverse the two logos left/right</li>
+    </ul></dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="question"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">question</span>(<span class="sig-arg">msg</span>,
+        <span class="sig-arg">button1</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">OK</code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">button2</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">Cancel</code><code class="variable-quote">'</code></span>,
+        <span class="sig-arg">parent</span>=<span class="sig-default">0</span>,
+        <span class="sig-arg">title</span>=<span class="sig-default"><code class="variable-quote">'</code><code class="variable-string">Question</code><code class="variable-quote">'</code></span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    >&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>Display a prompt dialog window with specified text. Returns True if 
+  first button (default OK) is pressed, False otherwise.</p>
+  <dl class="fields">
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== VARIABLES DETAILS ==================== -->
+<a name="section-VariablesDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Variables Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-VariablesDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="DESRES_COPYRIGHT_INFO"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">DESRES_COPYRIGHT_INFO</h3>
+  
+  <dl class="fields">
+  </dl>
+  <dl class="fields">
+    <dt>Value:</dt>
+      <dd><table><tr><td><pre class="variable">
+<code class="variable-quote">'''</code><code class="variable-string">Desmond Molecular Dynamics System, Copyright (c) 2004-2014 D. E. Sh</code><span class="variable-linewrap"><img src="crarr.png" alt="\" /></span>
+<code class="variable-string">aw Research.</code>
+<code class="variable-string">Portions of Desmond Software, Copyright (c) Schrodinger, LLC.</code>
+<code class="variable-string">All rights reserved.</code><code class="variable-quote">'''</code>
+</pre></td></tr></table>
+</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="DISP_NAMES"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">DISP_NAMES</h3>
+  
+  <dl class="fields">
+  </dl>
+  <dl class="fields">
+    <dt>Value:</dt>
+      <dd><table><tr><td><pre class="variable">
+OrderedDict([('append', 'Append new entries'), ('ignore', 'Do not inco<span class="variable-linewrap"><img src="crarr.png" alt="\" /></span>
+rporate')])
+</pre></td></tr></table>
+</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="PYHELP_ERROR_MSG"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <h3 class="epydoc">PYHELP_ERROR_MSG</h3>
+  
+  <dl class="fields">
+  </dl>
+  <dl class="fields">
+    <dt>Value:</dt>
+      <dd><table><tr><td><pre class="variable">
+<code class="variable-quote">'</code><code class="variable-string">The help topic for this panel could not be found.</code><code class="variable-quote">'</code>
+</pre></td></tr></table>
+</dd>
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Project homepage -->
+      <th class="navbar" align="right" width="100%">
+        <table border="0" cellpadding="0" cellspacing="0">
+          <tr><th class="navbar" align="center"
+            >2015-2Schrodinger Python API</th>
+          </tr></table></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Sat May  9 06:30:55 2015
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

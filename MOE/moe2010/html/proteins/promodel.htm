@@ -1,0 +1,811 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	promodel.htm	Protein Homology Modeling 
+!!
+!!	25-oct-2010 (cc) added Example Multimer Homology Modeling
+!!	26-apr-2010 (al) added details to running
+!!	02-oct-2008 (kk) updated
+!!	12-jan-2001 (al) Updated for release 2001.01
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<meta panel Homology Model>
+
+<title>Building Homology Models</title>
+</head>
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Building Homology Models</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#methodology">Methodology</a>
+<li><a href="#running">Running Homology Model</a>
+<li><a href="#Output">Output</a>
+<li><a class="example" href="#Example_multimer_homology_modeling">Example:
+Creating a Multimer Homology Model</a>
+<li><a href="#references">References</a>
+<li><a href="#SVL_Commands">SVL Commands</a>
+<li><a href="#See_Also">See Also</a>
+</ul>
+
+<p>The purpose of the Homology Model application is to build and refine 
+all-atom 3D models for protein sequences, based on homologous template
+protein structures.  Models can be built in the presence of ligands,
+prosthetic groups or other molecular entities, and can also be built as
+multimers - dimers, trimers or tetramers - by specifying separate
+sequence-template correspondances in the GUI.
+
+<p>The Homology Model application is opened by choosing <b>Homology Model</b>
+from either the <b><nobr>SE | Homology</nobr></b> menu or the
+<b><nobr>MOE | Compute | Biopolymer</nobr></b> menu.
+
+<p><b>Note!</b> The Homology Model application supports MOE/smp cluster
+computing. If run under a MOE/smp session, Homology Model will run in parallel.
+For information on how to configure your system in order to make
+use of multiple processors, please refer to 
+<a href="../install/smp_inst.htm">Installing and Running MOE/smp</a>.
+
+<h2><a name="methodology">Methodology</a></h2>
+
+<P>The Homology Model method comprises the following steps:
+
+<ol>
+<li><b>Initial Partial Geometry Specification.</b>
+
+<p>An initial partial geometry for each target sequence is copied from regions
+of one or more template chains.  Where residue identity is conserved between
+the target sequence and its template, all heavy-atom coordinates are copied;
+otherwise, only backbone coordinates are copied.
+Note, however, that if a proline residue
+in the target sequence is aligned to a non-proline in its template and the
+&phi; angle at that position is positive, then the no coordinates are copied:
+the position will be treated as an indel (see step 2). 
+Disulfide bonds will be copied to the model whenever the half-cystines
+comprising a disulfide bond in a template chain are both aligned to cysteines
+in the target sequence.  Optionally, disulfide bridges can be created during
+the side chain packing procedure (see step three).
+
+<p><b>Note</b>: Atoms whose coordinates are copied from template atoms carry
+along with them all attributes that affect energy minimization including
+its <tt>Fixed</tt> status as well as tethers and restraints. 
+
+
+<p><li>
+<b>Insertions and Deletions</b>.
+
+<p>After an initial partial geometry for the model has been
+copied from the templates, some residues will still have no assigned backbone
+coordinates.
+These residues may in loops (insertions in the model with respect to
+to the template), "outgaps" (residues in a model sequence which
+are aligned before the C-terminus or after the N-terminus of its template)
+or in deletions&mdash;regions where the template has an
+insertion with respect to the model.
+In the latter case, it is unlikely that the copied
+geometry on either side of the deletion will be correct for the new peptide
+bond them, in which case it may be ignored, thereby creating, in effect, an
+insertion. We refer collectively to these cases where backbone geometries 
+must be modeled as "indels".
+
+<p>Indels are modeled from fragments of 
+high-resolution chains from the Protein Data Bank [Berman&nbsp;2000]
+which superpose well onto anchor residues on either side of the insertion area.
+Following [Fechteler&nbsp;1995], the segment search
+is permitted to back off from indel regions if no segment which
+meets a specified RMSD criteria is found.
+</p>
+
+<li><b>Loop Selection and Sidechain Packing</b>
+
+<p>After the indel data collection is complete, a collection of independent
+models is created.  Loops are modeled first, in random order.
+For each loop, a contact energy function analyzes the list of candidates
+collected in the segment searching stage,
+taking into account all atoms already modeled and any atoms specified by 
+the user as belonging to the model environment
+(e.g. a ligand bound to the template, or structural waters). 
+These energies are then used to make a Boltzmann-weighted choice from the
+candidates, the coordinates of which are then copied to the model.
+
+
+<p>Once all of the loops have been chosen, the side chains are modeled.
+Sidechain data is assembled from an extensive rotamer library 
+generated by systematic clustering of high-resolution PDB data.
+A deterministic procedure based on Unary Quadratic Optimization is then
+run to select an optimal packing.
+
+
+<p>After all of the backbone segment and sidechain conformations have been
+chosen for an intermediate model, hydrogens are added to complete valence
+requirements and the model is submitted to a series of minimizations designed
+to first relieve any serious steric strains, and then to prepare the model
+to be scored. It is then written to the output database, along with a number
+of quality assessment measurements which can flag any serious geometric
+problems.
+
+<p><li>
+<b>Final Model Selection and Refinement</b>
+
+<p>The final model is based on the best-scoring intermediate model.
+The following choices are available for choosing the final model:
+
+<ul>
+<li>
+the RMSD of each intermediate model to the average position of all of the
+intermediate models (either all-heavy atom, or C&alpha; only);
+
+<li>
+the <i>electrostatic solvation energy</i>, calculated used a
+Generalized Born/Volume Integral (GB/VI) methodology [Labute&nbsp;2008]. 
+
+<li>
+a knowledge-based <i>residue packing quality function</i> derived from
+a statistical survey of the environments in which amino acid residues
+typically find themselves. Each residue is classified according its
+<i>solvent accessibility</i>, its participation in in <i>hydrogen bonded
+contacts</i>, and the <i>ratio of polar vs non-polar</i>
+contacting atoms in its micro-environment. Histograms of the
+distributions of the various residue types into the different environment
+classes  then allow for an estimation of the probability of observing a
+particular string of amino acids in a specific set of environments in a
+"normal" protein. This negative of the log of this probability is reported,
+so that smaller values indicate higher probability structure-sequence
+combinations.  Values between two and three are typically observed for
+high-resolution structures; values over five suggest the presence of highly
+atypical residue environments.
+
+<li>
+an estimation of the <i>effective atomic contact energy</i> (ACE) adapted by
+[Zhang&nbsp;1997] from the procedure of [Miyazawa&nbsp;1985] in which the
+effective energy difference for replacing residue-solvent contacts with
+residue-residue contacts is based on observed contact frequencies in a
+database of high-resolution protein structures. In [Zhang&nbsp;1997],
+statistics are collected on atom-atom contacts between 18 different protein
+atom types, identified by clustering all of the heavy atoms of the twenty
+common amino acid types.
+
+</ul>
+</ol>
+
+<p>Once the homology modeling procedure has finished, the final model
+should be inspected using MOE's
+<A href="../apps/progeom.htm">Protein Geometry</a> stereochemical quality
+evaluation tools in order
+to confirm that the model's stereochemistry is reasonably consistent with
+typical values found in crystal structures.
+Persistent problems may suggest a problem with the alignment used to
+build the model; manual adjustments to the alignment may be necessary,
+particularly in the loop areas, followed by a rebuilding of the model.
+
+<h2><a name="running">Running Homology Model</a></h2>
+
+<p>Homology Model operates on protein chains already loaded into MOE. To
+prepare for a calculation, the following steps can be taken:
+</p>
+
+<ol>
+<p><li>
+<i>Load from one to four query protein sequences into MOE.</i>
+<blockquote>
+<span class="menu">MOE | File | Open | <i>filenames</i></span>
+</blockquote>
+These are the proteins to be modeled.
+For homology modeling, these must be sequence-only chains.
+One way to obtain sequence-only data is:
+    <ol type="a">
+    <li>
+    In the Sequence Editor, select the chains for which to obtain
+	sequence-only data.
+    </li><li>
+	<span class="menu">SE | Edit | Copy SEQ | FastA</span>
+    </li><li>
+	<span class="menu">SE | Edit | Paste</span>
+    </li>
+    </ol>
+
+</li></p><p><li>
+<i>Identify and load template chains into MOE, one for each query sequence.</i>
+<br />
+<b>Note:</b>
+If template chains are already available, load them into MOE and skip this step.
+A template chain is assumed to
+be homologous to the query, and to have atom coordinates.
+    <p>
+    <ol type="a">
+    <p><li>
+    <i>Open the Sequence Editor.</i>
+    <p class="indent_novspace">
+    <span class="menu">MOE | SEQ</span>
+    <span class="menu">MOE | Window | Sequence Editor</span> or
+    </p>
+    </li></p><p><li>
+    <i>Open the <a href="prosearch.htm">MOE-SearchPDB</a> panel.</i>
+    <p class="indent_novspace">
+    <span class="menu">SE | Homology | PDB Search</span>
+    </p>
+    </li></p><p><li>
+    <i>In the MOE-SearchPDB panel, load the query sequence.</i>
+    <p class="indent_novspace">
+    Press the appropriate <b>Chain</b> button.
+    </p>
+    </li></p><p><li>
+    <i>Perform the search.</i>
+    <p class="indent_novspace">
+    Press <b>Search</b>.  The results will be listed in the Results area.
+    </p>
+    </li></p><p><li>
+    <i>Load a search result into MOE.</i>
+    <ol type="i">
+	<li>Double-click in the Results area list.
+	</li><li>In the MOE-SearchPDB: Load Alignment panel,
+	select the desired template chain.
+	</li><li>Turn on <b>Load Query Sequence</b>.
+	</li><li>Press <b>Load Selected</b>.  Both the template and
+	a sequence-only copy of the query chain will be loaded into MOE.
+	</li>
+    </ol>
+    </li></p><p><li>
+    <i>Close the MOE-SearchPDB panel.</i>
+    <p class="indent_novspace">
+    Press <b>Close</b>.
+    </p>
+    </li></p>
+    </ol>
+    </p>
+</li></p><p><li>
+<i>Align each query sequence to its corresponding template chain.</i>
+    <p>
+    <ol type="a">
+    <li>Open the 
+    <a href="align.htm">Protein Align</a> panel:
+    <p class="indent_novspace">
+    <span class="menu">SE | Homology | Align</span>
+    </p>
+    </li><li>
+    In the chain list,
+    select the chains (query and template) to align.
+    </li><li>
+    Perform the alignment by pressing <b>OK</b>.
+    </li>
+    </ol>
+    </p>
+</li></p><p><li>
+<i>Select a forcefield parameterized for proteins.</i>
+    <blockquote>
+    <span class="menu">MOE | Footer | <i>Forcefield</i></span>
+    </blockquote>
+In the <a href="../moe/pot.htm">Potential Setup</a> panel, select an
+appropriate forcefield for protein modeling. Of the forcefields supported
+in MOE, Amber99 and Charmm27 are
+specifically designed to support protein simulations; Amber99, in particular,
+has been recommended by [Levitt&nbsp;2007] for protein homology applications.
+</li></p>
+</ol>
+
+<p>
+Open the Homology Model panel by selecting <b>Homology Model</b> from either
+<span class="menu">SE | Homology</span> or 
+<span class="menu">MOE | Compute | Biopolymer</span>. 
+The following panel will appear:
+</p>
+
+<p align=center> <img src="promodel/promodel.png" alt="Homology Panel"></p>
+
+The Homology Model options are as follows:
+
+<p><table cellspacing="5" width="100%">
+
+<tr>
+<td valign="top"><b>Current&nbsp;System</b> 
+<td valign="top">The name of the MOE file into
+which to save the current system before the modeling procedure begins.
+</tr>
+
+<tr>
+<td valign="top"><b>Output&nbsp;Database</b></td> 
+<td valign="top">
+The name of the molecular database file that will contain the generated
+models and various measurements.  This can either be a new database or
+an existing one in which case the contents will be overwritten.  If <b>Open
+Database Viewer</b> is on, then the output database will be displayed in a
+Database Viewer when the homology modeling procedure begins.
+</td></tr>
+
+<tr></tr>
+
+<tr>
+<td valign="top" ><b>Sequence</b>
+<td valign="top">Specifies which of the protein chains currently
+loaded into MOE will be modeled. Up to four separate protein chains can
+specified. Each protein chain selected as a model sequence must
+consist entirely of empty residues &ndash; i.e. must have no atoms.
+
+<p><span class="tip">Tip!</span>&nbsp;&nbsp;
+To create a homo-multimer, you need only one protein sequence-only chain 
+in the system; simply repeat the same chain in the Sequence fields,
+each one paired with a different template chain.
+</td></tr>
+
+<tr>
+<td valign="top"><b>Template</b> 
+<td valign="top">Specifies which of the protein chains
+currently loaded in the system will be used as a template for
+copying atom coordinates to a corresponding model chain. Each protein chain
+selected as a model sequence must have a corresponding, unique template.
+Each protein chain selected as a template must consist entirely of standard
+amino acid residues, and must possess at least three residues with complete
+main chain coordinates.
+</td></tr>
+
+<tr>
+<td valign="top"><b>Options</b>
+<td valign="top">
+If <b>Use Selected Residues To Override Template</b> is on,
+then any residues that are selected in the Sequence Editor
+will be used as templates for the model sequence, regardless of whether they
+belong to a specified template chain or not. This option allows one sequence
+to be modeled using parts of more than one template. <b>Note:</b>
+If more than one sequence/template pair has been specified, then
+this option is unavailable.
+
+<p>If <b>Disable C-terminal &amp; N-terminal Outgap Modeling</b> on, then any 
+residues in a model sequence which are aligned before the C-terminus or
+after the N-terminus of its template residues will not be modeled.
+
+<p>If <b>Include Selected Atoms as Environment for Induced Fit</b> is on, 
+then any atoms selected in the MOE Window will be included in
+the energy tests and minimization stages of the modeling procedure.
+This option is useful, for example, when one wishes to build
+a homology model in the presence of a ligand docked to the primary template,
+or other proteins known to be complexed with the sequence to be modeled.
+
+<p>If <b>Enable Automatic Disulfide Bond Detection</b> is on, then
+any cysteines that meet that the geometric criteria for disulfide bonding
+after mutations and loop modeling will be bonded.
+
+</tr></td>
+
+<tr>
+<td valign="top"><b>Models</b></td>
+<td valign="top">
+<b>Maximum Number of Mainchain Models</b> specifies the maximum number of independent models that will
+be constructed by the Boltzmann-weighted randomized modeling procedure.
+Note that regardless of the number specified here, if there are no indels to
+model then only one intermediate model will be created, as the side-packing
+procedure is deterministic.
+
+<p>
+<b>Sidechain Sample at Temperature</b> specifies the number of sidechain models
+to build for ever main chain model.
+</p>
+</td></tr>
+
+<tr><td></td></tr>
+
+<tr>
+<td valign="top"><b>Intermediates</b>
+<td valign="top">
+Specifies the degree of refinement by molecular mechanics to be applied
+to each of the independently constructed models in the ensemble of intermediate
+models. If <b>Medium</b> is chosen, a brief series of highly tethered 
+minimizations meant only to relieve steric strain is run. If <b>Fine</b>
+is chosen each model is also submitted to an electrostatics-enabled
+minimization run which terminates when the gradient falls below the 
+specified <b>RMS Gradient</n>.
+</td></tr>
+
+<tr>
+<td valign="top"><b>Model Scoring</b>
+<td valign="top">
+Specifies the scoring method used to choose the final model from the ensemble
+of intermediate models.
+</td></tr>
+
+<tr>
+<td valign="top"><b>Final Model</b>
+<td valign="top">
+Specifies the energy minimization scheme to be applied to the highest scoring
+model from the ensemble of intermediate models. If <b>Medium</b> is chosen,
+the final model is minimized using a built-in protocol. If <b>Fine</b> is
+chosen, the model is minimized within the full specification of the currently
+loaded forcefield, including cutoffs and the treatment of electrostatics.
+If <b>Apply Protonate3D</b> is on, then the
+<a href="../apps/protonate3d.htm">Protonate 3D</a> application will be used to
+optimize ionization states and proton placement in the final model prior
+to the final refinement step.
+</td></tr>
+
+<tr>
+<td valign="top"><b>Forcefield</b>
+<td valign="top">
+Displays the currently loaded forcefield, which will be used for all
+energy minimizations, and for the GB/VI scoring.<b> Potential Setup</b> 
+is a shortcut for 
+<a href="../moe/pot.htm"><b>MOE | Window | Potential Setup</b></a><br/>
+</td></tr>
+
+</table>
+
+<h2><a name="Output">Output</a></h2>
+
+
+<p>The following fields will be written to the output database:</p>
+
+
+<table align="center" class="titlebar" border="1" width="90%">
+<tr>
+<th>Field</th>
+<th>Description</th>
+<tr>
+<td valign="top"><b><tt>mol</tt></b></td>
+<td>A molecule field containing the all-atom molecular conformations of the
+modeled protein sequences.
+<tr>
+<td valign="top"><b><tt>env</tt></b></td>
+<td>A molecule field containing the all-atom molecular conformations of any atoms
+included as environment atoms.
+<tr>
+<td valign="top"><b><tt>name</tt></b></td>
+<td>A character field containing a name for each model. The intermediate models
+will be named "Model #1" etc.  
+<tr>
+<td valign="top"><b><tt>RMSD to Mean</tt></b></td>
+<td>The heavy atom RMSD of each model to the average position of
+all of the intermediate models.
+<tr>
+<td valign="top"><b><tt>CA RMSD to Mean</tt></b></td>
+<td>The C&alpha;-only RMSD of each model to the average C&alpha; position
+of all of the intermediate models. 
+<tr>
+<td valign="top"><b><tt>Packing Score</tt></b></td>
+<td>A statistically-based residue packing quality function, expressed on
+a negative log scale.
+<tr>
+<td valign="top"><b><tt>GB/VI</tt></b></td>
+<td>
+Coulomb and Generalized Born [Labute&nbsp;2008] interaction
+energies of the model (including environment atoms).
+<tr>
+<td valign="top"><b><tt>Contact Energy</tt></b></td>
+<td>
+Effective atomic contact energies (ACE), based on [Zhang&nbsp;1997].
+<tr>
+<td valign="top"><b><tt>U</tt></b></td>
+<td>The total potential energy of the model (including environment atoms).
+<tr>
+<td valign="top"><b><tt>E sol</tt></b></td>
+<td>The solvation energy of the model (including environment atoms).
+<tr>
+<td valign="top"><b><tt>E ele</tt></b></td>
+<td>The electrostatic energy of the model (including environment atoms).
+<tr>
+<td valign="top"><b><tt>E vdw</tt></b></td>
+<td>The van der Waals energy of the model (including environment atoms).
+<tr>
+<td valign="top"><b><tt>E bond</tt></b></td>
+<td>The bonded energy of the model.
+<tr>
+<td valign="top"><b><tt>Atom Clashes</tt></b></td>
+<td>A count of the atom-atom contact pairs with repulsion energies exceeding
+0.5 kcal/mol.
+<tr>
+<td valign="top"><b><tt>BB&nbsp;Bond&nbsp;Outliers</tt></b></td>
+<td>A count of the number of backbone bond length outliers (Z-score greater
+than five) in the homology model.
+<tr>
+<td valign="top"><b><tt>BB Angle Outliers</tt></b></td>
+<td>A count of the number of backbone bond angle outliers (Z-score greater
+than five) in the homology model.
+<tr>
+<td valign="top"><b><tt>BB Torsion Outliers</tt></b></td>
+<td>A count of the number backbone torsion outliers (Z-score greater than
+five) in the homology model.
+<tr>
+<td valign="top"><b><tt>Rotamer Outliers</tt></b></td>
+<td>A count of the sidechain rotamers in the homology model whose
+rotamer strain energies exceed 5.0 kcal/mol.
+</table>
+
+<!-- ======= Start of example for multimer homology modeling ========    --!>
+<br>
+<h2>Creating a Multimer Homology Models</h2>
+<div class="example">
+<a name="Example_multimer_homology_modeling"></a>
+<h3>Example: Multimer Homology Modeling</h3>
+
+<p>This example uses 1QBT, a 2-chain structure of HIV-1 protease,
+as a homology modeling template, and Q9W9R3 as the query sequence.
+</p>
+
+<ol>
+    <p><li><i>Close the system and load the structure into MOE.</i>
+    <blockquote>
+	<span class="menu">MOE | RHS | Close</span><br />
+	<span class="menu">MOE | File | Open |
+	    <tt>$MOE/sample/mol/1qbt.pdb</tt></span>
+    </blockquote>
+
+    Press <b>OK</b> in the Load PDB File panel.
+
+    </li></p><p><li>
+    <i>Prepare the structure by assigning protonation and ionization states.</i>
+
+    <blockquote>
+	<span class="menu">MOE | Compute | Protonate 3D</span>
+    </blockquote>
+
+    Press <b>OK</b> in the Protonate 3D panel.
+
+    </li></p><p><li>
+    <i>Load the protein sequence.</i>
+    <blockquote>
+	<span class="menu">MOE | File | Open |
+	<tt>$MOE/sample/mol/Q9W9R3.fasta</tt></span>
+    </blockquote>
+
+    </li></p><p><li>
+    <i>Align the target to the template.</i>
+
+    <p>
+    Open the Sequence Editor, then open
+    the Protein Align panel:
+    <blockquote>
+    <span class="menu">MOE | SEQ</span><br />
+    <span class="menu">SE | Homology | Align</span><br />
+    </blockquote>
+    </p>
+
+    <p>In the Protein Align panel:<br />
+    <ol>
+	<li>
+    	<span class="menu">Action | Sequence Alignment Only</span>
+    	</li><li>
+	Turn off <b>Superpose Chains</b>.
+	</li><li>
+	Press <b>OK</b>.
+	</li>
+    </ol>
+    </p>
+
+    <p>
+    The residue identity matrix is output to the
+    SVL Commands Window <span class="nobr">(<b>MOE | SVL</b>)</span>.
+    </p>
+
+    <center>
+    <img src="promodel/alignSVLWindow.png" alt="Alignment of 1QBT and Q9W9R3" />
+    </center>
+
+    </li></p><p><li>
+    <i>Open the Homology Model panel.</i>
+
+    <blockquote>
+    <span class="menu">SE | Homology | Homology Model</span>
+    </blockquote>
+
+    <p>
+    The panel automatically
+    detects potenital templates and sequences to be modeled. The template
+    chains are identified as 1QBT.A and 1QBT.B while the sequence to be
+    modeled is identified as Q9W9R3.
+    </p>
+
+    </li></p><p><li>
+    <i>Set the homology modeling parameters.</i>
+
+    <p>First, select the ligand.  The ligand atoms will be used
+	as a modeling &quot;environment&quot; to prevent the generated
+	models from clashing with the ligand.
+    </p>
+
+    <blockquote>
+    <span class="menu">MOE | RHS | Select | Ligand</span>
+    </blockquote>
+
+    <p>In the Homology Model panel, set the following options:</p>
+    <ol type="a">
+    <p><li>
+    Turn on <span class="menu">Output Database: Open Database Viewer</span>.
+
+    <p>
+    During the modeling operation, a Database Viewer will
+    automatically open loaded with the output database of homology models.
+    This permits you to observe the results as they are being generated.
+    </p>
+
+    </li></p><p><li>
+
+    Enable <b>Options: Include Selected Atoms as Enviroment for Induced Fit</b>.
+
+    </li></p><p><li>
+    Change the number of independent sidechain models to build to 5:
+
+    <blockquote>
+    <span class="menu">Models:
+	<tt>5</tt> Sidechain Samples at Temperature <tt>300</tt>
+    </span>
+
+    </li></p><p><li>
+
+    Change the solvation potential by pressing <b>Potential Setup</b>.
+    In the Potential Setup panel, 
+    select <b>Solvation: R-Field</b>, then press
+    <b>OK</b>. 
+
+    </li></p><p><li>
+
+    To start building the homology models press <b>OK</b> in the
+    <b>Homology Model</b> panel. 
+
+    </li></p>
+</ol>
+
+</li></p>
+<p><li>
+<i>View the results.</i>
+
+<p>
+    When modeling is complete, you can view the amount of movement throughout
+    the intermediate models by coloring the atoms by B-factor:
+</p>
+
+    <blockquote>
+	<span class="menu">MOE | Footer | Atoms | Color | B-Factor</span>
+    </blockquote>
+
+    <p>In the image shown here, backbone ribbons were rendered using:
+    <blockquote>
+    <span class="menu">MOE | Footer | Ribbons | Ribbon</span><br />
+    <span class="menu">MOE | Footer | Ribbons | Color | Chain</span>
+    </blockquote>
+    
+
+<center>
+<img src="promodel/multimerModeling.png" alt="Multimer Homology Modeling" />
+</center>
+
+</li></p>
+</ol>
+
+</div>
+
+<h2><a name="references">References</a></h2>
+
+<p><table width="100%" cellpadding="5 border="0">
+
+<tr>
+<td valign="top">[Berman&nbsp;2000]</td>
+<td valign="top">Berman, H.M., Westbrook, J., Feng, Z., Gilliland, G.,
+Bhat, T.N., Weissig, H., Shindyalov, I.N., Bourne, P.E.;
+The Protein Data Bank;
+<i>Nucleic Acids Research 28</i> (<b>2000</b>) 235&ndash;242.
+</tr></td>
+
+<tr>
+<td valign="top">[Berman&nbsp;2003]
+</td><td valign="top">
+Berman, H.M., Henrick, K., Nakamura, H.;
+Announcing the Worldwide Protein Data Bank;
+<i>Nat. Struct. Biol. 10</i> (<b>2003</b>) 980.
+</td></tr>
+
+<tr>
+<td valign="top">[Fechteler&nbsp;1995]</td>
+<td valign="top">Fechteler T., Dengler, U., Schomberg, D.;
+Prediction of Protein Three-Dimensional Structures in Insertion and
+Deletion Regions: A Procedure for Searching Databases of Representative Protein
+Fragments Using Geometric Scoring Criteria;
+<i>J. Mol. Biol. 253</i> (<b>1995</b>) 114&ndash;131.
+</td></tr>
+
+<tr>
+<td valign="top">[Jones&nbsp;1986]</td>
+<td valign="top">Jones, T.A., Thirup, S.;
+Using Known Substructures in Protein Modeling and Crystallography;
+<i>EMBO J. 5</i> (<b>1986</b>) 819&ndash;822.
+</td></tr>
+
+<tr>
+<td valign="top">[Labute&nbsp;2008]</td>
+<td valign="top">Labute, P.;
+The Generalized Born / Volume Integral (GB/VI) Implicit Solvent Model:
+Estimation of the Free Energy of Hydration Using London Dispersion Instead
+of Atomic Surface Area;
+<i>J. Comp. Chem. 29</i> (<b>2008</b>) 1693&ndash;1698.
+</td></tr>
+
+<tr>
+<td valign="top">[Labute&nbsp;2008]</td>
+<td valign="top">Labute, P.;
+Protonate3D: Assignment of Ionization States and Hydrogen Coordinates to
+Macromolecular Structures;
+<i>Proteins 75</i> (<b>2009</b>) 187&ndash;205.
+</td></tr>
+
+<tr>
+<td valign="top">[Levitt&nbsp;1992]</td>
+<td valign="top">Levitt, M.;
+Accurate Modeling of Protein Conformation by Automatic Segment Matching;
+<i>J. Mol. Biol. 226</i> (<b>1992</b>) 507&ndash;533.
+</td></tr>
+
+<tr>
+<td valign="top">[Levitt&nbsp;2007]</td>
+<td valign="top">Summa, C.S., Levitt, M.;
+Near-native Structure Refinement Using In Vacuo Energy Minimization;
+<i>PNAS 104</i> (<b>2007</b>) 3177&ndash;3182.
+</td></tr>
+
+<tr>
+<td valign="top">[Miyazawa&nbsp;1985]</td>
+<td valign="top">Miyazawa, S., Jerrigan, R.L.;
+Estimation of Effective Interresidue Contact Energies from Protein Crystal
+Structures: Quasi-chemical Approximation;
+<i>Macromolecules 18</i> (<b>1985</b>) 534&ndash;552.
+</td></tr>
+
+<tr>
+<td valign="top">[Zhang&nbsp;1997]</td>
+<td valign="top">Zhang C., Vasmatzis G., Cornette J.L., DeLisi C.;
+Determination of Atomic Desolvation Energies from the Structures
+of Crystalized Proteins;
+<i>J. Mol. Biol. 267</i> (<b>1997</b>) 707&ndash;726.
+</td></tr>
+
+</table>
+
+<h2><a name="SVL_Commands">SVL Commands</a></h2>
+
+<a class="svl" href="fcnref/pro_mod.html">pro_HomologyModel</a><br />
+<br />
+<a href="fcnref/progeomf.htm">Protein Geometry Checking Functions</a><br />
+<a href="fcnref/intropro.html">Protein Functions</a>
+
+<a name="See_Also"></a>
+<h2>See Also</h2>
+
+<a href="../tutorials/hom_tut.htm">
+Homology Modeling Tutorial</a><br />
+<a href="prosearch.htm">Homology Searching</a><br />
+<a href="../apps/progeom.htm">
+Protein Geometry</a><br />
+<a href="align.htm">
+Sequence and Structure Alignment</a><br />
+<a href="../apps/protonate3d.htm">
+Protonate3D - Macromolecular Protonation State Assignment</a><br />
+<a href="../moe/pot.htm">
+Potential Energy Selection and Configuration</a><br />
+<a href="pdb_mdb.htm">
+Protein Sequence and Structure Data</a>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

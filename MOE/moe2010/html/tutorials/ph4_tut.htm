@@ -1,0 +1,1586 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--	ph4_tut.htm		Pharmacophore tutorial
+!!
+!!	16-oct-2010 (ah) update for MOE 2010.10
+!!	03-oct-2008 (kk) proofing pass; reference style
+!!	14-sep-2005 (ms) explicit use of db_ConfPack
+!!	14-sep-2005 (ms) small corrections in dir.constraints etc.
+!!	10-sep-2005 (ms) rewrote for Unified scheme
+!!	07-oct-2005 (ms) corrected modifications for 2005.06
+!!	21-feb-2004 (ms) reworked, new data
+!!	09-apr-2003 (al) small edits
+!!	27-feb-2003 (pm,es) created, new in release 2003.02
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<title>Pharmacophore Tutorial</title>
+
+<style type="text/css">
+body { background-color: white; }
+.cntr { text-align: center; }
+.resnap { border: solid thick maroon; }
+#dbx { display: block; color: red; background-color: yellow; }
+</style>
+</head>
+
+<!-- Note: to create comments visible in the browser, use "dbx" blocks:
+<div id="dbx">
+... here go comments ...
+</div>
+-->
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Pharmacophore Tutorial</h2>
+<hr noshade="noshade" />
+
+<p>This tutorial presents examples of using MOE Pharmacophore applications:
+Query Editor, Consensus and Search.</p>
+
+<ul>
+	<li><a href="#Introduction">Introduction to Serotonin 5-HT3 Receptors</a></li>
+	<li>Basic:
+	<ul>
+		<li><a href="#CreatingData">Creating a Conformational Database</a></li>
+		<li><a href="#CreatingQuery">Creating a Pharmacophore Query</a></li>
+		<li><a href="#Running">Running a Pharmacophore Search</a></li>
+		<li><a href="#Analyzing">Analyzing the Output</a></li>
+		<li><a href="#Refining">Refining Your Query</a></li>
+	</ul></li>
+	<li>Advanced:
+	<ul>
+	<li><a href="#Alignment">Aligning Active Molecules</a></li>
+	<li><a href="#Consensus">Using the Pharmacophore Consensus</a></li>
+	<li><a href="#Tuning">Interactive Tuning of the Query</a></li>
+	<li><a href="#Shapes">Adding Shape Constraints</a></li>
+	<li><a href="#Directional">Adding Directional Features</a></li>
+	</ul></li>
+	<li><a href="#Conclusion">Conclusion</a></li>
+	<li><a href="#References">References</a></li>
+</ul>
+
+<h3>Conventions Used in This Tutorial</h3>
+
+<p>The menu commands are prefixed with the name of the window
+in which they originate:</p>
+
+<table border="0" cellpadding="3">
+	<tr>
+		<td valign="top" bgcolor="#cccccc">MOE</td>
+		<td valign="top">MOE Window</td>
+	</tr>
+	<tr>
+		<td valign="top" bgcolor="#cccccc">SE</td>
+		<td valign="top">Sequence Editor</td>
+	</tr>
+	<tr>
+		<td valign="top" bgcolor="#cccccc">DBV</td>
+		<td valign="top">Database Viewer</td>
+	</tr>
+</table>
+
+<p>For example, <span class="menu">MOE | File | Open</span> refers to
+the "Open" command of the "File" pull-down menu of the
+MOE Window.</p>
+
+<!--
+<p>For information on using the mouse see
+<a href="../moe/gui/mouse.html">Using the Mouse</a>.
+
+<p><font color="#ff0000"><b>Important!</b></font>&nbsp;&nbsp;
+<i> MOE uses stochastic algorithms in its conformational import.
+The results may differ slightly each time the program is run.
+</i>
+-->
+
+<h2><a name="Introduction">Introduction to Serotonin 5-HT3 Receptors</a></h2>
+
+<p>Serotonin 5-HT receptors have been widely studied as potential
+therapeutic targets because of their involvement in a multitude of
+physiological processes.  In particular, antagonists for the 5-HT3
+receptor subtype have shown promise in the prevention of
+chemotherapy-induced emesis and may be useful in the treatment of pain,
+depression, anxiety, and drug addiction.
+While the study of antagonist ligands (e.g., granisetron)
+as therapeutic agents has been well documented, 
+little is known about agonist action against these receptors. The lack of
+information on 5-HT3 agonists and their therapeutic potential has been the
+focus of several investigations e.g., [Daveu&nbsp;1999].</p>
+
+<p>In this tutorial, a series of serotonin partial agonists will be used
+to construct a pharmacophore model to search for potential therapeutic
+compounds. A pharmacophore model relates chemical structure to biological
+affinity and identifies the biologically important binding sites on
+ligands.  The compounds are represented in their 3-dimensional form, and
+molecular flexibility is taken into account by considering each compound
+as a collection of conformations.</p>
+ 
+<h2><a name="CreatingData">Creating a Conformational Database</a></h2>
+
+<p>To perform a pharmacophore search, a database of conformations is
+required.  To create the database of conformations, we begin with a
+database created by entering the experimental data specified in
+[Daveu&nbsp;1999], <tt>$MOE/sample/mol/serotonin.mdb</tt>.  This database contains three
+fields, <b>mol</b>, <b>mol_name</b> and <b>-logIC50</b>.  Each
+molecule in the <b>mol</b> field has been given a <i>name</i> indicating
+the compound name,  which can be seen when the cells of the molecule
+field are reduced to minimum height.  This name is also recorded in
+the <b>mol_name</b> field.</p>
+
+<p>The database contains 25 molecules from the reference paper
+representing the active set and 250 random molecules representing the
+inactive set.  To generate the inactive set, we started with a catalog
+of 190,000 molecules.  We selected a subset of 19,000 molecules that are
+similar to the active set.  From the subset we selected 250 molecules at
+random; the molecules also had to satisfy a set of minimal constraints
+similar to those used in the 
+<a href="../apps/confgui.htm">Conformation Import</a> application.</p>
+
+<p><i>Note</i>:
+The similarity was defined as a 50% overlap of
+the MACCS Structural Keys fingerprint,
+using the Tanimoto metric.  The 50% level represents the
+level of similarity between the random molecules and those of the active set.</p>
+
+<ol>
+<li><p>The starting conformational database to be used in this tutorial
+has been created for you.  The following procedure was used:</p>
+<ol type="i">
+	<li>The input 2D&nbsp;database was <tt>$MOE/sample/mol/serotonin.mdb</tt>.
+	</li>
+	<li>The <b>Conformation&nbsp;Import</b> application was used to generate
+	3D&nbsp;conformations.
+	</li>
+	<li>The conformations were generated using the (default)
+	<b>MMFF94x</b> forcefield.
+	</li>
+	<li>The forcefield parameters were kept at their default values of
+	    the <b>Strain&nbsp;Limit</b> of 4&nbsp;kcal/mol and
+	    the <b>Conformations</b> limit of 250&nbsp;conformations/molecule.
+	</li>
+	<li>The settings other settings were kept at their default values,
+	    with the exception of
+	    <!--
+	    the <b>Packed&nbsp;Conformations</b> option being turned <i>on</i>,
+	    -->
+	    the <b>Split&nbsp;Output</b> option being turned <i>off</i>, and
+	    the <b>Input&nbsp;Filters</b> being turned off (using the <b>Clear</b>
+	    button).
+	    </li>
+	<li>The database was packed with the command<br />
+	<span class="nobr"><tt>
+	    db_ConfPack ['conf_out.mdb', 'serotonin_conf.mdb']
+	</tt></span>
+	<br />
+	<b>Note</b>. The conformational database does not need to be packed.
+	The search will return the same results if the conformational database
+	stays in its unpacked form.
+	</li>
+</ol>
+
+<p>The conformational database created by <b>Conformation Import</b> is
+supplied in <tt>$MOE/sample/mol/serotonin_conf.mdb</tt>.  It contains the
+conformations of all 275&nbsp;molecules.  The database has two fields,
+<b>mol</b>, the molecule,
+<!--
+<b>mseq</b> the molecule sequence number,
+-->
+and <b>mol:conf</b>, storing the packed conformations of each molecule.
+Make a copy of this database to use for the tutorial:</p>
+
+<ol type="i">
+<li><span class="menu">MOE | File | Open</span> <tt>$MOE/sample/mol/serotonin_conf.mdb</tt>.</li>
+<li><span class="menu">DBV | File | Save As</span> <tt>serotonin_conf.mdb</tt>.</li>
+</ol>
+
+</li>
+<li><p>It would be convenient to see the value of the <b>-logIC50</b> field 
+in <tt>serotonin_conf.mdb</tt>.  For each entry in the
+conformation database, we need to find and copy the appropriate
+<b>-logIC50</b> value.  This can be accomplished by merging the
+<tt>serotonin_conf.mdb</tt> database with the original
+<tt>serotonin.mdb</tt> database that contains the <b>-logIC50</b>
+values.</p>
+
+<p> To merge the databases, we need to create a <i>key</i> field, which
+is used to compare individual entries.  The <i>key</i> field, in our case,
+will contain the name of each molecule. This field needs to be present in both databases.</p>
+
+<ol type="i">
+	<li><p>From the <tt>serotonin_conf.mdb</tt> database viewer, 
+	open the <b>Molecule Names</b> panel:
+	<span class="menu">DBV | Compute | Molecule | Molecule Name</span>.</p></li>
+	<li><p>Set the <b>Output Field</b> name to <tt>mol_name</tt> and press <b>OK</b>:</p>
+	
+	<p class="cntr"><img src="ph4_tut/mol_name.png" alt="Molecule Names" /></p>
+	</li>
+</ol>
+</li>
+<li><p>Merge the <b>-logIC50</b> field into our <tt>serotonin_conf.mdb</tt>
+database:</p>
+
+<ol type="i">
+	<li>From the <tt>serotonin_conf.mdb</tt> Database Viewer,
+	    open the <b>Merge Databases</b> panel:
+	    <span class="menu">DBV | File | Merge</span>.
+	</li>
+	<li>Set <b>Input Database 2</b> to <tt>$MOE/sample/mol/serotonin.mdb</tt>
+	</li>
+	<li>Leave the <b>Output Database</b> field blank and turn <i>off</i> the
+	    <b>New Database</b> checkbox.  This will merge the
+	    -logIC50 field directly into the <tt>serotonin_conf.mdb</tt> database.
+	    Press <b>Next &gt;&gt;</b>.
+	
+	    <p class="cntr"><img src="ph4_tut/merge.png" alt="Database Merge" /></p>
+	
+	</li>
+	<li>Set <b>key1</b> for both databases to <b>mol_name</b>.
+	    Press <b>Next</b>.
+	</li>
+	<li>Choose <b>-logIC50</b> in the list of fields to be copied.
+	    Press <b>Next</b>.
+	</li>
+	<li>Turn <i>off</i> both <b>Import unshared entries of Database 1</b> and
+	    <b>Import unshared entries of Database 2</b>.
+	    Keep <b>Import shared entries</b> turned <i>on</i>.
+	</li>
+	<li>Press <b>Merge</b>.
+	</li>
+	<li>When the merge is finished, close this panel.</li>
+</ol>
+</li>
+</ol>
+
+<p>The database is ready to use in the subsequent exercises.</p>
+
+
+<h2><a name="CreatingQuery">Creating a Pharmacophore Query</a></h2>
+
+<p>A pharmacophore query is created using the <b>Pharmacophore Query
+Editor</b>.  A query consists of a set of constraints on the location 
+and type of pharmacophoric features, which can be used to
+search a database of molecular conformations.  In this exercise,
+you will create a query and save it to be used later
+in a pharmacophore search.</p>
+
+<ol>
+<li><p>Close the current system using <span class="menu">MOE | File | Close</span>.</p></li>
+<li><p>Open a database of active molecules:</p>
+
+<blockquote>
+<span class="menu">File | Open | </b><tt>$MOE/sample/mol/serotonin.mdb</tt></span>
+</blockquote>
+
+<p>This database contains 25 active molecules with an activity range
+of -logIC50 between 6.0 and 12.09.  It also contains 250 similar,
+randomly chosen molecules with -logIC50 set to 0.0.</p>
+</li>
+<li><p>
+<img src="ph4_tut/db.png" class="floatright" alt="Database Detail" />
+While a query may be created without a reference molecule,
+it is convenient to use one that possesses the spatial features to
+be included in the query, if you have such a molecule available.
+We will use the most active molecule in our database.
+The most active molecule is the one with the 
+highest -logIC50 value.  Since the <tt>serotonin.mdb</tt> database
+is sorted by that value, simply pick the first molecule in the database.</p>
+<br style="clear:right" />
+<!--
+<p><img src="ph4_tut/dbcopy.png" hspace=30 align=left alt="Database Copy">
+-->
+<p>To load a molecule from the Database Viewer into MOE, place the cursor
+over the molecule cell of the database entry and press:</p>
+<blockquote class="menu">DBV | Molecule Popup | Send to MOE</blockquote>
+<!--Press <b>OK</b> to load the molecule into MOE.-->
+
+<p><span class="tip">Tip:</span> &nbsp;&nbsp;
+An alternate method is to double-click on the molecule cell of interest.</p>
+
+<p><img src="ph4_tut/minimize.png" class="floatright" alt="Energy Minimize" />
+After the molecule is loaded, minimize it to a local minimum.</p>
+
+<blockquote>
+<span class="menu">MOE | Compute | Energy Minimize</span>
+</blockquote>
+
+<p>Set <b>Gradient</b> to 0.00001. The <b>Hamiltonian</b> should be
+set to Forcefield:MMFF94x.</p>
+<p>Press <b>OK</b> to start the minimization.</p>
+<br style="clear:right" />
+</li>
+<li><p>For easier viewing, hide the hydrogen atoms. </p>
+
+<blockquote>
+<span class="menu">MOE | RHS | Hydrogens</span>
+</blockquote>
+
+<p>The Hydrogens button toggles between showing all hydrogens,
+hiding all hydrogens, and showing only polar hydrogens.</p>
+
+</li>
+<li><p>Open the Pharmacophore Query Editor.</p>
+
+<blockquote>
+<span class="menu">MOE | File | New | Pharmacophore Query</span>
+</blockquote>
+
+<p class="cntr">
+<img src="ph4_tut/ph4_query.png" alt="Pharmacophore Query Editor" />
+</p>
+
+<p>In the MOE Window, colored annotation points appear
+around the ligand to denote pharmacophoric regions of interest.
+The annotation points are color-coded by their type (green is
+hydrophobe, purple is donor, etc.):</p>
+
+<p class="cntr"><img src="ph4_tut/ann_uni.png" alt="Ligand Annotation" /></p>
+</li>
+<li><p>In the Pharmacophore Query Editor panel, change the 
+<b>Ligand Annotation</b> to <b>Long</b>.  In <b>Long</b> mode the
+ligand annotation number and the annotation type are displayed in
+the MOE Window.
+</p></li>
+<li><p>A pharmacophore scheme defines the set of attributes used to
+construct labeled ligand annotation points that can be matched to the
+query.  The default scheme is <b>Unified</b>.  To see information on the
+pharmacophore scheme, press the <b>Info</b> button to the right of the
+<b>Scheme</b> option menu.  A separate panel is displayed:</p>
+
+<p class="cntr"><img src="ph4_tut/info_unified.png" alt="Scheme Info Panel" /></p>
+
+<p>The panel informs the user which annotation types are available
+in the current scheme and which of those types are actually displayed
+in the MOE Window.</p>
+
+<p>To simplify the view of the molecule, hide the <b>Don2</b>, <b>Acc2</b>
+and <b>PiN</b> projected features.  To save this view for future use,
+assign it a name, e.g., <tt>Basic</tt>, type that name in the <b>Memory</b>
+field and press <b>Store</b>.</p>
+
+<p class="cntr"><img src="ph4_tut/info_basic.png" alt="Save Basic View" /></p>
+
+<p>The Default view and the Basic view can now be alternated simply by
+pressing the <b>Default</b> button or the <b>Load</b> button. Select the 
+Basic view and <b>Close</b> this panel before continuing.</p>
+
+<p class="cntr"><img src="ph4_tut/ann_uni_long.png" alt="Ligand Annotation" /></p>
+
+</li>
+<li><p>
+Open the Sequence Editor.</p>
+
+<blockquote>
+<span class="menu">MOE | Window | Sequence Editor</span>
+</blockquote>
+
+<p>
+Turn on the <b>Compound Name</b> display.</p>
+
+<blockquote>
+<span class="menu">SE | Display | Compound Name</span>
+</blockquote>
+
+<p>
+Notice the additional chains named <tt>[Private] Pharmacophore
+Query Features</tt> and <tt>[Private] Ligand Pharmacophore Annotation</tt>,
+which are
+created by the Pharmacophore Query Editor.  Do not modify
+these chains;
+they will be automatically removed when the Pharmacophore Query Editor
+is closed.</p>
+
+<p class="cntr">
+<img src="ph4_tut/se.png" alt="Sequence Editor" /></p>
+
+<p>Make sure <span class="menu">SE | Display | Single Letter Residues</span>
+is disabled.
+The created features and volumes will be displayed in the Sequence Editor as
+residues with names <b>F<i>n</i></b> and <b>V<i>n</i></b>, for example:</p>
+
+<p class="cntr">
+<img src="ph4_tut/se_detail.png"
+    alt="Sequence Editor Detail" /></p>
+
+<p>You may wish to minimize or close the Sequence Editor until it is
+needed again.</p>
+</li>
+<li><p>We will create a pharmacophore model for serotonin agonists, and then we 
+will use the Pharmacophore Search to identify active molecules.</p>
+
+
+<p>In the <b>Title</b> text field of the Pharmacophore Query Editor, type in 
+<tt>"Serotonin Agonist Query"</tt>.
+This title will be displayed in the Pharmacophore Search panel
+to help us identify the query being used for the search.</p>
+
+<p class="cntr"><img src="ph4_tut/title.png" alt="Query Title" /></p>
+</li>
+<li><p>
+<img src="ph4_tut/first_acc.png" class="floatright" alt="Middle Ring Acceptor" />
+We will now create a query feature based on a ligand annotation point.
+Selecting a ligand annotation point prior to creating the feature allows you to
+create the feature with specific attributes copied from the annotation point.
+In MOE Window, select the acceptor annotation point <b>L2:Acc</b>
+on the unsaturated nitrogen of the middle ring of the tricyclic ring system
+("N1=Ccncc1").  Then press <b>Feature</b> in the Pharmacophore Query
+Editor.</p>
+
+
+<p>A new feature named <b>F1</b> is created and displayed in
+the MOE Window as a sphere centered on the nitrogen atom.
+The Pharmacophore Query Editor list displays item <b>F1:Acc</b>
+(<b>F1</b>'s default expression is automatically derived from its annotation
+expression).  The Sequence Editor represents the feature by displaying
+<b>F1</b> in the Pharmacophore Query Features chain.</p>
+
+<br style="clear:right" />
+
+<p class="cntr">
+<span class="nobr">
+<img src="ph4_tut/f1_list.png" alt="Query Editor: Feature F1" />
+&nbsp;&nbsp;&nbsp;&nbsp;
+<img src="ph4_tut/f1_se.png" alt="Sequence Editor: Feature F1" />
+</span>
+</p>
+<p><span class="tip">Tip</span> &nbsp;&nbsp;It may be
+difficult to click precisely on the atom we need to select.  Sometimes,
+it is easier to use a selection box, which can be dragged around the
+atom or the annotation point to be selected.
+
+If, by mistake, a new feature is created from a wrong selection,
+delete the feature with the <b>Delete</b> button on the right
+of the list and try again.</p>
+</li>
+
+<li><p>The newly created feature is automatically selected in the Pharmacophore
+Query Editor list (other list items, if any, are deselected).
+
+The corresponding residue in the Sequence Editor is
+also selected.  The three representations of the feature (MOE Window,
+Pharmacophore Query Editor panel, Sequence Editor) are synchronized
+so that selecting the item in any one of the displays will select it in
+the other displays.</p>
+
+<p>To see this, deselect everything in the MOE Window by clicking
+away from any atoms.  Notice that the list item <b>F1</b>
+in the Pharmacophore Query Editor and the residue <b>F1</b>
+in the Pharmacophore Search also become deselected.</p>
+
+<p>Now select the residue <b>F1</b> in the Sequence Editor.
+Notice the list item <b>F1</b> in the Pharmacophore Query Editor
+and the sphere <b>F1</b> in the MOE Window become selected.</p>
+
+<p><span class="tip">Tip</span> &nbsp;&nbsp;When several
+objects (atoms, annotation points, query features) are centered
+at the same position, selection or deselection in the MOE Window
+acts upon all such objects at once.
+Query features, however, can be individually selected or deselected by 
+using the Pharmacophore Query Editor or the Sequence Editor.</p>
+
+<p><span class="tip">Tip</span> &nbsp;&nbsp;The <b>R</b>,<b>S</b> and 
+<b>L</b> buttons in the corner of the MOE Window disable selection of
+Receptor, Solvent and Ligand atoms using the mouse.</p>
+<p><img src="ph4_tut/rsl.png" alt="R S and L buttons" class="floatright" />
+When the buttons have
+a red background, atoms from that class will be unaffected by mouse selection 
+in the MOE Window.  Pharmacophore annotation points are in the Ligand class
+for these buttons.</p>
+</li>
+<li><p>
+<img src="ph4_tut/f1_edit.png" alt="Feature F1 Detail" class="floatright" />
+When a feature is selected in the Pharmacophore Query Editor list,
+the modifiable attributes of the feature are displayed below the list.
+Modifications take effect immediately.  For example,
+increase the tolerance radius <b>R</b> to 1.2 angstroms (use
+the wheel or enter the value in the text field and press
+<tt>&lt;Enter&gt;</tt>).  Notice that this immediately enlarges
+the sphere denoting the feature in the MOE Window.</p>
+
+<br style="clear:right" />
+</li>
+<li><p>The manner in which pharmacophore features are
+rendered in the MOE Window can be adjusted to
+suit your preference.  Sets of predefined settings can be selected using
+the <b>Query Rendering</b> option menu.  To have full
+control over all query rendering parameters, open the Pharmacophore
+Query Rendering panel by pressing the <b>Change</b> button. The
+Pharmacophore Query Rendering panel is displayed:</p>
+
+<p class="cntr"><img src="ph4_tut/qrender.png" alt="Pharmacophore Query
+Rendering" /></p>
+
+<p>To change the appearance of the selected feature, <b>F1</b>, ensure
+that <b>Apply to Selected Items</b> is enabled.  Change the sphere
+type to <b>Dot</b> and the density to <b>High</b>.  Note that the
+button labels that reflect the current values of the feature properties are
+drawn in blue.</p>
+
+<p>You may close the Pharmacophore Query Rendering Panel.  Your query
+should resemble the following:</p>
+
+<p class="cntr"><img src="ph4_tut/f1.png" alt="Partial Query: F1" /></p>
+</li>
+<li><p>
+In this step we will create a second feature on the basic nitrogen
+of the piperazine ring ("[NH1]1CCNCC1"), marked by the annotation
+point <b>L3</b>:</p>
+
+<p class="cntr"><img src="ph4_tut/f2_cat.png" alt="Partial Query: F1" /></p>
+
+<p>
+However, this time, the feature will be created
+without using the ligand annotation point as a template.
+(If you wish to skip this step as well as the next step to save time,
+simply select <b>L3</b> and press <b>Feature</b>.)</p>
+
+<ol type="i">
+	<li><p>Turn off the ligand annotation by changing
+	<b>Ligand Annotation</b> to <b>None</b>  in the
+	Pharmacophore Query Editor panel.</p>
+	</li>
+	<li><p>Deselect all atoms in the MOE Window by clicking in the MOE Window
+	<i>away</i> from any atoms.  Now press the <b>Feature</b> button in the
+	Pharmacophore Query Editor.  A yellow feature of type <b>AtomQ</b> is
+	created in the center of the MOE Window.
+	</p></li>
+	<li><p>To move the query feature around, you can
+	explicitly define the X, Y, and Z coordinates of the feature using the
+	Atom Manager.  First, we will find the X, Y, Z coordinates of the 
+	basic nitrogen of the piperazine ring:
+	select the nitrogen atom and open the Atom Manager using
+	<span class="menu">MOE | Window | Atom Manager</span>.
+	Turn on the <span class="menu">Selection only</span> checkbox
+	and highlight the nitrogen atom line in the list.  This will show
+	properties of the atom at the bottom of the panel.
+	</p>
+	</li>
+	<li><p>The X, Y, and Z coordinates of this atom listed under
+	<b>Position</b> at the bottom of the Atom Manager.  Record these
+	values in a separate area or on a piece of paper.
+	</p>
+	<p><span class="tip">Tip</span> &nbsp;&nbsp;One way
+	to record the values for future use is to cut-and-paste them from
+	the Atom Manager to the SVL Commands Window
+	(<span class="menu">MOE | Window | Commands</span>).
+	One by one, highlight each number, press <tt>Ctrl-C</tt>, click
+	to the SVL Commands text field, and press <tt>Ctrl-V</tt>.  Insert
+	a blank to separate the numbers. On most X-windows (typically Unix) systems,
+	you can also use the paste function of the middle mouse button
+	of a 3-button mouse.
+	</p>
+	</li>
+	<li><p>In the Atom Manager, find the atom named <b>F2</b> in the chain
+	<tt>Pharmacophore Query Features</tt> and select it.
+	Change the X, Y, and Z coordinates of this <b>F2</b> to match those of
+	the annotation point.
+	</p>
+	<p><span class="tip">Tip</span> &nbsp;&nbsp;If you do not see
+	the <b>F2</b> atom, leave the Atom Manager open and
+	double click on <b>F2</b> in the MOE Window.
+	</p>
+	<p><span class="tip">Tip</span> &nbsp;&nbsp;To cut-and-paste
+	coordinates from the SVL Commands Window,
+	highlight each coordinate in the SVL Commands text field,
+	press <tt>Ctrl-C</tt>,
+	then highlight the corresponding coordinate in the Atom Manager,
+	and press <tt>Ctrl-V</tt>.
+	</p>
+	</li>
+	<li><p>Press <b>Apply</b> to have the changes take effect.</p>
+	<p class="cntr"><img src="ph4_tut/atom_man.png" alt="Atom Manager" />
+	</p>
+	</li>
+	<li><p>In the MOE Window, the feature should now be properly positioned.  Close
+	the Atom Manager before continuing.
+	</p></li>
+</ol>
+</li>
+<li><p>In the Pharmacophore Query Editor, select feature <b>F2</b>.
+This feature was created with a <i>feature expression</i> of <b>AtomQ</b>.</p>
+
+<p class="cntr"><img src="ph4_tut/f2_expr.png" alt="Feature F2 Expression" /></p>
+
+<p>Logical expressions such as <b>and</b> and <b>or</b> can be added
+to feature expressions by using the <b>&amp;</b> and <b>|</b> operators.
+For this feature we will allow only (non-planar) donor and cation ligand
+annotation points.  
+To specify this, modify the text field next to the <b>F2</b> label to say
+<span class="nobr"><tt>Cat&amp;Don</tt></span> and press <b>Apply</b> (or <tt>Enter</tt>).
+Only those ligand annotation points whose labels are donor
+and cation will match this feature.</p>
+
+<p><span class="tip">Tip</span> &nbsp;&nbsp;
+The shortcut menu supplied with the expression text field can be used to start
+a feature expression.  Using the shortcut menu, however, always clears what is
+currently displayed in the text field and so it can not be used to add
+to an existing expression.
+</p>
+</li>
+<li><p>Click the <b>Auto</b> button to change the feature to the default 
+color for this type, purple.
+</p>
+</li>
+<li><p>Create a third feature on the aromatic center (<b>L10</b>)
+of the pyridine ring ("c1nccccc1") of the tricyclic ring system.</p>
+</li>
+<li><p>Change the <b>Ligand Annotation</b> to
+<b>Short</b> to display the annotation points the MOE Window again.
+</p>
+
+<p>Your query should resemble the following:</p>
+
+<p class="cntr"><img src="ph4_tut/f3.png" alt="Partial Query: F1+F2+F3" /></p>
+</li>
+<li><p>If several annotation points or atoms are selected, then the
+created feature (or volume) is positioned at the centroid of the
+selected annotation points and atoms.
+Select the aromatic center <b>L12</b> of the pyrrole ring ("n1cccc1") of
+the tricyclic ring system, together with the three exposed carbons of
+the pyrrole ring.
+Create a fourth feature from the selected points, positioned at the centroid
+of the four points.
+</p>
+</li>
+<li><p>Select the two aromatic features, <b>F3:Aro</b> and <b>F4:Aro</b> in
+the Pharmacophore Query Editor and increase their radii to 1.4 angstroms.
+</p>
+</li>
+<li><p>
+Select all features in the Pharmacophore Query Editor list
+(use <tt>Shift-click</tt> to select an additional feature or
+<b>Select&nbsp;All</b> from the list popup menu).
+</p>
+</li>
+<li><p><b>Change</b> the rendering of all features to <b>High</b>
+density <b>Dot</b> mode.
+Set the <b>Ligand Annotation</b> to <b>None</b>.</p>
+
+<p> The final query should resemble the following:</p>
+
+<p class="cntr"><img src="ph4_tut/query.png" alt="Final Query" /></p>
+</li>
+
+<li><p>Save the query to <tt>serotonin1.ph4</tt> using the <b>Save</b>
+button at the bottom of the Pharmacophore Query Editor.
+</p>
+</li>
+<li><p>Close the Pharmacophore Query Editor. (Notice that in the
+Sequence Editor the chains associated with the Pharmacophore Query
+Editor have been deleted.)
+</p>
+</li>
+<li><p>Close the current system.</p>
+
+<blockquote>
+<span class="menu">MOE | RHS | Close</span><br />
+or<br />
+<span class="menu">MOE | File | Close</span>
+</blockquote>
+
+</li>
+</ol>
+
+<h2><a name="Running">Running a Pharmacophore Search</a></h2>
+
+<p>We are ready to run the pharmacophore search using the query
+we have created.</p>
+
+<ol>
+	<li><p>Open the Pharmacophore Search panel from within the
+	<tt>serotonin_conf.mdb</tt> database viewer:</p>
+	
+	<p><span class="menu">DBV | Compute | Pharmacophore | Search</span></p>
+	</li>
+	<li><p>The Pharmacophore Search panel is displayed with the database
+	name in the <b>Input</b> field already set.</p>
+	
+	<p class="cntr"><img src="ph4_tut/search.png" alt="Pharmacophore Search" /></p>
+	</li>
+	
+	<li><p>The top portion of the Pharmacophore Search panel affects
+	the input database.  <b>Entries</b> controls which entries
+	of the input database will be used in the search.  <b>Hit Entries</b>
+	controls what will be done with entries that the search deems as
+	<i>hits</i>.  It is often useful to have <i>hits</i> indicated
+	as selected database entries.
+	To specify this, change the <b>Hit Entries</b> option menu
+	to <b>Select</b>.
+	</p>
+	</li>
+	<li><p>The middle portion of the panel specifies the query to use
+	for the search.</p>
+	<p class="cntr"><img src="ph4_tut/srch_query.png"
+	    alt="Pharmacophore Search Detail" /></p>
+	
+	<p>
+	Press <b>Browse</b> and select <tt>serotonin1.ph4</tt>,
+	the query file created previously.
+	The filename and the query title appear in the search panel.
+	</p>
+	</li>
+	<li><p>
+	The fields at the bottom of the panel affect the created output
+	database.  The default name of the output database is <b>ph4out.mdb</b>.
+	To change the fields recorded in this file, press <span class="menu">Setup &gt;&gt;</span>.  The
+	Pharmacophore Search panel displays the setup page.  Turn <i>on</i> all
+	toggle buttons to specify that all generated output fields are to be
+	output.
+	
+	Select <b>-logIC50</b> in the <b>Copied Fields</b> list to
+	copy the activity field into the output database. </p>
+	
+	<p class="cntr"> <img src="ph4_tut/settings_molconf.png"
+	    alt="Pharmacophore Search Settings" /></p>
+	
+	<p>Press <span class="menu">&lt;&lt; Back</span> to return to the Pharmacophore Search.
+	The <b>Fields</b> label should say: 
+	<span class="menu">5 calculated, 1 copied</span>.</p>
+	</li>
+	<li><p>Press <b>Search</b> at the bottom of the panel to start the search.</p>
+	
+	<p>When the search is complete, the word <b>Finished</b> appears in the
+	Search Status area in the lower left corner of the Pharmacophore Search
+	and the number of hits (matches) appears next to it.
+	</p>
+	</li>
+	<li><p>Notice that molecules in the input database that matched the
+	query (the <i>hits</i>) are selected in the database viewer.  
+	</p>
+	</li>
+</ol>
+
+
+<h2><a name="Analyzing">Analyzing the Output</a></h2>
+
+<p>There are several ways to view and analyze the output of your
+search.  In this section, we will determine how well our PH4 model
+separates the active compounds from the rest of the database.
+
+The model will be refined to reduce the number of inactives
+that match the query.</p>
+
+<ol>
+<li>
+<p>The <b>Status Line</b> in the <b>Pharmacophore Search</b> panel shows
+the number of hits.</p>
+
+<p class="cntr"><img src="ph4_tut/status.png"
+    alt="Pharmacophore Search Status Line" />
+</p>
+</li>
+<li><p>Press <b>Report</b> at the bottom of the
+Pharmacophore Search panel to open a report in an SVL Text Editor.
+The report summarizes various statistics regarding the results of the
+last executed search.
+This report is divided into three sections: SVL Search Command,
+Query Summary and Counts and Timing Information.  A portion
+of the report is shown here:
+</p>
+<p class="cntr"><img src="ph4_tut/report.png"
+    alt="Pharmacophore Search Report" border="1" /></p>
+
+<p>The query section summarizes the type of query used in the search
+including the title, the number of features, constraints and volumes,
+and the minimum number of features that are required to match.
+</p>
+<p>The timing section gives measurements of the speed of the search.
+For example, the above report indicates that on average, each molecule
+took 3.593 milliseconds to search, while each conformer took 0.195
+milliseconds to search.  There were 1152 hits found representing
+the total of 1138 conformations of 39 molecules.
+The times may vary from machine to machine and from run to run.
+</p>
+<p>Close this window and discard the text.  You can always regenerate
+the report if you want to see it again.
+</p>
+</li>
+<li><p>Open the results database.
+Press <b>Open</b> to the right of the <b>Results</b>
+radio buttons to open <b>ph4out.mdb</b>.
+</p>
+<p>There should be 39 compounds (mseq 1 to 39) in this database and 
+over 1,100 entries (note that these values may vary slightly).  Each entry
+represents a match of the query to one conformation.
+The query can match the same conformation in multiple ways, generating
+multiple entries.
+</p>
+<!--
+<p><font color="#ff0000">Tip</font>&nbsp;&nbsp;
+<b>mseq</b> may <b>not</b> match the mseq in the input database
+as it is recalculated for this particular set of entries.
+
+If you wish to see from which entry the hit came, look at the <b>row</b>
+field.  The value in this field refers to the row in the input
+database from which the hit was generated.
+-->
+
+<p class="cntr"><img src="ph4_tut/ph4out.png"
+    alt="Pharmacophore Search Output" />
+</p>
+</li>
+<li><p>Sort the database so the best matched conformer for each molecule
+is listed first by sorting on two sort keys: <b>mseq</b> and
+<b>rmsd</b>.  To do this, open the <b>Sort Database</b> panel.</p>
+
+<blockquote>
+<span class="menu">DBV | Compute | Sort</span>
+</blockquote>
+
+<p class="cntr"><img src="ph4_tut/sort.png" alt="Sort Database" /></p>
+
+<p>Set <b>Priority 1</b> to <b>mseq</b> and  <b>Priority 2</b> to <b>rmsd</b>
+as shown in the above picture.
+Press <b>OK</b> to sort the database.
+</p>
+</li>
+<li><p>We are only interested in the best matched conformer (lowest RMSD)
+to the query for any given molecule.</p>
+
+<ol type="i">
+	<li>Open the Sort Database panel.</li>
+	<li>Turn off the <b>Sort Entries</b> option.</li>
+	<li>Turn on the <b>Select Unique Entries</b> option.</li>
+	<li>Set <b>Priority 1</b> to <b>mseq</b>.</li>
+	<li>Press <b>OK</b>.</li>
+</ol>
+
+
+<p>For each distinct mseq, the first entry in that range is selected.
+To display only the selected entries use: </p>
+<p>
+<span class="menu">DBV | Display | Entry | Hide Unselected Entries</span>.</p>
+
+<p>The database display should show only the first (lowest RMSD) entry
+for each unique <tt>mseq</tt>.</p>
+
+<p class="cntr"><img src="ph4_tut/top_scores.png" alt="Result: Top Hits" /></p>
+</li>
+<li><p>To simplify the database, store the currently selected 39 entries
+in a separate database, <tt>result.mdb</tt>.  </p>
+
+<blockquote>
+<span class="menu">DBV | File | Save As</span>
+</blockquote>
+
+<p>In the Database Save As panel, turn on <b>Selected Entries Only</b>
+and press <b>OK</b>.
+(If you wish to save time, you can skip this step and work directly with the
+visible entries of the output database <tt>ph4out.mdb</tt>.)
+</p>
+<p><span class="tip">Tip</span> &nbsp;&nbsp;As a shortcut to generating <tt>result.mdb</tt>, 
+we could have set the <b>Hits</b> option in 
+the pharmacophore Search panel to <span class="menu">Best Per Molecule</span> and set <b>N</b> to 1, ensuring 
+that only the pose with the lowest RMSD will be output per hit molecule.</p>
+</li>
+<li><p>Since we have copied the activity field to the output database,
+we can identify
+which of the hit molecules are active and which are inactive.
+(Alternatively, we may remember that the active molecules
+have names 01-25).
+</p>
+<p>You may notice that all 25 active molecules were hit, as well as several
+other molecules.  After the first molecule is discounted, this corresponds to
+the enrichment factor of <span class="nobr">R = (24/38)/(24/274) = 7.2.</span>
+(This enrichment is measured against a database that has been already
+enriched by a factor of 10 using MACCS fingerprints.  Had we worked with
+the original database, the enrichment would likely be almost an order of
+magnitude higher.)
+</p>
+</li>
+
+<li><p>Display the searched query in the MOE Window by pressing <b>Edit</b>
+in the Pharmacophore Search panel.  Then show the best conformations
+of the hit molecules using the Database Browser in <tt>result.mdb</tt>.</p>
+<blockquote>
+<span class="menu">DBV | File | Browse</span>
+</blockquote>
+
+<p class="cntr"><img src="ph4_tut/browser.png" alt="Database Browser" /></p>
+
+<p>Move the <b>Entry</b> slider or press the 
+<img src="ph4_tut/gtbutton.png" alt= "Right Arrow" />
+button.  One by one, the alignments of each hit conformation to the
+query will be shown in the MOE Window.  Conformations of interest can be
+marked by changing their <b>Selected</b> state and then further
+processed (e.g., deleted or saved separately) in the database viewer.
+For example, the alignment of a hit conformation may appear as follows:</p>
+
+<p class="cntr"><img src="ph4_tut/browser_6.png"
+    alt="Molecule 13" /></p>
+</li>
+<li><p>Alternatively, you can visualize all hits at once:</p>
+
+<ol type="i">
+<li><p>Close the Database Browser.</p>
+</li>
+
+<li><p>
+In the Pharmacophore Editor, hide the display
+of the annotation points by setting <b>Ligand Annotation</b>
+to None.</p>
+</li>
+
+<li><p>
+<b>Change</b> the rendering of all features
+to <span class="menu">Sphere: Solid</span>,
+<span class="menu">Density: High</span> and
+<span class="menu">Text: None</span>.</p>
+</li>
+
+<li><p>
+Copy all molecules into the MOE Window.  Select all 39 entries and
+use</p>
+<blockquote>
+<span class="menu">DBV | Molecule Popup | Send Selected To MOE</span>
+</blockquote>
+<p>The Sequence
+Editor will display 39 chains storing the loaded molecules and an
+additional 2 chains that store the pharmacophore annotation points and
+query features.</p>
+</li>
+
+<li>
+<p>Move the pharmacophore chains to the bottom.
+In the Sequence Editor, turn on the compound name
+display</p>
+
+<blockquote>
+<span class="menu">SE | Display | Compound Name</span>
+</blockquote>
+
+<p>to find the auxiliary chains</p>
+<blockquote>
+<tt>[PRIVATE] Pharmacophore Query Features Serotonin Agonist Query<br />
+[PRIVATE] Ligand Pharmacophore Annotation</tt>
+</blockquote>
+<p>Select these chains and move them to the bottom using:</p>
+<blockquote>
+<span class="menu">SE | Selected Chains Popup | Move Chains | Bottom</span>.
+</blockquote>
+
+<p>The first 4 chains now store highly active molecules (03,02,05,16)
+with -logIC50 above 9.
+
+The next 21 chains store weakly or moderately active molecules
+with -logIC50 between 6 and 8.
+
+The remaining loaded chains store the additional "noise" molecules
+<span class="nobr">(BAS xxx)</span> marked as inactive <span class="nobr">(-logIC50&nbsp;=&nbsp;0).</span></p>
+    </li>
+</ol>
+
+</li>
+<li><p>Highlight the atoms of the highly active molecules.</p>
+
+<p>
+First select the chains 1-4, then render their atoms as green sticks using:</p>
+
+<blockquote>
+<span class="menu">SE | Selected Chains Popup | Atoms</span> and deselect the <b>Color&nbsp;C</b> checkbox.
+</blockquote>
+
+<p class="cntr"><img src="ph4_tut/se_selatoms.png"
+    alt="Render Atoms of Selected Chains" /></p>
+
+</li>
+<li><p>Similarly, render the atoms of the weakly active molecules
+(chains 5-25) as blue lines and inactive molecules (chains <span class="nobr">26-39</span>)
+as red lines.  Make sure that before you select the atoms of the selected
+chains, you first deselect all atoms in the MOE Window.
+The MOE Window should resemble the following:</p>
+
+<p class="cntr"><img src="ph4_tut/align.png" alt="Aligned Top Hits" /></p>
+</li>
+</ol>
+
+<h2><a name="Refining">Refining the Query</a></h2>
+
+<p>A pharmacophore model can be refined in many ways.  Techniques
+include reducing the tolerance on features, creating more specific
+features, adding constraints, creating volumes, and enabling partial
+matching.  Adding an excluded volume can reduce output by modeling receptor
+shape.  Excluded volumes are used to reject hits that place an atom
+inside the volume.  This is essential for shape
+selection and receptor modeling.  Excluded volumes can also be added
+above and below pi systems to enforce planarity. (Aromatic or Pi ring normal 
+projected features can also be used to achieve this)</p>
+
+<p>In this section, the query will be refined by adding an excluded
+volume that accounts for molecular shape selection.</p>
+
+<ol>
+
+<li><p> Use the aligned results
+from the previous section (with inactive molecules displayed
+in red and active molecules displayed in blue or green).
+Observe that some of the inactive (red) molecules extend
+into the space beyond the (orange) aromatic features,
+which is not occupied by any of the active molecules.</p>
+
+<p>Mark the volume of space to be excluded by selecting
+representative atoms in some of the protruding red fragments.
+For example:</p>
+
+<p class="cntr"><img src="ph4_tut/unionatoms.png"
+    alt="Excluded Volume: Selected Atoms" /></p>
+</li>
+<li><p>
+We can instruct the query to ignore any conformations that
+reaches this space by creating an excluded volume around it.
+Press <b>Union</b> button in the Pharmacophore Query Editor.
+This will create a volume composed of the union of spheres
+centered on the selected atoms.  The type of the newly
+created volume is set to <b>Excluded</b>.  Adjust the
+radius of the volume so that it intersects "bad" conformations
+while avoiding all "good" conformations - you may need to
+view the molecules from several different angles to do this.
+(The radius of the volume in the picture is 2.5 angstroms.)
+To obtain a better view of the atoms, <b>Change</b> the rendering type
+of the selected volume to
+<span class="menu">Sphere: Contour</span> and
+<span class="menu">Color: White</span>.
+</p>
+<p class="cntr"><img src="ph4_tut/union.png"
+    alt="Excluded Volume: Contour" /></p>
+
+<p><span class="tip">Tip</span>
+
+Alternatively, you may wish simply to
+hide the excluded volume.  To do this, first select the volume in the
+Pharmacophore Query Editor list.  Below the list, the modifiable
+attributes for the selected items are available.  Turn on the
+<b>Hidden</b> option.  The volume will no longer be drawn in the MOE
+Window until you turn the <b>Hidden</b> option off.
+</p>
+</li>
+<li><p>Close the current system.  This will delete all atoms,
+but not the query.</p>
+
+<p>Change the rendering of the query features back to its
+previous state (
+<span class="menu">Sphere: Dot</span>,
+<span class="menu">Density: High</span>,
+<span class="menu">Text: Offset&nbsp;Long</span>).</p>
+
+<p>Change the title of the query (or add a comment)
+and save the query to <tt>serotonin2.ph4</tt> for future reference.</p>
+</li>
+<li><p>We are ready to search once more with the more
+restrictive query.</p>
+
+<p>Press <b>Search</b> in the Pharmacophore Query Editor.
+Note that this will not start a new Pharmacophore Search.  Instead, it
+will bring to the fore the Pharmacophore Search panel that
+was used to start the editor.  The two panels communicate with each
+other and share the pharmacophore data.  The Pharmacophore Search will
+use the query currently being edited in the Pharmacophore Query Editor.
+</p>
+
+<p>In the Pharmacophore Search panel, change <b>Results</b> to
+<span class="nobr">"No Output"</span> (for faster processing) and press <b>Search</b>.
+This time, fewer inactive molecules will be hit, while the hits of
+all active molecules will remain.  The enrichment factor will improve.
+</p>
+</li>
+
+<li><p>Additional refinement can be done by adding constraints, such as
+creating an included volume constraint to account for the shape of the
+active molecule, or adding smarts expressions to volumes in order to
+eliminate the presence of fragment groups which may lead to poor
+interaction.  Also, new features can be incorporated into the
+query.</p>
+</li>
+</ol>
+
+
+<h2><a name="Alignment">Aligning Active Molecules</a></h2>
+
+<p>Note: This section describes how to align active molecules.
+If you need to save time, you can skip this section and
+replace the molecules in the system with molecules from
+<span class="nobr"><tt>$MOE/sample/mol/serotonin_aligned.moe</tt></span>.</p>
+
+<p>The query developed the previous sections was based on
+one conformation of the most active molecule.  Alternatively,
+a query can be based on an alignment of several active
+molecules.  Such an alignment can be, for example, obtained
+by using MOE's Flexible Alignment, described in detail in the
+<a href="#SeeAlso">Flexible Alignment</a> chapter.</p>
+
+<ol>
+	<li><p>Close the Pharmacophore Query Editor and the Pharmacophore Search.</p></li>
+	<li><p>Close the current MOE system:</p>
+	<p><span class="menu">MOE | File | Close</span></p></li>
+	
+	<li><p>Open a database of active molecules:</p>
+	<p><span class="menu">MOE | File | Open | <tt>$MOE/sample/mol/serotonin.mdb</tt></span></p>
+	</li>
+	
+	<li><p>Select the 3 most active molecules and load them into MOE Window
+	using the popup menu <b>Send Selected to MOE</b> as before.</p>
+	
+	<p class="cntr"><img src="ph4_tut/copyseltomoe.png"
+	    alt="Copy Selected Molecules" /></p>
+	
+	<p>After the molecules are loaded, you can close the database.</p>
+	</li>
+	
+	<li><p>Open the Flexible Alignment panel with</p>
+	
+	<p><span class="menu">MOE | Compute | Simulations | Flexible Alignment</span></p>
+	
+	<p>In general, all conformations of the molecules should be considered
+	for the alignment.  In this exercise, however, the molecules happen
+	to be already in very similar low-energy conformations and  it
+	will be sufficient to simply refine their existing alignment.</p>
+	
+	<p>Turn on <span class="menu">Refine Existing Alignment</span>
+	and press <b>OK</b>.</p>
+	
+	<p class="cntr"><img src="ph4_tut/flexalgn.png"
+	    alt="Flexible Alignment" /></p>
+	
+	<p>The molecules in the MOE Window will be somewhat adjusted,
+	resulting in a better alignment.</p>
+	</li>
+	<li><p><b>Note:</b> The minimization process used in the Flexible Alignment
+	may introduce a small random element to the outcome.
+	
+	If you want to make sure that your alignment matches the conformations
+	depicted in this text, replace your molecules with those from 
+	
+	<tt>$MOE/sample/mol/serotonin_aligned.moe</tt>.
+	</p>
+	</li>
+</ol>
+
+
+<h2><a name="Consensus">Using the Pharmacophore Consensus</a></h2>
+
+<p>The Pharmacophore Consensus provides suggested features given an
+aligned set of molecules.  In this exercise we will use the alignment
+of the three most active serotonin agonists to locate features
+that may contribute to their pharmacophore.</p>
+
+<p>The consensus calculation can be performed using molecules
+currently loaded in MOE or molecules from a database (or both).
+We will use the three aligned molecules from the previous section
+that are currently loaded in MOE.</p>
+
+<ol>
+	<li><p>Simplify the view of the molecules by hiding all hydrogens:
+	<span class="menu">MOE | RHS | Hydrogens</span>.</p>
+	</li>
+	
+	<li><p>Open a new Pharmacophore Query Editor with
+	<span class="menu">MOE | File | New | Pharmacophore Query</span>
+	and press <b>Info</b>.</p>
+	</li>
+	
+	<li><p>
+	In the <b>Info</b> panel, press <b>None</b> to disable all annotation.
+	Then enable only 
+	
+	<b>Ani</b>,
+	<b>Cat</b>,
+	<b>Don</b>,
+	<b>Acc</b>,
+	<b>Aro</b>
+	and
+	<b>PiR</b>.
+	
+	These will be the annotation types used by the Consensus algorithm.
+	</p>
+	</li>
+	
+	<li><p>
+	In the new Pharmacophore Query Editor,
+	press <b>Consensus</b>.
+	The pharmacophore Consensus panel will open:</p>
+	
+	<p class="cntr"><img src="ph4_tut/consensus.png"
+	    alt="Pharmacophore Consensus" /></p>
+	</li>
+	<li><p>The <b>Tolerance</b> parameter defines the neighborhood distance
+	threshold.  Annotation points closer than this distance are considered to
+	be neighbors.  Decrease the tolerance to 0.3.</p>
+	
+	<p>The <b>Threshold</b> parameter defines the consensus score threshold.
+	This score measures the level of consensus among all input
+	molecule conformations in a region of space (defined by the neighborhoods
+	determined by the tolerance parameter).
+	Increase the threshold to 100%. </p>
+	
+	<p class="cntr"><img src="ph4_tut/cons_parms.png"
+	    alt="Consensus Parameters" /></p>
+	
+	<p>All annotations that are within 0.3 angstroms will be grouped
+	together. All (100%) of the molecules in the database 
+	must have groups of the same feature type.</p>
+	</li>
+	
+	<li><p>Press <b>Calculate</b> to run the consensus calculation. </p>
+	</li>
+	
+	<li><p>The suggested features will be displayed in the list in the
+	Pharmacophore Consensus panel and in the MOE Window.  </p>
+	
+	<p class="cntr"><img src="ph4_tut/cons_out.png" alt="Suggested Features" /></p>
+	
+	<p>You can view the individual suggested features by selecting them in
+	the list.  Only the selected suggested features will be displayed in the
+	MOE Window.</p>
+	</li>
+	<li><p>To add a suggested feature to the actual query, use the <b>Load
+	Selected</b> button at the bottom of the panel.  If a feature to be
+	added to the query overlaps with an already existing feature in the
+	query, you will be warned.</p>
+	</li>
+	
+	<li><p>Select and load all features into the editor and close the consensus
+	panel.</p>
+	</li>
+	
+	<li><p>You should now have a query similar to the picture below.
+	Use the <b>Up</b> and <b>Down</b> buttons in the Pharmacophore Query Editor
+	to move the <b>Acc</b> feature to the second position (<b>F2</b>), the
+	<b>Cat&amp;Don</b> feature to the first position (<b>F1</b>), and the
+	three <b>Aro</b> features at the bottom of the list.</p>
+	
+	<p class="cntr">
+	<img src="ph4_tut/cons_features.png" alt="Loaded Consensus Features" /></p>
+	</li>
+</ol>
+
+
+<h2><a name="Tuning">Interactive Tuning of the Query</a></h2>
+
+<p>In this section we will interactively use the Pharmacophore Search
+together with the Pharmacophores Query Editor to focus the query.</p>
+
+<ol>
+
+<li><p>In the Pharmacophore Query Editor, press <b>Search</b> to open
+the Pharmacophore Search.  Set the searched database to the conformational
+database <tt>serotonin_conf.mdb</tt> created earlier.</p>
+
+<p><span class="tip">Tip</span>&nbsp;&nbsp;
+To open the input database (<tt>serotonin_conf.mdb</tt>) in the
+Database Viewer, press <b>Open</b> to the right of the <b>Input</b>
+text field of the Pharmacophore Search.</p>
+</li>
+
+<li><p>In the Pharmacophore Search, turn on <b>Subrange</b>
+and specify the range of entries corresponding to active molecules
+(molecules 01-25).  Set <b>Results</b> to <b>No&nbsp;Output</b> and press
+<b>Search</b>.  Only the active molecules will now be searched.</p>
+
+<p class="cntr"><img src="ph4_tut/subrange.png" alt="Subrange 1-25" /></p>
+
+<p><span class="tip">Tip</span>&nbsp;&nbsp;
+The <tt>serotonin_conf.mdb</tt> is in the <i>packed</i> form
+<span class="nobr">(1 molecule / entry)</span>, therefore the subrange of the
+first 25 (active) molecules simply consists of the first 25 entries.
+When the input database is in the <i>unpacked</i> form
+<span class="nobr">(1 conformation / entry)</span>,
+the subrange of the first 25 molecules may consist
+of many more entries.</p>
+</li>
+<li><p>The status line will indicate that only 17 out of 25 active molecules
+were hit with the query.  That means that the query is too strict and has to be
+loosened.</p>
+
+<p class="cntr"><img src="ph4_tut/status_lt25.png" alt="Search Status: 17/25" /></p>
+</li>
+<li><p>The radii of the query features are rather small.  We will try to
+match the query by increasing the radii to a larger, common value.</p>
+
+<p>In the Pharmacophore Query Editor, the radius <b>R</b> displays and
+modifies the average radius of the selected features.  First we will set
+the average radius to 0, effectively forcing all radii to attain a
+common value (0).</p>
+
+<ol type="i">
+	<li>Select all features.</li>
+	<li>Set their radius to 0.</li>
+	<li>Set their radius to 2.0.</li>
+</ol>
+
+<p>Note that had we set the radius directly to 2.0, the features'
+radii would average 2.0, but would keep their relative
+differences.</p>
+</li>
+<li><p>
+Set the common radius to different values and press <b>Search</b>
+in the Pharmacophore Search panel.  Even with large feature radii
+(e.g., 4 angstroms), the query will <i>not</i> match all 25 active molecules.
+</p></li>
+<li><p>The current query forces each feature to be matched.
+To further loosen the query, we will permit only a partial match.</p>
+<ul>
+    <li>
+    Set the feature radii back to 1.4 angstroms.</li>
+
+    <li>
+    In the Pharmacophore Query Editor, turn on the
+    <b>Enable Partial Match</b> parameter and set its value to
+    <b>At Least</b> 4.
+    (Make sure to press <tt>Enter</tt> in the text field to have the
+    value take effect.)</li>
+
+    <li>
+    In the Pharmacophore Search, press <b>Search</b> again and observe that
+    this time all 25 actives are hit.</li>
+</ul>
+
+<p class="cntr"><img src="ph4_tut/partial_match_4.png"
+    alt="Enable Partial Match: 4" /></p>
+</li>
+<li><p>Only 4 features are being used in each match.  One of the features
+remains unmatched.
+However, different features may remain unmatched in different hits.
+A simple way to investigate which features are truly needed
+and which features may be redundant is to toggle
+the <b>Essential</b> and the <b>Ignore</b> flags of individual features.
+Marking a feature to be <b>Essential</b> forces its inclusion in any, even
+partial match.  Marking a feature with the <b>Ignore</b> flag excludes
+it from consideration for a match, effectively removing it from the
+query.  If the query matches all desired molecules with a feature being
+ignored, the ignored feature is redundant and can be deleted.</p>
+</li>
+
+<li><p>Turn on the <b>Essential</b> option for <b>F1:&nbsp;Cat&amp;Don</b>
+and <b>F2:Acc</b>.  The query still matches all 25 actives.
+Our search for redundant features can be limited to the <b>Aro</b> features.</p>
+</li>
+
+<li><p>One by one, turn on and then back off the
+<b>Ignore</b> flag for each of the three <b>Aro</b> features and press
+<b>Search</b> to examine how many molecules are hit with the features
+missing from the query. When the <b>Aro</b> feature at the center of the
+middle ring of the tricyclic ring system (<b>F3</b>) is ignored, the
+query still matches all 25 actives - the feature is redundant and can be
+deleted. (This is not true for the other two <b>Aro</b> features.)</p>
+</li>
+
+<li><p>Delete the redundant <b>Aro</b> features and turn the
+<b>Enable Partial Match</b> parameter back off.
+We obtained the initial pharmacophore query:</p>
+
+<p class="cntr"><img src="ph4_tut/query_init.png" alt="Initial Query" /></p>
+</li>
+<li><p>Save the query to <tt>serotonin3.ph4</tt> for future reference.</p>
+</li>
+
+<li><p>In Pharmacophore Search, turn off the <b>Subrange</b> and
+<b>Search</b> again.  There are 39 hits.  Discounting the 3 molecules
+used to create the query, this corresponds to the enrichment factor of
+<span class="nobr">R = (22/36)/(22/272) = 7.6.</span></p>
+</li>
+
+</ol>
+
+<h2><a name="Directional">Adding Directional Features</a></h2>
+
+In this section we will add directional features to further focus
+the query.
+
+<ol>
+
+<li><p>In the <b>Info</b> panel, enable the display of projected
+annotation types <b>Don2</b> and <b>Acc2</b>.</p>
+</li>
+
+<li><p>Find the basic nitrogen of the piperazine ring -
+the location of the <b>F1:Cat&amp;Don</b> feature.
+Find the (purple) annotation point projected from this atom (this can easily 
+be done by enabling the "Show Projecting Vectors" option in the Pharmacophore 
+Query Editor). 
+Create a new <b>Don2</b> query feature from this projected
+annotation point.</p>
+</li>
+
+<li><p>Press <b>Search</b> in Pharmacophore Search to examine
+the number of hit molecules.  Again, all 25 actives will be hit, 
+but the number of all hits decreases to 36, increasing the
+enrichment factor to <span class="nobr">272/33 = 8.24</span>.
+(Use the <b>Subrange</b> checkbox to toggle between searching only the active 
+molecules and all molecules.)</p>
+</li>
+
+<li><p>Find the unsaturated nitrogen of the middle ring of the tricyclic
+ring system - the location of the <b>F2:Acc</b> feature.  Find the
+(cyan) annotation point projected from this atom.  Create a new
+<b>Acc2</b> query feature from this projected annotation point.</p>
+</li>
+
+<li><p>The radius of the new feature will have to be increased to
+1.8 angstroms to hit all 25 actives.  The number of all hits,
+however will decrease to&nbsp;30.</p>
+</li>
+
+<li><p>The projected feature (e.g., <b>F6:Acc2</b>) and the atom-based
+feature located on the projecting atom (<b>F2:Acc</b>) represent the
+H-bond direction and should be matched as a pair.  We will accomplish
+this requirement by tying the two features together in the query with a
+constraint.</p>
+</li>
+
+<li><p>Select the <b>Acc</b> and <b>Acc2</b> features and press
+<b>Constraint</b>.  Set the constraint type to
+<b>Same&nbsp;atom(s)</b>.  This will ensure that when an particular
+H-bond acceptor atom matches the <b>Acc</b> feature, the <b>Acc2</b>
+features will be matched only by the annotation point projected from
+that atom (and not from some other acceptor atom).</p>
+</li>
+
+<li><p>Create a similar constraint for the <b>Cat&amp;Don</b>
+and <b>Don2</b> features.</p>
+</li>
+
+<li><p>Due to proximity of the features, the directional constraints are
+already satisfied in most hits and their effect is not apparent by
+examining only the number of hit molecules.  To find out the difference
+made by adding the constraints, we need to look at the total number of
+hits (alignments).</p>
+</li>
+
+<li><p>Search the database with and without the projected features.
+In each case, find all hits, i.e. set
+<span class="menu">Results: Conformations</span>
+and <span class="menu">Hits: All</span>.  The last section of the CLI summary
+(or the <b>Report</b> file) indicates the number of hit molecules,
+the number of hit conformations and the total number of all hits.
+
+Notice that although the number of hit molecules remains
+the same, the number of hit conformations and the total number
+of hits does decrease.</p>
+
+<p class="cntr">
+<img src="ph4_tut/query_proj.png" alt="Query With Projected Features" /></p>
+</li>
+</ol>
+
+<h2><a name="Shapes">Adding Shape Constraints</a></h2>
+
+In this section we will use a molecular shape constraint
+to further focus the query. 
+
+<ol>
+
+<li><p>The molecular shape will be represented by a volume
+composed of several spheres.  The spheres of different radii
+can be centered on individual atoms or on significant groups.
+Several volume constraints of different types can mark
+different regions of space around the query.</p>
+</li>
+
+<li><p>Select all heavy atoms by
+<span class="menu">MOE | Selection | Element | Heavy Atom</span>
+
+and press <b>Union</b> to create a single volume constraint
+consisting of several spheres.</p>
+</li>
+
+<li><p>Select the created volume and use the <b>V</b>
+pull-down option to set the type of the volume to <b>Exterior</b>.</p>
+</li>
+
+<li><p>Adjust the radius of the volume to 2.5&nbsp;angstroms.</p>
+</li>
+
+<li><p>Use the <b>Pharmacophore Search</b> panel to examine the
+number of hit molecules.  All 25 actives are still hit.
+The overall number of hits, however, decreases to&nbsp;27.</p>
+</li>
+
+<li><p>To finalize the query, turn the rendering of the volume
+to white contour.</p>
+</li>
+
+<li><p>Save the query for future reference in <tt>serotonin4.ph4</tt>.</p>
+</li>
+</ol>
+
+<p class="cntr">
+<img src="ph4_tut/query_shape.png" alt="Query With Shape Volumes" /></p>
+
+
+<h2><a name="Conclusion">Conclusion</a></h2>
+
+<p>In this tutorial we addressed four areas of pharmacophore design:
+preparation of the molecular data, design of the pharmacophore query,
+analysis of the results, and additional refinement of the query.</p>
+
+<p>We followed through the steps of preparing the conformations of the
+input molecules, including merging and processing databases to create
+the needed fields. Subsequently we illustrated the techniques of creating
+a pharmacophore query and analyzing the results of a pharmacophore search
+on several test queries.</p>
+
+<p>9% of the input database consisted of active molecules. The inactive
+molecules were randomly sampled from a set of molecules which had been
+enriched using the similarity properties of MACCS fingerprints.</p>
+
+<p>By using different features of the MOE pharmacophore applications, we
+successively improved the quality of the queries and obtained a
+substantial additional enrichment of the input database.</p>
+
+<h2><a name="References">References</a></h2>
+
+<table width="100%" cellpadding="5">
+
+<tr>
+<td valign="top">[Daveu&nbsp;1999]</td>
+<td valign="top">
+Daveu, C., Bureau, R., Baglin, I., Prunier, H.,
+Lancelot, J.C., Rault, S.;
+Definition of a Pharmacophore for Partial Agonists of 
+Serotonin 5-HT<sub>3</sub> Receptors.
+<span class="nobr"><i>J. Chem. Inf. Comp. Sci. 39</i></span> (<b>1999</b>) 362&ndash;369.</td>
+</tr>
+</table>
+
+<a name="SeeAlso"></a>
+<h2>See Also</h2>
+
+<a href="../apps/ph4_intro.htm">MOE Pharmacophore Applications</a><br />
+<a href="../moe/fcnref/ph4srch.htm">Pharmacophore Search Functions</a><br />
+
+<a href="../moe/gui/mainwin.htm">MOE Window</a><br />
+<a href="../mdb/db.htm">Database Viewer</a><br />
+<a href="../moe/gui/se.html">Sequence Editor</a><br />
+
+<a href="../apps/flex.htm">Flexible Alignment</a><br />
+<a href="flex_tut.htm">Flexible Alignment Tutorial</a><br />
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

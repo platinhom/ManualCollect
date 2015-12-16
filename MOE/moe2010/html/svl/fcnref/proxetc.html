@@ -1,0 +1,233 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions prox_close, prox_find, prox_get, prox_open>
+
+<meta intro Proximity Functions>
+
+<title>Proximity Search Functions: prox_close...</title>
+
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Proximity Search Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    prox_key = <a class="fcnlink" href="#prox_open">prox_open</a> [ bucket_size, [x,y,z], radii ]
+    [seg, idx, sqr_dist] = <a class="fcnlink" href="#prox_find">prox_find</a> [ prox_key, [x,y,z], radii ]
+    [ [x,y,z], radii ] = <a class="fcnlink" href="#prox_get">prox_get</a> prox_key
+    <a class="fcnlink" href="#prox_close">prox_close</a> prox_key
+</pre>
+
+<h2>Description</h2>
+<p>The proximity functions test whether a query set
+of three-dimensional balls intersects a search set of three-dimensional
+balls.  Likewise, the functions can also be used for proximity searches on 
+sets of balls or points, i.e. finding all balls or points
+in a search set which lie within a given distance 
+from those in a query set.  
+
+<p><a name="prox_open"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+prox_key = <span class="fcndef">prox_open</span> [ bucket_size, [x,y,z], radii ]
+</pre>
+
+Subdivides a search space into cubes or <i>buckets</i> and
+stores them in an internal data structure.  The key of the
+bucketized system is returned.  
+
+<dl>
+<dt>
+<tt>[x,y,z]</tt> 
+<dd>The coordinates of the centers of the balls in the search set, given as
+a laminated vector. 
+
+<dt>
+<tt>radii</tt>
+<dd>
+Radii of the balls, given in the same order as the coordinates of the centers.
+Unit extension applies.
+
+<dt><tt>bucket_size</tt>
+<dd>The space is subdivided into buckets of size no smaller than
+<tt>bucket_size</tt> (a scalar).  The buckets are used to limit the 
+search space of subsequent proximity searches.  Thus the bucket size
+should not be smaller than the largest proximity
+distance of interest; i.e.
+
+<pre>
+    bucket_size &gt; max search_radii + max query_radii
+</pre>
+
+where <tt>search_radii</tt> are the radii of the balls in the
+bucketized set, and <tt>query_radii</tt> are the radii of the balls
+of a query set to be tested for intersection with the search set.
+</dl>
+
+<p><a name="prox_find"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+[seg, idx, sqr_dist] = <span class="fcndef">prox_find</span> [ prox_key, [x,y,z], radii ]
+</pre>
+
+Performs a proximity search.  The arguments are as follows:
+
+<dl>
+<dt>
+<tt>prox_key</tt> 
+<dd>Specifies a bucketized
+search set (returned by <tt>prox_open</tt>). 
+
+<dt>
+<tt>[x,y,z]</tt>
+<dd>
+The Cartesian coordinates of the centers of the query balls.
+
+<dt>
+<tt>radii</tt>
+<dd>
+The radii of the query balls.  Unit extension applies.</p>
+</dl>
+
+<p><tt>prox_find</tt> reports, for each ball in the query set, all balls
+in the bucketized search set which intersect the query ball.
+</p>
+
+<b>Return Values</b> 
+<p>The return values are 3 flat vectors:
+
+<dl>
+<dt><tt>seg</tt> 
+<dd>The number of search balls which intersect each query point. 
+Its length is equal to the
+number of balls in the query set, and it is used for splitting
+<tt>idx</tt> and <tt>sqr_dist</tt> into sub-vectors according to query ball.
+
+<dt><tt>idx</tt> 
+<dd>The indices of the search balls (the indices
+index into the original search set as passed to <tt>prox_open</tt>).
+
+<dt><tt>sqr_dist</tt>
+<dd>The <i>squares</i> of the distances from the center of each query ball to
+the center of each search ball which intersects it. 
+</dl>
+
+<b>Example</b> 
+
+<p>Suppose the prox_find returns <tt>[seg, idx, sqr_dist]</tt> such that</p>
+
+<pre>
+    seg == [2, 4, 0, 0, 1]
+    idx == [1, 4, 2, 4, 5, 8, 3]
+    sqr_dist == [2.1, 3.6, 2.3, 5.3, 2.1, 0.0, 1.3]
+</pre>
+
+<p>To extract, for each query ball, the indices of the associated target
+points, use:</p>
+
+<pre>
+    split [ idx, seg ]
+</pre>
+
+<p>This command on the above example would return the vector</p>
+
+<pre>
+    split [ idx, seg ] == [ [1, 4], [2, 4, 5, 8], [], [], 3 ]
+</pre>
+
+<p>which would mean that:</p>
+
+<ul> <li> The first ball of the query set intersects
+balls 1 and 4 of the search set;
+<li> The second ball of the query set
+intersects balls 2, 4, 5, and 8 of the search set; 
+<li> The third and fourth balls of the query set do
+not intersect any balls of the search set, and 
+<li> The last ball of the query set intersects ball 3
+of the search set.
+</ul>
+
+<p>Extracting the distances can be performed similarly: </p>
+
+<pre>
+    split [ sqrt sqr_dist, seg ]
+</pre>
+
+<p>(Do not forget that <tt>sqr_dist</tt> contains the squares of the 
+distances.)</p>
+
+<p><a name="prox_get"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+[ [x,y,z], radii ] = <span class="fcndef">prox_get</span> prox_key
+</pre>
+
+Returns the coordinates of the centers and associated radii of a search set
+given to <tt>prox_open</tt>.
+
+
+<p><a name="prox_close"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">prox_close</span> prox_key
+</pre>
+
+Frees the memory associated with the system 
+specified by <tt>prox_key</tt>. This memory is freed
+automatically at the end of a task, but it is good practice to call
+<tt>prox_close</tt> explicitly.</p>
+
+<hr noshade="noshade" />
+
+To use the <tt>prox_*</tt> functions to find which <i>points</i> of a
+set of query points
+are close to a set of search points, bucketize a search set of balls with zero 
+radii (in essence, a set of points).  Then a search with a query set of balls
+of radius <tt>r</tt> returns points of the search set within distance 
+<tt>r</tt> of the centers of the balls of the query set.
+
+
+<h2>See Also</h2>
+
+<p>
+    <a class="svl" href="catetc.html">split</a>
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

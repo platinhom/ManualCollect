@@ -1,0 +1,133 @@
+<html><head>
+<title></title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<style type="text/css">
+<!--
+
+p {
+	font-family: "Times New Roman", Times, serif;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+}
+
+-->
+</style>
+</head><body>
+<h1>Efficiency Considerations</h1>
+<p>Gaussian has been designed to work efficiently given a variety of computer configurations. In general, the program attempts to select the most efficient algorithm given the memory and disk constraints imposed upon it. Since Gaussian does offer a wide choice of algorithms, an understanding of the possibilities and tradeoffs can help you to achieve optimal performance.</p>
+<p>Before proceeding, however, let us emphasize two very important points:</p>
+<ul>
+<li>
+<p> The default algorithms selected by the program give good performance for all but very large jobs. Note that some defaults have changed with Gaussian 09 to reflect current typical problem sizes. Defaults used in earlier versions of the program were designed for small jobs of under 100 basis functions. The default algorithms used in Gaussian are generally designed for longer jobs.</p>
+</li>
+<li>
+<p>For users or sites who routinely run very large jobs, it is recommended to set appropriate defaults in the <font color="#009933">Default.Route</font> file regarding the available amounts of memory and disk in order to produce good general performance, as indicated below:</p>
+<pre>
+ -M- <font face="Times New Roman, Times, serif" color="#CC0000"><i>available-memory</i></font></font>
+ -#- MaxDisk=<font face="Times New Roman, Times, serif" color="#CC0000"><i>available-disk</i></font></font>
+</pre>
+<p>The amounts of available memory and disk space are given in 8-byte words (default); these values may also be followed by <b><font color="#0000FF">KB</font></b>, <b><font color="#0000FF">MB</font></b>, <b><font color="#0000FF">GB</font></b>, <b><font color="#0000FF">KW</font></b>, <b><font color="#0000FF">MW</font></b> or <b><font color="#0000FF">GW</font></b> (without intervening spaces) to specify units of kilo-, mega- or giga- bytes or words. The default memory size is 256 MB, while the scratch disk space is set unlimited (<b><font color="#0000FF">-1</font></b>) by default, i.e. it is assumed that enough disk space is available to perform a given calculation with no redundant work. For most sites, once the <font color="#009933">Default.Route</font> file is set up no other special actions are required for overall efficient program use.</p>
+</li></ul>
+<h2>Estimating Calculation Memory Requirements</h2>
+<p>With Gaussian 09 and current computers, the default memory size of 256 MB is sufficient for most job types and methods, employing basis functions  through g functions. If your basis set includes h or higher angular momentum functions (e.g. <b><font color="#0000FF">cc-pVQZ</font></b>), then you may need to increase the amount of memory you give to the job. The following formula can be used to estimate the memory requirement of various types of Gaussian jobs (in 8-byte words):</p>
+<font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font><font face="Times New Roman, Times, serif" size="3"><i>M</i></font> + 2(<font face="Times New Roman, Times, serif" size="3"><i>N</i></font><sub>B</sub>)<sup>2</sup><br>
+<p>where <font face="Times New Roman, Times, serif" size="3"><i>N</i></font><sub>B</sub> is the number of basis functions used in the calculation, and <font face="Times New Roman, Times, serif" size="3"><i>M</i></font> is a minimum value that is usually generously covered by the default memory size. Note that 1 MW = 1,048,576 words (= 8,388,608 bytes). Larger amounts of memory may be required for derivatives of contracted high angular momentum functions (f and above).</p>
+<p>The remainder of this section is designed for users who wish to understand more about the tradeoffs inherent in the various choices in order to obtain optimal performance for an individual job, not just good overall performance. Techniques for both very large and small jobs will be covered. Additional related information may be found in reference <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Schlegel91">Schlegel91</a>]</font>.</p>
+<h3>Memory Requirements for Parallel Calculations</h3>
+<p>When using multiple processors with shared memory, a good estimate of the memory required is the amount of memory required for a single processor job. For distributed memory calculations (i.e., those performed via Linda), the amount of memory specified in <b><font color="#0000FF">%Mem</font></b> should be equal to or greater than the value for a single processor job.</p>
+<p>In Gaussian 09, these two parallelization methods can be combined. For example, you might use the following directive in order to run a job on 8 CPUs located on 4 two-headed shared memory multiprocessors:</p>
+<pre>
+%Mem=128MW &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Memory required by each multiprocessor.</i></font></font>
+%LindaWorkers=sysa,sysb,sysc,sysd &nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Specify the four Linda workers: all multiprocessor system.</i></font></font>
+%NProcShared=2 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Use two shared memory processors on each multiprocessor computer.</i></font></font>
+</pre>
+<h2>SCF Procedure</h2>
+<p>In order to speed up direct HF and DFT calculations, the iterations are done in two phases:</p>
+<ul>
+<li>
+<p>The density is converged to about 10<sup>-5</sup> using integrals accurate to six digits and a modest integration grid in DFT calculations. This step is terminated after 21 iterations even if it is not fully converged. This step is omitted by default if any transition metal atoms are present.</p>
+</li>
+<li>
+<p>The density is then converged to 10<sup>-8</sup> using integrals accurate to ten digits, allowing up to a total of 128 cycles total for the two steps.</p>
+</li></ul>
+<p>This approach is substantially faster than using full integral accuracy throughout without slowing convergence in the great majority of cases tested so far. In the event of difficulties, full accuracy of the integrals throughout can be requested using <b><font color="#0000FF">SCF=NoVarAcc</font></b>. See the discussion of the <b><font color="#0000FF">SCF</font></b> keyword for more details.</p>
+<h3>Problem Convergence Cases</h3>
+<p>The default SCF algorithm uses a combination of two Direct Inversion in the Iterative Subspace (DIIS) extrapolation methods: EDIIS and CDIIS. EDIIS <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Kudin02">Kudin02</a>]</font> uses energies for extrapolation, and it dominates the early iterations of the SCF convergence process. CDIIS, which performs extrapolation based on the commutators of the Fock and density matrices, handles the latter phases of SCF convergence. This algorithm is very reliable, and previously troublesome SCF convergence cases now almost always converge with the default algorithm. For the few remaining pathological convergence cases, Gaussian 09 offers Fermi broadening and damping in combination with CDIIS (including automatic level shifting).</p>
+<p>These are the available alternatives if the default approach fails to converge (labeled by their corresponding keyword):</p>
+<p><b><font color="#0000FF">SCF=Fermi</font></b><br>
+Requests temperature broadening during early iterations <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Rabuck99">Rabuck99</a>]</font>, combined with CDIIS and dynamic damping of early SCF iterations. This is the first choice when there are SCF convergence problems.
+</p>
+<p><b><font color="#0000FF">SCF=QC</font></b><br>
+This is quadratically convergent SCF, based on the method of Bacskay <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Bacskay81">Bacskay81</a>]</font>. Since it combines linear minimizations with the Newton-Raphson algorithm suggested by Bacskay, it is guaranteed to reach a stationary point eventually. Typically, <b><font color="#0000FF">SCF=QC</font></b> is about twice as expensive as conventional SCF. Since <b><font color="#0000FF">SCF=QC</font></b> is reliable and can be used for direct SCF, it is usually the second choice if convergence problems are encountered. It can be used for RHF and UHF, but not for complex or ROHF.
+</p>
+<p><b><font color="#0000FF">Guess=Alter</font></b><br>
+Sometimes convergence difficulties are a warning that the initial guess has occupied the wrong orbitals. The guess should be examined, especially as to the symmetries of the occupied orbitals. <b><font color="#0000FF">Guess=Alter</font></b> can be used to modify the orbitals selected for occupation.
+</p>
+<p><b><font color="#0000FF">SCF(MaxCyc=<font face="Times New Roman, Times, serif" size="3"><i>N</i></font>)</font></b><br>
+Increases the total number of SCF iterations to <font face="Times New Roman, Times, serif" size="3"><i>N</i></font>. Note that merely increasing the number of SCF cycles for the default algorithm is rarely helpful.
+</p>
+<p>These approaches all tend to force convergence to the closest stationary point in the orbital space, which may not be a minimum with respect to orbital rotations. A stability calculation can be used to verify that a proper SCF solution has been obtained (see the <b><font color="#0000FF">Stable</font></b> keyword). Note also that you should verify that the final wavefunction corresponds to the desired electronic state, especially when using <b><font color="#0000FF">Guess=Alter</font></b>.</p>
+<p>The <b><font color="#0000FF">freqmem</font></b> utility program returns the optimal memory size for different parameters of frequency calculation (i.e., the amount required to perform the major steps in a single pass).</p>
+<h2>MP2 Energies, Gradient and Frequencies</h2>
+<p>Four algorithms are available for MP2, but most of the decision-making is done automatically by the program. The critical element of this decision making is the value of <b><font color="#0000FF">MaxDisk</font></b>, which should be set according to your particular system configuration (see chapter 3). It indicates the maximum amount of disk space available in words. If no value is specified for <b><font color="#0000FF">MaxDisk</font></b>, either in the route section or in the <font color="#009933">Default.Route</font> file, Gaussian will assume that enough disk is available to perform the calculation with no redundant work, which may not be the case for larger runs. <font face="Times New Roman, Times, serif" size="3"><i>Thus, specifying the amount of available memory and disk is by far the most important way of optimizing performance for MP2 calculations</i></font>. Doing so allows the program to decide between the various available algorithms, selecting the optimal one for your particular system configuration. This is best accomplished with <b><font color="#0000FF">-M-</font></b> directive and <b><font color="#0000FF">MaxDisk</font></b> keyword in the <font color="#009933">Default.Route</font> file (although <b><font color="#0000FF">MaxDisk</font></b> and <b><font color="#0000FF">%Mem</font></b> may be included in the input file).</p>
+<h2>Higher Correlated Methods</h2>
+<p>The correlation methods beyond MP2 (MP3, MP4, CCSD, CISD, QCISD, etc.) all require that some transformed (MO) integrals be stored on disk and thus (unlike MP2 energies and gradients) have disk space requirements that rise quartically with the size of the molecule. There are, however, several alternatives as to how the transformed integrals are generated, how many are stored, and how the remaining terms are computed.</p>
+<p>The default in Gaussian is a semi-direct algorithm. The AO integrals may be written out for use in the SCF phase of the calculation or the SCF may be done directly or in-core. The transformation recomputes the AO integrals as needed and leaves only the minimum number of MO integrals on disk (see below). The remaining terms are computed by recomputing AO integrals.</p>
+<p>The following points summarize the effect of <b><font color="#0000FF">MaxDisk</font></b> for post-SCF methods:</p>
+<ul>
+<li>
+<p>CID, CISD, CCD, BD, and QCISD energies also have a fixed storage requirement proportional to O<sup>2</sup>N<sup>2</sup>, with a large factor, but obey <b><font color="#0000FF">MaxDisk</font></b> in avoiding larger storage requirements.</p>
+</li>
+<li>
+<p>CCSD, CCSD(T), QCISD(T), and BD(T) energies have fixed disk requirements proportional to ON<sup>3</sup> which cannot be limited by <b><font color="#0000FF">MaxDisk</font></b>.</p>
+</li>
+<li>
+<p>CID, CISD, CCD, QCISD densities and CCSD gradients have fixed disk requirements of about N<sup>4</sup>/2 for closed-shell and 3N<sup>4</sup>/4 for open-shell.</p>
+</li></ul>
+<h2>CIS and TD Energies and Gradients</h2>
+<p>In addition to integral storage selection, the judicious use of the restart facilities can improve the economy of CIS and TD calculations.</p>
+<h3>Integral Storage</h3>
+<p>Excited states using CI with single excitations can be done using five methods (labeled by their corresponding option to the <b><font color="#0000FF">CIS</font></b> keyword). Note that only the first two options are available for the <b><font color="#0000FF">TD</font></b> method:</p>
+<p><b><font color="#0000FF">Direct</font></b><br>
+Solve for the specified number of states using iterative diagonalization, forming the product vectors from two-electron integrals computed as needed. This algorithm reduces memory and disk requirements to O(N<sup>2</sup>). This is the default for <b><font color="#0000FF">TD</font></b>.
+</p>
+<p><b><font color="#0000FF">InCore</font></b><br>
+Requests that the AO Raffenetti combinations be held in memory. In-core is quite efficient, but is only practical for small molecular systems or large memory computers as N<sup>4</sup>/4 words of memory are required. This approach is used automatically if there is sufficient memory available.
+</p>
+<p><b><font color="#0000FF">MO</font></b><br>
+Solve for the specified number of states using iterative (Davidson) diagonalization, forming the product vectors using MO integrals. This is the fastest method and is the default. This algorithm is an efficient choice up to about 150 basis functions, depending on the number of occupied orbitals. The more occupied orbitals, the sooner the direct algorithm should be used. Since only integrals involving two virtuals are needed (even for gradients) an attempt is made to obey MaxDisk. The minimum disk required is about 4O<sup>2</sup>N<sup>2</sup> (6O<sup>2</sup>N<sup>2</sup> for open-shell). This is the default for <b><font color="#0000FF">CIS</font></b>.
+</p>
+<h3>Restarting Jobs and Reuse of Wavefunctions</h3>
+<p>CIS and TD jobs can be restarted from a Gaussian checkpoint file. This is of limited use for smaller calculations, which may be performed in the MO basis, as new integrals and transformation must be done, but is invaluable for direct CIS. If a direct CIS job is aborted during the CIS phase, then <b><font color="#0000FF">SCF=Restart</font></b> should be specified in addition to <b><font color="#0000FF">CIS=Restart</font></b> or <b><font color="#0000FF">TD=Restart</font></b>, as the final SCF wavefunction is not moved to its permanent location (suitable for <b><font color="#0000FF">Guess=Read</font></b>) until the entire job step (or optimization step) completes.</p>
+<h3>CIS and TD Excited State Densities</h3>
+<p>If only density analysis is desired, and the excited states have already been found, the CIS density can be recovered from the checkpoint file, using <b><font color="#0000FF">Density=(Check,Current) Guess=Only</font></b>, which recovers whatever generalized density was stored for the current method (presumably CIS) and repeats the population analysis. Note that the one-particle (unrelaxed) density as well as the generalized (relaxed) density can be examined, but that dipole moments and other properties at the CIS level are known to be much less accurate if the one-particle density is used (i.e., if the orbital relaxation terms are neglected) <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Foresman92">Foresman92</a>, <a href="refs.htm#Wiberg92">Wiberg92</a>]</font>. Consequently, the use of the CIS one-particle density is strongly discouraged, except for comparison with the correct density and with other programs that cannot compute the generalized density.</p>
+<p>Separate calculations are required to produce the generalized density for several states, since a CPHF calculation must be performed for each state. To do this, first solve for all the states and the density for the first excited state:</p>
+<pre># CIS=(Root=1,NStates=N) Density=Current</pre>
+<p>if <font face="Times New Roman, Times, serif" size="3"><i>N</i></font> states are of interest. Then do <font face="Times New Roman, Times, serif" size="3"><i>N</i></font>-1 additional runs, using a route section of the form:</p>
+<pre>CIS=(Read,Root=M,NStates=N) Density=Current</pre>
+<p>for states <font face="Times New Roman, Times, serif" size="3"><i>M</i></font>=2 through <font face="Times New Roman, Times, serif" size="3"><i>N</i></font>.</p>
+<h3>Pitfalls for Open-Shell Excited States</h3>
+<p>Since the UHF reference state is not an eigenfunction of S<sup>2</sup>, neither are the excited states produced by CIS or TD <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Foresman93">Foresman93</a>]</font>.</p>
+<h2>Stability Calculations</h2>
+<p>Tests of Triplet and Singlet instabilities of RHF and UHF and restricted and unrestricted DFT wavefunctions can be requested using the <b><font color="#0000FF">Stable</font></b> keyword. Stability calculations can be restarted as described above for <b><font color="#0000FF">CIS</font></b>.</p>
+<h2>CASSCF Efficiency</h2>
+<p>The primary challenge in using the CASSCF method is selecting appropriate active space orbitals. There are several possible tactics:</p>
+<ul>
+<li>
+<p>Use <b><font color="#0000FF">Pop=SaveMixed</font></b> to save NBOs for the occupied orbitals and NLMOs for unoccupied orbitals to the checkpoint file. Then use GaussView to populate and reorder the orbitals required to form the active space. This is by far the easiest and most effective method.</p>
+</li>
+<li>
+<p>Use the standard delocalized initial guess orbitals. This is sometimes sufficient, e.g. if the active space consists of all p electrons. Use <b><font color="#0000FF">Guess=Only</font></b> to inspect the orbitals and determine whether any alterations are required before running the actual calculation.</p>
+</li>
+<li>
+<p>Use localized initial guess orbitals. This is useful if specific bond pairs are to be included, since localization separates electron pairs.</p>
+</li>
+<li>
+<p>Use the natural orbitals from the total density from a UHF calculation (CAS-UNO) <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Hamilton88">Hamilton88</a>, <a href="refs.htm#Bofill89">Bofill89</a>]</font>. For singlets, this requires that one has coaxed the UHF run into converging to a broken symmetry wavefunction (normally with <b><font color="#0000FF">Guess=Mix</font></b>). It is most useful for complex systems in which it is not clear which electrons are most poorly described by doubly-occupied orbitals.</p>
+</li></ul>
+<p>In all cases, a single-point calculation should be performed before any optimization, so that the converged active space can be checked to ensure that the desired electrons have been correlated before proceeding. There are additional considerations in solving for CASSCF wavefunctions for excited states (see the discussion of the <b><font color="#0000FF">CASSCF</font></b> keyword for details).</p>
+<h3>CASSCF Frequencies</h3>
+<p>CASSCF frequencies require large amounts of memory. Increasing the amount of available memory will always improve performance for CASSCF frequency jobs (the same is not true of frequency calculations performed with other methods). These calculations also require O<sup>2</sup>N<sup>2</sup> disk space.</p>
+<hr><p><font face="Times New Roman, Times, serif" size="-1"><i>Last updated on: 10 May 2009</i></font></p>
+</body></html>

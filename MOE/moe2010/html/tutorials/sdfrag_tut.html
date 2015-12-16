@@ -1,0 +1,1326 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	sdfrag_tut.htm	SD Pipelining Tools - How to Create a Fragment Database
+!!
+!!  13-aug-2009 (ad) created
+!!
+!!-->
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<title>SD Pipelining Tools - How to Create a Fragment Database</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>SD Pipelining Tools - How to Create a Fragment Database</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Conventions">Conventions Used in this Tutorial</a>
+</li><li>
+<a href="#Introduction">Introduction to SD Pipelining in MOE</a>
+</li><li>
+<a href="#Fragments_for_Scaffold_Replacement">
+Fragments for Scaffold Replacement
+</a>
+</li><li>
+<a href="#Fragmentation_Protocol">Fragmentation Protocol and Workflow</a>
+</li><li>
+<a href="#Preparing_Environment">Preparing the Environment</a>
+</li><li>
+<a href="#Creating_a_Fragment_Database">Creating a Fragment Database</a>
+</li><li>
+<a href="#See_Also">See Also</a>
+</li>
+</ul>
+
+<p>
+This tutorial will guide you in the creation of a fragment database suitable
+for input to the <a href="../apps/scaffold.htm">Scaffold Replacement</a>
+application in MOE. SD files from the MOE installation will be used as input
+to illustrate how the SD Pipelining tools are used.</p>
+
+<a name="Conventions"></a>
+<h2>Conventions Used in this Tutorial</h2>
+
+<table border="0" cellpadding="3">
+<tr>
+<td bgcolor="#cccccc">MOE</td>
+<td>The MOE Window</td>
+</tr>
+<tr>
+<td bgcolor="#cccccc"><tt>$MOE</tt></td>
+<td>
+The MOE installation directory.  This is a Unix-style reference to
+the environment variable <tt>MOE</tt> (described
+<a href="#Preparing_Environment">below</a>), and is
+appropriate for
+Linux, Unix, and Mac OS X computer operating systems.
+<br />
+Microsoft Windows: Use <tt>%MOE%</tt> instead.</p>
+</td>
+</tr>
+<tr>
+<td bgcolor="#cccccc" align="center">
+<tt>/</tt>
+</td>
+<td>
+Unix path separator, e.g. <tt>$MOE/sample/mol</tt>.
+<br />
+Microsoft Windows: Use <tt>\</tt> instead, e.g.
+<tt>%MOE%\sample\mol</tt>.
+</td>
+</tr>
+
+<tr>
+<td bgcolor="#cccccc" align="center">
+<tt>\</tt>
+</td>
+<td>
+Unix line continuation character, e.g.
+<pre>
+    $MOE/bin/sddesc -calc TPSA,SlogP,Weight \
+	input.sdf -o output.sdf
+</pre>
+Microsoft Windows: Use <tt>^</tt> instead, e.g.
+<pre>
+    %MOE%\bin\sddesc -calc TPSA,SlogP,Weight ^
+	input.sdf -o output.sdf
+</pre>
+</td>
+</tr>
+
+</table>
+
+<p>
+In this tutorial, we will assume that you have basic knowledge of your
+currently installed shell. All examples will assume a Unix shell.
+</p>
+
+<a name="Introduction"></a>
+<h2>Introduction to SD Pipelining in MOE</h2>
+<p>
+The SD Pipeline Tools are a collection of standard command-line
+applications that can be used to process structure libraries found in
+SD files and SMILES databases. Each application is controlled via
+command-line switches enabling or disabling certain functions and
+features. Combining these various application via pipes is an effective
+method of creating <i>ad hoc</i> workflows as is done with a flow-chart
+model. The pipelining model allows easy access to many cheminformatics
+algorithms in MOE via MOE/batch, the non-graphical version of MOE.
+Individual SD Pipeline Tools can be called from within script, in web
+applications or from any third party software or programming language.
+Streaming data over pipes allows for very large input files, for example,
+an entire corporate database.  Such files can be
+processed as a single file or split into multiple smaller files.
+</p>
+
+<p>
+A full description of the SD Pipeline Tools can be found in their
+respective manual pages. They are summarized here:
+</p>
+
+<blockquote>
+<table width="90%">
+<tr>
+<td valign="baseline">
+<a href="../moe/fcnref/sddesc.htm">sddesc</a>
+</td>
+<td valign="baseline">
+Calculate MOE descriptors for molecules in SD files.
+</td>
+</tr>
+
+<tr>
+<td valign="baseline">
+<a href="../moe/fcnref/sdfilter.htm">sdfilter</a>
+</td>
+<td valign="baseline">
+Apply filtering rules to SD files.
+</td>
+</tr>
+
+<tr>
+<td valign="baseline">
+<a href="../moe/fcnref/sdfrag.htm">sdfrag</a>
+</td>
+<td valign="baseline">
+Apply fragmentation algorithm to molecules in SD files.
+</td>
+</tr>
+
+<tr>
+<td valign="baseline">
+<a href="../moe/fcnref/sdsort.htm">sdsort</a>
+</td>
+<td valign="baseline">
+Sort or merge records from one or more SD files and optionally remove
+duplicates.
+</td>
+</tr>
+
+<tr>
+<td valign="baseline">
+<a href="../moe/fcnref/sdstereo.htm">sdstereo</a>
+</td>
+<td valign="baseline">
+Enumerate stereo centers in SD files or SMILES input.
+</td>
+</tr>
+
+<tr>
+<td valign="baseline">
+<a href="../moe/fcnref/sdwash.htm">sdwash</a>
+</td>
+<td valign="baseline">
+Apply washing rules and tautomer enumeration to structures in SD files.
+</td>
+</tr>
+</table>
+</blockquote>
+
+<a name="Fragments_for_Scaffold_Replacement"></a>
+<h2>Fragments for Scaffold Replacement</h2>
+
+<p>
+Scaffold replacement methodologies require a library of suitable molecules or
+fragments to search. Existing molecules, such as those found in chemical
+reagent databases, can be used directly but are found in limited numbers.
+Algorithmic enumeration of chemical graphs is a common approach for generating
+fragments, but these can be difficult to synthesize since they do not
+necessarily relate to existing molecules. Enumerating hydrocarbon scaffolds
+also lacks the pharmacophore richness required for drug design. A better
+approach is to break existing molecules into smaller fragments.
+</p>
+
+<p>
+
+Ideally, a fragment should be smaller than drug-size such that upon
+rescaffolding the newly created molecule still retains its drug-like
+properties. On average, in scaffold replacement, such a fragment is
+expected to link two or more small R-groups. Fragments should also be
+amenable to chemical substitution to allow for creating the
+scaffold&mdash;R-group bond(s).  A fragment should also be sufficiently
+large to link fairly distant R-groups as those found in larger active
+sites. It must also have a limited number of rotatable bonds to reduce
+the molecule's overall flexibility.
+
+</p>
+
+
+<p>
+In this tutorial, we will use the SD Pipeline Tools with specific options
+for balancing size, pharmacophore richness, linker geometry,
+and descriptor space requirements
+to generate a set of fragments suitable for scaffold replacement.
+
+</p>
+
+<a name="Fragmentation_Protocol"></a>
+<h2>Fragmentation Protocol and Workflow</h2>
+
+<center>
+<img src="sdfrag_tut/workflow.png" width="50%">
+</center>
+
+<p>
+Starting with SD data, a typical workflow in MOE is as follows:
+</p>
+
+<ol start="1">
+<p><li>
+Wash and filter input SD files to obtain good starting structures for
+fragmentation.
+<ol type="a">
+<li>Filter out V3000 records (incompatible with SDTools).
+<li> Expand abbreviations and filter out those with missing abbreviations.
+  Disconnect salts, normalize ylides, remove hydrogens, and assign
+  wedge bonds.
+<li> Filter out records that contain inorganic atoms, or atoms with more than 4
+  bonds.
+<li> Retain only largest components in each record and generate unique
+	tautomers and ionization states.
+<li> Filter out undesirable protomers. Keep only structures that are leadlike,
+  non-reactive, contain only small rings, 4 or less chiral centers, 3 or
+  less racemic centers, or any fragments with an acid or base.
+</ol>
+
+</li></p><p><li>
+Fragment molecules using a combination of algorithms. Apply Ringatoms,
+Ringblock, RECAP, and Schuffenhauer fragmentation algorithms simultaneously.
+Keep fragments with at most 4 rotatable bonds and a graph diameter of at
+most 10.
+
+</li></p><p><li>
+Generate conformations of fragments.
+
+</li></p>
+</ol>
+
+<a name="Preparing_Environment"></a>
+<h2>Preparing the Environment</h2>
+
+To simplify the command syntax, the
+<a href="../install/install.htm#RunEnv">MOE environment variable</a>
+can be set at the command-line prior to launching the SD Tools.
+
+<h3>Windows</h3>
+
+<p>
+The Windows command-line terminal can be launched via the <b>Start</b> menu:
+</p>
+
+<div class="floatright">
+<img src="sdfrag_tut/console.png" alt="Windows commands" />
+</div>
+
+<blockquote>
+<span class="menu">Start | Run</span></p>
+</blockquote>
+
+<p>
+In the Run application, type
+<blockquote>
+<span class="nobr"><tt>cmd</tt></span></p>
+</blockquote>
+to launch the command line interpreter.
+</p>
+
+<p>
+Locate your MOE installation directory (e.g. <tt>c:\moe</tt>).  To
+create an environment variable <tt>MOE</tt> that points to this
+directory, type
+</p>
+
+<blockquote>
+<span class="nobr"><tt>C:\&gt;&nbsp;set MOE=c:\moe</tt></span>
+</blockquote>
+
+<p>
+For the remainder of this document, Unix-style commands are used.
+To run the same commands on Unix, replace all instances of
+<tt>$MOE</tt> with <tt>%MOE%</tt>, path separator &quot;/&quot; with
+&quot;\&quot;, and line continuation character &quot;/&quot; with
+&quot;^&quot;.  For example, the following Unix-style command
+</p>
+
+<blockquote>
+    <tt>$&gt;&nbsp;$MOE/bin/sdfrag</tt>
+    <b>{</b> <i>option</i> | <i>inputfilename</i> | @<i>filename</i> <b>}*</b>
+</blockquote>
+
+<p>would have the following Windows equivalent:
+
+<blockquote>
+    <tt>C:\&gt;&nbsp;%MOE%\bin\sdfrag</tt>
+    <b>{</b> <i>option</i> | <i>inputfilename</i> | @<i>filename</i> <b>}*</b>
+</blockquote>
+
+</p>
+
+
+<h3>Unix</h3>
+<p>
+From within a shell session, set your <tt>MOE</tt> environment variable to your
+MOE installation directory (e.g. <tt>/usr/local/moe</tt>):
+
+<blockquote>
+<table class="titlebar">
+<tr>
+<th>Shell</th>
+<th>Set <tt>MOE</tt> Environment Variable</th>
+</tr>
+<tr>
+<td valign="baseline">
+sh (Bourne shell)
+</td>
+<td valign="baseline">
+<tt>$&gt; MOE=/usr/local/moe</tt>
+<br />
+<tt>$&gt; export MOE</tt>
+</td>
+</tr>
+<tr>
+<td valign="baseline">
+csh (C shell), tcsh
+</td>
+<td valign="baseline">
+<tt>$&gt; setenv MOE /usr/local/moe</tt>
+</td>
+</tr>
+<tr>
+<td valign="baseline">
+Bash (Bourne-again shell)
+</td>
+<td valign="baseline">
+<tt>$&gt; export MOE=/usr/local/moe</tt>
+</td>
+</tr>
+<tr>
+<td valign="baseline">
+ksh (Korn shell)
+</td>
+<td valign="baseline">
+<tt>$&gt; export MOE=/usr/local/moe</tt>
+</td>
+</tr>
+</table>
+</blockquote>
+
+<h3>Mac OS X</h3>
+From within the Terminal application, set your <tt>MOE</tt> environment
+variable to
+your MOE installation directory (e.g. <tt>/Applications/moe</tt>).
+Mac OS X uses Bash by default:
+
+<blockquote>
+<b>Applications | Utilities | Terminal</b>
+</blockquote>
+
+<blockquote>
+<tt>$&gt; export MOE=/usr/local/moe</tt>
+</blockquote>
+
+<!--
+<p>
+For unusual configurations, please see the generic Unix instructions.
+</p>
+-->
+
+<a name="Creating_a_Fragment_Database"></a>
+<h2>Creating a Fragment Database</h2>
+
+<p>This section describes in sequence the SD Tools commands used
+to create a fragment database.  These commands can be collated
+into a <a href="#Script">script</a> which can then be run as a batch job.
+
+<ol>
+<p><li><h3>Preparing Input Structures</h3>
+
+<ol type="a">
+<li><h4>Remove V3000 Structures</h4>
+<p>
+The first step is to ensure that all structures in the workflow can be processed
+by the SD Tools. The SD Tools were designed to take advantage of correctly
+formatted SDF V2000 structures. The V3000 structures can be removed with the
+<a href="../moe/fcnref/sdfilter.htm">sdfilter</a> application:</p>
+
+<pre>
+    $&gt; $MOE/bin/sdfilter -verbose -V2000 $MOE/sample/mol/*.sdf \
+	-f V3000.sdf -o V2000.sdf
+</pre>
+
+<pre>
+    C:\&gt; %MOE%\bin\sdfilter -verbose -V2000 %MOE%\sample\mol\*.sdf ^
+	-f V3000.sdf -o V2000.sdf
+</pre>
+
+
+<p>
+The structures in the newly created <tt>V2000.sdf</tt> file will contain records
+compatible with all the SD Tools. A filter file, <tt>V3000.sdf</tt>, will be created
+containing any V3000 records found which can be examined at a later time.
+</p>
+
+<li><h4>Wash Input Structures</h4>
+
+<p>
+Input structures are often not ready for processing by cheminformatics
+applications. A common source of molecules is vendor catalogs which commonly
+present their structures in their salt form, without hydrogens,
+with abbreviations,
+and/or without explicit stereochemical bond wedges. In this protocol, we use
+<tt><a href="../moe/fcnref/sdwash.htm">sdwash</a></tt> to address these issues, filtering out any
+problematic structures into a filter file.
+</p>
+
+<pre>
+    $&gt; $MOE/bin/sdwash -verbose -strict -salts -ylide -wedge -removeH \
+	@$MOE/lib/sdabbrev.txt V2000.sdf -f wash_invalid.sdf -o wash.sdf
+</pre>
+
+<pre>
+    C:\&gt; %MOE%\bin\sdwash -verbose -strict -salts -ylide -wedge -removeH ^
+	@$MOE/lib/sdabbrev.txt V2000.sdf -f wash_invalid.sdf -o wash.sdf
+</pre>
+
+
+<p><center>
+<table class="titlebar" width="95%">
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline">
+<tt>-verbose</tt>
+<td valign="baseline">
+Enable information printing.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-strict</tt>
+<td valign="baseline">
+Require a fully specified molecule (all elements).
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-salts</tt>
+<td valign="baseline">
+Disconnect common metal salts.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-ylide</tt>
+<td valign="baseline">
+Normalize double bond / charge-separated representation.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-wedge</tt>
+<td valign="baseline">
+Assign chiral wedge bonds in 2D output.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-removeH</tt>
+<td valign="baseline">
+Remove hydrogens.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>@$MOE/lib/sdabbrev.txt</tt>
+<td valign="baseline">
+Use text file containing a list of <tt>-abbrev</tt> statements to translate
+the abbreviation to the intended structure.
+(<tt>-abbrev name=<a href="../moe/molsystems/smiles.html">SMILES</a></tt>)
+</tr>
+</table>
+</center></p>
+
+<p>
+Here, two output files are created, <tt>wash.sdf</tt> and
+<tt>wash_invalid.sdf</tt>. The first file, <tt>wash.sdf</tt>, contains the
+structures that will continue on in the workflow, while the structures in
+<tt>wash_invalid.sdf</tt> are removed and can be examined at a later time.
+</p>
+
+
+<li><h4>Filter Undesirable Structures</h4>
+
+<p>
+Some structures may not be compatible with drug discovery activities. For
+example, inorganic structures with covalently bound transition metals or
+hypervalent structures can be removed with the following <tt>
+<a href="../moe/fcnref/sdfilter.htm">sdfilter</a></tt> command.
+</p>
+
+<pre>
+    $&gt; $MOE/bin/sdfilter -verbose -smarts '[#T]' 0 -smarts '[!D0!D1!D2!D3!D4]' 0 \
+	-elements C,H,N,O,S,P,F,Cl,Br,I wash.sdf -o pass.sdf -f wash_rejected.sdf
+</pre>
+
+<pre>
+    C:\&gt; %MOE%\bin\sdfilter -verbose -smarts '[#T]' 0 -smarts '[!D0!D1!D2!D3!D4]' 0 ^
+	-elements C,H,N,O,S,P,F,Cl,Br,I wash.sdf -o pass.sdf -f wash_rejected.sdf
+</pre>
+
+
+<p><center>
+<table class="titlebar" width="95%">
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline">
+<tt>-verbose</tt>
+<td valign="baseline">
+Enable information printing.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-smarts '[#T]' 0</tt>
+<td valign="baseline">
+Filter out structures with transition metals.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-smarts '[!D0!D1!D2!D3!D4]' 0</tt>
+<td valign="baseline">
+Filter out structures with atoms containing more than 4 bonds.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-elements C,H,N,O,S,P,F,Cl,Br,I</tt>
+<td valign="baseline">
+Allow only molecules consisting of listed atoms.
+</tr>
+</table>
+</center></p>
+
+<p>
+Two files are again created.  The first, <tt>pass.sdf</tt>, contains
+the structures that passed the filters, and the
+second, <tt>wash_rejected.sdf</tt>, those
+that were rejected.
+</p>
+
+<li><h4>Enumerate Tautomers and Protonation States</h4>
+
+<p>
+Input structures are often drawn in an arbitrary ionization state and tautomer
+state. This can have dramatic effects on QSAR, fingerprint, and pharmacophore
+modeling results. <tt><a href="../moe/fcnref/sdwash.htm">sdwash</a></tt> is used to ensure
+that the biologically
+active form is available in the data set. Here, the maximum number of
+enumerated structures for each input record is set to a large
+number to effectively generate them all.
+</p>
+
+<pre>
+    $&gt; $MOE/bin/sdwash -verbose -component -protomers -enumsize 1000 \
+	-seqno mseq wash.sdf -o enumerated.sdf
+</pre>
+
+<pre>
+    C:\&gt; %MOE%\bin\sdwash -verbose -component -protomers -enumsize 1000 ^
+	-seqno mseq wash.sdf -o enumerated.sdf
+</pre>
+
+
+<p><center>
+<table class="titlebar" width="95%">
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline">
+<tt>-verbose</tt>
+<td valign="baseline">
+Enable information printing.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-component</tt>
+<td valign="baseline">
+Keep only largest connected component.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-protomers</tt>
+<td valign="baseline">
+Enumerate tautomers (H/double bond migrations) and protomers
+(+/- protons).
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-enumsize 1000</tt>
+<td valign="baseline">
+Enumerate "all" protomeric states.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-seqno mseq</tt>
+<td valign="baseline">
+Generate a field named <tt>mseq</tt>, which contains
+the index record number of the input structure.
+</tr>
+</table>
+</center></p>
+
+<p>
+The <tt><a href="../moe/fcnref/sdwash.htm">sdwash</a></tt>
+command produces a single output file,
+<tt>enumerated.sdf</tt>, containing all tautomer, protomer,
+and ionization states of the input molecules.
+</p>
+
+</li></p>
+
+<p><li><h4>Filter Tautomers and Produce Leadlike Structures</h4>
+<p>
+The previous <tt><a href="../moe/fcnref/sdwash.htm">sdwash</a></tt>
+command will produce a large
+number of structures as a result of tautomer and ionization state
+enumeration. Some of these structures will represent minor tautomers that
+are unlikely to be popular under biological conditions. Also, in the
+context of producing fragments for scaffold replacement experiments,
+structures that are already leadlike and nonreactive, and contain no
+macrocyles or have few of chiral centers are desirable. The
+<tt><a href="../moe/fcnref/sdfilter.htm">sdfilter</a></tt>
+command can be re-applied with different
+settings to produce a set of leadlike, non-reactive small molecules
+suitable for fragmentation input.
+</p>
+
+<pre>
+    $&gt; $MOE/bin/sdfilter -verbose -leadlike -nonreactive -smallring -chiral 4- \
+	-racemic 3- @smarts_filter.txt -svl sdfilter_acidbase 0 enumerated.sdf \
+	-f tautomers_rejected.sdf -o tautomers_pass.sdf
+</pre>
+
+<pre>
+    C:\&gt; %MOE%\bin\sdfilter -verbose -leadlike -nonreactive -smallring -chiral 4- ^
+	-racemic 3- @smarts_filter.txt -svl sdfilter_acidbase 0 enumerated.sdf ^
+	-f tautomers_rejected.sdf -o tautomers_pass.sdf
+</pre>
+
+
+<p><center>
+<table class="titlebar" width="95%">
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline">
+<tt>-verbose</tt>
+<td valign="baseline">
+Enable information printing.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-leadlike</tt>
+<td valign="baseline">
+Is lead-like
+(<tt>MW &lt;= 450</tt>, <tt>#Donors &lt;=5</tt>,
+<tt>#Acceptors &lt;=8</tt>, <tt>-3.5 &lt;= logP &lt;= 4.5</tt>,
+<tt>#rotatable bonds &lt;= 10</tt>, <tt>#rings &lt;= 4</tt>).
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-nonreactive</tt>
+<td valign="baseline">
+Reject any of a conservative list of reactive groups.<br />
+The table of reactive groups is based on the Oprea set [Oprea 2000] and
+includes metals, phospho-, N/O/S-N/O/S single bonds, thiols, acyl halides,
+Michael Acceptors, azides, esters, etc.<br />
+<!--
+See <tt>$MOE/lib/svl/quasar.svl/q_btop.svl</tt> for
+a complete list.
+-->
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-smallring</tt>
+<td valign="baseline">
+Restrict ring size to 8 or smaller.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-chiral 4-</tt>
+<td valign="baseline">
+Limit of 4 chiral centers.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-racemic 3-</tt>
+<td valign="baseline">
+Limit of 3 unconstrained chiral centers.
+</tr>
+<tr>
+<td valign="baseline">
+<span class="nobr"><tt>-svl sdfilter_acidbase 0</tt></span>
+<td valign="baseline">
+Filter out acids or bases.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>@smarts_filter.txt</tt>
+<td valign="baseline">
+Filter out undesirable tautomers and ionization states.
+</tr>
+</table>
+</center></p>
+
+<p>
+The output will consist of two files. <tt>tautomers_pass.sdf</tt> contains the
+structures that have passed all filters and that
+will be sent on for fragmentation;
+<tt>tautomers_rejected.sdf</tt> contains all records that
+failed any of the filters or any
+<a href="../moe/molsystems/smiles.html">SMARTS</a> expression
+specified in <tt>smarts_filter.txt</tt>.
+</p>
+
+<p>
+The <tt>smarts_filter.txt</tt> file is a list of SMARTS expressions
+used to filter the SD structures.  These expressions of the form
+<pre>
+    <tt>-smarts SMARTS range</tt>
+</pre>
+where <tt>range</tt> is the number of permissible matches (<tt>0</tt>
+means must not match).
+In this example, the
+<tt>smarts_filter.txt</tt> file is used to filter out any undesirable
+input structures or generated tautomer states. A few examples are listed in
+the table below.
+</p>
+
+<p>
+<table border="1" width="95%" cellpadding="5">
+<tr>
+<th bgcolor="#cccccc">Option</th>
+<th bgcolor="#cccccc">Description</th>
+<th bgcolor="#cccccc">Example</th>
+</tr>
+
+<tr>
+<td valign="baseline">
+<tt>-smarts F 6-</tt>
+<td valign="baseline">
+Up to 6 fluorine atoms.
+<td>&nbsp;</td>
+
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-smarts "[#G7!F]" 3-</tt>
+<td valign="baseline">
+Up to 3 halogen atoms (except fluorine).
+<td>&nbsp;</td>
+
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-smarts "[N+](=[OX1])[OX1]" 1-</tt>
+<td valign="baseline">
+Allow one nitro group.
+<td>&nbsp;</td>
+
+</tr>
+<tr>
+<td valign="top">
+<tt>-smarts [CX4Q4](F)(F)[CX4Q4](F)(F)[CX4Q4](F)(F) 0</tt>
+<td valign="top">
+No tetra-fluorocarbons.<br />
+<tt>[x] = [CX4Q4]</tt>
+<td valign="top">
+<img src="sdfrag_tut/smarts_01.png" />
+</tr>
+<tr>
+<td valign="top">
+<tt>-smarts [CX4Q2]!@[CX4Q2]!@[CX4Q2]!@[CX4Q2]!@[CX4Q2] 0</tt>
+<td valign="top">
+No chains of five aliphatic carbons, each with two
+heavy neighbors connected by
+four contiguous rotatable bonds.<br />
+<tt>[x] = [CX4Q2]</tt>
+<td valign="top">
+<img src="sdfrag_tut/smarts_03.png" />
+</tr>
+<tr>
+<td valign="top">
+<tt>-smarts [OX2Q2][SX4]([OX1])([OX1])O 0</tt>
+<td valign="top">
+No sulphates
+<td valign="top">
+<img src="sdfrag_tut/smarts_04.png" />
+</tr>
+<tr>
+<td valign="top">
+<tt>-smarts [N;!$(*~[#G6])]=[CX3][#G6] 0</tt><br>
+<i>Warning:</i> Certain shells process <tt>$</tt>
+<td valign="top">
+No aliphatic nitrogens which are not bonded to a chalcogen,
+but are double-bonded
+to a carbon, which is in turn bonded to a chalcogen.
+The central carbon can be bonded
+to an additional heavy atom.
+<td valign="top">
+<img src="sdfrag_tut/smarts_02.png" />
+</tr>
+<tr>
+<td valign="top">
+<tt>-smarts [OX2Q2][N+Q3](=[OX1])[OX1] 0</tt>
+<td valign="top">
+No nitrates.
+<td valign="top">
+<img src="sdfrag_tut/smarts_05.png" />
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-smarts [#6+!$(C(N)(N))] 0</tt>
+<td valign="baseline">
+No positively charged carbons which are not single-bonded to two aliphatic
+nitrogens.
+<td>&nbsp;</td>
+
+</tr>
+<tr>
+<td valign="top">
+<tt>-smarts [N+X3](=C[NX3])OC=O 0</tt><br>
+<tt>-smarts [NX3](C=[N+X3])OC=O 0</tt>
+<td valign="top">
+Forbid two beta secondary amines,
+where either is charged, and one is alpha to an ester.
+<td valign="top">
+<img src="sdfrag_tut/smarts_07.png" /><br>
+<img src="sdfrag_tut/smarts_08.png" />
+
+
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-smarts [O!i]!@-[N!$(*[i])] 0</tt>
+<td valign="baseline">
+No aliphatic oxygens
+bonded to an aliphatic nitrogen. Bond cannot be in a &pi; system
+or in a ring.
+<td>&nbsp;</td>
+
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-smarts [#6-] 0</tt><br>
+<tt>-smarts [#6--] 0</tt><br>
+<tt>-smarts [#6++] 0</tt>
+<td valign="baseline">
+No carbocations or carboanions.
+<td>&nbsp;</td>
+
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-smarts [O+] 0</tt>
+<td valign="baseline">
+No positively charged aliphatic oxygens.
+<td>&nbsp;</td>
+
+</tr>
+<tr>
+<td valign="top">
+<tt>-smarts [#6r6]1-*=*-*=*-*-1=* 0</tt>
+<td valign="top">
+A 6-membered unsaturated non-aromatic ring with an exocyclic double-bond
+(aromatic breaker).
+<td valign="top">
+<img src="sdfrag_tut/smarts_09.png" />
+</tr>
+<tr>
+<td valign="top">
+<tt>-smarts [#6r6]1-*=*-*=*-*-1=* 0</tt>
+<td valign="top">
+No 6-membered unsaturated non-aromatic rings with an exocyclic double-bond,
+unless exocyclic double-bond is a chalcogen (e.g. carbonyl).
+<td valign="top">
+<img src="sdfrag_tut/smarts_06.png" />
+</tr>
+
+</table>
+
+</ol>
+</p></li>
+
+<p><li>
+<h3>Generating Fragments</h3>
+<p>
+With a set of cleaned and filtered structures, we are now ready to apply
+fragmentation algorithms to our structures.
+The <tt><a href="../moe/fcnref/sdfrag.htm">sdfrag</a></tt> command
+can generate or process
+fragments according to one or
+more different molecule fragmentation algorithms, and
+a large number of structures, including possibly duplicates, may
+result. We will apply a selection of descriptor filters to increase
+the chance of obtaining interesting fragments suitable for scaffold
+replacement, R-group linking, and ligand growing.
+</p>
+
+<pre>
+    $&gt; $MOE/bin/sdfrag -verbose -unique -ringblock -recap -schuffenhauer -ringatoms \
+	-maxrotbond 4 -maxdiam 10 -simplify tautomers_pass.sdf -o fragments.sdf
+</pre>
+
+<pre>
+    C:\&gt; %MOE%\bin\sdfrag -verbose -unique -ringblock -recap -schuffenhauer -ringatoms ^
+	-maxrotbond 4 -maxdiam 10 -simplify tautomers_pass.sdf -o fragments.sdf
+</pre>
+
+<p><center>
+<table class="titlebar" width="95%"`>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-unique</tt>
+<td valign="baseline">
+Retain only unique fragments.
+
+
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-ringblock</tt>
+<td valign="baseline">
+Generate fragment rings and fused ring systems, including exocyclic
+double-bonded atoms or charge-separated species.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-recap</tt>
+
+<td valign="baseline">
+Generate fragments by performing all 2<sup>n</sup> disconnection combinations on
+RECAP bonds.
+</tr>
+<tr>
+<td valign="baseline">
+<tt>-schuffenhauer</tt>
+<td valign="baseline">
+Generate fragments by sequential decomposition following Schuffenhauer/Ertl
+retrosynthetic rules.
+</tr>
+
+<tr>
+<td valign="baseline">
+<tt>-ringatoms</tt>
+
+<td valign="baseline">
+Generate fragments by deleting all non-ring atoms,
+and extracting remaining components. Add back exocyclic double-bonded atoms
+or charge-separated species.
+</tr>
+
+<tr>
+<td valign="baseline">
+<tt>-maxrotbond 4</tt>
+<td valign="baseline">
+Generate fragments with no more than four rotatable bonds.
+</tr>
+
+<tr>
+<td valign="baseline">
+<tt>-maxdiam 10</tt>
+
+<td valign="baseline">
+Generate fragments whose longest two-atom shortest path, or
+maximum eccentricity, is less than 10.
+
+</tr>
+
+<tr>
+<td valign="baseline">
+<tt>-simplify</tt>
+
+<td valign="baseline">
+Remove any terminal group with no possibility of substitution
+and that does not affect the conformation of the remaining atoms.
+</tr>
+
+</table>
+</center></p>
+
+
+<p>
+The output, <tt>fragments.sdf</tt>, contains 2D-depicted unique fragments from
+each input record. These structures could be used for any fragment-based
+application, provided it is not sensitive to conformational geometries.
+In the case of <a href="../apps/ph4_search.htm">Pharmacophore Search</a> and
+<a href="../apps/scaffold.htm">Scaffold Replacement</a>,
+3D conformations are required.
+</p>
+
+
+</li></p>
+
+<p><li><h3>Generating Conformations</h3>
+
+<p>
+Conformations of each structure must be generated for scaffold replacement,
+linking disconnected fragments, and growing searches. A number of conformation
+searching techniques can be used, but due to the large size of typical fragment
+databases, the <a href="../apps/confgui.htm">Conformation Import</a>
+application is most suitable.
+</p>
+
+<p>
+<a href="../moe/pot.htm">Forcefield</a>
+settings can greatly affect conformational
+geometries. Here, we will use MMFF94x with a
+distance-dependent dielectric solvation model.
+</p>
+
+<p>
+<ol type="a">
+<li> Launch the <a href="../moe/pot.htm">Potential Setup</a> panel
+(<span class="menu">MOE | Window | Potential Setup</span>).
+
+<blockquote>
+<img src="sdfrag_tut/potsetup.png" alt="Potential Setup panel" />
+</blockquote>
+
+</li><li>Ensure that the forcefield is set to MMFF94x
+(if not, press <b>Load</b> and select <b>MMFF94x</b>).
+</li><li> Set the interior <b>Dielectric</b> constant to 4.
+</li><li> Set the non-bonded interaction smoothing <b>Cutoff On</b> to 7.
+</li><li> Set the non-bonded interaction smoothing <b>Cutoff Off</b> to 9.
+</li><li> Press <b>Apply</b> and then <b>Close</b>.
+</li>
+</ol>
+</p>
+<p>
+<a href="../apps/confgui.htm">Conformation Import</a>
+provides a high-throughput
+method for calculating low-energy
+conformations of molecules
+by fragmenting the input molecules,
+performing a stochastic conformation search
+on the fragments, and then reassembling the fragments into unique
+conformations.
+This application can accept SD files input and can run in a
+distributed fashion if
+<a href="../install/smp_inst.htm">MOE/smp</a> compute clusters are available
+and enabled.
+</p>
+
+<p>
+<center>
+<img src="sdfrag_tut/conf_import.png" alt="Conformation Import panel" />
+</center>
+</p>
+
+<p>
+<ol type="a">
+<li> Launch the Conformation Import application
+(<b>MOE | Compute | Conformations | Conformation Import</b>).
+</li><li> Set <b>Output Database</b> to <tt>fragments.mdb</tt>.
+</li><li> Increase <b>Limits: Strain</b> to 5.0.
+</li><li> Reduce <b>Limits: Conformations</b> to 25.
+</li><li> Press <b>Add</b>.  In the Select Files for Import
+file prompter, choose a fragment SD file.
+</li><li> Clear all <b>Input Filters</b> by pressing <b>Clear</b>.
+</li><li> Press <b>OK</b>.
+</li>
+</ol>
+</p>
+<p>
+
+Equivalently, the Conformation Import application can be run from the
+command-line:
+</p>
+<pre>
+<code>
+$&gt; $MOE/bin/moebatch -std -exec "       \
+  PotSetup [                            \
+    cutoffOn: 7,                        \
+    cutoffOff:9,                        \
+    eleDielectric:4                     \
+  ];                                    \
+  conf_Import [                         \
+  'fragments.sdf', 'mdl_sdf', [         \
+    outputFile: 'fragments.mdb',        \
+    outputFileOpenDBV: 0,               \
+    outputStrainLimit: 4,               \
+    outputConformationLimit: 250,       \
+    filterTransitionMetal: 0,           \
+    filterWeightLimit: 600,             \
+    filterBigRing: 1,                   \
+    filterDHybridization: 0,            \
+    filterDonorAcceptorLimit: 0,        \
+    filterChiralLimit: 0,               \
+    filterFreeChicalLimit: 0,           \
+    filterLogPLow: -100,                \
+    filterLogPHigh: 100,                \
+    filterAcidBase: 0,                  \
+    filterSingleChainLimit: 0,          \
+    filterRotatableBondLimit: 0         \
+  ]                                     \
+]" -exit
+</code>
+</pre>
+
+<pre>
+<code>
+C:\&gt; %MOE%\bin\moebatch -std -exec "    ^
+  PotSetup [                            ^
+    cutoffOn: 7,                        ^
+    cutoffOff:9,                        ^
+    eleDielectric:4                     ^
+  ];                                    ^
+  conf_Import [                         ^
+  'fragments.sdf', 'mdl_sdf', [         ^
+    outputFile: 'fragments.mdb',        ^
+    outputFileOpenDBV: 0,               ^
+    outputStrainLimit: 4,               ^
+    outputConformationLimit: 250,       ^
+    filterTransitionMetal: 0,           ^
+    filterWeightLimit: 600,             ^
+    filterBigRing: 1,                   ^
+    filterDHybridization: 0,            ^
+    filterDonorAcceptorLimit: 0,        ^
+    filterChiralLimit: 0,               ^
+    filterFreeChicalLimit: 0,           ^
+    filterLogPLow: -100,                ^
+    filterLogPHigh: 100,                ^
+    filterAcidBase: 0,                  ^
+    filterSingleChainLimit: 0,          ^
+    filterRotatableBondLimit: 0         ^
+  ]                                     ^
+]" -exit
+</code>
+</pre>
+
+
+<p>
+The output database, <tt>fragments.mdb</tt>, contains 3D conformations
+generated by Conformation Import. This database can be used in
+MOE's <a href="../apps/scaffold.htm">Scaffold Replacement</a>
+application without any further treatment, but can also be used
+with any application that requires fragments of similar type. The database
+itself is a standard <a href="../mdb/db.htm">MOE database</a>
+(<tt>*.mdb</tt>) containing no
+special annotations, and can be opened in the MOE
+<a href="../mdb/db.htm">Database Viewer</a>.
+</ol>
+
+<a name="Script"></a>
+<h3>Writing a Script for Creating a Fragment Database</h3>
+
+<p>
+The SD Tools commands described above can be collected into a script to
+allow for running as a batch job (i.e. with no
+user intervention required). Such a script is available for
+use and can be found at $MOE/sample/sd2frag.sh (Unix) or 
+$MOE/sample/sd2frag.bat (Windows) along with a special 
+acid/base filter file, $MOE/sample/sdfrag_acidbase.svl.
+</p>
+
+<p>
+To run this script, use the following command:
+</p>
+
+<pre>
+    $&gt; sh sd2frag.sh <i>inputfiles</i> &gt; <i>logfile</i> 2&gt;&amp;1
+</pre>
+
+<pre>
+    C:\&gt; sd2frag.bat <i>inputfiles</i> &gt; <i>logfile</i> 2&gt;&amp;1
+</pre>
+
+
+The output will contain a number of filter files along with an output file
+of 2D-fragments.
+
+<h2>Summary</h2>
+<p>
+In this tutorial, we have illustrated how to use SD Pipeline Tools in MOE
+to create a fragment database suitable for use in
+scaffold replacement, linking disconnected
+R-groups and growing an existing ligand, all of which can be done through
+MOE's Scaffold Replacement application.
+SD Pipeline Tools can be applied to
+one or more small files or even an entire corporate database and
+can be invoked as a batch process.
+
+</p>
+
+<a name="See_Also"></a>
+<h2>See Also</h2>
+
+<dl>
+
+<p>
+<dt>
+<i>Launching MOE</i><br />
+</dt>
+<dd>
+<a href="../install/install.htm">MOE and MOE/batch</a><br />
+<a href="../install/smp_inst.htm">Installing and Running MOE/smp</a><br />
+</dd>
+</p>
+
+<p>
+<dt>
+<i>MOE GUI</i><br />
+</dt>
+<dd>
+<a href="../moe/gui/mainwin.htm">MOE Window</a><br />
+<a href="../mdb/db.htm">Database Viewer Window</a><br />
+</dd>
+</p>
+
+<p>
+<dt>
+<i>SD Tools</i><br />
+</dt>
+<dd>
+<a class="svl" href="../moe/fcnref/sddesc.htm">sddesc</a><br />
+<a class="svl" href="../moe/fcnref/sdfilter.htm">sdfilter</a><br />
+<a class="svl" href="../moe/fcnref/sdfrag.htm">sdfrag</a><br />
+<a class="svl" href="../moe/fcnref/sdsort.htm">sdsort</a><br />
+<a class="svl" href="../moe/fcnref/sdstereo.htm">sdstereo</a><br />
+<a class="svl" href="../moe/fcnref/sdwash.htm">sdwash</a>
+</dd>
+</p>
+
+<p>
+<dt>
+<i>Washing</i><br />
+</dt>
+<dd>
+<a href="../mdb/wash.htm">Database Wash</a><br />
+<a class="svl" href="../moe/fcnref/protomer.htm">ctab_EnumerateProtomers</a><br />
+<a class="svl" href="../moe/fcnref/depictor.htm">DepictionCoordinates</a><br />
+</dd>
+</p>
+
+<p>
+<dt>
+<i>Filtering</i><br />
+</dt>
+<dd>
+<a href="../quasar/descr.htm">QuaSAR-Descriptor</a><br />
+</dd>
+</p>
+
+<p>
+<dt>
+<i>Scaffold Replacement, R-Group Linking, and Growing</i><br />
+</dt>
+<dd>
+<a href="../apps/scaffold.htm">Scaffold Replacement</a><br />
+<a href="../quasar/model.htm">QuaSAR-Model</a><br />
+<a href="../apps/docking.htm">Molecular docking</a><br />
+</dd>
+</p>
+
+</dl>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

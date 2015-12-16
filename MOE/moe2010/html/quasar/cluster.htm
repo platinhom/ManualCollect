@@ -1,0 +1,362 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<meta panel QuaSAR-Cluster>
+<title>QuaSAR-Cluster</title>
+</head>
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>QuaSAR-Cluster</h2>
+<hr noshade="noshade" />
+
+<ul>
+  <li><a href="cluster.htm#Theory">Formulation and Theory</a> </li>
+  <li><a href="cluster.htm#Run">Running the Calculation</a> </li>
+</ul>
+
+<p><a name="Theory"></a> </p>
+
+<h2>Formulation and Theory</h2>
+
+<p>The purpose of QuaSAR-Cluster is three-fold: 
+
+<ol>
+<li>
+<i>Clustering</i>. When designing experiments it is often necessary that
+a &quot;diverse&quot; collection of molecules be used (in order to avoid bias).
+QuaSAR-Cluster can assign codes to a collection of molecules, based upon a
+table of molecular descriptors, so that &quot;similar&quot; molecules in the
+collection can be quickly identified.
+<p>
+
+<li>
+<i>Dimension Reduction</i>. Often, a table of molecular descriptors contains
+columns that are correlated and differ in relative scale. This can be a problem
+for distance-based diversity analysis since a Euclidean metric cannot be used
+directly (without overemphasizing some subset of the descriptors).
+QuaSAR-Cluster is capable of calculating a new table of descriptors, often
+smaller, that are uncorrelated and normalized (mean 0 and variance 1).
+<p>
+
+<li>
+<i>Assigning Weights</i>. When a moderately large collection of molecules is
+used in a QSAR study, it is important that bias not be introduced due to the
+particular selection of molecules. For example, near duplicate molecules can
+bias the fit. QuaSAR-Cluster can assign weights to molecules so that, for
+instance, the two near duplicate molecules will be assigned a weight of 0.5.
+</ol>
+
+<p>Suppose that we are given <i>m</i> molecules each of which is described by
+an <i>n</i>-vector of real numbers
+<i>x<sub>i</sub></i>=(<i>x</i><sub><i>i</i>1</sub>,...,<i>x<sub>in</sub></i>),
+consisting of the descriptors for molecule <i>i</i>. Further, suppose that each
+molecule has an associated importance weight, <i>w<sub>i</sub></i>, a
+non-negative real number.  These weights can be thought of as the relative
+probability that the associated molecule will be encountered and are usually
+all equal to 1; however, in some applications, unequal weights are used.
+Let <i>W</i> denote the sum of all the weights. </p>
+
+<p>
+<b>Principal Component Analysis</b>. Dimension reduction through <i>principal
+component analysis</i> (PCA) can be interpreted in the following manner.
+Let <i>X</i> denote a random <i>n</i>-vector and let <i>Z</i> denote a random
+<i>p</i>-vector with mean 0 and covariance matrix equal to the identity matrix.
+If we assume that <i>X</i>=<i>RZ</i>+<i>x</i><sub>0</sub> for some <i>n</i> by
+<i>p</i> linear transform <i>R</i> and some
+<i>n</i>-vector <i>x</i><sub>0</sub> then PCA is the estimation of the
+<i>Z</i> vectors from a sample of <i>X</i> vectors.</p>
+
+<p>
+If we integrate both sides of the supposed affine transform we obtain:
+
+<p align="center"><img src="cluster/mean.png"></p>
+
+<p>which shows that <i>x</i><sub>0</sub> is the mean of the distribution of
+the <i>X</i> vectors. Turning to the covariance of the <i>X</i> vectors, we
+observe that:</p>
+
+<p align="center"><img src="cluster/cov.png"></p>
+
+<p>
+These equations suggest the following method for estimating the <i>Z</i>
+vectors. We use the sampled data to approximate both <i>E</i>(<i>X</i>) and
+Cov(<i>X</i>):</p>
+
+<p align="center"><img src="cluster/est.png"></p>
+
+<p>
+The sample covariance matrix, <i>S</i>, is now symmetric semi-definite; hence,
+all of its eigenvalues are real and non-negative. We can therefore diagonalize
+<i>S</i> so that:</p>
+
+<p align="center"><img src="cluster/diag.png"></p>
+
+<p>
+where <i>Q</i> is orthogonal and <i>D</i> is diagonal-sorted in descending
+order from top left to bottom right. Let <i>p</i> be the number of non-zero
+diagonal values in <i>D</i> (the square roots of the eigenvalues of <i>S</i>).
+We can estimate <i>R</i> as the first <i>p</i> columns of <i>Q<sup>T</sup>D</i>
+and say that the <i>X</i> vectors have <i>p</i> principal components. In
+practice, we restrict the selection of <i>p</i> further by limiting the
+<i>condition</i> of the estimated <i>R<sup>T</sup>R </i>matrix; that is, we
+choose <i>p</i> so that the largest eigenvalue divided by the smallest
+eigenvalue is less than some specified threshold.</p>
+
+<p>
+<b>Cluster Determination</b>. The assignment of cluster codes to molecules
+proceeds in <i>p</i> dimensional Euclidean space after estimating the
+<i>p</i> principal components of the molecular descriptors. Each of the
+<i>p</i> axes is divided into <i>k</i> intervals labeled &quot;a&quot;,
+&quot;b&quot;, &quot;c&quot;, etc. Each of the <i>p</i> coordinates of a
+molecule is assigned a letter code depending on the axis intervals into which
+the coordinates fall. A cluster code is the concatenation of <i>p</i> letters.
+More precisely, if <i>f</i>(<i>z</i>) is the probability density function for
+a random variable <i>Z</i>, we determine
+<i>b</i><sub>0</sub>,...,<i>b<sub>k</sub></i> with <i>b</i><sub>0</sub> equal
+to minus infinity and <i>b<sub>k</sub></i> equal to plus infinity such that:</p>
+
+<p align="center"><img src="cluster/prob.png"></p>
+
+<p>
+This corresponds to a percentile-type subdivision of space. If a coordinate
+<i>z</i> is such that <i>z</i> is in the interval
+(<i>b</i><sub><i>i</i>-1</sub>,<i>b<sub>i</sub></i>] then <i>z</i> is given
+the <i>i</i>-th label.</p>
+
+<p>
+Let <i>z</i><sub>1</sub>,...,<i>z<sub>m</sub></i> be <i>m</i> samples of a
+continuous random variable <i>Z</i>. We can estimate <i>f</i> by accumulating
+a histogram of observed samples values on a set of <i>B</i> bins
+(<i>b</i><sub>0</sub>,<i>b</i><sub>1</sub>],...,(<i>b</i><sub><i>B</i>-1</sub>,<i>b<sub>B</sub></i>]
+defined by <i>B</i>+1 numbers
+<i>b<sub>j</sub></i>&lt;<i>b</i><sub><i>j</i>+1</sub>,
+with <i>b</i><sub>0</sub> equal to minus infinity and <i>b<sub>B</sub></i>
+equal to plus infinity. The usual procedure for counting the number of
+observations among <i>m</i> samples in bin <i>j</i>&gt;0 is:</p>
+
+<p align="center"><img src="cluster/bins.png"></p>
+
+<p>
+which has unfortunate sensitivity to the selection of bin boundaries since
+observations close to the boundary between two bins are treated as if they
+were in the middle of one of the bins. To reduce the sensitivity to the bin
+boundaries we replace the delta function observation density with a normal
+random variable with mean <i>z<sub>i</sub></i> and variance
+<i>s</i><sup>2</sup>. We now have</p>
+
+<p align="center"><img src="cluster/smoothed.png">.</p>
+
+<p>
+Once the alphabetic cluster codes have been assigned, they are converted
+into a single integer such that the sort order of the integers is the same
+as the sort order of the original codes.  These single integers are written
+as the output cluster codes.
+
+<p>
+<b>Weight Assignment.</b> Suppose that a cluster analysis has assigned a code
+to each of the <i>m</i> molecules. Suppose further that <i>m<sub>i</sub></i>
+is the number of molecules that have the same cluster code as molecule <i>i</i>.
+QuaSAR-Cluster will output a weight of 1/<i>m<sub>i</sub></i> for molecule
+<i>i</i>. For example, if a total of three out of the <i>m</i> molecules are
+assigned a particular cluster code, then each of the three molecules will be
+given a weight of 1/3.</p>
+
+<p>
+<b>Algorithm Summary</b>. The foregoing considerations are integrated into
+the QuaSAR-Cluster computational procedure:
+
+<ol>
+  <li>Calculate the sample average vector <i>x</i><sub>0</sub> and covariance matrix <i>S</i>.</li>
+  <li>Diagonalize <i>S</i> and select the <i>p</i> principal components.</li>
+  <li>Form the PCA transform <i>Q</i> so that <i>Z</i>=<i>Q</i>(<i>x</i>-<i> x</i><sub>0</sub>)
+    has identity covariance and mean 0.</li>
+  <li>For each <i>i</i> write the <i>p-</i>vector <i>z<sub>i</sub></i>=Q(<i>x<sub>i</sub></i>-<i>
+    x</i><sub>0</sub>) to the output.</li>
+  <li>Estimate <i>p</i> probability density functions from the <i>z<sub>i</sub></i>.</li>
+  <li>For each density function compute the percentile-type intervals.</li>
+  <li>For each <i>i</i> output a cluster label based on the <i>p</i> coordinates of the <i>z<sub>i</sub></i>.</li>
+  <li>For each <i>i</i> determine <i>m<sub>i</sub></i> the number of molecules with the same
+    cluster code.</li>
+  <li>For each <i>i</i> output the weight 1/<i>m<sub>i</sub></i>.</li>
+</ol>
+
+<p>The procedure has the following parameters (explained in the foregoing equations):
+
+<ul>
+  <tt>
+  <li>maxcomp</tt> : the maximum number of components (the maximum value of <i>p</i>).</li>
+  <tt>
+  <li>maxcond</tt> : the maximum condition of the <i>Q<sup>T</sup>Q</i> transform.</li>
+  <tt>
+  <li>swidth</tt> : the normal histogram smoothing width, <i>s</i>.</li>
+  <tt>
+  <li>ncodes</tt> : the number of subdivisions per axis, <i>k</i>.</li>
+</ul>
+
+<a name="Run"></a>
+<h2>Running the Calculation</h2>
+
+<p>QuaSAR-Cluster can be invoked in several ways:
+
+<ul>
+<li>Open the database in the Database Viewer and choose 
+<span class="menu">DBV | Compute | Descriptors | Clusters</span>. 
+Since the command was
+selected from a Molecular Database Viewer menu, the source database is
+specified by the Molecular Database Viewer. 
+
+<p><li>In the MOE Window, choose 
+<span class="menu">MOE | Compute | QuaSAR | QuaSAR-Cluster</span>. In this case
+you will be prompted to select the molecular database file that is to be
+operated upon. This invocation is useful when the calculation is to be
+performed on a database that is not to be opened with the Molecular
+Database Viewer.  <p>
+
+<li>
+<a class="svl" href="fcnref/cluster.htm">QuaSAR_ClusterMDB</a> in batch mode or
+from the SVL command line.
+
+</ul>
+
+<p>
+When the calculation is invoked from a menu, the following panel appears:</p>
+
+<p align="center"><img src="cluster/cluster.png" alt="QuaSAR-Cluster Panel"></p>
+
+<p><table width=100% cellpadding=5>
+<tr>
+<td valign=top><b>Source&nbsp;Database</b>
+<td valign=top>Path and filename of the database that contains the fields to be
+analyzed. 
+
+<p>If the <b>Use Selected Entries Only</b> option is turned on, then only the
+database entries (rows) that are selected in the Molecular Database Viewer
+will be used in the calculation.
+
+<tr>
+<td valign=top><b>Weight Field</b>
+<td valign=top>Name of the field that will be used to weight individual entries of the
+database. These weights should be non-negative; negative weights will be set
+to zero for the calculation. If the Weight Field is set to (NONE), then all
+entries will have a weight of 1.
+
+<tr>
+<td valign=top><b>Fields</b>
+<td valign=top>List of all the numeric fields in the database. If no fields
+are selected, then all the numeric fields (except the Weight Field) will be
+used in the calculation. If fields are selected in the list, the selected
+fields will be used in the calculation and the unselected fields will be
+ignored.
+
+<tr>
+<td valign=top><b>De-correlate Descriptors</b>
+<td valign=top>If turned on, the full principal components analysis will be performed
+as described above. Otherwise, if not turned on, then off-diagonal elements of the
+covariance matrix will be set to zero before the diagonalization and
+dimension reduction step.  This has the effect of enforcing an assumption
+that the descriptors are uncorrelated.
+
+<tr>
+<td valign=top><b>Equiprobable Subdivision</b>
+<td valign=top>If turned on, then the subdivision of the probability density into equiprobable
+regions (as described above) will be performed.  If not checked, then each
+principal component axis will be subdivided into regions of equal volume.
+
+<tr>
+<td valign=top><b>Output Database</b>
+<td valign=top>Filename of the database into which the results of the
+calculation will be written. If this filename is different from the Source
+Database, a new database will be created. If the Output Database is empty or
+equal to the Source Database, the results will be written to the Source
+Database. If the Output Database is different from the Source Database, all
+database fields except those used in the analysis will be copied to the
+Output Database.
+
+<tr>
+<td valign=top><b>Principal Components</b>
+<td valign=top>If turned on, then the calculated principal
+components will be written in fields prefixed with the text in
+<b>Field Prefix</b>. For example, the default Field Prefix is
+&quot;PCA&quot;; if there are four principal components then these values will
+be written in fields PCA1, PCA2, PCA3 and PCA4.
+
+<tr>
+<td valign=top><b>Cluster Code</b>
+<td valign=top>If turned on, then the calculated cluster code will be
+written to the integer-type field named in the <b>Cluster Field</b>. If
+the field already exists, then it will be overwritten.
+
+<tr>
+<td valign=top><b>Cluster Weight</b>
+<td valign=top>If turned on, then a new field with the name given in
+<b>New Weight Field</b> will be created and will contain the inverse of the
+number of members in the cluster of each entry. If the field already exists,
+then it will be overwritten.
+For example, if a particular
+entry is assigned a code that is identical to three other entries, then a
+value of 0.25 will be written.
+
+<tr>
+<td valign=top><b>Smoothing</b>
+<td valign=top>Width of the smoothing distribution used in
+accumulating the distributions during clustering. It is the standard
+deviation of a normal distribution (the <i>s</i> value in the theory section).
+This field is not used if Cluster Code is not turned on.
+
+<tr>
+<td valign=top><b>Code Count</b>
+<td valign=top>Number of equiprobable subdivisions of each principal
+component axis; that is, the number of letter codes used per axis. Smaller
+values lead to fewer clusters.
+
+<tr>
+<td valign=top><b>Component Limit</b>
+<td valign=top>Limit on the number of principal components
+selected. A value of zero means that no limit is set; otherwise, at most the
+specified number of largest principal components will be used.
+
+<tr>
+<td valign=top><b>Condition Limit</b>
+<td valign=top>Maximum condition (see theory section)
+number of the principal component transform.
+
+</table>
+
+<p>
+Press <b>OK</b> to begin the calculation (this may take a few
+moments depending on the size of the database).
+
+<h2>See Also</h2>
+<a href="../mdb/ph4clust.htm">Fingerprint Cluster</a><br>
+<a href="../mdb/dbpca.htm">Principal Components Analysis</a><br>
+<a href="qsar.htm">QuaSAR Overview</a>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

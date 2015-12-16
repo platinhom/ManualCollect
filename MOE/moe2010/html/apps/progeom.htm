@@ -1,0 +1,883 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	progeom.htm		Protein Geometry
+!!
+!!	24-sep-2009 (sg) updated
+!!	02-oct-2008 (jd) new snapshots, Preferences button, Within Chains only
+!!	05-sep-2007 (jm) updated
+!!	24-aug-2007 (jm) added Atomic Contact Energies
+!!	24-jul-2007 (jm) created
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+
+<title>Protein Geometry</title>
+<meta panel Protein Geometry>
+</head>
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Protein Geometry</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Overview">Overview</a></li>
+<li><a href="#Method">Methodology</a>
+    <ul>
+    <li><a href="#MethodDefAndVal">Backbone Definitions and Values</a></li>
+    <li><a href="#MethodPhiPsi">&phi;-&psi; Reference Data</a></li>
+    <li><a href="#MethodRotamer">Rotamer Reference Data</a></li>
+    <li><a href="#MethodClash">Calculation of Repulsion Energy</a></li>
+    <li><a href="#MethodACE">Atomic Contact Energy</a></li>
+    </ul>
+</li><li><a href="#Run">Running the Application</a>
+    <ul>
+    <li><a href="#RunPhiPsi">&phi;-&psi; Plot (Ramachandran)</a></li>
+    <li><a href="#RunLength">Bond Lengths</a></li>
+    <li><a href="#RunAngle">Bond Angles</a></li>
+    <li><a href="#RunDihedral">Dihedrals</a></li>
+    <li><a href="#RunRotamer">Rotamer</a></li>
+    <li><a href="#RunClashes">Atom Clashes</a></li>
+    <li><a href="#RunACE">Contact Energies</a></li>
+    <li><a href="#Export">Export</a></li>
+    <li><a href="#ColorPref">Plot Color Preferences</a></li>
+    <li><a href="#Clipboard">Clipboard </a></li>
+    <li><a href="#Report">Report</a></li>
+    </ul>
+</li>
+<li><a href="#Ref">References</a>
+<li><a href="#SeeAlso">See Also</a>
+</li></ul>
+
+<!-- ============================== OVERVIEW ============================= -->
+
+<p><a name="Overview"></a></p><h2>Overview</h2>
+
+<p>
+As macromolecular crystal structures are determined and refined in an
+increasingly automated fashion, careful assessment of the reliability and
+quality of the resulting models becomes increasingly important, especially
+when these structures are used in the comparative modeling process. The
+Protein Geometry application provides a variety of stereochemical
+measurements for inspection of the structural quality in a given protein:
+
+<ol>
+<li>Backbone bond lengths, angles and dihedrals.
+<li>Ramachandran &phi;-&psi; dihedral plots.
+<li>Sidechain rotamer quality.
+<li>Nonbonded contact quality.
+</ol>
+
+</p><p>
+For the evaluation of the &phi;-&psi; torsion quality, an updated and refined 
+reference dataset [Lovell&nbsp;2003] serves as the basis for identifying
+potentially erroneous protein backbone topologies. The sidechain rotamers
+are assessed by the rotamer strain energies calculated from the probability
+factors obtained from a backbone-dependent rotamer library [Dunbrack&nbsp;1997].
+</p>
+<p>
+The user interface of the Protein Geometry application offers two
+distinct views on the result sets: 
+<ol type=a>
+<li>
+Scatter plots provide a quick overview of the entire data set
+(e.g. Bond Lengths, &phi;-&psi; Plots etc.) and allow interactive
+selection of residues of interest. Overall trends can be
+visualized and localized to certain domains within the protein. In addition, 
+the plots may be exported into common graphic formats
+(e.g. GIF, PNG, JPG, EMF, etc.) for use in other applications.
+<p>
+<li>
+Data Lists give a more detailed representation of the results by listing 
+the benchmark data of a particular category in a table. A variety of
+interface controls (e.g. checkboxes for sub-categories of the dataset, various 
+possibilities for sorting, sliders, etc.)
+enable efficient browsing and filtering of the results and help 
+in finding potential outliers or subsets of interest. The content of the
+tables may also be copied into the clipboard and imported into other
+applications.
+</ol>
+
+<p>
+The Report Panel provides a summary of the stereochemical evaluation of
+a given protein in the form of an ASCII file.
+
+<p align=center>
+<img src="progeom/appl.png" alt="Example">
+<br>&nbsp;<br>
+<b>Fig. 1:</b> <i>An example of Protein Geometry with PDB:1ARU</i>
+</p>
+
+
+<!-- ============================ METHODOLOGY ============================ -->
+
+<p><a name="Method"></a></p><h2>Methodology</h2>
+
+<p>
+This section contains an overview of the methods and calculations underlying 
+the distinct functions on the Protein Geometry application.
+
+Backbone Bond lengths, angles and dihedrals are compared to averages
+and standard deviations of a reference database of
+high resolution structures from the May&nbsp;2007 Protein Data Bank (PDB).
+The following criteria were used to select reference database entries:
+</p>
+
+<ol>
+<li> Resolution of 1.3&nbsp;&Aring; or better. The electron density map of
+these structures at this range is so clear that alternate occupancies become
+more distinguishable with fewer constraints required during the refinement
+procedure. The level of detail at this resolution should provide a more
+"realistic" - closer to experimental data - dataset when used in statistical
+analysis.
+<li>R<sub>free</sub> value of 0.25 or lower.
+<li>B-Factor values of backbone atoms of 30 or lower.
+<li>Backbone atom occupancy of 100%.
+</ol>
+
+<p>
+Protein chains with sequence identity of 95% or higher have been removed
+from the collection as well as residues with erroneous backbone topology
+(e.g. incorrect topology or missing atoms).
+The resulting reference database consists of 129,858 residues originating
+from 556 protein structures.
+</p>
+
+<p><a name="MethodDefAndVal"><b>Backbone Definitions and Values</b>.
+The depictions below outline the respective definitions of backbone bonds,
+angles and dihedrals and, for each measurement, list the expected values as
+calculated from the reference database.  The reference database statistics
+are to for calculating the Z-Scores (number of standard deviations from the
+expected value) of a particular measurement (length, angle or dihedral).
+The atom backbone names are denoted as follows:
+
+<p>
+<center>
+<table class="titlebar">
+<tr>
+<th>Name</th>
+<th>Atom</th>
+</tr>
+<tr>
+<td>N
+<td>Backbone nitrogen atom of a residue.
+<tr>
+<td>CA
+<td>Backbone &alpha; carbon atom of a residue.
+<tr>
+<td>C
+<td>Backbone carbonyl carbon atom of a residue.
+<tr>
+<td>O
+<td>Backbone carbonyl oxygen atom of a residue.
+<tr>
+<td>pCA
+<td>Backbone &alpha; carbon atom of the <i>previous</i> residue.
+<tr>
+<td>pC
+<td>Backbone carbonyl carbon atom of the <i>previous</i> residue.
+<tr>
+<td>pO
+<td>Backbone carbonyl oxygen atom of the <i>previous</i> residue.
+<tr>
+<td>nN
+<td>Backbone nitrogen atom of the <i>next</i> residue.
+</table>
+</center>
+</p>
+
+<p align=center>
+<a name="bblen"></a><img src="progeom/bblength.png" 
+alt="Backbone Bond Length Definitions">
+<br>&nbsp;<br>
+<b>Fig. 2:</b> <i>Backbone Bond Length Definitions</i>
+</p>
+
+<p align=center>
+<a name="bbang"></a><img src="progeom/bbangle.png" 
+alt="Backbone Bond Angle Definitions">
+<br>&nbsp;<br>
+<b>Fig. 3:</b> <i>Backbone Bond Angle Definitions</i>
+</p>
+
+<p align=center>
+<a name="bbdih"></a><img src="progeom/bbdihedral.png" alt="Backbone Bond Torsion Definitions">
+<br>&nbsp;<br>
+<b>Fig. 4:</b> <i>Backbone Torsion Definitions</i>
+</p>
+
+<p>
+Since the number of <i>cis</i>-omega dihedrals (peptide dihedrals) was too
+small to deduce reasonable statistics, the expected values were taken from
+[Jabs&nbsp;1999].
+
+<p><a name="MethodPhiPsi"></a><b>&phi;-&psi; Reference Data</b>.
+The &phi; and &psi; backbone dihedrals are correlated; consequently, they
+are scored using 2-dimensional probability distributions calculated
+on a high-resolution collection of X-ray structures containing approximately
+100,000 residues from 500 protein structures [Lovell&nbsp;2003].
+Each probability distribution was estimated with a 2 degree spacing for
+each of &psi; and &phi; with separate histograms for proline, glycine,
+pre-proline and general amino acids.
+The histograms reveal sharp edges and clear delineation between large empty 
+areas and regions that are allowed but disfavored. 
+
+<p align=center>
+<img src="progeom/contour300.png" alt="Reference Phi/Psi Data">
+<br>&nbsp;<br>
+<b>Fig. 5:</b> <i>Contours of Allowed (orange) and Core (green)
+Regions of Ramachandran Maps</i>.</p>
+</p>
+
+<p><a name="MethodRotamer"></a><b>Rotamer Reference Data</b>.
+Quality estimates for a particular protein sidechain are calculated
+based on the backbone-dependent rotamer library published by Dunbrack
+and Cohen [Dunbrack&nbsp;1997].
+
+The rotamer statistics were collected for each &phi;-&psi; combination
+in 10 degree increments and smoothed with Bayesian methods.
+The backbone dependency of sidechain rotamers is 
+restricted to the &chi;1-angle; the remaining &chi; angles
+are independent of the backbone &phi;-&psi; values.
+For a given backbone &phi;-&psi; combination, the resulting probabilities
+provide estimates of weakly or strongly populated sidechain rotamers
+in the PDB.
+The SCWRL strain estimate [Bower&nbsp;1997] is derived from the probabilities
+using
+
+<p align=center>
+<img src="progeom/formularotlib.png" width="400">
+</p>
+
+<p>
+where <i>R</i> is the residue type (ALA, GLU, etc.), and <i>K</i> is a
+constant, set to 3.0 based on optimization of the energy function for
+a 180-protein test set.
+The argument of the log is normalized to the highest probability
+rotamer (defined as <i>r<sub>i</sub></i>= 1), so that the energy of this
+rotamer is zero and all others are positive.
+
+<p>
+The Protein Geometry application uses a different measure of strain
+derived using a statistical mechanical identity:
+
+<p align=center>
+<img src="progeom/rotstrainE.png" width="400">
+</p>
+
+<p>
+Here, <i>E<sub>i</sub></i> denotes the energy of Rotamer type i,
+<i>E</i><sub>avg</sub> the average energy of rotamer <i>i</i> assuming
+a Boltzmann distribution, <i>k</i> is the Boltzmann Constant, <i>T</i> the
+temperature (298&nbsp;K) and <i>p<sub>i</sub></i> is the unit normalized
+probability distribution of rotamer <i>i</i>.
+The rotamer strain energy is then
+<i>E<sub>i</sub></i>&nbsp;-&nbsp;<i>E</i><sub>avg</sub>, which can be
+negative.
+
+<p><a name="MethodClash"></a><b>Calculation of Repulsion Energy</b>.
+The repulsion energy measurement is used to determine van der Waals clashes
+in a macromolecular structure.  Each non-hydrogen atom is assigned a radius
+and a van der Waals optimal interaction energy value and a distance-dependent
+function is used to estimate the van der Waals repulsion energy between
+two atoms.
+The van der Waals radii and well-depth parameters are those of the
+Engh-Huber forcefield [Engh&nbsp;1991] commonly used in crystallographic
+refinement.
+The distance-dependent interaction function is
+<p align=center>
+<i>w</i> 800&nbsp;(1&nbsp;-&nbsp;<i>r</i>&nbsp;/&nbsp;<i>R</i>)<sup>3</sup>
+</p>
+
+<p>
+where <i>r</i> is the interatomic separation distance, <i>R</i> is the
+sum of the van der Waals radii, and <i>w</i> is the geometric mean of the
+well-depth parameters of the two atoms.
+Figure 6 compares various functional forms for a carbon-carbon
+interaction: Lennard-Jones 12-6 and 9-6, the 800R3 function (above)
+and the SCWRL [Bower&nbsp;1997] function (often used in homology modeling).
+</p>
+<p align=center>
+<img src="progeom/vdwfcn.gif" alt="Functional forms of vdwEnergy">
+<br />&nbsp;<br />
+<b>Fig. 6:</b> <i>Functional Forms of VDW Interaction Energy</i>.
+</p>
+
+<p>
+The 800R3 function lies in between the Lennard-Jones 12-6 and 9-6 potentials
+and models only the repulsive part of the van der Waals interactions (which
+is more appropriate in implicit solvent model conditions).
+Close contacts are &quot;capped&quot; to avoid unrealistically
+large energy values.
+</p>
+
+<p><a name="MethodACE"></a><b>Atomic Contact Energy</b>.
+The calculation of the effective atomic contact energies (ACE) - the 
+desolvation free energies required to transfer atoms from water to a protein's 
+interior - is based on the publication of Zhang et al. [Zhang&nbsp;1997]. 
+The contact desolvation energies are calculated for 18 different atom types 
+of the 20 
+common amino acids that are resolved based on the clustering pattern of 
+their properties [Zhang&nbsp;1997]. 
+The contact potentials for each atom type are measured within a contact range 
+of 6 Angstroms by explicitly accounting for neighboring interactions. The 
+definition of chain neighbors is classified in terms of a connectivity matrix 
+Con(i,j), where i and j are the connectivity classes of the contact pair in 
+question:
+<p align=center>
+<img src="progeom/connmatrix.png" alt="Neighbor Connectivity Matrix">
+<br>&nbsp;<br>
+<b>Fig. 7:</b> <i>Neighbor Connectivity Matrix</i>.
+</p>
+
+where the first index position of the matrix denotes the backbone nitrogen 
+atoms, 
+the second the C&alpha; atoms, the third the backbone C atoms, and the fourth 
+any of the side-chain atoms. Contact pairs are eliminated from the calculation,
+if any atom of connectivity class i in residue k<sub>i</sub> and any contact 
+atom in connectivity class j in residue k<sub>j</sub> (k<sub>j</sub> >= 
+k<sub>i</sub>) satisfy the following condition:
+
+    <h3 align="center">
+	k<sub>j</sub> - k<sub>i</sub> &lt;= Con(i,j)
+    </h3>
+
+
+<p>The unscaled pairwise atomic desolvation energies (e<sub>ij</sub>) are given 
+in units of RT and converted to kcal/mol by a transformation factor 
+[Zhang&nbsp;1997].
+
+<!-- ============================ APPLICATION ============================ -->
+<p><a name="Run"></a></p><h2>Running the Application</h2>
+
+<p>
+The Protein Geometry application can be accessed in the MOE window with
+<nobr><b>MOE | Compute | Biopolymer | Protein Geometry</b></nobr>
+or via the Sequence Editor with
+<nobr><b>SE | Measure | Protein Geometry</b></nobr>.
+
+The Protein Geometry application is an interface for launching various
+protein checking routines and can conceptually be divided in two sections
+The upper section provides means to define which residues are included in
+the calculation, what measurements are displayed and whether the display
+is graphical or textual.  The lower section is the main results display
+area.
+
+<p><table cellpadding="5" width="100%">
+<tr>
+<td valign="top"><b>Residues</b>
+</td><td valign="top">
+The set of residues to include in the calculation / display.
+The residue collection can be changed to another defined set if necessary. 
+Press the <b>?</b> button to briefly show (in the MOE window) which atoms
+are included in the indicated set.
+</p></td></tr><tr>
+<td valign="top"><b>Check</b>
+</td><td valign="top">
+Determines the measurements that will be displayed and can be one of
+<b>&phi;-&psi; Plot</b>,
+<b>Bond Lengths</b>,
+<b>Bond Angles</b>,
+<b>Dihedrals</b>,
+<b>Rotamers</b>,
+<b>Atom Clashes</b> or
+<b>Contact Energies</b>.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Display</b></td>
+<td valign="top">
+Choose <b>Plot</b> for a graphical display of the data specified by
+<b>Check</b>.
+Choose <b>Data</b> for a textual list display of the data specified by
+<b>Check</b>.
+</td></tr>
+</table>
+
+<p>
+The following sections describe the particular display modes for showing
+results in the Protein Geometry application.
+</p>
+
+<p>
+<a name="RunPhiPsi"></a>
+<img src="progeom/ramplot.png" class="floatright">
+<b>&phi;-&psi; Plot (Ramachandran)</b>.
+Perhaps the best-known, and certainly most powerful, check for the
+stereochemical quality of a protein is the &phi;-&psi; Plot (Ramachandran Plot).
+<p>
+The 2D data points of &phi; and &psi; backbone torsion angles tend to cluster
+in favorable regions and tend to be excluded from certain disallowed regions
+due to steric hindrance of sidechain atoms. Glycine and Proline, which have
+no sidechains as such, along with amino acids preceding Prolines show a
+different distribution pattern on the map (see Methodology above).
+<p>
+The plot combines the four separate Ramachandran maps (as shown to the right)
+using shapes to distinguish the membership to a particular class (General,
+Proline, Glycine and Pre-Proline). Within this scheme, Glycines are shown
+as diamonds, Prolines as triangles, residues preceding Prolines (Pre-Proline)
+have a rectangular shape, otherwise (General case) they are drawn as small
+squares.
+
+<p>
+The color scheme encodes the affiliation to a certain region within
+the respective Ramachandran Map. Residues in the core region are rendered in
+green or yellow if they are found to be in the allowed region and red if in
+the outlier region.  Outliers are always marked as crosses, independent of
+their class.
+
+<p>
+The <b>Color</b> Option allows for viewing the plot in either black or white 
+background color. When <b>White</b> background is selected the above mentioned
+coloring scheme for assignment to core, allowed or outlier region within the
+map is not used; instead filled or non-filled shapes are used to make
+class distinctions.
+
+<p align=center>
+<img src="progeom/ramlegend.png">
+</p>
+
+<p>
+The Data mode shows a list of the data used to make the plot.  The chain
+name and number, residue name and number are displayed one-per-line.
+The measured &phi; and &psi; values are also listed along with the likelihood
+score of the combination.  An assessment is also given indicating whether
+the values are allowed or are outliers.
+Using the <b>Sort by</b> option enables detection of interesting data sets by 
+the columns in the list.
+When <b>Select Atoms</b> is pressed, residue atoms in highlighted list lines
+will be selected in the MOE window.  The <b>Outliers Only</b> button can be
+used to restrict the list to display outliers only.
+<p align="center"><img src="progeom/ramdata.png"></p>
+<p>&nbsp;</p>
+
+<p>
+<img src="progeom/blengthplot.png" class="floatright">
+<a name="RunLength"></a><b>Bond Lengths</b>.
+The Bond Length plot shows the quality of backbone bond lengths on a
+Z-Score scale (standard deviations from expectation) as defined in
+<a href="#bblen">Figure&nbsp;2</a> (above).
+<p>
+The Z-Score profiles are shown in three separate plots.
+The plot on the top depicts the bond lengths centered around the backbone
+nitrogen (the backbone bonds pC-N and N-CA respectively).
+The plot in the middle displays the bond lengths of the backbone 
+C&alpha; atom (bonds with backbone C and CB respectively).
+The plot on the bottom depicts the bond lengths of the backbone
+C atom with C&alpha; and backbone oxygen.
+<p>
+The 
+X-axis of these plots shows the residues in sequential order within MOE; the 
+Y-axis is the Z-Scores of the particular backbone bond length. 
+A Z-Score cutoff of 4.0 is marked by the dotted horizontal line colored in
+dark red. 
+Residues with values above this cutoff should be seen as outliers.
+Residues that are selected in the MOE Window are drawn as circles and
+can be selected interactively in the plots. In order to facilitate 
+standardized viewing the Z-Score values are clamped to 5.5.
+<p>
+The <b>Color</b> Option allows for viewing the plots with either a black or 
+white background. Press the <b>Definitions</b> button to raise a window with
+the backbone definitions and expected values as shown in 
+<a href="#bblen">Figure&nbsp;2</a>.
+
+<p>
+The bond length data can also be viewed in a tabular list when the
+<b>Display</b> is set to Data.
+In this mode, the values of the various bond data and Z-Scores are displayed.
+The <b>Sort by</b> option facilitates sorting of the presented data set
+by the entries of a chosen data column. This feature might be helpful in
+finding data subsets of interest. The corresponding residue atoms of selected
+entries in the list may also be selected in the MOE Window by pressing
+the <b>Select Atoms</b> Button. 
+Outliers - entries with Z-Score values larger than a given Z-Score cutoff - can 
+easily be identified by checking <b>Outliers Only</b>.  By default, the Z-Score 
+cutoff is set to 4.0 but may be set to a desired value specified in the 
+<b>Z-Score Threshold</b> field.
+
+<p align="center"><img src="progeom/blengthdata.png"></p>
+</p>
+<p>&nbsp;</p>
+<p>
+<img src="progeom/angleplot.png" class="floatright">
+<a name="RunAngle"></a><b>Bond Angles</b>.
+The Bond Angle plot shows the quality of backbone bond angles on a
+Z-Score scale (standard deviations from expectation) as defined in
+<a href="#bbang">Figure&nbsp;3</a> (above).
+<p>
+The Z-Score profiles are shown in three separate plots.
+The plot on the top depicts the bond angles centered around the backbone
+nitrogen (the backbone bonds pCA-pC-N and pC-N-CA respectively).
+The plot in the middle displays the bond angles of the backbone 
+C&alpha; atom (pC-N-CA and N-CA-C respectively).
+The plot on the bottom depicts the bond angles of the backbone
+C atom with C&alpha; and backbone oxygen as well as with nitrogen and C&alpha;.
+<p>
+The 
+X-axis of these plots shows the residues in sequential order within MOE; the 
+Y-axis is the Z-Scores of the particular backbone bond angle. 
+A Z-Score cutoff of 4.0 is marked by the dotted horizontal line colored in
+dark red. Residues with values above this cutoff should be seen as outliers.
+Residues that are selected in the MOE Window are drawn as circles and
+can be selected interactively in the plots. In order to facilitate 
+standardized viewing the Z-Score values are clamped to 5.5.
+<p>
+The <b>Color</b> Option allows for viewing the plots with either a black or 
+white background. Press the <b>Definitions</b> button to raise a window with
+the backbone definitions and expected values as shown in Figure&nbsp;3.
+
+<p>
+The backbone angle data can also be viewed in a tabular list when the
+<b>Display</b> is set to Data.
+In this mode, the values of the various bond angles and Z-Scores are displayed.
+The <b>Sort by</b> option facilitates sorting of the presented data set
+by the entries of a chosen data column. This feature might be helpful in
+finding data subsets of interest. The corresponding residue atoms of selected
+entries in the list may also be selected in the MOE Window by pressing
+the <b>Select Atoms</b> Button. 
+Outliers - entries with Z-Score values larger than a given Z-Score cutoff - can 
+easily be identified by checking <b>Outliers Only</b>.  By default, the Z-Score 
+cutoff is set to 4.0 but may be set to a desired value specified in the 
+<b>Z-Score Threshold</b> field.
+</p>
+<p>&nbsp;</p>
+<p align="center"><img src="progeom/angledata.png"></p>
+</p>
+<p>&nbsp;</p>
+<p>
+<img src="progeom/dihedralplot.png" class="floatright">
+<a name="RunDihedral"></a><b>Dihedrals</b>. 
+The Dihedral plot shows the quality of backbone torsion angles on a
+Z-Score scale (standard deviations from expectation) as defined in
+<a href="#bbdih">Figure&nbsp;4</a> (above).
+<p>
+As already seen with the bond length and angle plots, the Z-Score profiles are 
+shown 
+in three separate plots. The plot on the top depicts the profile of the omega 
+torsion as defined in Figure 4 in the Methodology section above.
+The plot in the middle shows the planarity and &phi;/&psi; profiles, and the 
+one on the 
+bottom the profile of the C&beta; torsion angle. It is worth noting that the 
+calculations of the &phi; and &psi; profiles depend upon each other and are not 
+separate. As a result, the profiles of &phi; and &psi; are identical.</p>
+
+<p>
+The X-axis of these plots shows the residues in sequential order within MOE; 
+the Y-axis is the Z-Scores of the respective backbone dihedral. 
+A Z-Score cutoff of 4.0 is marked by the dotted horizontal line colored in
+dark red. Residues with values above this cutoff should be seen as outliers.
+Residues that are selected in the MOE Window are drawn as circles and
+can be selected interactively in the plots. In order to facilitate 
+standardized viewing the Z-Score values are clamped to 5.5.
+<p>
+The <b>Color</b> Option allows for viewing the plots with either a black or 
+white background. Press the <b>Definitions</b> button to raise a window with
+the backbone definitions and expected values as shown in Figure&nbsp;4.
+
+<p>
+The backbone dihedral data can also be viewed in a tabular list when the
+<b>Display</b> is set to Data.
+In this mode, the values of the various bond angles and Z-Scores are displayed.
+The <b>Sort by</b> option facilitates sorting of the presented data set 
+by the entries of a chosen data column. This feature might be helpful in 
+finding data subsets of interest. The corresponding residue atoms of selected 
+entries in the list may also be selected in the MOE Window by pressing 
+the <b>Select Atoms</b> Button. The collection of dihedral data can be 
+selected by checking the checkboxes in <b>Torsions</b>. 
+Outliers - entries with Z-Score values larger than a given Z-Score cutoff - can 
+easily be identified by checking <b>Outliers Only</b>.  By default, the Z-Score 
+cutoff is set to 4.0 but may be set to a desired value specified in the 
+<b>Z-Score Threshold</b> field.
+</p>
+<p>&nbsp;</p>
+<p align="center"><img src="progeom/dihedraldata.png"></p>
+
+
+</p>
+<p>&nbsp;</p>
+<p>
+<img src="progeom/rotamerplot.png"  class="floatright">
+<a name="RunRotamer"></a><b>Rotamer</b>. 
+The Plot depicts the rotamer strain energy (kcal/mol) calculated as outlined in 
+the Methodology section above. The X-Axis shows the residues in sequential 
+order within MOE. Residues with strain energies larger 
+than 5.0 kcal/mol (marked by the dotted horizontal line in dark red color) 
+are infrequent in the PDB and warrant a closer inspection. The strain energy 
+threshold of the result set may be adjusted with the <b>E-Threshold</b> slider 
+reducing the results to entries with strain energies above the designated 
+cutoff. The <b>Color</b> option allows for setting the background color either 
+to black or white.
+</p>
+
+<p>
+The rotamer data can be viewed in a table when the <b>Display</b> option is set 
+to <b>Data</b>. The Residues are labeled by affiliation to chains and 
+by ID field number in the PDB files. For each rotamer, the backbone 
+&phi; and &psi; angles and their respective side chain torsions (&chi; angles) 
+are listed as well as the rotamer strain energy (kcal/mol) and probability 
+factor as obtained from the rotamer library. The results 
+can be sorted by each of these categories as outlined in <b>Sort by</b>. 
+Pressing the <b>Select Atoms</b> button facilitates the selection of 
+the corresponding atoms in the MOE Window as selected in the table. 
+The cutoff for rotamer strain energy is adjustable by moving the 
+<b>E-Threshold</b> slider. As with the Plot, only entries with strain energies 
+above the designated value will then be listed.
+
+<p>&nbsp;</p>
+<p align="center"><img src="progeom/rotamerdata.png"></p>
+<p>&nbsp;</p>
+<p>
+<a name="RunClashes"></a><b>Atom Clashes</b>.
+The clashing of two non-bonded atoms is defined by a positive repulsion energy 
+term (in kcal/mol) as outlined in Methodology (above). In <b>Plot</b> viewing 
+mode, the sum of the repulsion energies for each residue's atoms is plotted on 
+the Y axis in kcal/mol. 
+The X-Axis shows the residues in sequential order within MOE. 
+The <b>Options</b> checkboxes control which interactions are included in the 
+calculations:</p>
+
+<table>
+	<tr valign="top">
+	<th>Include Hydrogens</th>
+	<td>If on, clashes involving hydrogen atoms are included</td>
+	</tr>
+	<tr valign="top">
+	<th>Ignore Hydrogen Bonds</th>
+	<td>If on, clashes of potential H-Bond partners are discarded</td>
+	</tr>
+	<tr valign="top">
+	<th>Within Chains only</th>
+	<td>If on, the search space for clashing partners 
+	is confined to atoms that are members of the same chain</td>
+	</tr>
+</table>
+
+<p>
+<center>
+<img src="progeom/clashplot.png" alt="Atom Clashes Plot" />
+</center>
+</p>
+
+<p>The sensitivity for an atom clash can be adjusted by the 
+<b>E-Threshold</b> slider and is set to 0.5 kcal/mol by default. 
+Contact pairs with repulsion energies lower than 
+this value will then be discarded from the result set.
+<p>The Plot can also be viewed with either a white or black background as 
+specified in <b>Color</b>.
+</p>
+<p>
+
+If <b>Display</b> is set to Data, information about each clashing 
+pair is displayed in a table. The respective clashing atoms are specified 
+by chain name, residue name, residue ID number in the PDB files and atom name 
+and are listed together with distance of their respective atom centers 
+(in&nbsp;&Aring;) and repulsion energy (in kcal/mol). 
+As for the Plot display, clicking the <b>Options</b> checkboxes 
+defines the interactions included in the atom clash analysis. 
+When selected in the entry list, the clashing 
+atoms can be selected in the MOE Window by clicking the 
+<b>Select Atoms</b> button. All atoms of a residue containing a clashing atom 
+can be selected by clicking <b>Select Residues</b>. 
+Pressing the <b>Isolate Selected</b> button changes the viewing mode of the 
+MOE Window altogether. In this mode, only the residues of the clashing 
+atoms will be shown in the MOE Window along with the distance between 
+the clashing atoms, which are displayed as balls. This procedure 
+facilitates inspection of the clashing partners as listed in the 
+table. 
+The previous settings in the MOE Window can be restored by clicking the 
+<b>Reset View</b> button. 
+Using the <b>Sort by</b> option allows the data to be sorted by the residue 
+name of either of the clashing atoms, the clash distance or the repulsion energy. 
+The sensitivity of the atom clash is set to 0.5 kcal/mol by default and may be 
+adjusted by moving the <b>E-Threshold</b> slider resulting in elimination of 
+entries with repulsion energies lower than the designated cutoff value.
+</p>
+<p align="center"><img src="progeom/clashdata.png"></p>
+<br />
+
+
+
+
+<p>
+<img src="progeom/aceplot.png" class="floatright">
+<a name="RunACE"></a><b>Contact Energies</b>.
+The effective atomic contact energies (ACE) are calculated for heavy atoms of 
+standard amino acids within a contact range of 6 &Aring;, assigning energy terms 
+(in kcal/mol) for each contact pair as outlined in Methodology (above). These 
+energies are summed for each residue in the system. In general, a large 
+negative value indicates that the residue is predominantly in contact with 
+hydrophobic atoms and therefore expected to be in a buried protein environment. 
+Residues with positive energy terms indicate contacts with predominantly 
+hydrophilic atoms, and so are expected to be in more solvent-exposed regions 
+of the protein.
+In <b>Plot</b> viewing mode, the contact energies in kcal/mol are shown on the Y-Axis,
+while the position of the residue within the MOE system is shown on the X-Axis. 
+Residues containing selected atoms in the MOE Window are drawn as circles, 
+and can be selected interactively in the plot.
+
+<p>The Plot can also be viewed with either a white or black background as 
+specified in <b>Color</b>.
+</p>
+<p>
+In Data viewing mode (<b>Display</b> is set to Data) the contact energies of 
+each residue is displayed in a table specified by chain name, residue name, 
+residue UID number and energy value (kcal/mol). 
+Atoms of selected residues in the list can be selected by clicking 
+<b>Select Atoms</b>. Data in the table may be sorted by the 
+options in the <b>Sort by</b> menu.
+</p>
+<p align="center"><img src="progeom/acedata.png"></p>
+<p>&nbsp;</p>
+
+<a name="Export"></a><b>Export</b>
+<p>
+The Plots of the various checking routines may be exported into 
+a common image formats like PNG, JPG, GIF, BMP, etc. by clicking the 
+<b>Export</b> button. The presented Export panel allows for specification of 
+the required graphic format, image resolution, width and height. The export 
+feature is only accessible if <b>Display</b> is set to Plot. The image below 
+shows an example of exporting the Ramachandran Plot of streptavidin as a PNG 
+image file.
+</p> 
+<p align="center"><img src="progeom/export.png"></p>
+<p>&nbsp;</p>
+
+<a name="ColorPref"></a><b>Plot Color Preferences</b>
+<p>
+
+Pressing the <b>Preferences</b> button launches the Plot Color Preferences
+panel which is used to specify the color schemes of the various
+scatter plots.  Pressing <b>OK</b> applies the color selection.
+
+</p>
+
+<p align="center"><img src="progeom/plotcol.png"></p>
+<p>&nbsp;</p>
+
+<a name="Clipboard"></a><b>Data to Clipboard</b>
+<p>
+When <b>Display</b> is set to Data, the content of the tables may be exported to 
+the clipboard and further processed by applications like Excel, Powerpoint etc.
+</p>
+<p>
+<img src="progeom/rptoptions.png" class="floatright">
+<a name="Report"><b>Report</b></a> 
+The results of the stereochemical measurements in the Protein Geometry 
+application may be summarized in a report by pressing the <b>Report</b> button. 
+The required topics can be chosen using the checkboxes, and cutoff-values set 
+each of the topics, except Ramachandran Plot. 
+For the report, these cutoffs may be set to different values.
+<p>
+<b>Data Set</b> controls what data from each topic is included in the report.
+Selecting <b>all</b> will write all the data, whereas if <b>exceptions</b> is 
+selected only 
+the outliers of the respective topics will be written. If <b>Display</b> in 
+the Protein Geometry Application is set to Data, an additional option, 
+<b>listed data</b>, is presented. If this is used, the report will only contain the 
+data currently shown in the Protein Geometry application. 
+The content of the report is shown in the SVL Text Editor, as shown below in an 
+excerpt from a report file.
+<p>&nbsp;</p>
+<p align="center"><img src="progeom/report.png" width="500"></p>
+
+<!-- ============================ REFERENCES ============================= -->
+
+
+<p><a name="Ref"></a></p><h2>References</h2>
+
+<table cellpadding="5" width="100%">
+<tr>
+<td valign=top>[Bower&nbsp;1997]
+<td valign=top>
+Bower, M.M., Cohen, F.E., Dunbrack Jr., R.L.;
+Prediction of Protein Side-chain Rotamers from a Backbone Dependent Rotamer
+Library: A New Homology Modeling Tool;
+<i>J. Mol. Biol. 267</i> (<b>1997</b>) 1268&ndash;1282.
+</tr>
+
+<tr>
+<td valign="top">[Dunbrack&nbsp;1997]
+</td><td valign="top">
+Dunbrack Jr., R.L. and Cohen, F.E.;
+Bayesian Statistical Analysis of Protein Sidechain Rotamer Preferences;
+<i>Protein Science 6</i> (<b>1997</b>) 1661&ndash;1681.
+<br>Reference data (May&nbsp;2002) was obtained from
+<a href="http://dunbrack.fccc.edu/bbdep/bbdepdownload.php"
+>http://dunbrack.fccc.edu/bbdep/bbdepdownload.php</a>.
+</td></tr>
+
+<tr>
+<td valign=top>[Engh&nbsp;1991]
+<td valign=top>
+Engh, R.A., Huber, R.;
+Accurate Bond and Angle Parameters for X-ray Protein Structure Refinement;
+<i>Acta Cryst. A47 </i> (<b>1991</b>) 392&ndash;400.
+<tr>
+
+<tr>
+<td valign="top">[Jabs&nbsp;1996]
+</td><td valign="top">
+Jabs, A., Weiss, M., Hilgenfeld, R.;
+Non-proline <i>cis</i> Peptide Bonds in Proteins;
+<i>J. Mol. Biol. 286</i> (<b>1999</b>) 291&ndash;304.
+</td></tr>
+
+<tr>
+<td valign="top">[Lovell&nbsp;2003]
+</td><td valign="top">
+Lovell, S.C., Davis, I.W., Arendall III,W.B., de Bakker, P.I.,Word, J.M., 
+Prisant, M.G., Richardson, J.S., and Richardson, D.C.; 
+Structure Validation by C&alpha; Geometry: &phi;, &psi; and C&beta; Deviation; 
+<i>Proteins 50</i> (<b>2003</b>) 437&ndash;450.
+<br>Reference data was obtained from
+<a href="http://kinemage.biochem.duke.edu"
+>http://kinemage.biochem.duke.edu</a>.
+</td>
+</tr>
+<tr>
+<td valign="top">[Zhang&nbsp;1997]
+</td><td valign="top">
+Chao Zhang, George Vasmatizis, James L. Cornette and Charles DeLisi;
+Determination of Atomic Desolvation Energies From the Structures of 
+Crystallized Proteins
+<i>J. Mol. Biol. 267</i> (<b>1997</b>) 707&ndash;326.
+</td></tr>
+
+</table>
+
+<a name="SeeAlso"></a><h2>See Also</h2>
+<p>
+<a href="ligx.htm">Ligand Explorer</a><br>
+<a href="prolig2d.htm">Ligand Interactions</a><br>
+<a href="../proteins/fcnref/progeomf.htm">Protein Geometry Checking Functions</a><br>
+</p>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

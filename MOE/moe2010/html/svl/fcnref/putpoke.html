@@ -1,0 +1,278 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions poke, put, mput, apt mput, putadd >
+
+<meta SVL:symbol ()= []=, |= ||=>
+
+<title>Data Access Functions</title>
+
+</head>
+
+<body  bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Data Access Functions</h2>
+<hr noshade="noshade" />
+
+
+<h2>Syntax</h2>
+
+<pre>
+    result = <a class="fcnlink" href="#poke">poke</a> [ v, index_list, b ]
+    v(index_list) = b 
+
+    result = <a class="fcnlink" href="#put">put</a> [ v, index_list, b ]
+    v[index_list] = b 
+
+    result = <a class="fcnlink" href="#putadd">putadd</a> [v, index_list, b]
+
+    newvec = <a class="fcnlink" href="#mput">mput</a> [ v, mask, b ]
+    v | mask = b
+
+    v || mask_list = val_list 
+</pre>
+
+<h2>Notation</h2>
+
+<table cellspacing="0" border="0" cellpadding="5">
+  <tr>
+    <td width="23%" valign="top">Longhand</td>
+    <td width="19%" valign="top"><tt>poke<br />put<br />mput<br />
+	<span class="nobr">apt mput</span></tt></td>
+    <td width="58%" valign="top">Does not alter the source vector.</td>
+  </tr>
+  <tr>
+    <td valign="top">Shorthand</td>
+    <td valign="top"><tt>( )=<br /> []=<br /> |= <br />||=</tt></td>
+    <td valign="top">Overwrites the source vector with its return value.
+    In this case, the vector<tt> </tt>must be an lvalue, i.e. an
+    addressable, writeable location. </td>
+
+  </tr>
+</table>
+
+<p><a name="poke"></a></p>
+<h2>Description</h2>
+
+<pre>
+result = <span class="fcndef">poke</span> [ v, index_list, b ]
+v(index_list) = b 
+</pre>
+
+<p><tt>poke</tt> replaces a single element at any level of nesting in
+vector <tt>v</tt> with vector <tt>b</tt>. <tt>index_list</tt> gives the
+index of the element to be replaced, and must be a flat numeric vector. If
+<tt>index_list</tt> has more than one element, each successive element
+refers to a deeper level of nesting.</p>
+
+<p>For example:
+
+<pre>
+    svl&gt; poke [ [1,2,3,4,5], 2, 99 ]  
+    [1,99,3,4,5] 
+
+    svl&gt; a = [ 1, [2,3], 4, 5 ] 
+    svl&gt; poke [ a, 2, 99 ]  
+    [1,99,4,5] 
+
+    svl&gt; poke [ a, [2,1], 99 ]  
+    [ 1, [99,3], 4, 5 ] 
+
+    svl&gt; a     // till now, a unchanged  
+    [ 1, [2,3], 4, 5 ] 
+
+    svl&gt; a( [2,1] ) = 100; a  
+    [ 1, [100,3], 4, 5 ]  
+</pre>
+
+<p><a name="put"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+result = <span class="fcndef">put</span> [ v, index_list, b ]
+v[index_list] = b 
+</pre>
+
+<p>Like <tt>poke</tt>, <tt>put</tt> is also used to replace elements
+however it behaves differently, as shown in the following table:</p>
+
+<table border="1" cellspacing="0" border="0" cellpadding="5">
+  <tr>
+    <td width="50%" valign="top"><tt>poke</tt></td>
+    <td width="50%" valign="top"><tt>put</tt></td>
+  </tr>
+  <tr>
+    <td valign="top">Replaces one element</td>
+    <td valign="top">Replaces several elements</td>
+  </tr>
+  <tr>
+    <td valign="top">Inserts at any level</td>
+    <td valign="top">Inserts at top level</td>
+  </tr>
+  <tr>
+    <td valign="top">Inserted elements have increased level of nesting</td>
+    <td valign="top">Inserted elements have same level of nesting</td>
+  </tr>
+</table>
+
+
+<p><tt>put</tt> returns a vector having the same number of elements as
+source vector <tt>v</tt>, but with elements, as indicated by
+<tt>index_list</tt>, replaced by corresponding values in vector
+<tt>b</tt>. The lengths of <tt>b</tt> and <tt>index_list</tt> must be the
+same.</p>
+
+<pre>
+    svl&gt; v = [1,2,3,4,5] 
+    svl&gt; put [ v, 2, 99 ]  // replace element 2  
+    [1,99,3,4,5] 
+
+    svl&gt; put [ v, [2,3], 99 ] // unit-extension  
+    [1,99,99,4,5] 
+
+    svl&gt; put [ v, [3,2], [99,100] ]  
+    [1,100,99,4,5] 
+
+    svl&gt; v       // up to now, v unchanged  
+    [1,2,3,4,5] 
+
+    svl&gt; v[4] = 100; v  
+    [1,2,3,100,5] 
+
+    svl&gt; v[ [1,2] ] = ['a','b']; v  
+    [ 'a', 'b', 3, 100, 5 ]  
+</pre>
+
+<p><a name="putadd"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>result = <span class="fcndef">putadd</span> [v, index_list, b]
+</pre>
+
+<p>
+The <tt>putadd</tt> function is a variant of <tt>put</tt> in that it combines
+the <tt>add</tt> function with the <tt>put</tt> function.  The values of
+<tt>b</tt> will be added to the values of <tt>v</tt> at the corresponding
+positions specified by <tt>index_list</tt>.  The <tt>index_list</tt>
+vector may contain duplicate indices.  The <tt>putadd</tt> function is
+equivalent to
+
+<blockquote><pre>
+local i;
+local result = v;
+
+for i = 1, l_length [index_list,b] loop
+    result(index_list(i)) = result(index_list(i)) + b(i);
+endloop
+
+return result;
+</pre></blockquote>
+
+<p>
+assuming that <tt>index_list</tt> and <tt>b</tt> have the same length; if
+they do not then they will be unit extended so that they have the same
+length.  If <tt>index_list</tt> has values larger than the length of
+<tt>v</tt> then null vectors will be inserted and <tt>v</tt> resized to
+have a length equal to the largest value in <tt>index_list</tt>.  The
+original vector <tt>v</tt> will not be altered.
+
+<p><a name="mput"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+newvec = <span class="fcndef">mput</span> [ v, mask, b ]
+v | mask = b
+</pre>
+
+<p><tt>mput</tt> uses a mask instead of an index list to specify which
+elements to replace. <tt>mput</tt> returns <tt>v</tt> with those elements
+specified by non-zero values in <tt>mask</tt> replaced by the elements in
+<tt>b</tt>. The lengths of <tt>v</tt> and <tt>mask</tt> must match and,
+unless unit extension applies, the length of <tt>b</tt> should be the
+number of non-zero values in <tt>mask</tt>. <tt>mask</tt> must be a flat
+numeric vector.</p>
+
+<p><b>Note:</b> <tt>mput</tt> is equivalent to <tt>unpack [ b, a | not m,
+m ]</tt>.</p>
+
+<pre>
+    svl&gt; mput [ [1,2,3,4,5], [0,1,0,0,0], 99 ]  
+    [1,99,3,4,5] 
+
+    svl&gt; mput [ [1,2,3,4,5], [0,1,1,0,0], 99 ] // unit-extension  
+    [1,99,99,4,5] 
+
+    svl&gt; mput [ [1,2,3,4,5], [0,1,1,0,0], [99,100] ]  
+    [1,99,100,4,5] 
+
+    svl&gt; mput [ &quot;soybean&quot;, [0,1,1,0,0,0,1], &quot;unm&quot; ]  
+    &quot;sunbeam&quot; 
+</pre>
+<tt>
+
+<p>|=</tt> is shorthand for <tt>mput</tt>, with assignment; i.e.
+<span class="nobr"><tt>v | mask = b</tt></span> is equivalent to <nobr><tt>v = mput[v,
+mask, b]</tt></span>. In this case, <tt>v</tt> must be an lvalue.</p> 
+
+
+<p><hr noshade="noshade" />
+
+<pre>
+v || mask_list = val_list 
+</pre>
+
+<p><tt>||=</tt> is shorthand for <tt>apt mput</tt>, with assignment;
+i.e. <tt>v</tt> must be a vector of lvalues, whose values are
+modified by the operation.</p>
+
+<pre>
+    svl&gt; a = &quot;ABCDE&quot;; 
+    svl&gt; a | [0,1,0,1,0] = &quot;bd&quot;; a  
+    &quot;AbCdE&quot;  
+</pre>
+
+
+
+<h2>See Also</h2>
+
+<a href="introstruct.html">Structural Functions</a> 
+
+<p>
+<a class="svl" href="getpeek.html">get []</a><br />
+<a class="svl" href="getpeek.html">peek ()</a> <br />
+<a class="svl" href="getpeek.html">mget |</a><br />
+<a class="svl" href="getpeek.html">apt mget ||</a><br />
+<a class="svl" href="app.html">apt</a><br />
+<a class="svl" href="tagpeek.html">tagpoke</a><br />
+<a class="svl" href="packetc.html">unpack</a> 
+</p>
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

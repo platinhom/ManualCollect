@@ -1,0 +1,382 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	moemanuals/quasar/qcombi.htm
+!!
+!!	22-apr-2008 (al) new output molecule naming scheme
+!!	10-jan-2001 (al) Updated for new attachment point definition
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<meta panel QuaSAR-CombiDesign>
+
+<title>QuaSAR-CombiDesign</title>
+</head>
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>QuaSAR-CombiDesign</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Theory">Theory and Formulation</a>
+<li><a href="#Run">Running QuaSAR-CombiDesign</a>
+<li><a href="#Output">QuaSAR-CombiDesign Output</a>
+<li><a href="#SVL">SVL Commands</a>
+</ul>
+
+<p>The QuaSAR-CombiDesign application is used to select a diverse
+collection of compounds from a virtual combinatorial library of compounds.
+The virtual library is constructed by functionalizing <i>scaffold</i>
+molecules.  QuaSAR-CombiDesign creates the diverse subset by statistical
+sampling of the "chemical space" spanned by all possible R-group/scaffold
+substitutions.</p> 
+
+
+<a name="Theory"></a>
+<h2>Theory and Formulation</h2>
+
+<p>
+QuaSAR-CombiDesign is able to select diverse subsets from extremely large
+virtual libraries for one simple reason: <i>the virtual library is never
+enumerated</i>.  In conventional techniques one first enumerates the
+library by forming all combinations of scaffolds and R-groups.  This is
+followed by descriptor calculation, Principal Components Analysis and
+Diverse Subset Selection.  QuaSAR-CombiDesign uses sampling techniques for
+each of the sub-calculations thereby eliminating the enumeration.
+
+<p>
+The Basic Sampling Operation is used to select a random member of the
+virtual library spanned by the central and R-group databases.  The Basic
+Sampling Operation proceeds as follows:
+
+<ol>
+<li>Randomly select a scaffold molecule.
+<li>Randomly select R-group molecules, one per attachment point on the
+scaffold molecule.
+<li>Construct the product.
+<li>Test against Rule of Five Filter; i.e. if any of Molecular Weight,
+LogP, Number of donors+acceptors, Number of rotatable bonds falls outside
+pre-set limits then return to step 1 (a maximum of 1000 times).
+<li>Calculate molecular descriptors on the entire product molecule.
+</ol>
+
+<p>
+At the highest level, a QuaSAR-CombiDesign proceeds in three phases:
+
+<ol>
+<li><b>[PCA]</b>.  Principal components analysis.  The Basic Sampling
+Operation is repeatedly performed a fixed number of times.  A mean and
+covariance matrix is accumulated and diagonalized.  A linear transform
+<i>Q</i> and a vector <i>u</i> are calculated such that for a given
+descriptor vector <i>x</i>,
+<span class="nobr"><i>Q</i>(<i>x</i>-<i>u</i>)</span>
+has a mean of 0 and a variance equal to the identity matrix.
+<p>
+
+<li><b>[VAR]</b>.  Mean and Variance Estimation.  A random subset of size
+<i>k</i> is repeatedly performed using the Basic Sampling Operation.  The
+PCA transforms are used to de-correlate and normalize the descriptors.
+The diversity metric is evaluated on each sampled subset.  In this way
+the mean and variance of the diversity of a subset of size <i>k</i> is
+estimated.  This allows the diversity of a subset to be measured in terms
+of Z-scoring: the number of standard deviations away from random.
+<p>
+
+<li><b>[MC]</b>.  Monte Carlo Simulated Annealing.  A random subset of size
+<i>k</i> is used as the starting point.  A simulated annealing calculation
+is then used to randomly exchange members of the subset for random molecules
+obtained with the Basic Sampling Operation.  A Metropolis rejection
+criterion is used to optimize the diversity metric.
+</ol>
+
+<p>
+The diversity metric is an entropy-based metric that encourages coverage
+of the entire virtual library spanned by the scaffold and R-group databases;
+this metric does not merely look for extreme molecules but for good coverage.
+
+<a name="Run"></a>
+<h2>Running QuaSAR-CombiDesign</h2>
+
+<p>
+To open the QuaSAR-CombiDesign panel choose
+<span class="menu">MOE | Compute | QuaSAR | QuaSAR-CombiDesign</span> 
+from the MOE Window.
+The panel is operated in the style of a "Wizard"; that is, a sequence
+of pages that specify the parameters to the calculation.  The Next and
+Previous buttons are used to move between the pages.  The Start button
+becomes available on the last page and is used to start the calculation.
+The Cancel button can be used at any time to terminate the calculation.
+
+<p>
+<b>Page 1: Virtual Library Definition</b>.  The first page contains fields
+used to specify the virtual library:
+
+<p>
+<center><img src="qcombi/pg_vl.png" alt="Virtual Library"></center>
+
+<p>
+
+The filenames of the databases used in a QuaSAR-CombiDesign
+run are shown on this page, and can be specified using the <a
+href="../combi/cdgen.htm"><b>Define and Edit Connections</b></a>
+button. QuaSAR-CombiDesign generates new compounds by randomly
+functionalizing scaffold molecules from the <b>Scaffold Input Database</b>
+with R-groups from databases specified in the <b>Connections</b> area.
+Functionalizations occur between terminal atoms named "Ax" (where x is an
+integer from 0 to 9) on the scaffold molecules and terminal atoms named "A0"
+("A" zero) on the R-groups. The overall functionalization "reaction" is:
+
+</p>
+
+<center> Scaffold-Ax + A0-R  ->  Scaffold-R ;   x = 0 to 9</center>
+
+<p>
+
+In bidentate connections, a second connection is made from the scaffold
+to a terminal atom named "A1" in an R-group.
+
+<p>
+
+Scaffold structures are created by renaming the atoms at the desired
+points of substitution with the tokens A0 to A9. Each scaffold molecule must
+contain at least one atom named "Ax" to be recognized as a valid scaffold
+by QuaSAR-CombiDesign.  Symmetric substitutions are achieved by giving
+multiple atoms the same name.  Bidentate substitutions are also supported,
+as are substitutions through higher-order bonds.  Bidentate connections
+are specified when defining a new connection (<b>Define and Edit
+Connections</b>).  Naming
+non-terminal atoms "Ax" can result in errors and unreasonable structures.
+
+</p>
+
+<p>
+
+R-groups are created by renaming the atom at the desired point of
+substitution with "A0". R-groups must contain one and only one "A0" atom to
+be correctly recognized by QuaSAR-CombiDesign. R-groups may also contain a
+terminal atom labeled A1, in which case the group can be used in a bidentate
+connection.  If the group has other atoms labeled "Ax" (x is not 0 or 1),
+then these can be use as substitution points in subsequent invocations
+of QuaSAR-CombiDesign.  In this way you can set up a multi-step "reaction".
+You may label a multiply-bonded atom with "A0" or "A1", in which case the
+substitution will be made through a higher-order bond.  Naming non-terminal
+atoms "A0" will result in errors and unreasonable structures.
+
+</p>
+
+<p>
+For more information about scaffolds, R-groups, and connections, please
+see the chapter on <a href="../combi/cdgen.htm">QuaSAR-CombiGen</a>.
+
+
+<p>
+<b>Page 2: Molecular Descriptors</b>.  Molecular descriptors are calculated
+on each product (member of the virtual library) and not just on individual
+R-groups and scaffold molecules.  The Molecular Descriptors page specifies
+which QuaSAR descriptors to use to describe a virtual library
+member:
+
+<p>
+<center><img src="qcombi/pg_desc.png" alt="Descriptors"></center>
+
+<p>
+Select the descriptors to use in the calculation.  If none are selected
+then all descriptors will be used.  Note that only 2D descriptors are
+employed by QuaSAR-CombiDesign.
+
+<p>
+<b>Page 3: Rule of Five Filter</b>.  Virtual Library compounds are constructed
+by randomly choosing a scaffold molecule and functionalizing it with random
+R-groups.  The Rule of Five Page is used to reject virtual library members
+with a collection of filters:
+
+<p>
+<center><img src="qcombi/pg_rule.png" alt="Rule of 5"></center>
+
+<p>
+A constructed virtual library member will only be used if its Molecular
+Weight, LogP (octanol/water), number of donors + acceptors and number of
+rotatable
+bonds fall between the limits specified in the Rule of Five Filter page.
+If any one of the tests fails then the constructed molecule is rejected
+and another is randomly chosen.
+
+<p>
+<b>Page 4: Principal components analysis</b>.  The diversity calculation
+ultimately proceeds in a descriptor space that is uncorrelated and normalized.
+In order to construct the affine transform of the original descriptors,
+a Principal Components Analysis (PCA) is conducted using a sampling
+method.  Consult <a href="cluster.htm">QuaSAR-Cluster</a> for more details
+on the theory behind the PCA calculation.  The Principal Components Analysis
+page specifies the parameters to the PCA calculation:
+
+<p>
+<center><img src="qcombi/pg_pca.png" alt="Principal Components"></center>
+
+<p>
+The <b>PCA Samples</b> field indicates the number of iterations to use
+in the PCA sampling step.  Values above 30,000 are generally above the
+diminishing returns level.  The details of Condition Limit and Component Limit
+can be found in <a href="cluster.htm">QuaSAR-Cluster</a>.
+
+<p>
+<b>Page 5: Diverse Subset Output</b>.  This page controls the destination
+and size of the output database as well as the simulation control
+parameters:
+
+<p>
+<center><img src="qcombi/pg_div.png" alt="Diverse Subset"></center>
+
+<p>
+The <b>Subset Size</b> field indicates the desired number of molecules
+in the output database and <b>Output Database</b> is the filename of the
+output database.  <b>Subset Samples</b> contains the number of random
+subsets of size Subset Size that will be sampled in order to estimate
+the mean and variance of the diversity of a random subset.
+<b>Temperature Steps</b> controls how many iterations will be performed
+per temperature value.  This is calculated as <i>ks</i> where <i>k</i> is
+the Subset Size and <i>s</i> is the value entered for Temperature Steps.
+<b>Temperature Scale</b> is the factor by which the Monte Carlo temperature
+will be scaled from one outer iteration to the next.  The simulation will
+stop when the temperature falls below 1e-6 (it starts at 1.0).
+
+<p>
+<b>Page 6: Start Simulation</b>.  This is the final page of QuaSAR-CombiDesign.
+The Start button is activated and must be pressed to begin the calculation.
+
+<p><b>Note:</b> QuaSAR-CombiDesign <b>cannot</b> write to an output database
+that is currently open; an Open Database error will occur. Closing the database
+and reinitiating QuaSAR-CombiDesign will correct this error.</p> 
+
+
+<a name="Output"></a>
+<h2>QuaSAR-CombiDesign Output</h2>
+
+<p>
+QuaSAR-CombiDesign outputs to both the CLI and to the output database.
+CLI output echoes the process which QuaSAR-CombiDesign is currently
+performing, and can be used to monitor the progress of the calculation.
+Database output consists of the generated compounds, and the molecular
+fragments from which they were generated.</p>
+
+The CLI output mirrors the QuaSAR-CombiDesign algorithm, and is written
+in the following sequence:
+
+<ol>
+<li>QuaSAR_CombiDesign run options listed in a tagged vector.</li>
+<li>A list of the Scaffold and R-group databases; the name of the associated
+attachment point on the scaffold is given with each R-group database.
+<li>A summary of any errors found in the Scaffold and R-group databases.</li>
+<li>A list of the descriptors used in the diversity analysis.</li>
+<li>The number of principal components determined by the PCA.</li>
+<li>The average and variance energies of random subset samples.</li>
+<li>The energy, Z-score and temperature after every 100
+Monte Carlo selection cycles. </li>
+</ol>   
+
+<p>
+
+The output database from a QuaSAR-CombiDesign run contains an output molecule
+field as well as input fragment molecule fields.  The "mol" field contains
+the compounds generated by QuaSAR-CombiDesign.  The scaffold field "C"
+and the R-group fields contain the scaffold (central) and R-group fragments
+from which the compound was generated.
+
+<p>
+The scaffold fragments are assigned a name of the following form:
+
+<blockquote>
+<i>Cn.scaff_name</i>
+</blockquote>
+
+<p>
+where:
+
+<ul>
+<li><i>n</i> is the entry number of the scaffold in the scaffold database.
+<li><i>scaff_name</i> is the name, if any, of the original scaffold molecule.
+</ul>
+
+<p>The R-group fields are named according to their attachment point on
+the scaffold, and the names of the individual R-group fragments are the
+same as in the original R-group databases.
+
+<p>
+The output molecules are
+named according to the scaffold and R-group fragments from which they
+are built.  The scaffold name is as described above.
+Each R-group in the product is assigned a name of the
+following form:
+
+<blockquote>
+<i>port.n.rgp_name</i>
+</blockquote>
+
+<p>
+where:
+
+<ul>
+<li><i>port</i> is the name of the attachment point, e.g. <tt>A1</tt>.
+<li><i>n</i> is the entry number of the fragment in the R-group database.
+<li><i>rgp_name</i> is the name, if any, of the original R-group molecule.
+</ul>
+
+<p>Here is an example of the name of an output molecule:
+
+<blockquote>
+C2.benzene/A1.5.F/A2.3.N/A3.1.Cl
+</blockquote>
+
+<p>
+
+</p>
+
+<p>In the Monte Carlo phase of the simulation, QuaSAR-CombiDesign writes a 
+new diverse subset to the output database every 5000 cycles. 
+The Monte Carlo simulation will continue until the system temperature is 
+below 1e-06.</p>
+
+<p><b>Note:</b> Caution must be used when running QuaSAR-CombiDesign with small 
+databases; infinite loops may result if the subset size is larger than
+the space spanned by all possible scaffold/R-group substitutions.</p>
+
+
+<a name="SVL"></a>
+<h2>SVL Commands</h2>
+<p>
+<a href="fcnref/qcombi.htm"><tt>QuaSAR-CombiDesign</tt></a><br>
+
+<h2>See Also</h2>
+<a href="qsar.htm">QuaSAR Overview</a><br>
+<a href="../combi/cdgen.htm">QuaSAR-CombiGen</a><br>
+
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

@@ -1,0 +1,441 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<meta panel Search PDB>
+<meta panel PDB Search>
+<meta panel PDB Search: Load Alignment>
+<meta panel PDB Search: Settings>
+<meta panel MOE-SearchPDB>
+<meta panel MOE-SearchPDB: Load Alignment>
+<meta panel MOE-SearchPDB: Settings>
+
+<title>Homology Searching</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Homology Searching</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Methodology">Methodology</a></li>
+<li><a href="#Running">Running MOE-SearchPDB</a></li>
+<li><a href="#SettingParameters">Setting the Search Parameters</a></li>
+<li><a href="#LoadingResults">Loading Results into MOE</a></li>
+<li><a href="#PDBPanelReference">MOE-SearchPDB Panel Reference</a></li>
+<li><a href="#SVLCommands">SVL Commands</a></li>
+<li><a href="#References">References</a></li>
+</ul>
+
+<p>MOE-SearchPDB searches for protein structures that are homologous to a
+query sequence.  The search is performed on a database of protein
+structures and sequences that have been clustered into families.
+</p>
+
+<h2>Methodology</h2>
+
+<p>A two stage search strategy is used.
+First, a fast scan is performed to create an initial list of
+candidates.  Second, the list is then narrowed by Z-Score evaluations.
+</p>
+
+<p><b>Fast Scan.</b>
+The initial scan is performed using a generalized version of the
+Fasta methodology [Pearson 1996].
+Any family containing at least one high-scoring
+sequence is placed on the list of candidates for further inspection.
+</p>
+
+<p>An expectation value (E-Value) is determined
+for each sequence.  The E-Value is an estimate
+of the number of possible false positives one might expect if
+all sequences scoring equal to or better than the alignment score
+from which the E-Value is derived were accepted.  High E-Values correspond
+to poor scores; low E-Values correspond to good scores.
+</p>
+
+<p><b>Evaluation.</b>
+The list is systematically reduced using pre-defined thresholds.
+For each family, the best E-Value of all of its sequences is compared
+to two values: E-Value Cutoff and E-Value Accept.
+</p>
+
+<ul>
+<li>
+<p>
+If the E-Value is higher
+than E-Value Cutoff, the family is rejected.
+</p>
+</li>
+
+<li>
+<p>
+If the E-Value is lower than E-Value Accept, the family is accepted and
+reported without any further evaluations.  In this case, the word <i>Good</i>
+is shown in the Z-Score column of the <b>Results</b> list.
+</p>
+</li>
+
+<li>
+<p>
+If the E-Value is between E-Value Accept and E-Value Cutoff, the Z-Score for
+the family is calculated.  The Z-Score is an estimate of the statistical
+significance of an alignment score.  It is calculated by generating a
+distribution of scores by repeated alignments of random permutations of the
+query sequence and the candidate family. The number of randomized alignments
+performed is limited by the <b>Z Iterations</b> parameter.  The alignment score
+is then converted to a Z-Score by subtracting the mean of this distribution and
+dividing by its standard deviation.  The Z-score is thus an estimate of the
+likelihood that sequences are related.  Roughly speaking, Z-scores of about 6
+can be viewed as significant, although one must take care to avoid false
+positives.  Scores of about 7 indicate that the sequences are very likely to be
+related, and scores above 8 indicate that the sequences are related with near
+certainty.
+</p>
+
+<p>
+Families whose Z-Scores are below <b>Z Cutoff</b> are rejected.  The default
+Z Cutoff is 6; this can be altered in the MOE-SearchPDB Settings Panel.
+</p>
+
+<p>The results of the Z-Score calculations are shown as the search
+progresses. Families are then reported in the <b>Results</b>
+list from which they can be examined and loaded into MOE.
+</p>
+</li>
+
+</ul>
+
+<p>Search parameters control the fast scan and Z-Score procedures, as well as
+the thresholds that determine which families will be reported as likely
+homologues to the query.</p>
+
+<h2><a name="Running">Running MOE-SearchPDB</a></h2>
+
+<p>The MOE-SearchPDB panel can be opened from either the MOE window or
+the sequence editor by choosing:
+</p>
+
+<ul>
+<li>
+<b style="white-space:nowrap">MOE | Compute | Biopolymer | PDB Search</b>
+</li>
+<li><b>SE | Homology | PDB Search</b></li>
+</ul>
+
+<p align="center">
+<img src="prosearch/searchpdb.png" alt="MOE-SearchPDB Panel" />
+</p>
+
+<p> The protein sequence used for the search is specified in the
+<b>Query</b> area of the panel.  A sequence can be entered in several
+ways:
+</p>
+
+<ul>
+<li>
+A sequence may be typed directly into the area.
+</li>
+
+<li>
+<b>Chain</b> buttons <b>1</b> to <b>6</b> enter the sequences of the
+specified chains.
+</li>
+
+<li>
+A sequence can be pasted from the clipboard using the <b>Paste Query</b>
+button.
+The Sequence Editor can be used to copy a chain's sequence onto
+the clipboard.  Position
+the cursor over the chain number of the chain to be copied.  Choose
+<b style="white-space:nowrap">SE | Chain Popup | Residues | To Clipboard</b>.
+</li>
+</ul>
+
+<p>Press the <b>Search</b> button to begin the search.</p>
+
+<p>The query sequence is aligned against each
+family in the homology databank, and E-Values and Z-Scores
+are calculated.  Families meeting the
+specified thresholds are inserted into the <b>Results</b> list.
+</p>
+
+<p>While the search is in progress, the Search button becomes
+<b>Stop Search</b>.  If the search is interrupted, any results which have
+already passed the E-Value acceptance test or the Z Cutoff test will remain in
+the list.  All other candidates will be removed.
+</p>
+
+<h2><a name="SettingParameters" />Setting the Search Parameters</h2>
+
+<p>
+Pressing the <b>Settings</b> button raises the Settings panel, which controls
+various parameters used in the MOE-SearchPDB calculation.
+</p>
+
+<p align="center">
+<img src="prosearch/settings.png" alt="MOE-SearchPDB Settings" />
+</p>
+
+<table width="100%" cellspacing="5" cellpadding="5" border="0">
+
+<tr>
+<td valign="top"><b>Tuple Size</b></td>
+<td valign="top"> Word size used during initial fast scan of the database.
+Lower values give a more sensitive albeit slower search.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Gap Start</b></td>
+<td valign="top">Penalty for creating a gap in the alignment.</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Gap Extend</b></td>
+<td valign="top">Penalty for extending a gap in the alignment.</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Scoring Matrix</b></td>
+<td valign="top">Amino acid comparison matrix.</td>
+</tr>
+
+<tr>
+<td valign="top"><b>E-Value Cutoff</b><br /></td>
+<td valign="top">
+The maximum allowable E-Value.  All E-Values higher than <b>E-Value Cutoff</b>
+are rejected.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>E-Value Accept</b></td>
+<td valign="top">
+The minimum E-Value required to skip the Z-Score calculation
+and automatically accept the candidate (assuming it is below the E-Value
+Cutoff).
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Z Iterations</b></td>
+<td valign="top">
+The maximum number of randomized alignments performed during the
+Z-Score calculation.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Z Cutoff</b><br /></td>
+<td valign="top">
+The minimum value of a Z-Score in order to be reported.
+</td>
+</tr>
+
+</table>
+
+<a name="LoadingResults" /><h2>Loading Results into MOE</h2>
+
+To load a result, either double-click on a reported candidate in
+the <b>Results</b> area, or select it in the list and press the
+<b>Load Alignment</b> button above the results area.
+The MOE-SearchPDB: Load Alignment panel appears, displaying the query sequence
+aligned to the family.
+
+<p align="center">
+<img src="prosearch/load.png" alt="MOE-SearchPDB: Load Alignment Panel" />
+</p>
+
+<p>Press the <b>Load All</b> button to load all the sequences and
+structures into MOE.  Otherwise, select one or more sequences in
+the panel and press the <b>Load Selected</b> button. If you wish to load
+the query sequence into MOE as well, select the <b>Load Query Sequence</b>
+option.
+</p>
+
+<table width="100%" cellspacing="5" cellpadding="5" border="0">
+
+<tr>
+<td valign="top"><b>Load Query Sequence</b></td>
+<td valign="top">If turned on, the query sequence will be loaded into
+MOE along with the requested sequences from the list.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Load Selected</b></td>
+<td valign="top">Loads only the selected sequences from the list.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Load All</b></td>
+<td valign="top">Loads all the sequences from the list.
+</td>
+</tr>
+</table>
+
+<a name="PDBPanelReference" />
+<h2>MOE-SearchPDB Panel Reference</h2>
+
+<p align="center">
+<img src="prosearch/searchpdb.png" alt="MOE-SearchPDB Panel" />
+</p>
+
+<table width="100%" cellspacing="5" cellpadding="5" border="0">
+
+<tr>
+<td valign="top"><b>Load Chain</b></td>
+<td valign="top">
+Load the sequence of a protein chain loaded in MOE into the Query text field.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Paste Query</b></td>
+<td valign="top">Pastes the contents of the clipboard into the Query text field.
+This operation overwrites any data already in the text area.  During the paste,
+all non-alphabetic characters will be removed, and all characters will be
+converted to upper-case.
+
+<p><font color="#ff0000"><b>Tip</b></font>&nbsp;&nbsp;
+The Sequence Editor can be used to copy a chain's sequence onto
+the clipboard.  Position
+the cursor over the chain number of the chain to be copied.  Choose
+<b style="white-space:nowrap">SE | Chain Popup | Residues | To Clipboard</b>.
+</p>
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Query</b></td>
+<td valign="top">Text field holding the sequence to the used in the search.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Load Alignment</b></td>
+<td valign="top">Opens the MOE-SearchPDB Load Alignment panel with the
+alignment of the selected result.  If no results are selected then
+the button is insensitive.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Results</b></td>
+<td valign="top">Shows the results that have already satisfied the search
+parameter thresholds.  This list is updated as the search progresses.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Settings</b></td>
+<td valign="top">Opens the MOE-SearchPDB Settings panel used to
+modify the parameters to be used with the search.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Search</b></td>
+<td valign="top">Starts the search.   Once the search begins,
+this button is converted to <b>Stop Search</b> which can be used
+to interrupt the search.
+</td>
+</tr>
+
+</table>
+
+<a name="SVLCommands" /><h2>SVL Commands</h2>
+
+<p><a class="svl" href="fcnref/pro_srch.htm">pro_SearchPDB</a><br />
+<a href="fcnref/intropro.html">Protein Functions</a>
+</p>
+
+<a name="References" /><h2>References</h2>
+
+<table width="100%" cellpadding="5" border="0">
+
+<tr>
+<td valign="top">[Mizuguchi&nbsp;1998]</td>
+<td valign="top">
+Mizuguchi K., Deane C.M., Blundell T.L., Overington J.P.;
+HOMSTRAD: A Database of Protein Structure Alignments for Homologous Families;
+<i>Prot. Sci. 7</i> (<b>1998</b>) 2469&ndash;2471.
+</td></tr>
+
+<tr>
+<td valign="top">[Pearson&nbsp;1996]</td>
+<td valign="top">Pearson, W.R.;
+Effective Protein Sequence Comparison;
+<i>Meth.  Enz. 266</i>, R.F. Doolittle, ed. (San Diego: Academic Press),
+(<b>1996</b>) 227&ndash;258.
+</td></tr>
+
+<tr>
+<td valign="top">[Shi&nbsp;2001]</td>
+<td valign="top">
+Shi J., Blundell, T.L., Mizuguchi K.;
+FUGUE: Sequence-Structure Homology Recognition Using
+Environment-Specific
+Substitution Tables and Structure-Dependent Gap Penalties;
+<i>J. Mol. Biol. 310</i> (<b>2001</b>) 243&ndash;257.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Teichmann&nbsp;2000]</td>
+<td valign="top">
+Teichmann, S.A., Chothia, C., Church, G.M., Park, J.;
+Fast Assignment of Protein Structures to Sequences Using the
+Intermediate Sequence Library;
+<i>Bioinformatics 16</i> (<b>2000</b>) 117&ndash;124.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Webber&nbsp;2001]</td>
+<td valign="top">
+Webber, C., Barton, G.J.;
+Estimation of P-values for Global Alignments of Protein Sequences;
+<i>Bioinformatics 17</i> (<b>2001</b>) 1158&ndash;1167.
+</td></tr>
+
+</table>
+
+<h2>See Also</h2>
+<a href="../tutorials/hom_tut.htm">Homology Modeling Tutorial</a><br />
+<a href="pdb_mdb.htm">MOE Protein Database</a><br />
+<a href="../moe/molsystems/molrep.html">Representation of Molecular Systems in MOE</a><br />
+<a href="align.htm">Sequence and Structure Alignment</a><br />
+<a href="../moe/gui/se.html">Sequence Editor</a>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

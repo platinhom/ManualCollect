@@ -1,0 +1,751 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!
+!!    emin.htm			energy minimize
+!!
+!!    27-oct-2010 (al) merged with Database Minimize (db3d.htm)
+!!    08-oct-2003 (pl) created from min.html
+!!
+!!    replaces: moe/confspace/min.html (put emin.htm in apps)
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<title>Energy Minimization</title>
+
+<meta panel Energy Minimize>
+<meta panel Database Minimize>
+
+<meta main_keywords energy minimize, minimization, geometry, optimization />
+<meta main_keywords forcefield, potential setup, refinement, tether />
+<meta main_keywords PM3, AM1, MNDO, MOPAC, AMBER, CHARMM, MMFF94 />
+<meta main_keywords steepest descent, SD, conjugate gradient, CG />
+<meta main_keywords truncated newton, TN, interpolation />
+
+<meta keywords molecular dynamics, conformations, search />
+<meta keywords periodic boundary conditions, crystal parameters />
+<meta keywords quantum, orbital />
+<meta keywords chiral, distance, angle, dihedral constraint, restraint />
+<meta keywords hamiltonian, root mean square, RMS, test, limit />
+
+<meta keywords four-dimensional energy minimization />
+<meta keywords database energy minimization />
+<meta keywords 2D to 3D conversion />
+<meta keywords SMILES 3D conversion />
+<meta keywords SD file 3D conversion />
+
+</head>
+
+<!--
+<meta index entry="energy minimization" subentry="database">
+<meta index entry="energy minimization" subentry="four dimensional">
+<meta index entry="database" subentry="energy minimization">
+<meta index entry="2D to 3D conversion">
+<meta index entry="SMILES" subentry="3D conversion">
+<meta index entry="SD file" subentry="3D conversion">
+-->
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Energy Minimization</h2>
+<hr noshade="noshade" />
+
+<ul>
+  <li><a href="#Theory">Theory</a></li>
+  <li><a href="#Run">Running an Energy Minimization</a></li>
+  <li><a href="#DBMin">3D Database Minimization</a></li>
+    <ul>
+    <li><a href="#Intro">Introduction</a>
+    </li><li><a href="#Method">Methodology</a>
+    </li><li><a href="#Minimizing">Minimizing the Database</a>
+    </li>
+    </ul>
+  <li><a href="#Ref">References</a></li>
+  <li><a href="#SeeAlso">See Also</a></li>
+  <li><a href="#SVL">SVL Commands</a></li>
+</ul>
+
+<p>
+The Energy Minimize application in MOE calculates atomic coordinates that are
+local minima of a molecular energy function.  Energy minimization is useful
+for molecule building, determining low energy conformations, conformational
+search and preparation for molecular dynamics simulations and vibrational
+analysis.  The supported energy functions are:
+</p>
+<ul>
+<li>The current MOE forcefield (e.g. AMBER, CHARMM, MMFF94, etc.)</li>
+<li>The MOPAC semi-empirical energy functions (e.g. PM3, AM1, MNDO)</li>
+</ul>
+<p>
+The MOPAC energy functions are fundamentally different from molecular
+mechanics forcefields in that they are capable of simulating chemical
+reactions.  For information on configuring MOPAC to run in MOE,
+please see the section on
+<a href="scf.htm#MOPAC">MOPAC Engine</a>.
+</p>
+
+<p>In forcefield minimization, the Energy Minimize application is
+capable of calculating constrained geometries through the use of MOE's
+chiral, distance, angle and dihedral restraints.  In addition, atoms may
+be constrained to be frozen during the calculation.
+</p>
+<h2><a name="Theory">Theory</a></h2>
+
+<p>
+Energy minimization consists of finding a set of atomic coordinates
+that correspond to a local minimum of the molecular energy function (such
+as the potential energy model).  This is done by applying large scale non-linear
+optimization techniques to calculate a conformation (near to the starting
+geometry) for which the forces on the atoms are zero.
+</p>
+<p>
+<b>Forcefield Optimization</b>.
+Non-linear optimization algorithms typically have the following structure
+[Gill&nbsp;1981].   Let <i>x<sub>k</sub></i> denote the vector of
+atomic coordinates at step <i>k</i> of the procedure and let <i>U</i>
+be the energy function.  Then,
+</p>
+<ol>
+<li>
+<i>Test for convergence</i>.
+If the convergence criteria are satisfied (see below), then
+<i>x<sub>k</sub></i> is returned.
+</li>
+<li>
+<i>Compute the search direction</i>.
+Compute a non-zero vector <i>p<sub>k</sub></i> called the
+<i>search direction</i>.
+</li>
+<li>
+<i>Compute the step size</i>.
+Compute a non-zero scalar <i>a</i><sub><i>k</i></sub>, called the
+<i>step size</i>, for which 
+<span class="nobr"><i>U</i>(<i>x<sub>k</sub></i> + <i>a</i><sub><i>k</i></sub>
+<i>p<sub>k</sub></i>) &lt; <i>U</i>(<i>x<sub>k</sub></i>)</span>.
+</li>
+<li>
+<i>Advance</i>.
+Set <i>x</i><sub><i>k</i>+1</sub> = <i>x<sub>k</sub></i>
+and <i>k</i> = <i>k</i> + 1 and go to Step 1.
+</li>
+</ol>
+
+<p>
+The step size in Step&nbsp;3 is computed by using a safeguarded bicubic
+interpolation search along the search direction.  In Step&nbsp;1, the
+optimization is terminated when any of the following three conditions
+are satisfied:
+</p>
+
+<ol>
+<li><i>Root Mean Square gradient Test</i>:
+|grad <i>U</i>(<i>x</i><sub><i>k</i></sub>)| &lt; <i>e</i><sub><i>A</i></sub>
+sqrt(<i>n</i>),
+where <i>e</i><sub><i>A</i></sub> is a predefined
+constant and <i>n</i> is the number of unfixed atoms.
+</li>
+
+<li>
+<i>Iteration Limit Test</i>:
+<i>k</i> &gt; <i>K</i>, where <i>K</i> is a predefined upper 
+limit on the maximum number of iterations.
+</li>
+
+<li>
+<i>Progress Tests</i>:
+The following three conditions are simultaneously satisfied:
+
+<p align=center><img src="emin/tests.png"></p>
+
+<p>In these conditions, <i>T</i> is a predefined constant indicating the
+number of significant figures in <i>U</i> that are required (the
+<i>function test</i>). For example, if <i>T</i>
+ = 10<sup>-6</sup> then six figures of accuracy are required.</p>
+</li>
+</ol>
+
+<p>
+If the iteration limit is exceeded then it is typically due to a failure
+of the algorithm.  Note that saddle points satisfy criterion 1; the
+conformation should be perturbed slightly and optimization restarted.
+If criterion 3 is satisfied then it is very likely that a local minimum
+has been achieved.
+</p>
+<p>
+The choice of search direction <i>p<sub>k</sub></i> in Step 2 is what
+distinguishes the different nonlinear optimization methods.  MOE uses
+a success of three methods to effect an energy minimization: Steepest
+Descent (SD), Conjugate Gradient (SG) and Truncated Newton (TN).
+In SD optimization
+<span class="nobr"><i>p<sub>k</sub></i> = - grad <i>U</i>(<i>x<sub>k</sub></i>)
+</span>;
+that is, the search proceeds along the direction of the forces.
+While intuitive, SD is extremely inefficient after a few iterations and
+it is only used when the gradient is extremely high.  When the gradient
+is sufficiently small (but still quite high) the CG method is used.
+The Conjugate Gradient (CG) method improves upon SD by choosing the
+next search direction in a way so as to not undo the progress accomplished
+by the previous step. CG performs well in strained conditions; however, it
+exhibits poor convergence properties.  Once the gradient is reasonable,
+the TN method is used.
+</p>
+<p>The Truncated Newton (TN) method is the most efficient large-scale
+nonlinear optimization method known.  It exhibits superlinear convergence
+even in highly nonlinear conditions.  The Truncated Newton method attempts
+to use curvature information to improve convergence.  The Newton
+direction <i>p</i> satisfies:</p>
+
+<p align=center><img src="emin/newton.png"></p>
+
+<p>where <i>G<sub>k</sub></i> is the second derivative, or Hessian, of
+<i>U</i>.   These equations are called the Newton equations.
+TN solves the Newton equations approximately using an iterative linear
+equation solver. The iterative linear equation solver (based on the Linear
+Conjugate Gradient method) is terminated after a small number of
+iterations; hence the name Truncated Newton.
+</p>
+<p>
+<b>Quantum Mechanical Optimization</b>.
+The PM3, AM1 and MNDO Hamiltonians can be used as the energy model.  These
+models are implemented in the external MOPAC program [Stewart&nbsp;1993].
+MOPAC is a semi-empirical molecular orbital software program for the study
+of chemical structures, including reactions. MOPAC supports the MNDO, MINDO/3,
+AM1 and PM3 Hamiltonians (for the electron part of the calculation). For the
+most part, MOPAC has been parameterized for the organic elements (and some
+transition metals with full d shells). MOPAC can calculate geometries,
+transition states, vibrational spectra, thermodynamic quantities and force
+constants for molecules, radicals and ions.
+MOE will automatically run MOPAC to effect the energy minimization calculation
+for these Hamiltonians.  MOPAC uses different optimization methodology
+from MOE and a complete description is beyond the scope of this document.
+</p>
+<p>
+Chemical Computing Group Inc. (CCG) makes no copyright, confidentiality, or
+other intellectual property rights claim regarding the MOPAC 7.0 program which
+has been placed, by its authors, entirely into the public domain. CCG has
+limited its activities in relation to the MOPAC program to providing
+executables for various computer platforms and authoring interoperability
+software. CHEMICAL COMPUTING GROUP INC. AND ITS AFFILIATES DISCLAIM ALL
+WARRANTIES WITH REGARD TO THE MOPAC PROGRAM, INCLUDING ALL IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS: THE MOPAC PROGRAM IS PROVIDED "AS-IS".
+</p>
+<h2><a name="Run">Running an Energy Minimization</a></h2>
+
+<p>
+In general, the following steps should be taken to locate an energy minimum:
+</p>
+<ol>
+<li>
+Select and configure the forcefield and related parameters with the
+<span class="menu">MOE | Footer | <i>forcefield</i></span> button.
+Configure the periodic system parameters with
+<span class="menu">MOE | Footer | <i>PBC</i></span>,
+the periodic boundary conditions button (if the crystal parameters
+have been set, the button label will be the current space group).
+</li>
+<li>
+Add Hydrogens and Lone Pair atoms as required using 
+the <span class="menu">MOE | Edit | Hydrogens | Add Hydrogens</span> menu
+items.  
+Alternatively, the Energy Minimize panel can add/remove hydrogen and lone 
+pair atoms as required by the current forcefield.
+</li>
+
+<li>
+Decide which atoms are to be held fixed in space (i.e. frozen during
+the minimization calculation).  Fixed atoms can be detected using
+<span class="menu">MOE | Selection | Potential | Fixed</span> and modified with
+<span class="menu">MOE | Edit | Potential | Fix</span> or
+<span class="menu">MOE | Edit | Potential | Unfix</span>.
+If a large protein is in a highly strained state, it is a good idea to
+fix the backbone or C-alpha atoms.
+Alternatively, the Energy Minimize panel also allows temporary (only in effect
+during the course of minimization) tethers to be set up for common situations.
+</li>
+
+<li>
+Decide if restraints are to be added to the system (to constrain geometry).
+Use <span class="menu">MOE | Edit | Potential | Restrain</span> to add
+distance, angle and dihedral restraints.  
+Use
+<span class="menu">MOE | Footer | <i>forcefield</i> | Restraints</span>
+to review or delete restraints.
+</li>
+</ol>
+
+<p>
+When ready to perform the energy minimization, choose
+<span class="menu">MOE | Compute | Energy Minimize</span> and the panel
+on the left will appear (the "forcefield" version).  The panel on the right
+(the "MOPAC" version) is obtained by selecting either the PM3, AM1 or
+MNDO Hamiltonian option.  Both versions of the panel are described below.
+</p>
+<p align="center">
+<img src="emin/ffpanel.png" alt="FF panel" /> &nbsp;&nbsp;&nbsp;&nbsp;
+<img src="emin/mopanel.png" alt="Mopac panel" />
+</p>
+
+
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="top"><b>Hamiltonian</b></td>
+<td valign="top">
+The Hamiltonian option (and related controls) selects the potential energy
+model that will be used for the energy minimization calculation.  The
+default value of Forcefield means that the currently loaded forcefield,
+current potential setup and current restraints will be used for the
+calculation.  The title of the current forcefield is displayed to the right
+of the Hamiltonian option.
+<p>
+If either of PM3, AM1 or MNDO is selected, then the MOPAC program will be
+used to perform the energy minimization.  Due to the computational demands,
+only small systems can be handled.  The next option to the right of the
+Hamiltonian (in the panel on the right) controls the type of quantum
+mechanical calculation to perform.  RHF means Restricted Hartree-Fock,
+UHF means Unrestricted Hartee-Fock, Biradical means that the system is
+constrained to have two unpaired electrons and Excited means that the system
+is in an excited state.  The <b>Spin State</b> can be one of
+All (meaning all spin states), Singlet, Doublet, Triplet, Quartet,
+Quintet or Sextet (meaning that the system is constrained to be in
+that specified spin state).
+</p>
+</td></tr>
+<tr>
+<td valign="top"><b>Selected&nbsp;Atoms Only</b></td>
+<td valign="top">
+If on, then only molecules with selected atoms will be minimized; however,
+the coordinates of unselected atoms in those molecules will not be changed
+(they will be held fixed).  Molecules without selected atoms will be
+treated as inert atoms.
+</td></tr>
+<tr>
+<td valign="top"><b>Adjust&nbsp;H&nbsp;and&nbsp;LP</b></td>
+<td valign="top">
+If on, then hydrogen and lone pair atoms will be added or subtracted
+so as to fill valence requirements and/or forcefield atom type requirements.
+For united-atom forcefields, this means that hydrogen atoms may be
+deleted.  For all-atom forcefields, this means the hydrogen atoms may
+be created.  Lone pair atoms will be deleted for the PM3, AM1 and MNDO
+Hamiltonians.
+</td></tr>
+<tr>
+<td valign="top"><b>Gradient</b></td>
+<td valign="top">
+Energy minimization will be terminated when the root mean square gradient
+falls below the specified value.  The root mean square gradient is the
+norm of the gradient times the square root of the number of (unfixed) atoms.
+In preparation for molecular dynamics, an RMS gradient of 0.1 is sufficient.
+For vibrational analysis, the RMS gradient should be smaller than
+10<sup>-5</sup>.
+<p>
+In the panel on the right, the text field to the right of Gradient is
+provided so that MOPAC keywords can be supplied to MOPAC.  The
+(somewhat arcane) MOPAC keywords are used to control the behavior of the
+MOPAC program and a description of them is beyond the scope of this document.
+</p></td></tr>
+<tr>
+<td valign="top"><b>Options</b> (left)</td>
+<td valign="top">
+If <b>Calculate Forcefield Partial Charges</b> is on, then partial charges
+for the atoms to be minimized will be calculated prior to the energy
+minimization.  The partial charge methodology is that required by the
+current forcefield.
+<p>
+If <b>Chiral Constraints</b> is on, then constraints will be added to the
+molecular system so as to ensure that chirality is preserved.
+<b>Current Geometry</b> means that chiral constraints will be added
+(possibly overriding existing constraints) to all chiral centers in order
+to preserve the chirality determined by the current coordinates.
+Alternatively, <b>Unconstrained Centers</b> means that chiral constraints
+will be added only to those chiral centers that have no existing chiral
+constraints.
+</p>
+<p>
+If <b>Tether Atoms</b> is on, a quadratic force to the starting geometry
+is added to the atoms (with a force constant specified by the number to
+the right) in an attempt to keep the resulting minimum close to the original
+coordinates.  A force constant of 300 is comparable to the strength of a bond.
+A tether value greater than or equal to 100 000 is interpreted to mean
+a fixed atom; that is, atoms that are tethered with a weight greater than
+or equal to <span class="nobr">100 000</span> are frozen during the calculation.
+</p>
+<p>The option menu associated with the <b>Tether Atoms</b>
+defines to which atoms the force is applied.  <b>All</b>
+means all atoms; <b>Heavy</b> means non-hydrogen non-lone pair atoms;
+<b>Backbone</b> means backbone atoms; <b>Selected</b> means the selected
+atoms; <b>Unselected</b> means the unselected atoms. 
+</p>
+<p>If there are more entries in this option menu then they represent the
+names of <i>atom sets</i> created using the 
+<a class="svl" href="../moe/fcnref/collect.htm">oSetCollection</a>
+SVL function.
+If one of these menu items is chosen then this means to use
+all atoms in all objects in the named selection set.
+</p></td></tr>
+<tr>
+<td valign="top"><b>Options</b> (right)</td>
+<td valign="top">
+If <b>Increase Peptide Rotational Barrier</b> is on, then the torsion force
+of peptide bonds is increased (to 14 kcal/mol) due to the fact that
+semi-empirical methods routinely underestimate this rotational barrier.
+<p>
+If <b>Recalculate Connectivity of Optimized System</b> is on, then after
+the calculation, the topology of the system is recalculated; that is,
+bonds, hybridization, ionization and hint LP values are determined from
+the resulting geometry (typically after a chemical reaction has taken place).
+</p>
+<p>
+If <b>View Report</b> is on, then the (voluminous)
+MOPAC output report is opened in a MOE text editor for inspection.  This is
+useful if the calculation appears to have gone wrong.
+</p>
+<p>
+If <b>Plot Orbitals</b> is on, then MOE will plot the molecular orbitals
+about the HOMO and LUMO as isosurfaces (with names starting with
+Molecular Orbital).  The <b>Quality</b> parameter determines the smoothness
+of the surfaces; higher values mean smoother surfaces.
+</p></td></tr>
+</table>
+<p>
+Press <b>OK</b> to begin the calculation.  The <b>Forcefield</b> button can
+be used to change the current forcefield (it raises the Potential Control
+window and is only available when the Hamiltonian is set to Forcefield).
+</p>
+<p>
+<b>Warning!</b> The PM3, AM1 and MNDO Hamiltonians' calculation requirements
+increase with the fourth power of the number of atoms.  These calculations
+may take quite a lot of time to complete.
+</p>
+<p>
+<b>Note</b>.  The Tether Atoms options are quite flexible and they can be
+used in a number of common energy minimization situations.  The following
+table lists several such situations.
+</p>
+
+<table class="titlebar" border="1" width="100%" cellpadding="5">
+<tr>
+<th>Minimize</th>
+<th>Steps</th>
+</tr>
+<tr>
+<td>Light Atoms Only</td>
+<td>
+Enable Tether Atoms and choose Heavy using a weight of <span class="nobr">100 000</span>.
+</td></tr>
+<tr>
+<td>Sidechain Atoms Only</td>
+<td>
+Enable Tether Atoms and choose Backbone using a weight of <span class="nobr">100 000</span>.
+</td></tr>
+<tr>
+<td>Ligand in a Rigid Pocket</td>
+<td>
+Deselect the receptor and select the ligand atoms.  Enable Tether Atoms
+and choose Unselected using a weight of <span class="nobr">100 000</span>.
+</td></tr>
+<tr>
+<td>Ligand in a Flexible Pocket</td>
+<td>
+Select the ligand and active site atoms.  Enable Tether Atoms
+and choose Unselected using a weight of <span class="nobr">100 000</span>.
+</td></tr>
+<tr>
+<td>Independent Ligand</td>
+<td>
+Select the ligand atoms.  Enable Selected Atoms only.
+</td></tr>
+<tr>
+<td>Highly&nbsp;Strained&nbsp;Protein</td>
+<td>
+Enable Tether Atoms and choose Heavy using a weight of 100.
+</td></tr>
+</table>
+
+
+<h2><a name="DBMin">3D Database Minimization</a></h2>
+
+<p>
+In many instances, a database contains a collection of molecules for which
+3D structures must be built and/or energy minimized. To perform an
+operation such as this, MOE provides a database energy minimization
+application, which can be used in the following situations:
+
+<ul>
+<li><b>Clustering of Dynamics Output</b>.
+Suppose that a database contains a molecular dynamics trajectory.
+In order to cluster the conformations, it is often necessary to minimize 
+the energy of each conformer first.
+
+<p>
+<li><b>3D Conversion of SMILES Strings</b>.
+Suppose that an ASCII file containing SMILES strings has been imported into a
+database.  If 3D properties are to be calculated on the molecules, then it is
+necessary to calculate a 3D structure from each SMILES string.
+
+<p>
+<li><b>3D Conversion of SD Files</b>. 
+Suppose that an SD file has been imported.  Typically SD files contain 2D
+drawings of molecules.  If 3D structures are desired then it is necessary to
+convert each 2D drawing into a 3D structure.
+</ul>
+
+
+<h2><a name="Method">Methodology</a></h2>
+
+<p>
+The method used to construct 3D structures from molecular connection
+tables is <i>four-dimensional energy minimization</i>.  The four
+dimensions used are four atomic spatial dimensions: <i>x</i>, <i>y</i>,
+<i>z</i> and <i>w</i>.  In other words, the position of each atom is given
+by a four-dimensional vector (in contrast to the usual three-dimensional
+vector).  The motivation behind this method is that, in four-dimensional
+space, energy barriers are more easily surpassed than in 3D space, making
+energy minimization a viable 3D structure converter.
+
+<p>
+Although it is very difficult to visualize four-dimensional space, we will
+describe the calculation by way of analogy.  Suppose that molecules
+exist only in two dimensions, i.e. on a flat piece of paper.  Consider
+the C-O-C molecule crossing the energy barrier between its two-dimensional
+conformations:
+
+<p><center><img src="emin/coc.gif"></center></p>
+
+<p>When the atoms are colinear, the potential energy is very high and the
+molecule is highly strained; therefore, it is difficult to cross this
+barrier.  Suppose we add an extra spatial dimension: the third dimension.
+In this case, moving into the third dimension creates a low-energy path
+between the two conformations:
+
+<p><center><img src="emin/coc3d.gif"></center></p>
+
+<p>
+In other words, we can move between the two conformations without changing
+the angle between the atoms (thereby keeping the energy constant).  The same
+idea holds true when moving from three to four dimensions: <i>it is
+easier to cross energy barriers by introducing another spatial dimension</i>.
+However, in 4D more complicated scenarios are possible such as atoms
+passing through atoms, bonds passing through rings, etc.  The 
+<a href="../moe/pot.htm">MOE potential energy model</a> provides for
+evaluating potential energies in four spatial dimensions.  This means that
+forcefields such as MMFF94 or AMBER are defined in 4D.  It is
+thus possible to minimize the potential energy of a molecular system in
+four dimensions.
+
+<p>
+This fundamental capability is used to construct molecules from connection
+tables in the following algorithm:
+
+<ol>
+<li><b>Initialize.</b>  Assign to each atom a random four-dimensional
+position
+(<i>x<sub>i</sub></i>,<i>y<sub>i</sub></i>,<i>z<sub>i</sub></i>,<i>w<sub>i</sub></i>).
+
+<p>
+<li><b>4D Minimization.</b> Perform energy minimization in four dimensions
+to calculate a low energy 4D conformation.
+<p>
+<li><b>Projection.</b>  For successively increasing values of <i>p</i>, minimize
+the function <nobr><i>U</i>(<i>x</i>,<i>y</i>,<i>z</i>,<i>w</i>)</i>
++ <i>p</i> <i>w</i><sup>T</sup><i>w</i></nobr> where <i>U</i> is the potential
+energy and <i>w</i> are the coordinates in the fourth dimension.
+<p>
+<li><b>3D Minimization.</b> Delete the <i>w</i> (fourth dimension) coordinates
+of each atom and minimize the potential function
+<i>U</i>(<i>x</i>,<i>y</i>,<i>z</i>).
+</ol>
+
+<p>
+Alternatively, the external (third-party) program Corina may be used to
+convert SMILES or 2D structures to 3D structures.  In order to use this
+capability, the Corina program must be installed and either in the path or
+specified in the <tt>corina.exe</tt> entry of the MOE configuration
+file (e.g. <tt>corina.exe=/usr/local/bin/corina</tt> in the file
+<tt>$HOME/.moe-rc</tt>).
+
+<h2><a name="Minimizing">Minimizing the Database</a></h2>
+
+<p>Before running the application, make sure that the currently loaded
+forcefield is the desired one (<b><nobr>MOE | Window |
+<a href="../moe/pot.htm">Potential Setup</a></nobr></b>).  
+Databases typically contain
+small molecules so be sure to use a forcefield that has been parameterized
+for small molecules.
+
+<p>
+Open a database in a <a href="../mdb/db.htm">Database Viewer</a> and choose 
+<b><nobr>DBV | Compute | Molecule | Energy Minimize</nobr></b>.  If MOE
+already contains molecular data, you will be prompted to close it 
+(the minimization calculation
+requires that no prior data be loaded in MOE).  The Database Minimize
+panel appears:
+
+<p><center><img src="emin/dbmin.png" alt="Database Minimize Panel"></center></p>
+
+<p>The Database Minimize panel includes the following options:
+
+<p>
+<table width=100% cellpadding=5>
+<tr>
+<td valign=top width=25%><b>Database</b></td>
+<td>Path and filename of the current database which contains the molecules
+to energy minimize or convert to 3D structures.</td>
+
+</tr>
+<tr>
+<td valign=top width=25%><b>Selected Entries Only</b></td>
+<td>Performs energy minimization only on entries that are selected in the 
+Database Viewer.  Otherwise, all entries will be subject to energy
+minimization.</td> 
+</tr>
+
+<tr>
+<td valign=top><b>Molecule Source</b></td>
+<td>The <b>Structure</b> button allows you to energy minimize existing
+structures or, depending on other settings in the panel, rebuild them from
+scratch.  The option menu to the right contains the names of all the
+fields of type 'molecule'.  Select the database field that contains the
+molecular structures to be used.
+
+<p>
+The <b>SMILES</b> button allows you to convert SMILES strings to 3D 
+structures.  3D structures will be created from scratch.  Upon
+pressing this button, the option menu to the right will contain
+the names of all fields of type 'char'. Select the database field that
+contains the SMILES string to use.
+
+
+</td>
+</tr>
+<tr>
+<td valign=top><b>Destination Field</b></td>
+<td>Name of the database field that will hold the
+resulting structures.  
+
+<p>If the <b>Structure</b> button is pressed, the Destination Field
+can be the same as the Molecule Source field.  An empty field
+is interpreted as being equal to the Molecule Source field (the 
+molecules will be overwritten).
+
+<p>If the SMILES button is pressed, then
+the Destination Field must have a field name that is different from the
+Molecule Source field.  
+
+<p><b>Note:</b> If the specified field already exists in the database, it
+will be overwritten.</td>
+
+</tr>
+
+<tr>
+<td valign=top><b>Operation</b></td>
+<td valign=top>
+Determines the operation that will be performed.  <b>Minimize</b> means
+that the input molecules will be energy minimized from their current
+coordinates.  <b>Rebuild&nbsp;3D</b> means that 3D coordinates will be
+generated from scratch according the method described above.
+<b>Depict&nbsp;2D</b> means that 2D depiction coordinates will be generated.
+<b>Corina</b> means that the external program Corina will be used to
+generated 3D coordinates.
+</tr>
+
+<tr>
+<td valign=top><b>RMS Gradient</b></td>
+<td>Specifies the threshold used
+to terminate energy minimization.  When the RMS gradient falls below the
+specified value, energy minimization stops.</td>
+</tr>
+<tr>
+<td valign=top><b>Options</b></td>
+<td>The Options toggle buttons allow you to further specify
+the calculation:
+<p>
+<b>Preserve Existing Chirality.</b>  Preserves the chirality of
+all chiral centers, i.e. constrained to be the same as
+found in the existing 3D structure.  If the Molecule Source is SMILES,
+the chirality of each atom is determined from the SMILES string.
+<P>
+<b>Add Hydrogens to Structures.</b>  Adds hydrogens where needed to the
+calculated 3D structures.  If the Molecule Source is SMILES, hydrogens are
+always added.
+
+<P>
+<b>Calculate Forcefield Partial Charges.</b>  Calculates the partial
+charge of every atom using the partial charge method appropriate to the
+current forcefield.
+
+</td>
+</tr>
+
+
+</table>
+
+<p>Press OK to start the calculation. Generally, it takes a few seconds to
+convert each structure. A message appears in the MOE Window, and a log is
+written to the SVL Commands window.
+
+<h2><a name="Ref">References</a></h2>
+
+<table>
+<tr>
+<td valign="top" width="20%">[Gill&nbsp;1981]</td>
+<td valign="top">
+Gill, P., Murray, W., Wright, M.; <i>Practical Optimization</i>;
+Academic Press, London (1981).
+</td></tr>
+<tr>
+<td valign="top">[Stewart&nbsp;1993]</td>
+<td valign="top">
+Stewart, J.J.P.; <i>MOPAC Manual (Seventh Edition)</i> (1993).
+</td></tr>
+</table>
+
+<h2>See Also</h2>
+<a href="../moe/gui/mainwin.htm">MOE Window</a><br />
+<a href="../moe/pot.htm">Potential Energy Model</a><br />
+<a href="../moe/fcnref/chrgfcn.htm">Partial Charge Functions</a><br />
+<a href="../moe/fcnref/atom_p.htm">Atom Potential Functions</a><br />
+<br />
+<a href="../mdb/dbedit.htm">Creating a Database</a><br>
+<a href="../mdb/db.htm">Database Viewer</a><br />
+
+<h2><a name="SVL">SVL Commands</a></h2>
+
+<a class="svl" href="../moe/fcnref/mm.htm">MM</a><br />
+<a class="svl" href="../moe/fcnref/collect.htm">oSetCollection</a><br />
+<br />
+<a class="svl" href="../moe/fcnref/dbmin.htm#db_Minimize">db_Minimize</a>
+<br />
+<a class="svl" href="../moe/fcnref/dbmin.htm#dbv_Minimize">dbv_Minimize</a>
+
+<br />
+<br />
+<a href="../moe/fcnref/mopacfcn.htm">MOPAC Functions</a>
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

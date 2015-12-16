@@ -1,0 +1,829 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>volmap</TITLE>
+<META NAME="description" CONTENT="volmap">
+<META NAME="keywords" CONTENT="ug">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="ug.css">
+
+<LINK REL="next" HREF="node157.html">
+<LINK REL="previous" HREF="node155.html">
+<LINK REL="up" HREF="node120.html">
+<LINK REL="next" HREF="node157.html">
+</HEAD>
+
+<BODY BGCOLOR="WHITE">
+<!--Navigation Panel-->
+<A NAME="tex2html3195"
+  HREF="node157.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html3189"
+  HREF="node120.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html3183"
+  HREF="node155.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html3191"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html3193"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html3196"
+  HREF="node157.html">wait</A>
+<B> Up:</B> <A NAME="tex2html3190"
+  HREF="node120.html">Tcl Text Commands</A>
+<B> Previous:</B> <A NAME="tex2html3184"
+  HREF="node155.html">vmdinfo</A>
+ &nbsp; <B>  <A NAME="tex2html3192"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html3194"
+  HREF="node251.html">Index</A></B> 
+<BR>
+<BR>
+<!--End of Navigation Panel-->
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL>
+<LI><A NAME="tex2html3197"
+  HREF="node156.html#SECTION0012336100000000000000">Implicit Ligand Sampling (<TT>volmap ils</TT> command)</A>
+</UL>
+<!--End of Table of Child-Links-->
+<HR>
+
+<H2><A NAME="SECTION0012336000000000000000"></A>
+<A NAME="8154"></A>
+<A NAME="8155"></A>
+<A NAME="ug:ui:text:volmap"></A>
+<BR>
+volmap
+</H2>
+
+<P>
+The <TT>volmap</TT> command creates volumetric maps (3D grids containing a value at
+each grid point) based on the molecular data, which can then be visualized in
+VMD using the Isosurface and VolumeSlice representations or using the Volume
+coloring mode. Also note that the VolMap plugin, accessible from the VMD
+Extension menu, provides a graphical front-end to many of the <TT>volmap</TT>
+command's capabilities.
+
+<P>
+To create a volumetric map, the <TT>volmap</TT> command is run in the following
+way, where the atom selection specifies the atoms and molecule to include in the
+calculation, and where the maptype specifies the type of volumetric data to
+create:<PRE>
+  volmap &lt;maptype&gt; &lt;atom selection&gt; [optional arguments]
+</PRE>
+
+<P>
+For example, to create a mass density map with a cell side of 0.5 &#197;,
+averaged over all frames of the top molecule, and add the volumetric data to the
+top molecule, on would use:<PRE>
+  volmap density [atomselect top "all"] -res 0.5 -weight mass -allframes \
+                                                   -combine avg -mol top
+</PRE>
+
+<P>
+The various volumetric data map types currently supported by <TT>volmap</TT> are
+listed as follows. Please note that when a map type description refers to an atoms radius
+or beta field, <I>etc.</I>, that these values will be read directly from VMD's
+associated fields for that atom. In certain cases, you may want to adjust the
+atom selections fields (such as radius, beta, <I>etc.</I>) before performing the
+volmap analysis.
+
+<A NAME="8169"></A>
+<UL>
+<LI><B>density</B>: creates a map of the weighted atomic density at each
+  gridpoint. This is done by replacing each atom in the selection with a
+  normalized gaussian distribution of width (standard deviation) equal to its
+  atomic radius. The gaussian distribution for each atom is then weighted using
+  an optional weight (see the <TT>-weight</TT> argument), and defaults to a weight
+  of one (<I>i.e</I>, the number density). The various gaussians are then
+  additively distributed on a grid. 
+
+<P>
+<A NAME="8173"></A>
+</LI>
+<LI><B>interp</B>: creates a map with the atomic weights interpolated
+  onto a grid. For each atom, its weight is distributed to the 8 nearest 
+  voxels via a trilinear interpolation. The optional weight (see the
+  <TT>-weight</TT> argument) defaults to a weight of one.
+
+<P>
+<A NAME="8176"></A>
+</LI>
+<LI><B>distance</B>: creates a map for which each gridpoint contains the
+  distance between that point and the edge of the nearest atom. In other words,
+  each gridpoint specifies the maximum radius of a sphere cnetered at that point
+  which does not intersect with the spheres of any other atoms. All atoms are
+  treated as spheres using the atoms' VMD radii.
+
+<P>
+<A NAME="8178"></A>
+  <A NAME="8179"></A>
+
+<P>
+</LI>
+<LI><B>coulomb</B>, <B>coulombmsm</B>: Creates a map of the electrostatic 
+  field of the atom selection, made by computing the 
+  non-bonded Coulomb potential from each atom in the selection 
+  (in units of <IMG
+ WIDTH="54" HEIGHT="34" ALIGN="MIDDLE" BORDER="0"
+ SRC="img72.png"
+ ALT="$ k_BT/e$">
+). The coulomb map generation is optimized to 
+  take advantage of multi-core CPUs and programmable GPUs if they are 
+  available&nbsp;[<A
+ HREF="node250.html#STON2007">13</A>,<A
+ HREF="node250.html#OWEN2008-JS">14</A>,<A
+ HREF="node250.html#RODR2008">15</A>,<A
+ HREF="node250.html#HARD2009">16</A>,<A
+ HREF="node250.html#KIND2009-JS">17</A>,<A
+ HREF="node250.html#STON2010">18</A>,<A
+ HREF="node250.html#STON2010-JS">19</A>,<A
+ HREF="node250.html#ENOS2010-JP">20</A>,<A
+ HREF="node250.html#STON2011">21</A>].
+
+<P>
+<A NAME="8183"></A> 
+  <A NAME="8184"></A>
+
+<P>
+</LI>
+<LI><B>ils</B>: Creates a free energy map of the distribution of
+  a weakly-interacting monoatomic or diatomic gas ligand throughout the
+  system using the Implicit Ligand Sampling (ILS) technique.
+  See additional information about ILS below.
+
+<P>
+<A NAME="8186"></A>
+</LI>
+<LI><B>mask</B>: Creates a map which is set to 0 or 1 depending on whether
+  they are within a specified cutoff distance (use the <TT>-cutoff</TT> argument)
+  of any atoms in the selection. The mask map is typically used in combination
+  with other maps in order to hide/mask data that is far from a region of
+  interest.
+
+<P>
+<A NAME="8189"></A>
+</LI>
+<LI><B>occupancy</B>: Each grid point is set to either 0 or 1, depending on
+  whether it contains onbe or more atoms or not. When averaged over many frames,
+  this will provide the fractional occupancy of that grid point. By default,
+  atoms are treated as spheres using the atomic radii and a gridpoint is
+  considered to be "occupied" if it lies inside that sphere. Use the <TT>  -points</TT> argument to treat atoms as points (a grid point is "occupied" if its
+  grid cube contains an atom's center).
+
+<P>
+</LI>
+</UL> 
+
+<P>
+The following optional arguments are universally understood by every volmap map types:   
+
+<P>
+
+<UL>
+<LI><B>-allframes</B>: Use every frame in the molecule instead of just the
+  current one to compute the volumetric map. The method used to combine the
+  various trajectory frame maps can be specified using the <TT>-combine</TT>
+  argument. By default, volmap only uses the current frame.
+
+<P>
+</LI>
+<LI><B>-combine <TT>&lt;</TT> avg <TT>|</TT> max <TT>|</TT> min <TT>|</TT> stdev <TT>  |</TT> pmf <TT>&gt;</TT></B>: Specifies the rule to use to combine frames when using the
+  <TT>-allframes</TT> argument. These correspond to keeping the average, maximum or
+  minimum values from the range of calculated frames. <TT>stdev</TT> will return
+  the standard deviation for each point over the range of frames, and <TT>pmf</TT>
+  uses a thermal average <!-- MATH
+ $-\ln \sum_i^N e^{-value_i}/N$
+ -->
+<IMG
+ WIDTH="153" HEIGHT="41" ALIGN="MIDDLE" BORDER="0"
+ SRC="img73.png"
+ ALT="$ -\ln \sum_i^N e^{-value_i}/N$">
+ for each point. The
+  default is <TT>avg</TT> except for ligand maps where the default is <TT>pmf</TT>.
+
+<P>
+</LI>
+<LI><B>-res <I>resolution</I></B>: Sets the resolution of the map. This means
+  that the volume will be subdivided into many small cubes whose side have a
+  length of <I>resolution</I>.
+
+<P>
+</LI>
+<LI><B>-minmax <TT>{{</TT><IMG
+ WIDTH="40" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img74.png"
+ ALT="$ x_{min}$">
+ <IMG
+ WIDTH="39" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img75.png"
+ ALT="$ y_{min}$">
+ <IMG
+ WIDTH="38" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img76.png"
+ ALT="$ z_{min}$">
+<TT>} {</TT><IMG
+ WIDTH="42" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img77.png"
+ ALT="$ x_{max}$">
+
+<IMG
+ WIDTH="41" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img78.png"
+ ALT="$ y_{max}$">
+ <IMG
+ WIDTH="40" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img79.png"
+ ALT="$ z_{max}$">
+<TT>}}</TT></B>: Allows the user to specify the min-max
+boundaries of the grid in which the volumetric map will be computed. The
+argument to -minmax is a list of two 3-vectors specifying the minimum and
+maximum coordinates of the desired volumetric data grid.
+
+<P>
+</LI>
+<LI><B>-checkpoint <I>frequency</I></B>: For the analysis of
+  long trajectories, it can be desirable to have intermediate outputs of the
+  volmap computation. The checkpoint option forces the volmap computation to
+  output a map of what has been computed so far, at every  <I>frequency</I>
+  frames. The default <I>frequency</I> is 500; setting the <I>frequency</I> to
+  zero disables the checkpointing feature.
+
+<P>
+</LI>
+<LI><B>-mol <TT>&lt;</TT> <I>molid</I> <TT>|</TT> top <TT>&gt;</TT></B>: Exports the final
+  volumetric data into the VMD molecule specified by <I>molid</I>. By default,
+  all maps are exported to a file or name <I>maptype</I>_out.dx; using the <TT>  -mol</TT> option overrides this.
+
+<P>
+</LI>
+<LI><B>-o <I>filename</I></B>: Exports the final volumetric data into a DX
+  file (.dx extension is added if missing). By default, all maps are exported to
+  a file or name <I>maptype</I>_out.dx.
+
+<P>
+</LI>
+</UL>  
+
+<P>
+The following optional arguments are special arguments understood only by some volmap map types. Some arguments may only apply to certain map types or may have different meaning for different map types:      
+
+<P>
+
+<UL>
+<LI><B>-cutoff <I>cutoff</I></B>: Specifies a cutoff distance. For the
+  distance maps, specifies the largest distance that will be considered (large
+  number is better but slower). For the mask maps, specifies the distance from
+  each atom which will be considered part of the mask.
+
+<P>
+</LI>
+<LI><B>-points</B>: For the occupancy map type. Treat atoms as point
+  particles instead of as spheres.
+
+<P>
+</LI>
+<LI><B>-radscale <I>factor</I></B>: For the density map type. Sets a
+  multiplication factor that multiplies all the VMD atomic radii for the purpose
+  of the calculation.
+
+<P>
+</LI>
+<LI><B>-weight <TT>&lt;</TT> <I>field name</I> <TT>|</TT> <I>value list</I> <TT>&gt;</TT></B>:
+  For the density map type. Sets a per-atom weight to be used when computing the
+  density. This can be the name of any VMD numerical atomic field (such as mass,
+  charge, beta, occupancy, user, radius, <I>etc.</I>) or else a Tcl list of
+  numbers of the same length as the number of atoms.
+
+<P>
+</LI>
+</UL>
+
+<P>
+
+<H3><A NAME="SECTION0012336100000000000000">
+Implicit Ligand Sampling (<TT>volmap ils</TT> command)</A>
+</H3>
+This command computes a map of the estimated potential of mean force (in
+units of k<IMG
+ WIDTH="16" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img80.png"
+ ALT="$ _B$">
+T at 300&nbsp;K) of placing a weakly-interacting gas monoatomic or
+multiatomic ligand at every gridpoint. These results will only be valid when
+averaging over a large set of frames.
+Note that if you have a CUDA enabled GPU then your ILS calculation
+will run about 20 times faster than on a CPU.
+
+<P>
+Please refer to and cite:
+<BR>
+Cohen, J., A. Arkhipov, R. Braun and K. Schulten,  <I>"Imaging
+the migration pathways for O<IMG
+ WIDTH="12" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img81.png"
+ ALT="$ _2$">
+, CO, NO, and Xe inside myoglobin"</I>,
+Biophysical Journal <B>91</B>, 1844-1857, 2006.
+<BR>
+<P>
+The command syntax differs from the other volmap commands and
+it has its own set of options:
+<BR>
+<BR>
+<BR><TT>volmap ils <I>molid</I> &lt; <I>minmax</I> | pbcbox &gt; [options]</TT>
+<BR>
+<BR>
+<BR>
+<P>
+Here <I>minmax</I> denotes the boundaries of the grid in
+which the volumetric map will be computed. It is given as
+a list of two 3-vectors specifying the minimum and maximum
+coordinates of the desired volumetric data grid 
+{{<IMG
+ WIDTH="40" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img74.png"
+ ALT="$ x_{min}$">
+ <IMG
+ WIDTH="39" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img75.png"
+ ALT="$ y_{min}$">
+ <IMG
+ WIDTH="38" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img76.png"
+ ALT="$ z_{min}$">
+}
+{<IMG
+ WIDTH="42" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img77.png"
+ ALT="$ x_{max}$">
+ <IMG
+ WIDTH="41" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img78.png"
+ ALT="$ y_{max}$">
+ <IMG
+ WIDTH="40" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img79.png"
+ ALT="$ z_{max}$">
+}}.
+If you provide the keyword <TT><B>pbcbox</B></TT> instead of the <I>minmax</I>
+coordinates then the target grid will be set to the rectangular
+box that encloses the PBC cell. A typical choice for the minmax
+parameters would be the minmax box of a subset of your system
+(for instance the just protein) as returned by the <TT>measure
+ minmax</TT> command.
+
+<P>
+Based on the grid dimensions a selection that includes all atoms within
+the interaction cutoff distance (specified by <TT>-cutoff</TT>) is 
+automatically chosen for the computation of the interactions.
+
+<P>
+In case your minmax box exceeds the periodic bounday box the
+non-overlapping parts of your map will be ill defined and a warning
+is printed. In this case you should consider wrapping the coordinates
+so that the requested grid lies in the center of the box. You can use
+the <TT>pbc wrap</TT> command from the PBCtool plugin for this.
+
+<P>
+In case the nonbonded interaction margin exceeds the periodic 
+boundaries regions of your map will be based on incomplete 
+interactions and a warning is printed. If this happens you should 
+use the <TT>-pbc</TT> flag which automatically takes atoms of the 
+neighboring cells into account.
+
+<P>
+Before starting the computation, the atomic radii of each atom in the
+molecule should be set to the corresponding CHARMM Lennard-Jones
+<!-- MATH
+ $R_\mathrm{min}/2$
+ -->
+<IMG
+ WIDTH="58" HEIGHT="34" ALIGN="MIDDLE" BORDER="0"
+ SRC="img82.png"
+ ALT="$ R_\mathrm{min}/2$">
+ parameter (in &#197;ngstr&#246;m), and the <I>beta</I>
+value of each atom should be set to the CHARMM Lennard-Jones <IMG
+ WIDTH="11" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img83.png"
+ ALT="$ \epsilon$">
+
+(energy well depth in kcal/mol) parameter. 
+This can be done using VMD's VolMap plugin. Simply call in succession 
+the following commands within the VMD console environment to use default
+CHARMM values for the various atoms of a molecule:
+<PRE>
+  package require ilstools
+  ILStools::readcharmmparams [list of CHARMM parameter files]
+  ILStools::assigncharmmparams &lt;molid&gt;
+</PRE>
+
+<P>
+The following optional arguments are understood:
+
+<UL>
+<LI><B>-first <I>frame</I></B>: First frame to process. (default: frame 0)
+
+<P>
+</LI>
+<LI><B>-last <I>frame</I></B>: Last frame to process.
+    (default: last frame of molecule)
+
+<P>
+</LI>
+<LI><B>-o <I>filename</I></B>: Exports the final volumetric data into a DX
+    file (.dx extension is added if missing). By default, all maps are exported to
+    a file or name <I>maptype</I>_out.dx.
+
+<P>
+</LI>
+<LI><B>-res <I>resolution</I></B>: Sets the resolution of the final map.
+    This means that the volume will be subdivided into many small cubes
+    whose side have a length of <I>resolution</I>. The computation should
+    be performed on a finer grid (see <TT>-subres</TT> option) but at the end
+    the map is downsampled to this resolution.
+    A good choice for the grid resolution 1 &#197; (argument <TT>-res</TT>). 
+    Lower resolutions make it difficult to see features, higher ones will
+    be very costly in terms of computation time. Also, since the fluctuation
+    of the protein backbone is on the order of 1-2 Angstrom a higher grid 
+    resolution doesn't make much sense.
+
+<P>
+</LI>
+<LI><B>-subres <I>num</I></B>: Number of points in each dimension of the
+    subsampling grid, e.g. 2 for a 2x2x2 subgrid or 3 for a 3x3x3 subgrid.
+    A value of 1 means is no subsampling, the default is (<TT>-subres 3</TT>). 
+    Without subsampling the probe is placed at each grid cell
+    center (for diatomic probes in <IMG
+ WIDTH="77" HEIGHT="32" ALIGN="MIDDLE" BORDER="0"
+ SRC="img84.png"
+ ALT="$ numconf$">
+ different random orientations, 
+    see argument <TT>-orient</TT>). This position is assumed to be representative
+    for the interaction of the probe in this voxel with the system.
+    However, for a typical voxel size of 1x1x1 &#197; the energy value can
+    differ significantly within the voxel and the value at the center might
+    not be close to the average. Subsampling averages over the interaction
+    on a regular subgrid in each voxel thus producing a more accurate free
+    energy value for placing the probe into each voxel. Even though this
+    severely increases the computational cost it is highly recommended that
+    you use subsampling!
+    A 3x3x3 subgrid for a 1 &#197; resolution map is a good choice.
+
+<P>
+</LI>
+<LI><B>-T <I>temperature</I></B>: The temperature in Kelvin at which the
+    MD simulation was performed. (default: 300)
+
+<P>
+</LI>
+<LI><B>-probesel <I>selection</I></B>: Atom selection that defines the
+    probe molecule. The radius and occupancy fields should be populated
+    with the VDW radii and VDW epsilon parameters from the force field
+    (see option <TT>-probevdw</TT>).
+    Alternatively, you can specify the probe coordinates and VDW parameters
+    probe atoms directly using the <TT>-probecoor</TT> and <TT>-probevdw</TT>
+    options. 
+
+<P>
+</LI>
+<LI><B>-probecoor <I>atomcoords</I></B>: Set the coordinates of the
+    probe atoms in form of a list of triples
+    <I>{{<IMG
+ WIDTH="22" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img85.png"
+ ALT="$ x_0$">
+&nbsp;<IMG
+ WIDTH="21" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img86.png"
+ ALT="$ y_0$">
+&nbsp;<IMG
+ WIDTH="20" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img87.png"
+ ALT="$ z_0$">
+}&nbsp;<IMG
+ WIDTH="28" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img88.png"
+ ALT="$ \dots$">
+&nbsp;{<IMG
+ WIDTH="27" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img89.png"
+ ALT="$ x_N$">
+&nbsp;<IMG
+ WIDTH="26" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img90.png"
+ ALT="$ y_N$">
+&nbsp;<IMG
+ WIDTH="25" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img91.png"
+ ALT="$ z_N$">
+}}</I>. 
+
+<P>
+</LI>
+<LI><B>-probevdw <I>parameterlist</I></B>: Set the tuple of van der
+    Waals parameters for each probe atom in the form
+    <I>    {{<!-- MATH
+ $\epsilon_0$
+ -->
+<IMG
+ WIDTH="19" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img92.png"
+ ALT="$ \epsilon_0$">
+&nbsp;<!-- MATH
+ $R_{\mathrm{min},0}/2$
+ -->
+<IMG
+ WIDTH="69" HEIGHT="34" ALIGN="MIDDLE" BORDER="0"
+ SRC="img93.png"
+ ALT="$ R_{\mathrm{min},0}/2$">
+}&nbsp;<IMG
+ WIDTH="28" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img88.png"
+ ALT="$ \dots$">
+&nbsp;{<!-- MATH
+ $\epsilon_N$
+ -->
+<IMG
+ WIDTH="24" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img94.png"
+ ALT="$ \epsilon_N$">
+&nbsp;<!-- MATH
+ $R_{\mathrm{min},N}/2$
+ -->
+<IMG
+ WIDTH="74" HEIGHT="34" ALIGN="MIDDLE" BORDER="0"
+ SRC="img95.png"
+ ALT="$ R_{\mathrm{min},N}/2$">
+}}</I>.
+    They define the nonbonded interactions of the probe evaluated by the
+    Lennard-Jones potential 
+    <P></P>
+<DIV ALIGN="CENTER"><A NAME="eq:vdw"></A><!-- MATH
+ \begin{equation}
+U_\mathrm{VDW} = \sum_{\mathrm{atoms}\,\,i,j}
+         \epsilon_{ij}\left(\left(\frac{R_{ij}}{r_{ij}}\right)^{12} -
+         2\left(\frac{R_{ij}}{r_{ij}}\right)^{6}\right)
+    
+\end{equation}
+ -->
+<TABLE CELLPADDING="0" WIDTH="100%" ALIGN="CENTER">
+<TR VALIGN="MIDDLE">
+<TD NOWRAP ALIGN="CENTER"><IMG
+ WIDTH="344" HEIGHT="69" ALIGN="MIDDLE" BORDER="0"
+ SRC="img96.png"
+ ALT="$\displaystyle U_\mathrm{VDW} = \sum_{\mathrm{atoms}\,\,i,j} \epsilon_{ij}\left(...
+...ac{R_{ij}}{r_{ij}}\right)^{12} - 2\left(\frac{R_{ij}}{r_{ij}}\right)^{6}\right)$"></TD>
+<TD NOWRAP WIDTH="10" ALIGN="RIGHT">
+(9.2)</TD></TR>
+</TABLE></DIV>
+<BR CLEAR="ALL"><P></P>
+where <!-- MATH
+ $R_{ij}=(R_{\mathrm{min},i}+R_{\mathrm{min},j})/2$
+ -->
+<IMG
+ WIDTH="196" HEIGHT="34" ALIGN="MIDDLE" BORDER="0"
+ SRC="img97.png"
+ ALT="$ R_{ij}=(R_{\mathrm{min},i}+R_{\mathrm{min},j})/2$">
+ and
+    <!-- MATH
+ $\epsilon_{ij}=\sqrt{\epsilon_i\cdot\epsilon_j}$
+ -->
+<IMG
+ WIDTH="100" HEIGHT="31" ALIGN="MIDDLE" BORDER="0"
+ SRC="img98.png"
+ ALT="$ \epsilon_{ij}=\sqrt{\epsilon_i\cdot\epsilon_j}$">
+.
+    (That's the same form as in CHARMM and AMBER parameter files).
+    Units of <IMG
+ WIDTH="11" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img83.png"
+ ALT="$ \epsilon$">
+ are kcal/mol, and of <!-- MATH
+ $R_\mathrm{min}/2$
+ -->
+<IMG
+ WIDTH="58" HEIGHT="34" ALIGN="MIDDLE" BORDER="0"
+ SRC="img82.png"
+ ALT="$ R_\mathrm{min}/2$">
+ are
+    &#197;ngstr&#246;m.  
+
+<P>
+</LI>
+<LI><B>-orient <I>n</I></B>: Control the number of samples of
+    different probe orientations for multiatom probes at each grid
+    point. The number <IMG
+ WIDTH="15" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img35.png"
+ ALT="$ n$">
+ determines the angular spacing of probe
+    orientation vectors and of the rotations around each of these
+    vectors.
+
+<P>
+<IMG
+ WIDTH="47" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img99.png"
+ ALT="$ n=1$">
+: use 1 orientation only
+<BR>    <IMG
+ WIDTH="47" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img100.png"
+ ALT="$ n=2$">
+: use 6 orientations (vertices of a octahedron)
+<BR>    <IMG
+ WIDTH="47" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img101.png"
+ ALT="$ n=3$">
+: use 8 orientations (vertices of a hexahedron)
+<BR>    <IMG
+ WIDTH="47" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img102.png"
+ ALT="$ n=4$">
+: use 12 orientations (faces of a dodecahedron)
+<BR>    <IMG
+ WIDTH="47" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img103.png"
+ ALT="$ n=5$">
+: use 20 orientations (vertices of a dodecahedron)
+<BR>    <IMG
+ WIDTH="47" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img104.png"
+ ALT="$ n=6$">
+: use 32 orientations (faces+vertices of a dodecahedron)
+<BR>    <IMG
+ WIDTH="47" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img105.png"
+ ALT="$ n&gt;6$">
+: geodesic subdivisions of icosahedral faces
+           with frequency 1, 2, ... <IMG
+ WIDTH="45" HEIGHT="30" ALIGN="MIDDLE" BORDER="0"
+ SRC="img106.png"
+ ALT="$ n-6$">
+
+
+<P>
+For each orientation a number of rotamers will be
+    generated. The angular spacing of the rotations
+    around the orientation vectors is chosen to be about
+    the same as the angular spacing of the orientation
+    vector itself.
+    If the probe has at least one symmetry axis then the 
+    rotations around the orientation vectors are reduced
+    accordingly. If there is an infinite oder axis (linear
+    molecule) the rotation will be omitted.
+    In case there is an additional perpendicular C2 axis
+    the half of the orientations will be ignored so that
+    there are no antiparallel pairs.
+
+<P>
+Probes with tetrahedral symmetry:
+<BR>
+Here <IMG
+ WIDTH="15" HEIGHT="15" ALIGN="BOTTOM" BORDER="0"
+ SRC="img35.png"
+ ALT="$ n$">
+ denotes the number of rotamers for each of
+    the 8 orientations defined by the vertices of the 
+    tetrahedron and its dual tetrahedron.
+
+<P>
+</LI>
+<LI><B>-cutoff <I>cutoff</I></B>: Set the CHARMM van der Waals cutoff beyond
+    which the interaction between the probe and protein atoms is set to zero.
+
+<P>
+</LI>
+<LI><B>-maxenergy <I>energy</I></B>: Cutoff energy above which the
+    occupancy of a grid cell is regarded zero. For GPUs energies of
+    more than 87 always correspond to floating point values of zero
+    for the occupancy. Hence there is no point going higher than
+    that. For CPUs that number is higher, however, the lower the
+    occupancy the more severely these points will be undersampled and
+    the according error will be very high. Thus, in the final map it
+    probably does not make sense to look at values higher than 10kT
+    which not a big loss since the low energy regions are the ones we
+    are interested in. So you probably want to set this to a value
+    between 10 and 87 (we are in thye process of testing this but I
+    suppose 20 kT would be a safe number).
+
+<P>
+</LI>
+<LI><B>-alignsel <I>selection</I></B>:
+    Use the provided selection to align all trajectory frames to the first
+    frame. If you don't use this option you should make sure that you aligned
+    all frames yourself before running volmap ils.
+
+<P>
+</LI>
+<LI><B>-transform <I>matrix</I></B>:
+    Suppose you want to align your trajectory to a reference frame
+    from a different molecule. In this case you should align the
+    first frame of your trajectory to the reference and provide the
+    according alignment matrix as returned by "<TT>measure fit</TT>")
+    using the -transform option. <TT>volmap ils</TT> will take care
+    of the rest.
+    
+<P>
+</LI>
+<LI><B>-pbc</B>:
+    This flag signals that you want a periodic boundary aware ILS
+    calculation. Depending on the desired target grid size image atoms
+    from neighboring PBC cells are taken into account for the computation.
+    The atoms used for the calculation are chosen from a box that exceeds
+    the target grid size by the interaction cutoff in each direction.
+<BR>    <I>Note:</I> If your molecule rotated or drifted from the PBC center during
+    your MD simulation then the structure alignment will rotate or shift
+    the PBC cell so that your map might not lie entirely inside the PBC 
+    cell anymore. This will lead to ill-defined fringes of the map and you
+    might want to consider rewrapping the coordinates. Rewrapping cannot
+    undo the rotation but unless you have a very oblonged PBC cell
+    removing the shift by rewrapping will in most cases yield a map
+    without or with little boundary effects. See the <TT>pbc wrap</TT>
+    command from the PBCtool plugin.
+<BR>    <I>Warning:</I> If you use <TT>-pbc</TT> DO NOT ALIGN the frames of
+    the structure yourself prior to the calculation! It will totally
+    mess up the definition of your PBC cells. Instead you should use
+    the <TT>-alignsel</TT> option and let volmap handle the alignment.
+    However, you CAN align the sturcture globally (i.e. align all
+    frames using the SAME transformation matrix) to a reference
+    frame. In this case you have to provide the transformation matrix
+    you used via -transform.
+
+<P>
+</LI>
+<LI><B>-pbccenter <I>vector</I></B>:
+    Since the PBC cell origin is stored neither in DCD files nor in VMD
+    you have to specify it in case it is different than the default
+    {0 0 0}.
+
+<P>
+</LI>
+<LI><B>-maskonly</B>: This flag requests to compute only a mask map
+    telling for which gridpoints we expect valid energies, i.e. the
+    points for which the maps overlap for all frames will contain 1,
+    all other points will be 0. This is useful if you don't use
+    periodic boundary conditions where it can happen that due to the
+    choice of the grid and/or the rotation of the protein the box
+    including your grid plus the interaction cutoff will lie partially
+    outside your system which means you would miss some of the
+    interactions. The map produced by the <TT>-maskonly</TT> mode will
+    tell where are these ill defined regions.
+
+<P>
+</LI>
+</UL>
+
+<P>
+<A NAME="8328"></A><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html3195"
+  HREF="node157.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html3189"
+  HREF="node120.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html3183"
+  HREF="node155.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html3191"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A> 
+<A NAME="tex2html3193"
+  HREF="node251.html">
+<IMG WIDTH="43" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="index" SRC="index.png"></A> 
+<BR>
+<B> Next:</B> <A NAME="tex2html3196"
+  HREF="node157.html">wait</A>
+<B> Up:</B> <A NAME="tex2html3190"
+  HREF="node120.html">Tcl Text Commands</A>
+<B> Previous:</B> <A NAME="tex2html3184"
+  HREF="node155.html">vmdinfo</A>
+ &nbsp; <B>  <A NAME="tex2html3192"
+  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html3194"
+  HREF="node251.html">Index</A></B> 
+<!--End of Navigation Panel-->
+<ADDRESS>
+vmd@ks.uiuc.edu
+</ADDRESS>
+</BODY>
+</HTML>

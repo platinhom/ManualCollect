@@ -1,0 +1,401 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<meta spec Grids>
+
+<title>Example of Programming with Grids</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Example of Programming with Grids</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Molecular_Surface">Molecular Surface</a>
+<li><a href="#Appendix_Surface_Types">Appendix: Surface Types</a>
+<li><a href="#Appendix_Special_Effects">Appendix: Special Effects</a>
+</ul>
+
+<p>NOTE: A full version of the example below is available in files
+in the <tt>$MOE/sample/</tt> directory:
+
+Program <tt>gridex.svl</tt> allows either interactive (by default)
+or non-interactive (when run with an argument) setting of the
+molecular surface parameters and display of the results.
+Program <tt>gridcode.svl</tt> allows interactive modification and
+experimentation with a simplified version of this code.
+
+<a name=Molecular_Surface><h2>Molecular Surface</h2></a>
+
+<p>
+The following set of steps will plot and color a Gaussian surface of
+a given molecule.  By "Gaussian surface" we mean the isosurface of
+a composition of Gaussians centered at every atom, of widths equal to
+the van der Waals radii of the atoms.
+
+<p>
+Let's assume the following variables are loaded with molecular parameters:
+
+<pre>
+    local atoms = Atoms[];
+    local pos = aPos atoms;
+    local rad = el_VDW_Radius aElement atoms;
+</pre>
+
+The grid will be of uniform spacing <tt>opt.spacing</tt>, with boundaries
+extending 1 &Aring; beyond the outermost atom in each direction.
+
+<pre>
+    local extend = max rad + 1;
+    local org = app minE pos - extend;
+    local size = inc maxE [2,
+	int ceil ((app maxE pos + extend - org) / opt.spacing)
+    ];
+    local shape = org + dec app igen size * opt.spacing;
+</pre>
+
+Optionally, in order to achieve a different look of the resulting isosurface,
+we can increase every odd and decrease every even spacing interval
+by ratio <tt>opt.camrat</tt>:
+
+<pre>
+    shape = shape + (2 * opt.camrat - 1) * opt.spacing * odd app igen size;
+</pre>
+
+We use Gaussian to set the grid data vector.  The expected iso-level used
+is 1.0.  By decreasing the width of the Gaussian, while appropriately
+increasing its weight at the same time, we can modify how closely the
+surface follows the contours of individual atoms.  Our values of the
+modifying factor <tt>K</tt> typically ranges from 1.0 to 3.5.
+
+<pre>
+    local K = opt.ridge;	// larger K makes deeper ridges between atoms
+    local w = cube (sqrt(2*PI) * rad/K) * exp (0.5 * sqr K);
+    local data = grid_addgauss [0, shape, w, rad/K, pos, 4*rad];
+</pre>
+
+The surface type is controlled by variables <tt>ndim</tt> and <tt>gtype</tt>,
+which set according to the value of <tt>opt.surftype</tt>:
+
+<pre>
+    local gtype = 3, ndim = 3;
+
+    if indexof [opt.surftype, [MESH, LOOPS]] then
+        gtype = 2;
+    elseif opt.surftype === LINES then
+        gtype = 2; ndim = 2;
+    elseif opt.surftype === POINTS then
+        gtype = 1;
+    endif
+</pre>
+
+(See the appendix for more detail about the surface types.)
+
+<p>Function <tt>grid_iso</tt> calculates
+the "iso-vertices" of the isosurface and
+the "iso-indices" that point to them:
+
+<pre>
+    local dims = igen opt.ndim;		// default dims = [1,2,3]
+    local [isovtx, isoidx] = grid_iso [data, shape, opt.level, dims];
+</pre>
+
+We must calculate the coordinates of the iso-vertices and the normals
+of the iso-surface at those points.  In our case the normals are inverse
+gradients of the Gaussian field:
+
+<pre>
+    local points = grid_isovtx_coord [data, shape, isovtx, opt.level, dims];
+    local normals = - grid_isovtx_grad [data, shape, isovtx, opt.level, dims];
+</pre>
+
+For simplicity, we we'll color surface points by their X-coordinates.
+Points of low X-coordinate will be colored blue, points of high X-coordinate
+red, and points in the middle white:
+
+<pre>
+    w = points(1) - min points(1);
+    w = w / max w;
+    local color = grid_color_at [[BLUE,WHITE,RED], [[0,0.5,1]], [w]];
+</pre>
+
+Typically, we use function <tt>grid_isoidx_emit</tt> to create either
+a list of line segments of a mesh surface or a list of triangles
+of a mesh solid surface.
+
+(The third parameter (-1) is used to indicate that the surface normals are
+opposite to the field gradients.)
+
+<p>
+To achieve a checkered pattern (camouflage net) appearance of
+the surface, we remove surface data from every second cube of the grid
+with call <tt>grid_isoidx_drop</tt> before a calling
+<tt>grid_isoidx_emit</tt>.
+
+<p>Alternatively, in order to achieve a special look of the surface,
+instead of calling <tt>grid_isoidx_emit</tt> we can call our own emitter
+function, <tt>s_emit</tt>:
+
+<pre>
+    if opt.surftype === CAMNET then isoidx = grid_isoidx_drop [isoidx,0]; endif
+
+    local idx;
+    if indexof [opt.surftype, [TILES, LOOPS]] then
+        local s = max [0.01, min [0.99, opt.shrink]];
+        [idx, points, normals, color] = s_emit [s, isoidx, gtype, points, normals, color];
+    else
+        idx = grid_isoidx_emit [isoidx, gtype, -1];
+    endif
+</pre>
+
+Finally, we can create and display the graphics object that represents
+the surface:
+
+<pre>
+    GVertex  [GCreate opt.name, gtype, idx, color, points, normals];
+</pre>
+
+<!--
+<a name="Pictures"><h2>Pictures</h2>
+
+<p>The following are pictures of a molecular surface of a molecule of
+aspirin (file <tt>$MOE/sample/mol/asa.mol</tt>) created by program
+tt>$MOE/sample/gridex.svl</tt>.
+
+<p><img src="grid/grid_isodefault.jpg">
+<br>caption
+-->
+
+<a name=Appendix_Surface_Types><h2>Appendix: Surface Types</h2></a>
+
+The isosurface can be displayed in several different ways.
+We use the value of <tt>opt.surftype</tt>, to determine the look of
+the surface.
+
+<p>
+<ul>
+<table border=1 cellpadding=3>
+<tr bgcolor="#cccccc"><th>Type<th>Surface look
+
+<tr><td valign=top><tt>SOLID</tt>
+<td>
+A continuous solid surface composed of opaque triangles.
+
+<tr><td valign=top><tt>CAMNET</tt>
+<td>
+A solid surface of triangles belonging to every even grid-cube.
+Removing the triangles of every odd grid-cube creates the
+checkered appearance of a camouflage net.
+
+<tr><td valign=top><tt>TILES</tt>
+<td>
+A solid surface where each polygon of the surface is
+"shrunk" by a small ratio towards its center.  This creates the
+appearance of free tiles floating in space.
+
+<tr><td valign=top><tt>MESH</tt>
+<td>
+A surface composed of connected line segments.
+The line segments form series of iso-contours perpendicular
+to each of the 3 coordinate axes.  This creates the appearance
+of a 3D mesh or wireframe.
+
+<tr><td valign=top><tt>LOOPS</tt>
+<td>
+A surface composed of connected line segments.
+The line segments are connected in loops that form
+boundaries of the shrunk polygons of the <tt>TILES</tt> surface.
+This creates the appearance of a surface formed by a large
+number of small loops or rings.
+
+<tr><td valign=top><tt>LINES</tt>
+<td>
+A surface composed of connected line segments.
+The line segments form series of iso-contours perpendicular
+to the Z coordinate axis.  This creates the appearance
+of the edges of multiple parallel slices of the molecule.
+
+<tr><td valign=top><tt>POINTS</tt>
+<td>
+A surface composed of many dots.
+
+</table>
+</ul>
+
+<p>
+The iso surface is generated by functions <tt>grid_iso</tt>.  Except
+for the <tt>LINES</tt> surface, we always generate an isosurface
+in 3 dimensions (variable <tt>ndim = 3</tt>).  The appearance of the 
+graphics rendering of the surface, created by function <tt>GVertex</tt>
+is controlled by variable <tt>gtype</tt>:
+
+<p>
+<ul>
+<table border=1 cellpadding=7>
+<tr bgcolor="#cccccc"><th><tt>gtype</tt><th>surface generated
+<tr><td>1<td>Points
+<tr><td>2<td>Lines
+<tr><td>1<td>Opaque triangles
+</table>
+</ul>
+
+<p>
+In addition we use the routines <tt>grid_isoidx_drop</tt> and
+<tt>s_emit</tt> to modify the list of triangles or line segments
+to be rendered.  While <tt>grid_isoidx_drop</tt> is a built-in
+SVL routine, <tt>e_emit</tt> is a local routine that provides
+an example of how to use the <tt>GRID_ISO_...</tt> markers to
+achieve special effects.  The following table summarizes the
+different type of surfaces used:
+
+<p>
+<ul>
+<table border=1 cellpadding=3>
+<tr bgcolor="#cccccc"><th><tt>opt.surftype</tt>
+    <th><tt>ndim</tt><th><tt>gtype</tt><th>other
+<tr><td><tt>SOLID</tt>
+    <td>3<td>3<td>&nbsp;
+<tr><td><tt>CAMNET</tt>
+    <td>3<td>3<td>use function <tt>grid_isoidx_drop</tt>
+<tr><td><tt>TILES</tt>
+    <td>3<td>3<td>use local function <tt>s_emit</tt>
+<tr><td><tt>MESH</tt>
+    <td>3<td>2<td>&nbsp;
+<tr><td><tt>LOOPS</tt>
+    <td>3<td>2<td>use local function <tt>s_emit</tt>
+<tr><td><tt>LINES</tt>
+    <td>2<td>2<td>&nbsp;
+<tr><td><tt>POINTS</tt>
+    <td>3<td>1<td>&nbsp;
+</table>
+</ul>
+
+<a name=Appendix_Special_Effects><h2>Appendix: Special Effects</h2></a>
+
+<p>
+We use function <tt>s_emit</tt>
+to achieve the special effect of shrinking each of the polygons
+forming the surface by a small factor toward the center of the
+polygon.
+The effect of function <tt>s_emit</tt> is similar to that
+of <tt>grid_isoidx_emit</tt>: we detect and analyze
+the <tt>GRID_ISO_...</tt> markers in the stream of iso-indices
+and emit a modified stream of indices to be used in the
+graphics function <tt>GVertex</tt>. Because of the nature of
+the function, we also accept and modify the coordinates, the normals,
+and the colors of the points of the isosurface:
+
+<pre>
+local function s_emit [S, isoidx, gtype, points, normals, color]
+	...
+    return [idx, points, normals, color];
+endfunction
+</pre>
+
+The function shrinks each polygon toward its center by S percent.
+
+<p>
+First, we find the mask and the segment counts of all polygons
+forming the surface:
+
+<pre>
+    local m = notnot bitand [isoidx, GRID_ISO_POLY];
+    local c = mtoc m;
+</pre>
+
+Second, we calculate the center of each polygon.
+The coordinates of the centers are stored in the variable
+<tt>center</tt>:
+
+<pre>
+    local center = apt get [points, [bitand [GRID_ISO_VALUE, isoidx]]];
+    center = app pscan center || [rotl m];
+    center = center - apt rotrpoke [center, 0];
+    center = center / [c];
+</pre>
+
+Third, we resize and align polygon vertices with
+the polygon centers.
+
+<p>
+When each polygon is shrunk, the coordinates of its vertices will
+change.  Thus, instead of sharing
+vertices between polygons we must created replicates of all
+shared vertices and assign each polygon its own copy of the vertex
+coordinates, normals, and colors.
+
+<p>
+Variable <tt>idx</tt> stores
+an index vector of the triangles (or line segments)
+of which each polygon is composed.
+Variable <tt>cidx</tt> stores an index vector
+to be used for the centers of each polygon:
+
+<pre>
+    local idx = grid_isoidx_emit [isoidx, gtype, -1];
+    local cidx = grid_isoidx_emit [bitor [
+        pscan m, bitand [isoidx, bitnot GRID_ISO_VALUE]
+    ], gtype, -1];
+</pre>
+
+The following code fragment uses the indices <tt>idx</tt> and <tt>cidx</tt>
+calculated above to replicate the vectors of coordinates, normals,
+and colors, and to align
+the vector of the coordinates of vertices of each polygon
+with the vector of the coordinates of the centers of each polygon:
+
+<pre>
+    points = apt get [points, [idx]];
+    normals = apt get [normals, [idx]];
+    center = apt get [center, [cidx]];
+    color = get [color, idx];
+    idx = x_id idx;
+</pre>
+
+<p>Fourth and last, we shrink each polygon.
+Since the polygon vertices and centers are already aligned,
+the operation of the actual shrinking of each polygon is
+just the matter of a simple linear formula:
+
+<pre>
+    points =  (1-S) * points + S * center;
+</pre>
+
+The full body of the function <tt>s_emit</tt> is available 
+in file "<tt>$MOE/sample/gridex.svl</tt>".
+
+<h2>See Also</h2>
+
+<a href="../svl/fcnref/introgrid.htm">Grid Functions</a><br />
+<a href="../svl/manual/gridman.htm">SVL Multidimensional Grids</a>
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

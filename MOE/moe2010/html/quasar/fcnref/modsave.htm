@@ -1,0 +1,284 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+ 
+<!--
+!!	modsave.htm	model_Save
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions model_Save>
+<title>Model Save</title>
+
+</head>
+ 
+<body bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Model Save</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    <a class="fcnlink" href="#model_Save">model_Save</a> [
+	save_file	: 'output_filename'
+	title		: 'model_title',
+	comment		: 'comment',
+	wrbin		: write_binary,
+	model_files	: [filename1, ..., filenameN],
+	op		: 'combining_operation',
+	user_fcn	: 'function_name',
+	expr		: 'combining_expression',
+	model_names	: [name1, ..., nameN]
+	model_options	: [opt1, ..., optN],
+    ];
+
+where
+    optn = [
+	use_log		: flag,
+	use_complement	: flag,
+	use_min		: flag,
+	use_max		: flag,
+	min		: lower_threshold_value,
+	max		: upper_threshold_value,
+	weight		: scale_factor,
+	dbfields	: 'field_names'
+    ]
+</pre>
+
+<p><b>Note</b>: <tt>$MOE/lib/svl/run/model.svl</tt> must be loaded
+in order to use this function.
+
+<h2>Description</h2>
+
+<p><span class="fcndef">model_Save</span>
+is used in both batch and graphical MOE to save a
+composite model to a file.  The resulting file can then be evaluated over
+a database.
+
+<p>The output file, input model files and combining operation
+must all be specified.  The remaining arguments are optional.
+All arguments are given as a tagged vector with
+the following possible fields:
+
+<p>
+
+<dl>
+
+<dt><tt>save_file: 'output_filename'</tt>
+<dd>Specifies the file to be written.  Please note that
+if the file already exists, it will be overwritten.
+The name of the output file must be supplied.
+
+<p>
+<dt><tt>title: 'model_title'</tt>
+<dd>Specifies an optional model title.  This title is
+saved to the model file and viewable from the Model Options
+sub-panel of the Model-Composer application.
+
+<p>
+<dt><tt>comment: 'comment'</tt>
+<dd>Specifies an optional comment field.  The text of the comment is saved
+to the model file and viewable from the Model Options sub-panel of the
+Model-Composer application.
+
+
+<p>
+<dt><tt>wrbin: write_binary</tt>
+<dd>If non-zero, then the individual models making up the composite model
+will be written to the output file in binary form.  This is useful when
+precision is an issue, for example, in QSAR models.  The default is 0.
+
+<p>
+<dt><tt>model_files: [filename1, ..., filenameN]</tt>
+<dd>Specifies the names of the model files to be
+included in the composite model.  If a database field
+is to be used, the name of the database is specified;
+in this case, <tt>model_options</tt> must be used to
+give the names of the database fields to include.
+At least one model file must be specified for inclusion.
+If a model file cannot be found, an error will occur.
+ 
+<p>
+<dt><tt>model_names: [name1, ..., nameN]</tt>
+<dd>Specifies, for each model in <tt>model_files</tt>, a unique name.
+The model names are only used when the combining operation <tt>op</tt>
+is <tt>'eval'</tt>, in which case the names can be used in the combining
+expression <tt>expr</tt>.  When <tt>op</tt> is not <tt>'eval'</tt>, the
+model names are ignored.  The default, when no model names are specified,
+is to name each model alphabetically, according to the order in which they
+appear in the <tt>model_files</tt> list, i.e. the first model will be called
+<tt>A</tt>, the second <tt>B</tt>, etc.  The names appear in the expression
+prefixed by a <tt>$</tt> symbol, i.e. <tt>$<i>name</i></tt>.
+
+<p>When database fields are used, the same applies: each database field
+is treated as its own model, and the name used in <tt>expr</tt> is
+again the model name prefixed by a <tt>$</tt> symbol.
+
+<p>Note that the model names are not
+guaranteed to be preserved in the saved file as remapping of names may occur.
+
+<p>
+<dt><tt>op: 'combining_operation'</tt>
+<dd>Specifies how the included models are to be arithmetically combined.  The
+possible values are <tt>'product'</tt>, <tt>'sum'</tt>, <tt>'average'</tt>,
+<tt>'min'</tt>, <tt>'max'</tt>, <tt>'variance'</tt>, <tt>'user'</tt>,
+<tt>'eval'</tt>.  The combining operation must be specified.
+
+<p>If <tt>'user'</tt> is the operation, then the <tt>user_function</tt>
+option must be provided.
+
+<p>It <tt>'eval'</tt> is the operation, then the <tt>expr</tt>
+option must be provided.
+
+<p>
+<dt><tt>user_function: 'function_name'</tt>
+<dd>
+If <tt>op</tt> is <tt>'user'</tt>, <tt>user_function</tt> must be specified
+to give the name of the function to be used for combining the individual
+models.  It is the responsibility of the user to ensure that the individual
+model results are appropriate arguments for the function.
+
+<p>
+<dt><tt>expr: 'combining_expression'</tt>
+<dd>If <tt>op</tt> is <tt>'eval'</tt>, <tt>expr</tt> must be used to
+give the arithmetical expression used for combining the individual models
+specified in <tt>model_files</tt>.  If the <tt>model_names</tt> option
+is being used, then those names can be used in the expression in the
+form <tt>$<i>name</i></tt>, i.e. preceded by <tt>'$'</tt>.  If no model
+names were specified, then the models are assigned alphabetical letters as
+names (in order from A to Z) by default, in the order they appear in the
+<tt>model_files</tt> list.
+
+<p>Note that the specified model names are not guaranteed to be preserved
+in the saved file as remapping of names may occur.
+
+<p>
+<dt><tt>model_options: [opt1, ..., optN]</tt>
+<dd>
+Specifies a set of options for each model in <tt>model_files</tt>.
+Note that each set of options must be provided as a separated tagged vector
+and that there must be one for each model file.
+
+<pre>
+    optn = [
+	use_log		: flag,
+	use_complement	: flag,
+	use_min		: flag,
+	use_max		: flag,
+	min		: lower_threshold_value,
+	max		: upper_threshold_value,
+	weight		: scale_factor,
+	dbfields	: 'field_names'
+    ]
+</pre>
+
+<p>Please note that all options, with the exception of <tt>dbfields</tt>,
+have effect only when the combining operation <tt>op</tt> is <i>not</i>
+<tt>'eval'</tt>.  When <tt>op</tt> is <tt>'eval'</tt>, the expression used
+is exactly that given by the combining expression <tt>expr</tt>.
+
+<p>When multiple database fields are specified, all options can be specified
+on a per-field basis, i.e. a value given for each database field.  Thus,
+the option values can be either of length 1, in which case the same value
+is applied to all database fields (unit extension), or of the same length
+as the number of database fields.
+
+<p>The options are as follows:
+
+<p>
+<dl>
+
+<dt><tt>use_log: flag</tt>
+
+<dd>If <tt>flag</tt> is non-zero, then the log of the model
+will be used in the combining expression.  If <tt>use_complement</tt> is
+also on, then <span class="nobr"><tt>log (1-x)</tt></span> will be used.  The default is 0.
+
+<p>
+<dt><tt>use_complement: flag</tt>
+
+<dd>If <tt>flag</tt> is non-zero, then the complement (<tt>1-x</tt>)
+of the model will be used in the combining expression.
+If <tt>use_log</tt> is also on, then <span class="nobr"><tt>log (1-x)</tt></span> will
+be used.  The default is 0.
+
+<p>
+<dt><tt>use_min: flag</tt>
+<dd>If <tt>flag</tt> is non-zero, then a lower threshold will be
+applied to the model, giving a binary result.  The
+<tt>min</tt> option must be used in conjunction with a non-zero
+<tt>use_min</tt> value.  The default is 0.
+
+<p>
+<dt><tt>use_max: flag</tt>
+<dd>If <tt>flag</tt> is non-zero, then an upper threshold will be
+applied to the model, giving a binary result.  The
+<tt>max</tt> option must be used in conjunction with a non-zero
+<tt>use_max</tt> value.  The default is 0.
+
+<p>
+<dt><tt>min: lower_threshold_value</tt>
+<dd>If <tt>use_min</tt> is non-zero, specifies a lower threshold
+to apply to the model result.  The resulting binary value will be
+1 if the model value is greater than or equal to the specified
+threshold.
+
+<p>
+<dt><tt>max: upper_threshold_value</tt>
+<dd>If <tt>use_max</tt> is non-zero, specifies an upper threshold
+to apply to the model result.  The resulting binary value will be
+1 if the model value is less than the specified threshold.
+
+<p>
+<dt><tt>weight: scale_factor</tt>
+<dd>Specifies a scaling factor for the model result.  The model
+result will be multiplied by this factor before being included
+in the combining expression.
+
+<p>
+<dt><tt>dbfields: 'field_names'</tt>
+<dd>
+
+If database fields are to be included in the composite model,
+this option must be specified.  The corresponding file in
+the <tt>model_files</tt> list must be a database file.
+The field names are given as tokens and the fields
+must be of numeric type.
+
+</dl>
+
+</dl>
+
+<h2>See Also</h2>
+
+<a href="../modcomp.htm">Model-Composer Panel</a>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

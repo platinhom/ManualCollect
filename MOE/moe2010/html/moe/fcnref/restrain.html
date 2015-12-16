@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../../manstyle.css" />
+
+
+<meta keywords>
+<meta functions Restraints, RestraintCreate, RestraintDestroy>
+<title>Potential Energy Functions: Restraints</title>
+</head>
+<body  bgcolor="#ffffff">
+<a href="../../index.htm"><img src="../../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Potential Energy Functions</h2>
+<hr noshade="noshade" />
+
+<h2>Syntax</h2>
+
+<pre>
+    res_keys = <a class="fcnlink" href="#RestraintCreate">RestraintCreate</a> [ types, atom_vecs, target_vecs, weights ]
+
+    <a class="fcnlink" href="#RestraintDestroy">RestraintDestroy</a> res_keys 
+
+    [res_keys, types, atom_vecs, target_vecs, weights] = <a class="fcnlink" href="#Restraints">Restraints</a> [] 
+</pre>
+
+<h2>Description</h2>
+
+<p>
+Restraints are additional terms in the potential energy model intended to
+impose geometric constraints.  Because these constraints are not strictly
+enforced they are called restraints.  More precisely, these terms serve
+as <i>penalty functions</i> which have high potential energy when the
+constraint is violated and zero otherwise.
+<p>
+The following table lists the types of restraints supported:
+<p>
+<center>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr>
+<th>Type</th>
+<th>Function</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline"><tt>'distance'</tt>
+<td valign="baseline">
+  <i>w</i> max (0, L<sup>2</sup> - <i>r</i><sup>2</sup>)<sup>3</sup><br />
++ <i>w</i> max (0, <i>r</i><sup>2</sup> - U<sup>2</sup>)<sup>3</sup>
+<td valign="baseline">
+Restrains the distance, <i>r</i>, between two atoms, to lie in the
+interval [L,U] (in angstroms).  The scale factor <i>w</i> controls the
+strength of the restraint.  Both L and U must be non-negative and L must
+be less than or equal to U.
+
+<tr>
+<td valign="baseline"><tt>'angle'</tt>
+<td valign="baseline">
+100<i>w</i>&nbsp;max(0,&nbsp;cos&nbsp;<i>a</i>&nbsp;-&nbsp;cos&nbsp;L)<sup>3</sup><br />
++ 100<i>w</i>&nbsp;max(0,&nbsp;cos&nbsp;U&nbsp;-&nbsp;cos&nbsp;<i>a</i>)<sup>3</sup>
+<td valign="baseline">
+Restrains the angle, <i>a</i>, involving three atoms,  to lie in the interval
+[L,U] (in radians).  The scale factor <i>w</i> controls the strength of the
+restraint.  Both L and U must be non-negative and L must be less than or equal
+to U.
+<tr>
+<td valign="baseline"><tt>'dihedral'</tt>
+<td valign="baseline">
+10000<i>w</i> (1 - cos max(0,<i>d</i> - L))<sup>3</sup><br />
++ 10000<i>w</i> (1 - cos max(0,U - <i>d</i>))<sup>3</sup><br />
+<td valign="baseline">
+Restrains the dihedral angle, <i>d</i>, involving four atoms,
+to lie in the interval [L,U] assuming L is not greater than U and
+both L and U are in the
+interval [-PI,PI].  If L is greater than U then the interval [L,U+PI] is
+implied.  The scale factor <i>w</i> controls the strength of the restraint.
+Angles are measured in clockwise radians.
+
+</table> 
+</center>
+
+<p><a name="RestraintCreate"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+res_keys = <span class="fcndef">RestraintCreate</span> [types, atom_vecs, target_vecs, weights]
+</pre>
+
+<p>
+Creates a collection of restraints.  Assuming that each of the input arguments
+are of compatible lengths <i>n</i> (unit extension applies) then <i>n</i>
+restraints will be created.
+
+<dl>
+<dt><tt>types(i)</tt> 
+<dd>restraint type (defined above)
+
+<p>
+<dt><tt>atom_vecs(i)</tt> 
+<dd>vector of atom keys of appropriate length
+for the restraint (2 for <tt>'distance'</tt>, 3 for <tt>'angle'</tt> and
+4 for <tt>'dihedral')</tt>
+<p>
+<dt><tt>target_vecs(i)</tt> 
+<dd>defines the interval [L,U] in the units of
+the restraint (angstroms or radians).  A vector of length one will be unit
+extended.
+<p>
+<dt><tt>weights(i)</tt> 
+<dd>scale factor, or strength, of the restraint.
+<p>
+<dt><tt>res_keys(i)</tt> 
+<dd>the identifying number of the restraint (for
+use with <tt>RestraintDestroy</tt>).
+</dl>
+
+<p>
+For example, to restrain two atoms <tt>a1</tt> and <tt>a2</tt> so that
+their separation is in the interval [1.5,1.8] with a strength of 100:
+<pre>    RestraintCreate [ 'distance', [ [a1,a2] ], [ [1.5,1.8] ], 100 ]
+</pre>
+<p>
+To create a distance restraint between atoms <tt>a1</tt> and <tt>a2</tt>
+(target 1.5 A) and an angle restraint between atoms <tt>a1</tt>,
+<tt>a2</tt> and <tt>a3</tt> (target 0 radians) with the weight being 100 in
+both cases, use:
+
+<pre>    RestraintCreate [
+        ['distance','angle'], 
+        [ [a1,a2], [a1,a2,a3] ], 
+        [ [1.5,1.5] , [0,0] ], 
+        100
+    ]
+</pre>
+
+<p><a name="RestraintDestroy"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">RestraintDestroy</span> res_keys 
+</pre>
+
+<p>
+Destroys all restraints with keys specified by <tt>res_keys</tt>.
+
+<p><a name="Restraints"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[res_keys, types, atom_vecs, target_vecs, weights] = <span class="fcndef">Restraints</span> [] 
+</pre>
+
+<p>
+Returns information on all defined restraints in the system.  The return
+elements are in the same form as described in <tt>RestraintCreate</tt>.
+Note: the returned values may not be the same as those that were used
+to specify the restraint; for example, distance interval values less than
+zero are set to zero and angle restraints intervals moved to 
+<span class="nobr">[-PI, PI]</span>.
+
+<h2>See Also</h2>
+
+<p>
+    <a class="svl" href="draw.html">DrawConstr</a><br />
+    <a class="svl" href="meters.html">Meters</a><br />
+    <a class="svl" href="rconstraint.html">rConstraints</a><br />
+    <a class="svl" href="moe_const.html">RESTRAINT_TYPES</a>
+</p>
+
+<p>
+<a href="potfcn.htm"><span class="nobr">Potential
+    Energy Functions</span></a><br />
+<a href="atom_p.htm"><span class="nobr">Atom Potential Functions</span></a>
+</p>
+
+<p><a href="../../index.htm">MOE Table of Contents</a>&nbsp;&nbsp;<a href="../../fcnindex.html">SVL Function Index</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>

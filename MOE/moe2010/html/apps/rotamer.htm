@@ -1,0 +1,597 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    MOE 2010.10 On-Line Manuals
+!!    COPYRIGHT (C) 2010
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<!--
+!!	rotamer.htm	Residue Mutation and Rotamer Exploration
+!!
+!!	01-oct-2008 (mk) updated for 2008.10 release
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<link rel="stylesheet" type="text/css"
+href="../manstyle.css" />
+
+
+<meta panel Rotamer Explorer>
+
+<title>Residue Mutation and Rotamer Exploration</title>
+</head>
+
+<body bgcolor="#ffffff">
+<a href="../index.htm"><img src="../images/logo.gif"
+alt="CCG Logo" align="right" width="174" height="55" border="0" /></a>
+<h4>MOE 2010.10</h4>
+<h2>Residue Mutation and Rotamer Exploration</h2>
+<hr noshade="noshade" />
+
+<ul>
+<li><a href="#Mutations">Mutation Overview</a>
+<li><a href="#Methodology">Rotamer Explorer Methodology</a>
+    <ul>
+    <li><a href="#Generation">Generation of Rotamers</a>
+    <li><a href="#Scoring">Scoring</a>
+    </ul>
+<li><a href="#Running">Running Rotamer Explorer</a>
+    <ul>
+    <li><a href="#Exploring">Exploring a Residue</a>
+    <li><a href="#Results">Reported Information</a>
+    <li><a href="#Visualize">Visualizing the Results</a>
+    <li><a href="#Mutate">Mutating</a>
+    </ul>
+<li><a href="#PanelReference">Rotamer Explorer Panel Reference</a>
+<li><a href="#References">References</a>
+</ul>
+
+
+<a name="Mutations"></a><h2>Mutation Overview</h2>
+
+<p>
+The purpose of the Rotamer Explorer is to explore the conformational
+space of amino acid sidechains within proteins in the presence of
+surrounding amino acids, ligands, and solvent.
+You can visually inspect potential sidechain conformations and
+rank by multiple scores.
+Additionally the Rotamer Explorer can be used to mutate the selected
+sidechain (and explore rotamers of these mutations).
+
+<p>
+A second method to mutate amino acids is the <b>Mutate Prompt.</b>
+To use the Mutate Prompt in the Sequence Editor,
+choose <span class="nobr"><b>SE | Edit | Protein | Mutate</b></span>.
+The command line of the Sequence Editor will be changed to the Mutate Prompt.
+</p>
+
+<p><center><img src="rotamer/mutate.png" alt="Mutate Prompt" /></center></p>
+
+<p>
+Selecting a residue with the cursor mutates it into
+the new residue as specified in the option menu of the prompt.
+Residues which are not amino acids cannot be mutated.
+While the Mutate Prompt is faster to use,
+the Rotamer Explorer provides more functionality.
+</p>
+
+<p>
+Note that proteins with sequence-only data (i.e. without
+explicitly defined atoms) can only be mutated with the Mutate prompt.
+</p>
+
+<a name="Methodology"></a><h2>Rotamer Explorer Methodology</h2>
+
+<a name="Generation"></a><h3>Conformation Generation</h3>
+A rich discrete all atom rotamer (or conformation) library is used by the
+Rotamer Explorer for both sidechain conformation exploration and residue
+mutation. The sidechain coordinates are optimally rotated and translated
+onto a particular backbone of a particular protein structure. (Previous
+versions of the Rotamer Explorer used a systematic conformational search
+that varied dihedral angles but used ideal bond lengths and angles.)
+
+<p>
+Historically, rotamer libraries were conformations of protein sidechains
+created using ideal bond lengths and angles but with dihedral angles
+derived from observations in the PDB. For example Lovell's
+Penultimate Rotamer Library (PRL) [Lovell&nbsp;2003] contains 152 rotamers
+with 34 rotamers for Arg, 27 for Lys, 13 for Met, 9 for Gln, 8 for Glu.
+These rotamer libraries are intended for crystallographic refinement
+applications. The reason for having so few rotamers, even for the
+flexible sidechains, is that no uncommon rotamers should be introduced
+into the crystallographic structures.
+It is intended that further refinement will be conducted,
+so that the sidechain can adapt to a folded protein environment.
+The Dunbrack rotamer library [Dunbrack&nbsp;1993,2002] contains roughly 350
+rotamers along with statistical (&psi;,&phi;) dependent preferences
+&mdash; a kind of pseudo strain energy &mdash; again assuming ideal
+bond lengths and angles.  Typically &chi;<sub>1</sub> preferences are
+well characterized, however &chi;<sub>2</sub>, &chi;<sub>3</sub>, etc.
+preferences are poorly characterized, if at all. Given the small size
+of these libraries it is not surprising that over 10% of residues in
+high resolution crystal structures cannot be matched by the PRL or
+Dunbrack rotamers.
+For the exploration of the rotamer space, as intended in the Rotamer Explorer
+application, a much larger rotamer library is desired.
+In addition, the use of ideal bond lengths and angles in the rotamer libraries
+mentioned above can result in self-clashing rotamers since variations from
+ideal bond angles are required for certain combinations of dihedral
+angles.
+</p>
+
+<p>
+The Rotamer Library in MOE is a collection of all-atom sidechain conformations
+derived from high quality x-ray crystal structures.  These conformations
+differ markedly from the traditional rotamer libraries in that bond length
+and angle variations are permitted.  The intent of the MOE rotamer library
+is to provide adequate coverage of the conformational space available to
+a sidechain and not just encode dihedral preferences.  The rotamers
+are located in <tt>$MOE/lib/amino.mdb</tt> in a packed conformation
+field associated with each sidechain.
+A collection of ~2,000 high quality PDB structures was assembled; each
+structure had a resolution &le; 1.5&nbsp;&Aring;, a Free R &le; 0.24,
+an R Value &le; 0.2, and contained less than 30 atom overlaps per 1,000 atoms.
+From each such structure all residues with 1.0 occupancy, no missing atoms,
+B-factors &le; 30 for the backbone and &le; 40 for the sidechain and without
+close contacts were identified.	 The coordinates of each such residue
+were extracted and refined with the AMBER99 forcefield with strong
+flat-bottomed tethers applied to all atoms (ACE and NME caps were used
+as terminii).  The resulting AMBER99 bond angle, dihedral and van der Waals
+energies were calculated and stored with the refined coordinates in a
+database.  Duplicates were removed and the lowest energy conformation
+amongst the duplicates was retained. Two conformations were considered
+duplicate if the maximum corresponding interatomic distance was less
+than 0.3&nbsp;&Aring;.	The resulting library contained ~35,500 conformations
+with associated AMBER99 energies; Arg has more than 12,000 rotamers and
+Glu/Gln have several thousand each, in marked contrast to historical
+rotamer libraries.  Consequently, little or no coordinate refinement is required
+(unlike the historical rotamer libraries) and bond angle variations
+are explicitly taken into account.
+</p>
+
+<p>
+The following table summarizes the results of the rotamer library generation.
+
+<table class="titlebar" cellpadding="5" border="1" align="center">
+<tr align="center">
+<th><b>Residue</b></th>
+<th><b>N(raw)</b></th>
+<th><b>RMSD</b></th>
+<th><b>N(0.3)</b></th>
+<th><b>N(PRL)</sup></th>
+<tr align="right">
+<td align="center">Arg
+<td>27,419  <td>0.112	<td>14,181  <td>34
+<tr align="right">
+<td align="center">Asn
+<td> 28,974	<td>0.116	<td>527	    <td>7
+<tr align="right">
+<td align="center">Asp
+<td> 36,673	<td>0.123	<td>318	    <td>5
+<tr align="right">
+<td align="center">Cys
+<td> 9,869	<td>0.129	<td>42	    <td>9
+<tr align="right">
+<td align="center">Gln
+<td> 22,025	<td>0.116	<td>3,584   <td>9
+<tr align="right">
+<td align="center">Glu
+<td> 33,494	<td>0.119	<td>3,074   <td>8
+<tr align="right">
+<td align="center">His
+<td> 16,435	<td>0.132	<td>806	    <td>8
+<tr align="right">
+<td align="center">Ile
+<td> 35,471	<td>0.100	<td>185	    <td>7
+<tr align="right">
+<td align="center">Leu
+<td> 56,460	<td>0.111	<td>439	    <td>5
+<tr align="right">
+<td align="center">Lys
+<td> 89,255	<td>0.124	<td>6,181   <td>27
+<tr align="right">
+<td align="center">Met
+<td> 35,737	<td>0.121	<td>1,489   <td>13
+<tr align="right">
+<td align="center">Phe
+<td> 27,071	<td>0.103	<td>708	    <td>4
+<tr align="right">
+<td align="center">Pro
+<td> 30,865	<td>0.089	<td>11	    <td>2
+<tr align="right">
+<td align="center">Ser
+<td> 35,653	<td>0.086	<td>30	    <td>9
+<tr align="right">
+<td align="center">Thr
+<td> 38,702	<td>0.089	<td>57	    <td>9
+<tr align="right">
+<td align="center">Trp
+<td> 11,037	<td>0.108	<td>1,723   <td>7
+<tr align="right">
+<td align="center">Tyr
+<td> 24792	<td>0.101	<td>2,296   <td>8
+<tr align="right">
+<td align="center">Val
+<td> 48,240	<td>0.081	<td>16	    <td>3
+</table>
+</p>
+
+<p>
+<table width="90%" cellpadding="3" align="center">
+<tr>
+<td valign="top">N(raw):</td>
+<td>Raw number of conformations for each residue type
+without duplicate removal.</td>
+</tr>
+
+<tr>
+<td valign="top">RMSD:</td>
+<td>Average Root mean square deviation of the sidechain atom coordinates
+before and after minimization.</td>
+</tr>
+
+<tr>
+<td valign="top">N(0.3):</td>
+<td>Number of conformations after duplicate removal using
+0.3&nbsp;&Aring; criteria.</td>
+</tr>
+
+<tr>
+<td valign="top">N(PRL)</sup>:</td>
+<td>Number of conformations in the Penultimate Rotamer Library.</td>
+</tr>
+
+</table>
+
+</p>
+
+<a name="Scoring"></a><h3>Scoring</h3>
+
+The sidechain conformation score is a sum of three terms:
+<ol>
+<li>The sidechain strain energy from the rotamer library.
+<li>The AMBER99 van der Waals interaction energy with the environment.
+<li>A hydrogen bond score made up of a radial Lennard-Jones 12-10 potential
+and a dipole-dipole electrostatic term.
+</ol>
+
+The hydrogen bond radial 12-10 distribution is consistent with
+contact statistics derived from the PDB.
+
+<p align="center"><img src="rotamer/penalty.png" alt="Penalty Term" /></p>
+<!-- LATEX rotamer/penalty \[
+    P = \exp\left[-\frac{1}{kT}\left(
+    {5}\left[\frac{2.85}{r_{ij}}\right]^{12}
+    -{6}\left[\frac{2.85}{r_{ij}}\right]^{10}
+    \right)\right]
+
+\] ENDLATEX -->
+
+where <i>r<sub>ij</sub></i> is the distance between the polar heavy atoms in
+the sidechain and the environment.
+
+<p>
+Each polar hydrogen bearing heavy atom is given a point dipole in a
+direction consistent with its hybridization and with a magnitude consistent
+with the TIP5P water model. Dipole-dipole electrostatic interactions are
+evaluated for each such pair:
+</p>
+
+<p align="center"><img src="rotamer/dipole.png" alt="Dipole Energy Term" /></p>
+<!-- LATEX rotamer/dipole \[
+
+    E_{dip-dip} = \frac{1}{4\pi \varepsilon_{0}}
+    \left(\mathbf{d}_{i}\cdot \mathbf{d}_{j}
+    -3 \left( \mathbf{d}_{i}\cdot \mathbf{r}_{ij} \right)
+    \left( \mathbf{r}_{ij}\cdot \mathbf{d}_{j} \right)
+    \right)
+
+\] ENDLATEX -->
+
+where <b>d</b><sub><i>i</i></sub> and <b>d</b><sub><i>j</i></sub>
+are the dipole vectors of the
+heavy atoms and <b>r</b><sub><i>ij</i></sub> the vector between the atom
+positions.
+
+<p>
+The total hydrogen bond interaction energy E<sub>hb</sub>, which takes
+directional effects into account, is the product of the radial term P
+and the dipole-dipole energy term E<sub>dip-dip</sub>.
+</p>
+
+<a name="Running"></a><h2>Running Rotamer Explorer</h2>
+<p>
+To open the Rotamer Explorer, do either of the following:
+
+<ul>
+<li>In the Sequence Editor, choose
+<span class="nobr"><b>SE | Edit | Rotamer Explorer</b></span>.
+<li>In the Sequence Editor, position the cursor over the residue of
+interest and click the mouse popup button.  Choose <b>Rotamer Explorer</b>.
+The Rotamer Explorer will open and immediately explore the specified
+residue.  If the panel is already open, the residue will replace
+any current data in the panel.
+</ul>
+
+</p>
+<center><img src="rotamer/rotpanel.png" alt="Rotamer Explorer" /></center>
+</p>
+
+<a name="Exploring"></a>
+<h4>Exploring a Residue</h4>
+
+<p>There are several ways to choose the residue to be explored:
+
+<ul>
+<li>Select a residue in the Sequence Editor and press
+<b>Get from SE</b>
+<li>Select one or more atoms of a residue in the MOE Window and press
+<b>Get from MOE</b>
+<li>Use the Residue Popup menu in the Sequence Editor
+</ul>
+
+<p>The rotamers of the selected residue are automatically searched by
+the Rotamer Explorer, displaying the results in the list.
+
+<h4><a name="Results">Reported Information</a></h4>
+
+<p>Once the search is completed, the Rotamer Explorer reports the information
+in the panel list. For each rotamer, the Rotamer Explorer reports:
+
+<p>
+<table cellspacing="5" cellpadding="5" border="0">
+<tr>
+<td valign=top><b>Res</b>
+<td valign=top>The residue type of the rotamers being explored.
+When exploring histidine, the residue type also indicates the tautomer,
+either HID, HIE, or HIP.
+
+<tr>
+<td valign=top><b>Rank</b>
+<td valign=top>Numeric position in the list.
+<tr>
+<td valign=top><b>E</b>
+<td valign=top>The sidechain conformation score is calculated as the sum
+of the sidechain strain energy, the van der Waals interaction energy with the
+environment, and the hydrogen bond interaction energy.
+
+<tr>
+<td valign=top><b>Eself</b>
+<td valign=top>Sidechain strain energy from the rotamer library.
+
+<tr>
+<td valign=top><b>Ehb</b>
+<td valign=top>Hydrogen bond interaction energy.
+
+<tr>
+<td valign=top><b>chi n</b>
+<td valign=top>The dihedral chi angles of the rotamer.
+
+</table>
+
+<a name="Visualize"></a>
+<h4>Visualizing the Results</h4>
+<p>
+Clicking on rotamers in the list causes them to appear in the MOE window.
+<tt>CTRL</tt>-click or <tt>SHIFT</tt>-click on the list to display
+multiple residues.  During
+the exploration of the rotamers, the actual residue in the system is unchanged.
+</p>
+
+<a name="Mutate"></a>
+<h4>Mutating</h4>
+
+<p>
+To replace the current residue with the selected rotamer in the list,
+press the <b>Mutate</b> button.
+</p>
+
+<p>
+Once the mutation is complete there is no undo operation.
+</p>
+
+
+<h4>Saving the Results</h4>
+
+<p>
+Rotamers reported in the list may be saved in a database for future
+reference.  Each column of information displayed will be stored in
+a separate database field.
+To save the rotamers press <b>Write</b>.
+The Write to Database panel appears:
+
+<p><center><img src="rotamer/write.png" alt="Write Database Panel"></center></p>
+
+<p>
+Using this panel you can save
+some or all of the rotamers to a database.
+</p>
+
+<table cellspacing="5" cellpadding="5" border="0">
+
+<tr>
+<td><b>Database</b></td>
+<td>The file to which the database is written.
+
+<tr>
+<td valign=top><b>Open in Database Viewer</b></td>
+<td valign=top>
+Opens the database in a Database Viewer after the write
+operation is completed.
+
+
+<tr>
+<td valign=top><b>Append New Entries</b></td>
+<td valign=top>
+If the specified database already exists, then when this option is on, the new
+entries will be appended to it.	 Otherwise the database will be overwritten.
+If the database does not exist, a new database will be
+created regardless of the state of this option.
+
+<tr><td valign=top><b>Selected Rotamers Only</b></td>
+<td valign=top>
+If on, only the conformations selected in the Rotamer
+Explorer list will be written.	Otherwise all conformations will be
+written.
+
+
+</table>
+
+<p>Press <b>OK</b> to perform the write.
+
+
+<a name="PanelReference"></a>
+<h3>Rotamer Explorer Panel Reference</h3>
+
+<p>
+<center>
+<img src="rotamer/rotpanel.png" alt="Rotamer Explorer Panel" />
+</center>
+</p>
+
+<p>
+<table width="100%" cellspacing="5" cellpadding="5" border="1">
+
+<tr><td valign=top><b>Environment</b>
+
+    <td valign=top>
+    Specifies which atoms interact with the rotamer and are used
+    in calculating the sidechain conformation score, hydrogen bond interaction
+    energy, and whether the conformation is free of steric conflict.
+
+    The environment can be restricted to selected or unselected atoms only, and
+    furthermore, to selected or unselected chains only.
+
+    <b>Salts and solvent</b> are not in the environment unless explicitly
+    included.
+    <b>Hidden atoms</b> are included by default in the environment, but can be
+    excluded if desired.
+
+<tr><td valign=top><b>Site</b>
+
+    <td valign=top>Displays the chain number and full residue name
+    (including UID and Insertion code) residue in the system being explored.
+
+<tr><td valign=top><b>Target</b>
+
+    <td valign=top>The Rotamer Explorer can search the conformation space of
+    both the current sidechain of the residue and also the rotamers of any
+    different sidechain, i.e. of a mutation.
+
+<tr><td valign=top><b>Explore</b>
+
+    <td valign=top>Searches and scores rotamers based on the sidechain being
+    explored (as indicated by the <b>Target</b> option), and the
+    Environment.
+
+<tr><td valign=top><b>Cluster</b>
+
+    <td valign=top>Change the cluster value of the rotamers.
+
+<tr><td valign=top><b>Sort By</b>
+
+    <td valign=top>Determines the order in which the entries are sorted in the
+    list (lowest entry first).
+
+<tr><td valign=top><b>Mode</b>
+
+    <td valign=top>Determines how the rotamers are rendered when selected.
+
+<tr><td valign=top><b>Isolate Atoms</b>
+
+    <td valign=top>If on, atoms in the environment close to the rotamers are
+    displayed, and other atoms in the environment are hidden.
+
+<tr><td valign=top><b>Isolate Ribbon</b>
+
+    <td valign=top>If on, the backbone in the environment near the rotamers
+    will be displayed.
+
+<tr><td valign=top><b>Show Current</b>
+
+    <td valign=top>If on, the current residue conformation is shown besides
+    the selected rotamers.
+
+<tr><td valign=top><b>Get from SE</b>
+
+    <td valign=top>Changes the system residue being explored by retrieving the
+    residue selected in the Sequence Editor.
+
+<tr><td valign=top><b>Get from MOE</b>
+
+    <td valign=top>Changes the system residue being explored by retrieving the
+    residue whose atoms are selected in the MOE Window.
+
+<tr><td valign=top><b>Mutate</b>
+
+    <td valign=top>Replaces the system residue being explored with the selected
+    residue in the list. The Mutate button is sensitive only if there is
+    exactly one residue selected in the list. <p><b>Warning!</b> This operation
+    cannot be undone.
+
+<tr><td valign=top><b>Write</b>
+
+    <td valign=top>Opens a panel allowing you to write the results into a MOE
+    database.
+
+</table>
+
+
+<a name="References"></a>
+<h3>References</h3>
+
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="top">[Lovell&nbsp;2000]</td>
+<td valign="top">
+Lovell, S.C., Word, J.M., Richardson, J.S., Richardson, D.C.;
+The Penultimate Rotamer Library;
+<i>Proteins 40</i> (<b>2000</b>) 389&ndash;408.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Dunbrack&nbsp;1993]</td>
+<td valign="top">
+Dunbrack, R.L., Karplus, M.;
+Backbone-dependent Rotamer Library for Proteins:
+Application to Side-chain prediction;
+<i>J. Mol. Biol. 230</i> (<b>1993</b>) 543&ndash;574.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Dunbrack&nbsp;2002]</td>
+<td valign="top">
+Dunbrack, R.L.;
+Rotamer Libraries in the 21st Century;
+<i>Curr. Opin. Struct. Biol. 12</i> (<b>2002</b>) 431&ndash;440.
+</td>
+</tr>
+
+</table>
+
+<h2>See Also</h2>
+<a href="../proteins/protool.htm">Building Proteins and DNA</a><br>
+<a href="../moe/gui/se.html">Sequence Editor</a><br>
+<a href="../proteins/pdb_mdb.htm">Protein Sequence and Structure Data</a><br>
+
+
+<p><a href="../index.htm">MOE Table of Contents</a></p>
+<hr noshade="noshade" />
+<a href="http://www.chemcomp.com"><img src="../images/flogo.gif"
+alt="CCG Logo"
+align="left" width="30" height="30" border="1" hspace="5" vspace="3" /></a>
+<font size="2">
+<a href="../legal.html">Copyright</a> &copy; 1997-2010
+<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a><br />
+<a href="mailto:info@chemcomp.com"><i>info@chemcomp.com</i></a>
+</font>
+</body>
+</html>
