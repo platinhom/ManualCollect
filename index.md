@@ -55,7 +55,7 @@ layout: page_small
 
 ### Git related
 
-- Pro Git (V2-zh-936): [Origin](https://git-scm.com/book/zh/v2) , [Offline](./Softwares/Git/ProGit), [toc](./Softwares/Git/ProGit/toc.html)
+- Pro Git (V2-zh-936): [Origin](https://git-scm.com/book/zh/v2) , [Offline](./Softwares/Git/ProGit/v2_zh_936), [toc](./Softwares/Git/ProGit/v2_zh_936/toc.html)
 - Git Help From 1.9.5.msysgit: [Main](./Softwares/Git/GitHelp/1.9.5.msysgit/); [user-manual](./Softwares/Git/GitHelp/1.9.5.msysgit/user-manual.html)
 
 -----------
