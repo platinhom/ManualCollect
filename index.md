@@ -31,7 +31,7 @@ layout: page_small
 
 - 2012: [Help Documentation Index](./Schrodinger/Schrodinger_2012_docs/Documentation_Index.html), [Manuals_Index.pdf](./Schrodinger/Schrodinger_2012_docs/Manuals_Index.pdf)
 - 2015-2: [Help Documentation Index](./Schrodinger/Schrodinger_2015-2_docs/Documentation_Index.html), [Manuals_Index.pdf](./Schrodinger/Schrodinger_2015-2_docs/Manuals_Index.pdf)
-- 2017-1: [Help Documentation Index](./Schrodinger/Schrodinger_2017-1_docs/Documentation_Index.html),
+- 2017-1: [Help Documentation Index](./Schrodinger/Schrodinger_2017-1_docs/Documentation.htm),
 
 ## Gaussian
 
