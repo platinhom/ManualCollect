@@ -1,0 +1,544 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    	sdfilter.htm
+!!-->
+ 
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<title>sdfilter</title>
+<meta functions sdfilter>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+<blockquote>
+    <tt>unix&gt; $MOE/bin/sdfilter</tt>
+    <b>{</b> <i>option</i> | <i>inputfilename</i> | @<i>filename</i> <b>}</b>
+    <br />
+    <tt>unix&gt; $MOE/bin/moebatch -run $MOE/bin/sdfilter</tt>
+    <b>{</b> <i>option</i> | <i>inputfilename</i> | @<i>filename</i> <b>}</b>
+    <br />
+    <br />
+    <tt>windows&gt; %MOE%\bin\sdfilter</tt>
+    <b>{</b> <i>option</i> | <i>inputfilename</i> | @<i>filename</i> <b>}</b>
+    <br />
+    <tt>windows&gt; %MOE%\bin-i4w9\moebatch -run $MOE\bin\sdfilter</tt>
+    <b>{</b> <i>option</i> | <i>inputfilename</i> | @<i>filename</i> <b>}</b>
+    <p>
+
+<table>
+    <tr>
+    <td><i>option</i>
+    <td>&nbsp;:&nbsp;
+<td><tt>-help</tt>
+    
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-verbose</tt> | <tt>-quiet</tt>
+    
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-sdf</tt>&nbsp;|&nbsp;<tt>-smi</tt>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-o</tt> <i>outputfilename</i>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-f</tt> <i>filterfilename</i>
+
+   <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-annotate</tt>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-stripdata</tt>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-elements</tt>
+		    <i>element_list</i>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-numfield</tt>
+		    <i>datafield</i> <i>range</i>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-records</tt> <i>range</i>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-svl</tt>
+		    <i>svlfunction</i> <i>range</i>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-druglike</tt>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-leadlike</tt>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-fraglike</tt>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-nonreactive</tt>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-smallring</tt>
+
+ 	<tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-V2000</tt>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-V3000</tt>
+
+    <tr><td>&nbsp;<td>&nbsp;:&nbsp;<td><tt>-expr</tt> <i>filter</i>
+
+    <tr><td>&nbsp;<td>&nbsp;<td>&nbsp;
+
+    <tr>
+    <td><i>range</i>
+    <td>&nbsp;:&nbsp;
+	  <td><i>num</i>
+	      | <i>num</i><tt>+</tt>
+	      | <i>num</i><tt>-</tt>
+	      | <i>n</i><tt>,</tt><i>m</i>
+</table>
+</blockquote>
+
+<p><a name="sdfilter"></a></p><h2>Description</h2>
+
+<p>
+The <tt>sdfilter</tt> program removes records from an input collection of SD
+(or SMILES)
+files (based upon programmable filters) and writes the results to output files
+in either format.
+<tt>sdfilter</tt> is an SVL program intended to be run in MOE/batch.
+The fundamental structure of operation of <tt>sdfilter</tt> is:
+
+<ol>
+    <li>Read and concatenate all specified input files.
+    <li>Write records that satisfy the filters to the output file.
+    <li>Write records that don't satisfy the filters to the filter file.
+</ol>
+
+<p>On most POSIX systems, the first syntax can be used: <tt>sdfilter</tt> looks
+like a Unix command. If using an unusual shell, it may be necessary to  use the
+second syntax. On Windows systems, use the third (batch file) or fourth syntax
+lines (assuming <tt>cmd.exe</tt> is used to process commands).
+
+<p>The purpose of <tt>sdfilter</tt> is to remove molecules from the input
+files based upon satisfaction of all of the optional record filters.
+<tt>sdfilter</tt> accepts general
+<a href="#DescriptorFilters">descriptor filters</a>, some <a href="#FlagFilters">flag-based
+(boolean) filters</a>,
+as well several <a href="#RangeFilters">range-based filters</a> that
+require the specification of a range of acceptable values for
+a given attribute (for example, the value stored in a particular
+data field).
+
+<p>By default, input molecules that satisfy the filters will be written to
+<tt>stdout</tt> and those that don't satisfy the filters will be discarded.</p>
+
+<p>
+There are several general options that modify the behavior of
+<tt>sdfilter</tt>:
+<blockquote>
+<dl>
+    <dt><tt>-help</tt>
+    <dd>Prints a syntax summary to <tt>stderr</tt> and then exits.
+    <p>
+    <dt><tt>-verbose</tt>
+    <dd>Prints progress information to <tt>stderr</tt> during the run.
+    <p>
+    <dt><tt>-quiet</tt>
+    <dd>Suppresses the printing of progress information to <tt>stderr</tt>.
+    This is the default.
+    <p>
+    <dt><tt>-sdf</tt></dt>
+    <dd>Specifies that subsequent files in the <tt>sdfilter</tt> argument
+    list are SD files.  The format of the SD files can be further specified
+    using an option of the form
+    <span class="nobr"><tt>-sdf:<i>fmt</i></tt></span> where <i>fmt</i> is
+    either <tt>V2000</tt> or <tt>V3000</tt>.  If <i>fmt</i> is omitted,
+    output files will be written in V2000 format (the default).  It is not
+    necessary to specify the format of input SD files.
+    </dd>
+    <p>
+    <dt><tt>-smi</tt></dt>
+    <dd>Specifies that subsequent files in the <tt>sdfilter</tt> argument
+    list are whitespace separated ASCII files.
+    Note that this includes <span class="nobr"<tt>-o</tt></span> and
+    <span class="nobr"><tt>-f</tt></span> specifications.
+    The files have one SMILES string per line, with each line beginning
+    with the SMILES string;
+    subsequent fields on a given line are considered to be data.
+    The format of the ASCII file can be further specified using an
+    option of the form <span class="nobr"><tt>-smi:</tt><i>f</i></span>
+     where <i>f</i> is a single character: <tt>t</tt> for tab separated,
+    <tt>c</tt> for comma separated, <tt>m</tt> for semicolon separated,
+    and <tt>w</tt> for whitespace separated.
+    Append a <tt>q</tt> to the option string to specify that items
+    are surrounded by double quotes.  Append a <tt>p</tt> to the option
+    string to specify that the property names should be written as
+    the first line of the output file.  For example,
+    <span class="nobr"><tt>-smi:tq</tt></span>
+    specifies files in which each line contains tab-separated items
+    with each item enclosed in double quotes.
+    </dd>
+	<p>
+	<dt><tt>-o</tt> <i>outputfilename</i>
+    <dd>
+    Specifies the name of the file to which molecules that satisfy the
+    filters will be written.  If <i>outputfilename</i> is "." then no output
+    will be written.  If <i>outputfilename</i> is
+    <span class="nobr">"-"</span> then the output will be
+    written to <tt>stdout</tt>.
+
+    <p>
+    <dt><a name="fswitch"><tt>-f</tt> <i>filterfilename</i></a>
+    <dd>
+    Specifies the name of the file to which molecules that don't satisfy
+    the filters will be written.  If <i>filterfilename</i> is "." then no output
+    will be written.  If <i>filterfilename</i> is
+    <span class="nobr">"-"</span> then the output will be
+    written to <tt>stdout</tt>.  If the
+    <span class="nobr"><tt>-f</tt></span> option is specified to write to
+    <tt>stdout</tt> but no <span class="nobr"><tt>-o</tt></span> option is
+    given, then the normal <span class="nobr"><tt>-o</tt></span> output will
+    be disabled.
+    </dd>
+    </p>
+
+    <p>
+    <dt><tt>-annotate</tt>
+    <dd>
+    Specifies that
+    an additional SD data field will be written with each record
+    written to the filter file.  This data field will contain the reason
+    that the molecule was written to the filter file (i.e. the particular
+    violation of a filter that the filtered record did not satisfy).<br />
+    This option is valid only when the
+    <a href="#fswitch"><span class="nobr"><tt>-f</tt></span></a>
+    option is also used.  
+
+    <p>
+    <dt><tt>-stripdata</tt>
+    <dd>
+    Forces all additional fields from the original files to be 
+    removed, leaving only the molecular structure. The stripping is done upon
+    reading, and does not apply to fields which are subsequently appended.
+    
+    <p>
+    <dt><tt>-elements</tt> <i>element_list</i>
+    <dd>
+    Processes only the elements of the molecule contained in the
+    comma-separated list of elements specified by <i>element_list</i>.
+
+</dl>
+</blockquote>
+</p>
+
+<p>
+<tt>sdfilter</tt> can apply the following 
+<a name="RangeFilters">range-based filters:</a>
+<p>
+<blockquote>
+<dl>
+    <p>
+    <dt><tt>-numfield</tt> <i>datafield</i> <i>range</i>
+    <dd>
+    Processes the specified <i>datafield</i> only when the value of the
+    MDL per-record data field <i>datafield</i>, interpreted
+    as a numeric scalar, falls in the specified <i>range</i>.
+    More than one <span class="nobr"><tt>-numfield</tt></span> option may
+    be specified.
+    <p>
+    <dt><tt>-records</tt> <i>range</i>
+    <dd>
+    Processes only the records at positions in the concatenated input files that
+    fall in the specified range.  If more than one
+    <span class="nobr"><tt>-records</tt></span> option
+    is specified, only the rightmost range on the argument line is used.
+    <p>
+    <dt><tt>-svl</tt> <i>svlfunction</i> <i>range</i>
+    <dd>
+    Processes the global SVL function <i>svlfunction</i> only when the
+    return value of <i>svlfunction</i> 
+    falls in the specified <i>range</i>.  The function will be given the
+    argument <tt>[mol,data1,data2]</tt>, where <tt>mol</tt> is a database
+    molecule, <tt>data1</tt> is a vector of field names in which
+    <tt>data1(i)</tt> is the complete <i>i</i>th MDL data field line
+    (i.e. including
+    the &gt; which starts the line in the MDL file),
+    and <tt>data2</tt> is a vector of field data supplied as
+    character vectors, one
+    for each data line.  The SVL function must return a scalar.
+    More than one <span class="nobr"><tt>-svl</tt></span> option may be
+    specified.
+</dl> 
+The <i>range</i> argument can have one of the following forms:
+
+<blockquote>
+<dl>
+    <dt><i>num</i>
+    <dd>Specifies that a value must be equal to <i>num</i>.
+    <p>
+    <dt><i>num</i>-
+    <dd>Specifies that a value must be less than or equal to <i>num</i>.
+    <p>
+    <dt><i>num</i>+
+    <dd>Specifies that a value must be greater than or equal to <i>num</i>.
+    <p>
+    <dt><i>n</i>,<i>m</i>
+    <dd>Specifies that a value must be greater than or equal to <i>n</i>
+    and less than or equal to <i>m</i>.
+    <p>
+</dl>
+</blockquote>
+
+</blockquote>
+
+<p>
+<tt>sdfilter</tt> supports the following 
+<a name="FlagFilters">flag-based filters:</a>
+<blockquote>
+<dl>
+    <dt><tt>-druglike</tt>
+    <dd>
+    The molecule must satisfy Lipinski's rule-of-5 test for druglikeness
+    [Lipinski&nbsp;1997].  Briefly, the Lipinski druglike test is that a
+    molecular can have at most one violation of the following conditions:
+    a)&nbsp;the number of N or O atoms that are hydrogen bond donors must
+    be 5 or less;
+    b)&nbsp;the number of N and O atoms must be 10 or less;
+    c)&nbsp;the molecular weight must be 500 or less;
+    and
+    d)&nbsp;the logP must be 5 or less.
+    <p>
+    <dt><a name="leadlike"></a><tt>-leadlike</tt>
+    <dd>
+    The molecule must satisfy Oprea's test for leadlikeness [Oprea&nbsp;2000].
+    Briefly, the Oprea's leadlike test is that a molecule can have at most one
+    violation of the following conditions:
+    a)&nbsp;the number of N or O atoms that are hydrogen bond donors must
+    be 5 or less;
+    b)&nbsp;the number of N and O atoms must be 8 or less;
+    c)&nbsp;the molecular weight must be 450 or less;
+    d)&nbsp;the logP must be in the range [-3.5,4.5], inclusive;
+    e)&nbsp;the number of rings of size three through eight must be 4 or less;
+    and,
+    f)&nbsp;the number of rotatable bonds (as defined by Oprea) must be 10 or
+    less.
+    <p>
+    <dt><a name="fraglike"></a><tt>-fraglike</tt>
+    <dd>
+    The molecule must satisfy Astex's test for fragment likeness
+    [Congreve&nbsp;2003].
+    Briefly, the Astex fraglike test is that a molecule can have at most one
+    violation of the following conditions:
+    a)&nbsp;the molecular weight must be less than 300;
+    b)&nbsp;the number of hydrogen bond donors must be less than or equal to 3;
+    c)&nbsp;the number of hydrogen bond acceptors must be less than or equal
+    to 3;
+    d)&nbsp;the logP must be less than or equal to 3.
+    <p>
+    <dt><tt>-nonreactive</tt>
+    <dd>
+    The molecule must not contain groups in a conservative list of
+    reactive groups: acrylamide, acyclic diketyl, acyl halide, aldehyde,
+    aliphatic imine, aliphatic ketone, aliphatic nitro, aliphatic (thio)ester,
+    alkyl halide, anhydride, azide, aziridine, beta-heterounsubstituted
+    carbonyl, epoxide, halopyrimidine, hetero-allyl, iso(thio)cyanate,
+    maleimide, michael acceptor, perhalo ketone, phosphonate ester,
+    phospho-, sulfonate ester, thiol, thio(urea), O-O/N-N/O-S/O-N single
+    bonds, and transition metal.
+    <p>
+    <dt><tt>-smallring</tt>
+    <dd>
+    The molecule must not contain a ring of size 9 or larger.
+    <p>
+    <dt><tt>-V2000</tt>
+    <dd>
+    The molecule data format must be MDL's V2000; other formats (such as
+    V3000) are not written to the output.
+    <p>
+    <dt><tt>-V3000</tt>
+    <dd>
+    The molecule data format must be MDL's V3000; other formats (such as
+    V2000) are not written to the output.
+</dl>
+</blockquote>
+
+<p>
+<tt>sdfilter</tt>
+also supports <a name="DescriptorFilters">descriptor filters</a>
+that allow the user to specify one or more conditions that
+must be satisfied:
+<blockquote>
+<dl>
+    <dt><tt>-expr</tt> <i>filter</i>
+    <dd>
+The molecule data must satisfy the criteria enumerated in
+the specified expression.  The filter criteria are expressed
+as a series of descriptor names or SMARTS expressions along
+with associated conditions to be satisfied.
+Any MOE QuaSAR descriptor can be used, and
+the condition to be satisfied can be a range of values, a boolean value,
+numeric comparisons, etc.
+Molecules whose properties fall outside the specified range(s)
+will be discarded.
+
+<p>
+<i>filter</i> can be a file,
+specified as @<i>filename</i>, in which case the contents of the
+file are used as the descriptor filter.
+Note that if the filename contains spaces
+or other non-alphanumeric characters, it
+must be enclosed in double quotes.  Files can be nested, i.e. within
+the contents of a file there can be another
+<span class="nobr"><tt>-expr @</tt><i>filename</i></span>
+specified.
+</p>
+
+<p>
+Here are some examples of descriptor filters:
+</p>
+
+<p>
+<table class="titlebar">
+<tr>
+<th>Expression</th>
+<th>&nbsp;</th>
+<th>Meaning</th>
+</tr><tr>
+<td><tt>Weight[100,500]  SlogP<5</tt></td><td>&nbsp;</td>
+<td>Molecular weight &ge; 100 and &le; 500 and SlogP &lt; 5.</td>
+</tr><tr>
+<td><tt>!reactive 'b_1rotN'<4</tt></td><td>&nbsp;</td>
+<td>Not reactive and less than 4 rotatable single bonds.<br />
+(<b>Note:</b> Descriptor codes containing digits must be quoted.)</td>
+</tr><tr>
+<td><tt>"[NX3](=[OX1])[OX1]"<=2  not "[#M]"</td><td>&nbsp;</td>
+<td>Two or fewer nitro/nitrate groups and not metal atom.
+<b>Note:</b> SMARTS expressions must be enclosed in double quotes.
+</td>
+</tr><tr>
+<td><tt>@filter.txt TPSA>80</td><td>&nbsp;</td>
+<td>Apply the contents of <tt>filter.txt</tt> and TPSA &gt 80.</td>
+</tr>
+</table>
+</p>
+
+<dl>
+</blockquote>
+
+<p>
+<b>Argument Processing</b>.  The input arguments to <tt>sdfilter</tt> are
+processed in left-to-right order.  An argument that starts with a dash
+<span class="nobr">("-")</span> is
+taken as an option specification.  An argument of the form
+<span class="nobr">@<i>filename</i></span> specifies that the contents of
+<i>filename</i> are read and inserted
+into the argument stream for further argument processing (which is useful to
+avoid long command lines or to record commonly used arguments and files).
+Any other argument form is taken to be an input file.<br /><br />
+<b>Note:</b> the
+@<i>filename</i> can only appear where an option or filename would normally
+be processed and cannot be used as the second argument to an option
+(e.g. <span class="nobr"><tt>-o</tt>&nbsp;@<i>filename</i></span>
+specifies <span class="nobr">@<i>filename</i></span> as
+the actual output file).
+<p>
+The input files are processed in left-to-right order.
+Input files containing "*" or "?" are
+interpreted as filename patterns and each will be substituted with all
+filenames that match the given pattern; for example, <tt>*.sdf</tt> will
+be substituted with all filenames in the current directory that have a
+<tt>.sdf</tt> suffix.
+The input file
+<span class="nobr">"-"</span>
+is interpreted as <tt>stdin</tt> (for use with pipes).  If there are no
+explicit input files, <tt>stdin</tt> is used as the single input file.
+
+<p>
+<b>Example</b>.
+A common use of <tt>sdfilter</tt> is to filter out compounds from an
+SD file that are not leadlike (by some definition).  The following
+<tt>sdfilter</tt> command can be used to apply a reasonable leadlike
+filter to an SD file <tt>catalog.sdf</tt> and produce an
+SD file <tt>leadlike.sdf</tt>
+
+<blockquote><tt>
+sdfilter @leadfilter catalog.sdf -o leadlike.sdf
+</tt></blockquote>
+
+<p>
+where the file <tt>leadfilter</tt> contains rules to exclude compounds
+that fail Oprea's leadlike test or contain reactive groups, too many
+chiral centers, too large a ring, too many racemic centers,
+3 or more -CF<sub>2</sub> groups in a chain,
+5 or more -CH<sub>2</sub> groups in a chain,
+sulfates, nitrates,
+7 or more fluorines,
+4 or more halogens (other than fluorine),
+or 2 or more nitro groups:
+
+<blockquote><tt>
+	-leadlike<br />
+	-nonreactive<br />
+	-smallring<br />
+	-expr 'chiral<=4 chiral_u<=3'<br />
+	-expr '"[CX4Q4](F)(F)[CX4Q4](F)(F)[CX4Q4](F)(F)"<=0'<br />
+	-expr '"[CX4Q2]!@[CX4Q2]!@[CX4Q2]!@[CX4Q2]!@[CX4Q2]"<=0'<br />
+	-expr '"[OX2Q2][SX4]([OX1])([OX1])O"<=0'<br />
+	-expr '"[OX2Q2][N+Q3](=[OX1])[OX1]"<=0'<br />
+	-expr '"F"<=6 "[#G7!F]"<=3 "[N+](=[OX1])[OX1]"<=1'
+</tt></blockquote>
+
+As the <tt>-sdf</tt> option is omitted, <tt>leadlike.sdf</tt> will be
+written as an MDL V2000 SD file.
+
+<h2>References</h2>
+
+<p>
+<table cellpadding="5">
+<tr>
+<td>[Lipinski&nbsp;1997]
+<td>
+Lipinski, C. A., <i>et al.</i>;
+Experimental and Computational Approaches to Estimate Solubility
+and Permeability in Drug Discovery and Development Settings.
+<i>Adv. Drug Deliv. Rev. 23</i> (<b>1997</b>) 3-25.
+<tr>
+<td>[Oprea&nbsp;2000]
+<td>Oprea, T. I.;
+Property Distribution of Drug-Related Chemical Databases.
+<i>J. Comp. Aid. Mol. Des. 14</i> (<b>2000</b>) 251-264.
+<tr>
+<td>[Congreve&nbsp;2003]
+<td>Congreve, M., Carr, R., Murray, C. & Jhoti, H. A;
+A 'rule of three' for fragment-based lead discovery?
+<i>Drug Discov. Today 8</i> (<b>2003</b>) 876-877.
+</table>
+
+<h2>See Also</h2>
+
+<a class="svl" href="sddesc.htm">sddesc</a><br />
+<a class="svl" href="sdfrag.htm">sdfrag</a><br />
+<a class="svl" href="sdsort.htm">sdsort</a><br />
+<a class="svl" href="sdstereo.htm">sdstereo</a><br />
+<a class="svl" href="sdwash.htm">sdwash</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

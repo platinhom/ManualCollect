@@ -1,0 +1,361 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	/appendix/qcrsel.htm
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+
+<meta panel QuaSAR-Reagent>
+<title>QuaSAR-Reagent</title>
+</head>
+<body>
+<div id="useMathJax"></div>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Theory">Theory and Formulation</a>
+<li><a href="#Run">Running QuaSAR-Reagent</a>
+<li><a href="#Output">QuaSAR-Reagent Output</a>
+</ul>
+
+<p>
+
+The QuaSAR-Reagent application is used to estimate the activity of R-groups
+and <i>scaffold</i> (also called <i>central</i>) 
+molecules in a virtual combinatorial
+library.  By assigning an activity score to each such building block, a
+pure combinatorial design can be achieved by using this activity information
+first to cluster the <span class="nobr">R-groups</span> and 
+scaffold molecules and then to select the
+best candidates.  The virtual library is constructed by functionalizing
+scaffold molecules.  QuaSAR-Reagent estimates the activity information
+by statistical sampling of the "chemical space" spanned by all possible
+R-group/scaffold substitutions.
+
+</p>
+
+
+<a name="Theory"></a>
+<h2>Theory and Formulation</h2>
+
+<p>
+QuaSAR-Reagent is able to search diverse subsets from extremely large
+virtual libraries for one simple reason: <i>the virtual library is never
+enumerated</i>.  In conventional techniques, one first enumerates the
+library by forming all combinations of scaffolds and R-groups followed
+by activity evaluation.  QuaSAR-Reagent uses sampling techniques for
+each of the sub-calculations thereby avoiding the enumeration.
+
+<p>
+The Basic Sampling Operation is used to select a random member of the
+virtual library spanned by the scaffold and <span class="nobr">R-group</span>
+databases.  
+The Basic Sampling Operation proceeds as follows:
+
+<ol>
+<li>Randomly select a scaffold molecule.
+<li>Randomly select R-group molecules.
+<li>Construct the product.
+<li>Test against Rule of Five Filter; i.e. if any of Molecular Weight,
+LogP, Number of donors+acceptors, Number of rotatable bonds falls outside
+pre-set limits then return to step 1 (a maximum of 1000 times).
+</ol>
+
+<p>
+Imagine counting the number of times that a given R-group or scaffold
+group molecule <i>m</i> appears in a biologically active compound.  We
+can express this count as:
+
+<span class='LaTeX'>
+\begin{align}
+A\left( m \right) = \sum_{k} \delta \left( \textrm{k is active} \right)
+    \delta \left( m \in k \right)
+\end{align}
+</span>
+
+<P>
+where the sum extends over all compounds <I>k</I> in the virtual library.  The
+assessment of activity used is a Binary QSAR model, which outputs
+the probability that a compound is active.  We therefore can replace the
+activity assessment with a softer (probabilistic) one:
+
+<span class='LaTeX'>
+\begin{align}
+A\left( m \right) = \sum_{k} \textrm{Pr} \left( \textrm{k is active} \right)
+    \delta \left( m \in k \right)
+\end{align}
+</span>
+
+<P>
+To avoid enumerating the library, we replace the summation with a Monte Carlo
+integration as follows.  We assume a uniform sampling of the virtual library
+and sample <I>p</I> molecules.  This gives:</P>
+
+<span class='LaTeX'>
+\begin{align}
+A\left( m \right) \approx
+    \frac{1}{p} \sum_{i=1}^{p} \textrm{Pr} \left( X_{i} \textrm{ is active} \right)
+    \delta \left( m \in X_{i} \right) \frac{1}{1 / V}
+\end{align}
+</span>
+
+<P>
+where <I>V</I> is the number of compounds in the virtual library 
+and <i>X<sub>i</sub></i> is 
+the <i>i</i><sup>th</sup> of <i>p</i> sampled molecules.  To avoid
+explicit use of the number of compounds in the virtual library, we can
+normalize the count by dividing by the total number of active compounds in
+the virtual library:</P>
+
+<span class='LaTeX'>
+\begin{align}
+P\left( m \right)
+    =
+    \frac{
+        \frac{1}{p} \sum_{i=1}^{p}
+            \textrm{Pr}\left( X_{i} \textrm{ is active} \right)
+            \delta \left( m \in X_{i} \right)
+            \frac{1}{1 / V}
+    }{
+        \frac{1}{p} \sum_{i=1}^{p}
+            \textrm{Pr}\left( X_{i} \textrm{ is active} \right)
+            \frac{1}{1 / V}
+    }
+    =
+    \frac{
+        \sum_{i=1}^{p}
+            \textrm{Pr}\left( X_{i} \textrm{ is active} \right)
+            \delta \left( m \in \bar{X}_{i} \right)
+    }{
+        \sum_{i=1}^{p}
+        \textrm{Pr}\left( X_{i} \textrm{ is active} \right)
+    }
+\end{align}
+</span>
+
+<P>
+This approximate value to <I>P</I>(<I>m</I>) is what is written as output
+for each source database R-group or central group.
+
+<a name="Run"></a>
+<h2>Running QuaSAR-Reagent</h2>
+
+<p>
+
+To open the QuaSAR-Reagent panel choose
+<span class="menu">MOE | Compute | QuaSAR | QuaSAR-Reagent</span>
+in the MOE Window.
+The panel is operated in the style of a "Wizard"; that is, a sequence
+of pages that specify the parameters to the calculation.  The <b>Next</b> and
+<b>Previous</b> buttons are used to move between the pages. The <b>Start</b>
+button becomes available on the last page and is used to start the calculation.
+The <b>Cancel</b> button can be used at any time to terminate the calculation.
+
+<p>
+<b>Page 1: Virtual Library Definition</b>.  The first page contains fields
+used to specify the virtual library:
+
+<p>
+<center><img src="qcrsel/reagent.png" alt="Reagent Library"></center>
+
+<p>
+
+The filenames of the databases used in a QuaSAR-Reagent run are shown on this
+page, and can be specified using the <b>Define and Edit Connections</b> button. 
+QuaSAR-Reagent generates new compounds by randomly functionalizing scaffold
+molecules from the <b>Scaffold</b> database with R-groups from databases
+specified in the <b>Connections</b>.  Functionalizations occur between terminal
+atoms named "Ax" (where x is an integer from 0 to 9) on the scaffold molecules
+and terminal atoms named "A0" ("A" zero) on the R-groups. The overall
+functionalization "reaction" is:
+
+</p>
+
+<center> Scaffold-Ax + A0-R  ->  Scaffold-R ;   x = 0 to 9</center>
+
+<p>
+In bidentate connections, a second connection is made from the scaffold
+to a terminal atom named "A1" in an R-group.  Connections are specified by 
+pressing the <b>Define and Edit Connections</b> button.
+
+<p>
+Scaffold structures are created by renaming the atoms at the desired
+points of substitution with the tokens A0 to A9. Each scaffold molecule must
+contain at least one atom named "Ax" to be recognized as a valid scaffold
+by QuaSAR-Reagent.  Symmetric substitutions are achieved by giving
+multiple atoms the same name.  Bidentate substitutions are also supported,
+as are substitutions through higher-order bonds.  Bidentate connections
+are specified when defining or editing a connection in the
+<b>Edit Connections</b> panel.
+Naming non-terminal atoms "Ax" can result in errors and unreasonable
+structures.
+
+</p>
+
+<p>
+R-groups are created by renaming the atom at the desired point of
+substitution with "A0". R-groups must contain one and only one "A0" atom to
+be correctly recognized by QuaSAR-Reagent. R-groups may also contain a
+terminal atom labeled A1, in which case the group can be used in a bidentate
+connection.  If the group has other atoms labeled "Ax" (x is not 0 or 1),
+then these can be used as substitution points in subsequent invocations
+of QuaSAR-CombiDesign.  In this way you can set up a multi-step "reaction".
+You may label a multiply-bonded atom with "A0" or "A1", in which case the
+substitution will be made through a higher-order bond.  Naming non-terminal
+atoms "A0" will result in errors and unreasonable structures.
+
+</p>
+
+<p>
+For more information about scaffolds, R-groups, and specifying
+connections, please
+see the chapter on <a href="cdgen.htm">QuaSAR-CombiGen</a>.
+
+<p>
+
+The filenames of the output databases are also specified in this first
+page.  The output database for the scaffold molecules is specified in
+the <b>Scaffold Output Database</b> text field.  The names of the R-group
+output databases will be the same as the R-group source databases,
+prefixed by the <b>R-Group Name Prefix</b>.
+
+<p>
+<b>Page 2: Rule of Five Filter</b>.  Virtual Library compounds are constructed
+by randomly choosing a scaffold molecule and functionalizing it with random
+R-groups.  The Rule of Five Page is used to reject virtual library members
+with a collection of filters:
+
+<p>
+<center><img src="qcrsel/pg_rule.png" alt="Rule of 5"></center>
+
+<p>
+A constructed virtual library member will only be used if its Molecular
+Weight, LogP (octanol/water), number of donors + acceptors and number
+of rotatable
+bonds fall between the limits specified in the Rule of Five Filter page.
+If any one of the tests fail then the constructed molecule is rejected
+and another is randomly chosen.
+
+<p>
+<b>Page 3: Model</b>.  The biological activity of sampled virtual
+library molecules are evaluated with a model.  The model can be of
+various types: <a href="../quasar/model.htm">linear and binary QSAR</a>,
+<a href="../apps/ph4_guide.htm">pharmacophore</a>,
+<a href="../mdb/fpmodel.htm">fingerprint</a>,
+and <a href="../quasar/modcomp.htm">composite (MOE model)</a>.
+
+<p>
+<center><img src="qcrsel/pg_model.png" alt="Model"></center>
+
+<p> The Model page allows for the specification of the model and the duration
+of the calculation.  An optional reference database can also be specified.
+This reference database must contain compounds and activity data.
+The specified model is evaluated over the database, and, from the model
+accuracy, coefficients C<sub>0</sub> and C<sub>1</sub>, used to weight
+subsequent model predictions, are calculated.  The weighted predictions
+and not the original values are then used by QuaSAR-Reagent
+calculations as follows:
+
+<span class='LaTeX'>
+\begin{align}
+p_{reagent} = C_{0} + C_{1} * p_{model}
+\end{align}
+</span>
+
+<p>
+A previously saved model filename must be entered in the
+<b>Model File</b> text field.  The
+<b>Iterations</b> count controls the number of samples used in the
+calculation.  If <i>k</i> is entered for <b>Iterations</b>, then the number
+of iterations is <i>km</i> where <i>m</i> is the number of molecules
+in the largest source database.
+
+<p>The optional reference database is specified in the <b>Reference</b>
+text field.  Generally, this database must contain molecular data.
+The database must also contain a numeric <b>Activity Field</b>.
+At least one of the <b>Lower Threshold</b> and <b>Upper Threshold</b>
+must be specified.  Checkboxes are used to enable or disable the
+use of the individual thresholds.
+The thresholds are applied to the activity data to determine which
+entries in the reference database are to be deemed active.  If the
+lower threshold is specified, an entry will be considered active only if
+its activity value is greater than or equal to the threshold value.
+If the upper threshold is specified, the entry will be considered active
+only if its activity value is less than the threshold value.
+If both thresholds are specified, the entry is considered active only
+if its activity value satisfies both upper and lower threshold requirements.
+
+<p>
+<b>Page 4: Start Simulation</b>.  This is the final page of QuaSAR-Reagent.
+The <b>Start</b> button must be pressed to begin the calculation.
+
+<p>If MOE/cluster (MOE/smp) is enabled, the calculation will be distributed over
+the available host machines.
+
+
+<a name="Output"></a>
+<h2>QuaSAR-Reagent Output</h2>
+
+<p>
+
+QuaSAR-Reagent outputs to both the CLI and to the output database.  CLI
+output echoes the process which QuaSAR-Reagent is currently performing, and
+can be used to monitor the progress of the calculation.  The QuaSAR-Reagent
+run options are first output as a tagged vector, followed by a summary of
+the Scaffold and R-group databases.  At the end of the run, the names of
+the output databases are echoed, and an estimate is given of the number
+of actives present in the virtual combinatorial library.
+
+<p>
+
+The database output consists of a copy of each input database used in
+the calculation along with a new field in each one with the name '$ACT'.
+This field contains an estimate of the proportion of active compounds
+in the entire virtual library that contain the corresponding component.
+That is, the '$ACT' field numbers will sum to 1 in any given database,
+with higher numbers indicating that a higher proportion of active compounds
+contain that R-group or scaffold group.
+
+<h2>See Also</h2>
+
+<a href="../quasar/qsar.htm">QuaSAR Overview</a><br>
+<a href="../quasar/modcomp.htm">Model-Composer</a><br>
+<a href="../quasar/modcomp.htm">Model-Evaluate</a><br>
+<a href="cdgen.htm">QuaSAR-CombiGen</a><br>
+<a href="../apps/combitools.htm">Combinatorial Library</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+

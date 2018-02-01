@@ -1,0 +1,1944 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	/moe/prep3ddb.htm	Prepare a 3D Database
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+
+<title>Preparing a Conformation Database</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<blockquote>
+<i>This chapter is concerned with the preparation of 3D structure
+databases of small molecules (ligands) stored as SD files.
+For information about preparing protein data, please refer to the chapter on
+<a href="../apps/structprep.htm">Preparing Protein
+and Protein Complex Data</a>.
+For information about preparing a modest-sized database of
+small molecules, please refer to the chapter on
+<a href="moldb_prep.htm">Preparing a Small Molecule Dataset</a>.
+</i>
+</blockquote>
+
+<ul>
+<li><a href="#Introduction">Introduction</a>
+    <ul>
+    <li><a href="#Parallel_Processing">Parallel Processing</a>
+    </li>
+    </ul>
+</li><li><a href="#SD_Tools">SD Tools</a>
+</li><li><a href="#Pre-Processing">Pre-Processing</a>
+    <ul>
+    <li><a href="#Clean_the_Data">Clean the Data</a></li>
+    <li><a href="#Tautomers">Enumerate Tautomers and Protonation States</a></li>
+    <li><a href="#Filter">Filter
+	Tautomers and Produce Leadlike Structures</a></li>
+    <li><a href="#Stereo">Enumerate Stereoisomers</a></li>
+    <li><a href="#Pipelining">Pipelining</a></li>
+    </ul>
+</li><li><a href="#Generating_Conformations">Generating Conformations</a>
+    <ul>
+    <li><a href="#Using_MOE_Conformation_Import">
+	Using MOE Conformation Import</a></li>
+    <li><a href="#Using_Omega">Using Omega</a></li>
+    </ul>
+</li><li><a href="#Post-Processing">Post-Processing</a>
+</li><li><a href="#See_Also">See Also</a>
+<!--
+<li><a href="#Appendix">Appendix: Working with Other File Formats</a></li>
+-->
+</ul>
+
+<a name="Introduction"></a>
+<h2>Introduction</h2>
+
+<p>The purpose of 3D data preparation is to 
+render raw 3D ligand input data that may contain errors,
+missing annotations, and possibly other omissions,
+into a form that is ready for computational experimentation.
+Typical operations include enumeration of
+tautomers and protonation states, standardization of
+molecular structure (e.g. with respect to bonding
+patterns), and, in many cases, conformational analysis.
+An important component of data preparation is filtering
+unwanted compounds &ndash; judicious
+filtering at the appropriate moment can significantly reduce
+running time by shrinking the number of molecules
+to process.  Equally important, it can
+eliminate undesirable or even chemically impossible molecules,
+thus serving to unclutter the data.
+</p>
+
+<p>3D structure databases contain atomic coordinate data and are used
+to store both complete molecules and molecular fragments; in the
+latter case, the database is often referred to as a <i>fragment database</i>.
+All 3D structure databases are prepared in essentially the same way,
+with perhaps only minor differences in parameter settings between
+whole molecules and fragments.
+Downstream MOE applications do not differentiate between fragments and
+whole molecules; for example, Pharmacophore Search
+takes as input any 3D structure database.
+</p>
+
+<p>
+The raw input data used to generate a 3D structure database
+typically originates from Molecular Design Ltd. (MDL)
+Structure Data (SD) files,
+a popular ASCII (text) format for storing moderately large numbers of
+small molecules (ligands) along with associated data fields.
+The data source can also be
+a text file of <a href="molsystems/smiles.htm">SMILES</a>
+strings or a <a href="../mdb/db.htm">MOE database</a>.
+This document describes how to prepare SDF input data using
+MOE's SD tools.  The SD tools can be run in batch mode
+and in parallel to maximize efficient use of resources.
+</p>
+
+A typical SD data preparation workflow using MOE is as follows:
+</p>
+
+<p>
+<ol>
+
+<p><li>
+<i>Eliminate uninterpretable records.</i>
+The first stage of preparing SD data eliminates illegal
+or unrecognized molecules.
+Abbreviations are translated and molecules with unrecognized atoms
+or formats are rejected.
+Molecules may also be screened to remove transition metals
+or atoms with too many bonds.
+</li></p>
+
+<p><li><i>Enumerate tautomers and stereoisomers.</i>
+In the next stage, the molecules, which are now
+assumed to be correct and of standard form, can be enumerated
+for tautomeric, protomeric, and stereochemical states,
+and filtered in preparation for fragmentation or conformation generation.
+</li></p>
+
+<p><li><i>Perform fragmentation, if required.</i>
+If fragment databases are the goal, then the molecules are
+fragmented, possibly with a variety of fragmentation algorithms.
+For a detailed example of how to prepare a fragment database,
+please refer to the
+<a href="../tutorials/sdfrag_tut.htm">Small Molecule Fragmentation
+Using SD Tools Tutorial</a>.
+</li></p>
+
+<p><li><i>Generate conformations.</i>
+Conformational search is performed using MOE's fast conformation
+generator,
+<a href="../apps/confgui.htm">Conformation Import</a>.
+Typical operations on 3D structure databases include
+3D searching (<a href="../apps/ph4_guide.htm">Pharmacophore Search</a>)
+and <a href="../apps/docking.htm">docking</a>, both of which
+require conformations.
+Although MOE's Pharmacophore Search and
+Dock applications can generate conformations automatically,
+explicit conformation generation in the data preparation
+stage has the benefit of better control over which
+conformers are produced.
+</li></p>
+
+<p><li><i>Filter conformations.</i>
+It may be desirable or necessary to further filter the generated
+conformations, possibly with a variety of filtering techniques.
+</li></p>
+
+</ol>
+</p>
+
+<p>
+<span class="tip">Note:</span>
+The SD file format is primarily intended for small molecules.
+Note that residue and chain information is not encoded in SD files.
+</p>
+
+<a name="Parallel_Processing"></a>
+<h3>Parallel Processing</h3>
+
+<p>The raw input data may originate from a variety sources,
+including proprietary corporate databases and commercially
+available drug catalogs, some of which may be very large,
+possibly comprising millions of compounds.
+To reduce computation time, the input can be processed in parallel
+on a cluster, either by partitioning the input explicitly into
+pieces, or by dint of pipes.
+</p>
+
+<!-- !!! Partitioning !!! -->
+
+<p>There are two straightforward ways in which data preparation
+can be run in parallel on a cluster of machines:
+</p>
+
+<p>
+<ul>
+
+<p>
+<li>Use <i>pipes</i>.  These are buffers that can be written
+to by one process and read from by another asynchronously.  Because
+they are managed by the computer operating system, pipes are
+simple to use.  Processing, however, is limited to the CPUs on one computer.
+On the shell command line, under both Unix and
+Windows, the symbol for a pipe is the vertical bar &quot;<b>|</b>&quot;
+and represents linking the output of one process to the input of the next.
+The operation of chaining
+several processes together using pipes is called <i>pipelining</i>.
+</li>
+</p>
+
+<p>
+<li>
+Partition the data into chunks and process each separately.
+In this mode, the chunks are processed on different machines which
+run in parallel.
+On each machine, a chunk can itself be processed in parallel using
+the pipelining technique described above.
+</li>
+</p>
+</ul>
+</p>
+
+<p>
+<b>Token use.</b>
+<a href="../install/install.htm#RunBatch">MOE/batch</a> consumes
+one license token (graphical MOE consumes three).
+When using pipes, the number of tokens in use
+will be equal to or less than the number of processes pipelined together
+(a computational bottleneck may delay the onset of downstream
+processes, for example, resulting in fewer processes running concurrently).
+When using partitioned data, the number
+of tokens is equal to the number of machines being used, multiplied
+by the number of processes on each machine.
+</p>
+
+<p>The Conformation Import application is configured for
+distributed (parallel) processing.  Thus, if MOE or MOE/batch is run with
+<a href="hellomoe.htm#Multi-Processor">multi-processor mode</a> enabled,
+i.e. if <tt>moe</tt> or <tt>moebatch</tt> was invoked with the
+<a class="svl" href="../install/install.htm#-mpu">-mpu</a>
+command-line switch, Conformation Import will automatically
+distribute its workload among the computers of the designated
+cluster.  More on this topic will be given
+below in the section on
+<a href="#Using_MOE_Conformation_Import">Using MOE Conformation Import</a>.
+</p>
+
+<a name="SD_Tools"></a>
+<h2>SD Tools</h2>
+
+<p>
+MOE's
+<a href="../apps/sdtools.htm">SD tools</a>
+are intended for use in batch mode, either
+in <a href="../install/install.htm#RunBatch">MOE/batch</a>
+or directly at the system shell command line (in which case
+MOE/batch is invoked automatically).
+For example, <tt>sdfrag</tt>
+can be run using the following commands
+(assuming the command shell <tt>cmd.exe</tt>
+is being used to process commands on Windows):
+</p>
+
+<blockquote>
+    <tt>unix&nbsp;%&nbsp;$MOE/bin/sdfrag</tt>
+    <b>{</b> <i>option</i> | <i>inputfilename</i> | @<i>filename</i> <b>}*</b>
+    <br />
+    <br />
+
+    <tt>C:\&gt;&nbsp;%MOE%\bin\sdfrag</tt>
+    <b>{</b> <i>option</i> | <i>inputfilename</i> | @<i>filename</i> <b>}*</b>
+</blockquote>
+
+<p>These commands assume that the shell
+<a href="../install/install.htm#RunEnv">environment variable</a>
+<tt>MOE</tt> has been set.  For explicit instructions about setting
+this environment variable, please refer to the 
+<a href="../tutorials/sdfrag_tut.htm#Preparing_Environment">Small
+Molecule Fragmentation Using SD Tools Tutorial</a>.
+</p>
+
+<h4>Summary of SD Tools</h4>
+
+<p>MOE's SD tools
+all operate by reading and concatenating the input files,
+performing the calculations, then writing output records
+to an output SD file.
+</p>
+
+<ul>
+<p><li><a class="svl" href="fcnref/sdwash.htm">sdwash</a>.
+Provides a variety of washing options including
+removal of extraneous salts, enumeration of
+tautomeric and protonation states, saving of a SMILES
+representation, and adjustment of hydrogen atoms.
+This tool provides functionality similar to the database
+<a href="../mdb/wash.htm">Wash</a> application.
+
+</li></p><p><li><a class="svl" href="fcnref/sdfilter.htm">sdfilter</a>.
+Applies a series of filters to each input molecule, including:
+
+<p>
+    <ul>
+    <li>Range filters, applied to molecular descriptors that are
+    calculated automatically and/or to data fields included in the input file;
+    </li><li>Lipinski's druglikeness test;
+    </li><li>Oprea's leadlikeness test;
+    </li><li>reactivity test.
+    </li>
+    </ul>
+</p>
+
+<p>
+Molecules that pass the filter tests are written to the output.
+</p>
+
+</li>
+</ul>
+
+<p>
+Typically, <tt>sdwash</tt> and <tt>sdfilter</tt> are
+applied prior to using the following SD tools.  <tt>sdfilter</tt>
+is usually applied first to eliminate illegal records.  Then,
+<tt>sdwash</tt> is applied to generate tautomers and
+ionization states, followed by 
+<tt>sdfilter</tt> again, which is now used to eliminate large or inorganic
+or non-druglike structures.
+</p>
+
+<ul>
+<p><li><a class="svl" href="fcnref/sdfrag.htm">sdfrag</a>.
+Generates a fragment database from the input molecules.  This is
+useful for applications such as scaffold replacement.
+The input molecules can be fragmented using different
+methodologies, for example,
+<a href="../apps/recap.htm">RECAP</a> bond breaking or
+Schuffenhauer hierarchical decomposition.
+
+</li></p><p><li><a class="svl" href="fcnref/sdsort.htm">sdsort</a>.
+Sorts the contents of the input files, possibly removing duplicate
+records and merging related data fields.
+Molecules can be compared based on ZQH priority, SMILES
+string representation, tautomer state, and the value of
+specified data fields.
+
+</li></p><p><li><a class="svl" href="fcnref/sdstereo.htm">sdstereo</a>.
+Enumerates missing atom and bond stereochemistry assignments for
+each input molecule.  
+The input molecules can be provided as either SD files or
+ASCII files containing SMILES strings.
+These annotations are needed for
+certain 3D conformation generators.  Note, however, that
+MOE's
+<a href="../apps/confgui.htm">Conformation Import</a></span>
+and
+<a href="../apps/confsrch.htm">Conformational Search</a>
+<i>do</i> enumerate unconstrained centers and therefore
+do not require <tt>sdstereo</tt> to be run prior to being called.
+
+</li></p><p><li><a class="svl" href="fcnref/sddesc.htm">sddesc</a>.
+Calculates molecular descriptors for each input molecule and
+writes the results to either an SD file or an ASCII file.
+
+</li></p>
+</ul>
+
+<h4>Argument Processing</h4>
+
+<p>
+The input arguments to the SD tools are
+processed in left-to-right order.  If an argument starts with a dash
+(&quot;-&quot;) and
+is of length greater than one, it (and possibly subsequent arguments) is taken
+as an option specification.  For example, the following command
+contains two option specifications: <tt>-strict</tt>, which
+rejects any molecule containing an unrecognized atom element,
+and <tt>-f</tt>, which specifies a file into which the rejected molecules
+are written.
+
+<pre>
+    sdwash -strict file.sdf -f rejects.sdf
+</pre>
+
+
+If an argument is of the form
+<a name="@filename">@<i>filename</i></a>,
+then the contents of the file named <i>filename</i>
+are read and inserted into the argument
+stream for further argument processing.
+This is useful for avoiding long command
+lines or to record commonly used arguments and files.
+For example (assuming Unix),
+
+<pre>
+    sdwash @$MOE/lib/sdabbrev.txt file.sdf
+</pre>
+
+reads arguments from the file <tt>sdabbrev.txt</tt> (distributed
+with MOE), which contains lines such as
+
+<pre>
+    ...
+    -abbrev Me=C
+    -abbrev CH3=C
+    -abbrev Et=CC
+    ...
+</pre>
+
+for translating abbreviations.
+The remaining arguments are taken to be input SD files.
+</p>
+
+<p>
+<b>Note:</b> The @<i>filename</i> argument can only appear
+where an option or filename would normally be processed and not as the
+argument to an option (e.g. <tt>-o</tt>&nbsp;@<i>filename</i> specifies
+&quot;@<i>filename</i>&quot; as the name of the output file).
+</p>
+
+<p>
+The input SD files are processed in left-to-right order.
+For example (assuming Unix),
+<pre>    sdfrag file1.sdf file2.sdf file3.sdf
+</pre>
+specifies three input files: "file1.sdf", "file2.sdf" and "file3.sdf" which
+will be processed in the order given.  Input files containing "*" or "?" are
+interpreted as filename patterns and each will be substituted with all
+filenames that match the given pattern; for example, <tt>*.sdf</tt> will be
+substituted with all filenames in the current directory that have a
+<tt>.sdf</tt> suffix.  <b>Note:</b> On Unix systems,
+double and single quotes are
+removed by the command shell.  On Windows systems, such quotes are removed by
+MOE.  In both systems, filename patterns entered in quotes will be substituted
+by MOE.
+</p>
+
+<p>
+The input file "-" is
+interpreted as <tt>stdin</tt> (for use with pipes).  For example, in the
+following, <tt>sdfilter</tt> takes the output of <tt>sdwash</tt> as its input:
+
+<pre>
+    sdwash file1.sdf file2.sdf | sdfilter -
+</pre>
+
+If there are no explicit
+input files then <tt>stdin</tt> is used as the single input file, so
+this command can equivalently be issued as:
+
+<pre>
+    sdwash file1.sdf file2.sdf | sdfilter
+</pre>
+
+<p>
+Each invocation of an SD tool is associated with
+its own MOE/batch process.  When piped together and executed on
+a multi-processor machine, the MOE/batch processes will be run in parallel.
+</p>
+
+<a name="Pre-Processing"></a>
+<h2>Pre-Processing</h2>
+
+<p>3D data preparation has been divided here into three main stages,
+a &quot;pre-processing&quot; stage antecedent to conformational
+analysis (or fragmentation analysis, not treated here),
+the conformational analysis step, and a &quot;post-processing&quot;
+stage in which the output conformations are filtered.
+</p>
+
+<p>This section assumes that the shell
+<a href="../install/install.htm#RunEnv">environment variable</a>
+<tt>MOE</tt> has been set.  For explicit instructions about setting
+this environment variable, please refer to the 
+<a href="../tutorials/sdfrag_tut.htm">Small Molecule Fragmentation Using
+SD Tools Tutorial</a>.
+</p>
+
+<a name="Clean_the_Data"></a>
+<h3>Clean the Data</h3>
+
+<p>The data cleaning steps include removing unreadable records (e.g.
+molecules with unrecognized
+abbreviations or atom elements), normalizing structures (e.g.
+using ionic representation for salts, conventional representation
+for ylides), and eliminating structures with elements outside of
+the common &quot;organic&quot; set.
+Note that successive calls to <tt>sdwash</tt> and <tt>sdfilter</tt>
+are made (instead of calling each only once) as certain operations
+should be performed in a particular order (e.g. disconnect salts
+before filtering molecules for organic elements).
+</p>
+
+<h4>Wash Input Structures</h4>
+
+<p><tt>sdwash</tt> is used to expand abbreviations and handle salts,
+bond conventions, and chirality markers. The
+&quot;<tt>\</tt>&quot; (backslash) is the line continuation character on Unix,
+&quot;<tt>^</tt>&quot; (caret) on Windows.
+</p>
+
+<p>
+<span class="tip">Tip</span> To cut and paste the following example,
+omit the prompt (i.e. do not include <tt>unix %</tt> or <tt>C:\&gt;</tt>).
+On Windows, do each line separately, omitting all leading blank space.
+</p>
+
+<pre>
+    <span class="nobr">unix % $MOE/bin/sdwash <i>raw_data</i>.sdf @$MOE/lib/sdabbrev.txt -strict \</span>
+	<span class="nobr">-compfield lost_frag -ylide -chiral -wedge -f wash_fail.sdf -o wash_pass.sdf</span>
+
+    <span class="nobr">C:\&gt;  %MOE%\bin\sdwash <i>raw_data</i>.sdf @%MOE%\lib\sdabbrev.txt -strict ^</span>
+	<span class="nobr">-compfield lost_frag -ylide -chiral -wedge -f wash_fail.sdf -o wash_pass.sdf</span>
+</pre>
+
+<p>Here is an explanation of the options:</p>
+
+<p><center>
+<table class="titlebar" width="90%">
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+<tr>
+<td><span class="nobr"><span class="switch">@$MOE/lib/sdabbrev.txt</span></span>
+<br \>
+<span class="nobr"><span class="switch">@%MOE%\lib\sdabbrev.txt</span></span>
+</td>
+<td>
+SD file format allows for representing
+common groups by abbreviations, e.g. <tt>Me</tt> for
+a methyl group or <tt>COOH</tt> for a carboxyl group.
+This option uses the
+<span class="switch">-abbrev</span> statements in the file
+<tt>sdabbrev.txt</tt> to expand abbreviations.
+Examples of statements that
+appear in <tt>sdabbrev.txt</tt> are:
+
+<pre>
+    -abbrev Me=C
+    -abbrev CH3=C
+    -abbrev Et=CC
+</pre>
+
+Abbreviations (e.g. <tt>Et</tt>) are translated into
+<a href="molsystems/smiles.htm">SMILES</a> strings (e.g. <tt>CC</tt>)
+which are, in turn, converted through 2D depiction, into molecular fragments
+that are appended to the SD molecule.
+<br />
+<br />
+Note: On Unix, when using the
+<span class="switch">-abbrev</span> option directly on
+the command line, it may be necessary to
+enclose the SMILES string in quotes (<tt>'</tt>) to avoid
+interpretation by the command shell.
+</td>
+</tr>
+
+<tr>
+<td><span class="switch">-strict</span></td>
+<td>Require a fully specified molecule, with all elements belonging
+to the periodic table.
+If the <tt>-abbrev</tt> option is being used, the
+<tt>-strict</tt> check is done after abbreviations have been translated,
+and will strip out any records still containing abbreviations (i.e.
+which were not recognized and so went untranslated).
+</td>
+</tr>
+<!--
+<tr>
+<td><tt>-salts</tt></td>
+<td>Disconnect common metal salts (convert to ionic notation).</td>
+</tr>
+-->
+<tr>
+<td><span class="switch">-compfield lost_frag</span></td>
+<td>Disconnect common metal salts (convert to ionic notation) and
+remove minor components (salts, miscellaneous adducts).
+The  eliminated fragments will be
+recorded as a SMILES string in the output file in a field
+called <tt>lost_frag</tt>.
+Note that use of the <span class="switch">-compfield</span>
+option automatically enables the
+<span class="switch">-component</span> option, which
+in turn implies the <span class="switch">-salts</span> option.
+</td>
+</tr>
+<tr>
+<td><span class="switch">-ylide</span></td>
+<td>Standardize ylide
+<span class="nobr">(C<sup>+</sup>&ndash;X<sup>&ndash;</sup>)</span>
+bonds, converting between
+double bond and charge-separated notations as necessary
+to obtain conventional representations.</td>
+</tr>
+<tr>
+<td><span class="switch">-chiral</span></td>
+<td>To mark atom-centered chirality, SD files use either a chiral
+parity flag (with values 0, 1, 2, and 3, where 0 means non-chiral),
+or a planar 2D layout with wedge bond annotations.
+This option forces a recalculation of the chiral parity flag when
+wedge bonds are present but the parity is 0; the wedge bonds are
+then considered to be the correct representation of the chirality,
+and the parity flag is set accordingly.
+</tr>
+<tr>
+<td><span class="switch">-wedge</span></td>
+<td>To mark atom-centered chirality, SD files use either a chiral
+parity flag (with values 0, 1, 2, and 3, where 0 means non-chiral),
+or a planar 2D layout with wedge bond annotations.
+When the parity flag is non-zero, it is considered to be correct
+and takes precedence over wedge bond annotations, if any.
+This option forces recalculation of wedge bonds when
+the chiral parity flag is non-zero and wedge bonds are present;
+wedge bonds are set in accordance with the parity flag.
+The purpose of this option is to ensure
+that no conflict exists between the parity flag and the wedge
+annotations.
+</td>
+</tr>
+</table>
+</center></p>
+
+<p>The input is the raw data file <tt><i>raw_data</i>.sdf</tt>.
+The rejected molecules are written to the file
+<tt>wash_fail.sdf</tt>; the washed molecules are written to
+the file <tt>wash_pass.sdf</tt>.
+</p>
+
+<p>Note: 
+The SD Tools were designed to take advantage of correctly
+formatted SDF V2000 structures.  V3000 records can be processed,
+but there may be some information loss.  To restrict the output
+to only V2000 records, the <tt>-V2000</tt> option can be
+added to the command line.
+</p>
+
+<a name="Filter_Undesirable_Structures"></a>
+<h4>Filter Undesirable Structures</h4>
+
+<p>The following will eliminate molecules containing non-organic elements
+or atoms with more than 4 bonds.
+The
+&quot;<tt>\</tt>&quot; (backslash) is the line continuation character on Unix,
+&quot;<tt>^</tt>&quot; (caret) on Windows.
+</p>
+
+<p>
+<span class="tip">Tip</span> To cut and paste the following example,
+omit the prompt (i.e. do not include <tt>unix %</tt> or <tt>C:\&gt;</tt>).
+On Windows, do each line separately, omitting all leading blank space.
+</p>
+
+<pre>
+    <span class="nobr">unix % $MOE/bin/sdfilter wash_pass.sdf -smarts '[#T]' 0 -smarts '[\!D0\!D1\!D2\!D3\!D4]' 0 \</span>
+	<span class="nobr">-elements C,H,N,O,S,P,F,Cl,Br,I -f bad_mols.sdf -o clean_mols.sdf</span>
+
+    <span class="nobr">C:\&gt; %MOE%\bin\sdfilter wash_pass.sdf -smarts [#T] 0 -smarts [!D0!D1!D2!D3!D4] 0 ^</span>
+	<span class="nobr">-elements C,H,N,O,S,P,F,Cl,Br,I -f bad_mols.sdf -o clean_mols.sdf</span>
+</pre>
+
+<p>Here is an explanation of the options:</p>
+
+<p><center>
+<table class="titlebar" width="90%">
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+<tr>
+<td><span class="switch">-smarts '[#T]' 0</span>
+<br /><span class="switch">-smarts [#T] 0</span>
+</td>
+<td>Filter out structures with transition metals.
+<br /><br />
+On Unix, quotation marks
+are used to prevent interpretation by the command shell.
+</td>
+</tr>
+<tr>
+<td><span class="switch">-smarts '[\!D0\!D1\!D2\!D3\!D4]' 0</span>
+<br /><span class="switch">-smarts [!D0!D1!D2!D3!D4] 0</span>
+</td>
+<td>Filter out structures with atoms containing more than 4 bonds.
+<br /><br />
+On Unix,
+quotation marks are used to avoid interpretation by the command shell;
+the <tt>!</tt> requires an extra escape character (<tt>\</tt>) to
+prevent interpretation.
+</td>
+</tr>
+<tr>
+<td><span class="switch">-elements C,H,N,O,S,P,F,Cl,Br,I</span></td>
+<td>Allow only molecules consisting of listed atoms.</td>
+</tr>
+</table>
+</center></p>
+
+<p>
+The input is the <tt>wash_pass.sdf</tt> file from the previous step.
+The output file is <tt>clean_mols.sdf</tt>.
+The eliminated molecules are written to the file <tt>bad_mols.sdf</tt>.
+</p>
+
+<a name="Tautomers"></a>
+<h3>Enumerate Tautomers and Protonation States</h3>
+
+<p>Hydrogen bonding interactions play a key role in molecular
+recognition and ligand binding.  Many ligands have multiple tautomers
+and multiple protonation states, with the energetically favored
+ones in the active site possibly being different from those in the
+unbound molecule.  For this reason, it is important to explore 
+the various tautomeric and protonation states.
+Tautomers are isomerized by migrating a single hydrogen atom along
+with some number of double bonds.  Functional groups containing
+polar hydrogens are enumerated by generating both the acid
+(protonated) and the conjugate base (deprotonated, charged) forms.
+The enumeration process is described in greater detail
+in <a href="../mdb/wash.htm">Database Wash</a>.
+Note: When chirally constrained atoms undergo tautomerization,
+racemic mixtures may result.
+</p>
+
+<pre>
+    <span class="nobr">unix % $MOE/bin/sdwash -protomers -depracids -protbases -enumsize 1000 clean_mols.sdf -o tautomers.sdf</span>
+
+    <span class="nobr">C:\&gt; %MOE%\bin\sdwash -protomers -depracids -protbases -enumsize 1000 clean_mols.sdf -o tautomers.sdf</span>
+</pre>
+
+<p>Here is an explanation of the options:</p>
+
+<p><center>
+<table class="titlebar" width="90%">
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+<!--
+<tr>
+<td><tt>-component</tt></td>
+<td>Keep only largest connected component.</td>
+</tr>
+-->
+<tr>
+<td><tt>-protomers</tt></td>
+<td>Enumerate tautomers and protomers.</td>
+</tr>
+<tr>
+<td><tt>-depracids</tt><br /><tt>-protbases</tt></td>
+<td>Deprotonate strong acids and protonate strong bases.
+When used in conjunction with <tt>-protomers</tt>, results in
+strong acids and bases being eliminated from the enumeration.
+</td>
+</tr>
+<tr>
+<td><tt>-enumsize&nbsp;1000</tt></td>
+<td>Specify the maximum number of tautomers and protomers to generate
+per molecule.  Using a large limit
+effectively results in enumeration of all protomeric states
+for most molecules.</td>
+</tr>
+
+</table>
+</center></p>
+
+<p>The input is the file <tt>clean_mols.sdf</tt> from the previous step.
+The output is written to <tt>tautomers.sdf</tt>.
+</p>
+
+<a name="Filter"></a>
+<h3>Filter Tautomers and Produce Leadlike Structures</h3>
+
+<p>The data set is filtered to eliminate overly large
+and non-leadlike molecules.
+In the following example, the
+&quot;<tt>\</tt>&quot; (backslash) is the line continuation character on Unix,
+&quot;<tt>^</tt>&quot; (caret) on Windows.
+</p>
+
+<p>
+<span class="tip">Tip</span> To cut and paste the following example,
+omit the prompt (i.e. do not include <tt>unix %</tt> or <tt>C:\&gt;</tt>).
+On Windows, do each line separately, omitting all leading blank space
+</p>
+
+
+<pre>
+    <span class="nobr">unix % $MOE/bin/sdfilter named_tautomers.sdf -leadlike -nonreactive -smallring -chiral 4- \</span>
+	<span class="nobr">-racemic 3- @smarts_filter.txt -f nonlead_mols.sdf -o good_mols.sdf</span>
+
+    <span class="nobr">C:\&gt; %MOE%\bin\sdfilter named_tautomers.sdf -leadlike -nonreactive -smallring -chiral 4- ^</span>
+	<span class="nobr">-racemic 3- @smarts_filter.txt -f nonlead_mols.sdf -o good_mols.sdf</span>
+</pre>
+
+<p>Here is an explanation of the options:</p>
+
+<p><center>
+<table class="titlebar" width="90%">
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+<tr>
+<td>
+<tt>-leadlike</tt></td>
+<td>
+Use
+<a href="fcnref/sdfilter.htm#leadlike">Oprea's<sup>1</sup>
+leadlikeness filter</a>.
+<!--
+Is lead-like (MW <450, #Donors <=5, #Acceptors <=8, LogP-3.54.5, #rotatable bonds <=10, #rings <=4).
+-->
+</td>
+</tr>
+<tr>
+<td><tt>-nonreactive</tt></td>
+<td>
+The molecule must not contain groups in a
+from a conservative list of reactive groups.
+The table of reactive groups is based on the Oprea set<sup>1</sup> and
+includes metals, phospho-, N/O/S-N/O/S single bonds, thiols, acyl halides,
+Michael Acceptors, azides, esters, etc.
+<!--
+See $MOE/lib/svl/quasar.svl/q_btop.svl for complete list.
+-->
+</td>
+</tr>
+<tr>
+<td><tt>-smallring</tt></td>
+<td>Rings must have fewer than 9 atoms.</td>
+</tr>
+<tr>
+<td><tt>-chiral 4-</tt></td>
+<td>Molecules may have a maximum of 4 chiral centers.</td>
+</tr>
+<tr>
+<td><tt>-racemic 3-</tt></td>
+<td>Molecules may have a maximum of 3 unconstrained chiral centers.</td>
+</tr>
+<tr>
+<td><tt>@smarts_filter.txt</tt></td>
+<td>Filter out undesirable molecules, tautomers, and ionization states
+using the <tt>-smarts</tt> statements
+in the file <tt>smarts_filter.txt</tt>.
+An example of a typical <tt>smarts_filter.txt</tt> file is
+as follows.  These would be the exact contents of the file:
+
+<pre>
+    -smarts [CX4Q4](F)(F)[CX4Q4](F)(F)[CX4Q4](F)(F) 0
+    -smarts [CX4Q2]!@[CX4Q2]!@[CX4Q2]!@[CX4Q2]!@[CX4Q2] 0
+    -smarts [OX2Q2][SX4]([OX1])([OX1])O 0
+    -smarts [OX2Q2][N+Q3](=[OX1])[OX1] 0
+    -smarts [N;!$(*~[#G6])]=[CX3][#G6] 0
+    -smarts [N+X3](=C[NX3])OC=O 0
+    -smarts [NX3](C=[N+X3])OC=O 0
+    -smarts F 6-
+    -smarts [#G7!F] 3-
+    -smarts [N+](=[OX1])[OX1] 1-
+    -smarts [#6+!$(C(N)(N))] 0
+    -smarts [#6-] 0
+    -smarts [O!i]!@-[N!$(*[i])] 0
+    -smarts [#6r6]1-*=*-*=*-*-1=* 0
+    -smarts [*r6]1-*=*-*=*-*-1=[*!#G6] 0
+    -smarts [NX2]=[CX3][NX4!H0] 0
+    -smarts [#G6X2]([CX4])!@-[#G6X2]([CX4]) 0
+    -smarts [#G6X2]([#Q!i])!@-[#G6X2]([#Q!i]) 0
+    -smarts [OQ1][NX3]([OQ1])=* 0
+    -smarts [OQ1][CX3]([O,N;!i])=* 0
+    -smarts [#X!r!i!Q4!$([+*][-*])!$(*[i,+*]);#G5,#G6][CX4,A#G5X3!i][#X!r!i!Q4!$([+*][-*])!$(*[i,+*]);#G5,#G6,#G7] 0
+    -smarts [#G7X1]-[CX3!r]=[CX3] 0
+    -smarts *1=*-*1 0
+    -smarts [*r]=[C,N,O;r]=[*r] 0
+    -smarts [#6++] 0
+    -smarts [#6--] 0
+    -smarts [O+] 0
+    -smarts *1=*-*=*1 0
+    -smarts [#G7X1!v1] 0
+    -smarts [#G7X2!v2] 0
+    -smarts [#6!v4] 0
+</pre>
+
+Note: On Unix, when using the <span class="switch">-smarts</span> option
+directly on the command line, it may be necessary to enclose
+the SMARTS pattern in quotes (<tt>'</tt>) to
+prevent interpretation by the command shell.
+For an example, please see the call to <tt>sdfilter</tt> in
+<a href="#Filter_Undesirable_Structures">Filter Undesirable Structures</a>
+above.
+
+</td>
+</tr>
+</table>
+</center></p>
+
+<blockquote>
+<sup>1</sup>Oprea, T. I.;
+Property Distribution of Drug-Related Chemical Databases.
+<i>J. Comp. Aid. Mol. Des. 14</i> (<b>2000</b>) 251-264.
+</blockquote>
+
+<p>The input is <tt>tautomers.sdf</tt> from the previous step.
+The output is written to <tt>good_mols.sdf</tt>, and the rejected
+molecules to <tt>nonlead_mols.sdf</tt>.
+</p>
+
+<a name="Stereo"></a>
+<h3>Enumerate Stereoisomers</h3>
+
+<p>Atoms with unspecified or
+ambiguous stereochemistry should be assigned explicit stereochemistry.
+<tt>sdstereo</tt> is a sophisticated tool for comprehensive enumeration
+of double-bond and tetrahedral-center stereochemistry annotations.
+Note that this step is unnecessary
+when using MOE Conformation Import to generate conformations
+as Conformation Import
+can enumerate unconstrained chiral centers.
+</p>
+
+<p>
+In the following example, the
+&quot;<tt>\</tt>&quot; (backslash) is the line continuation character on Unix,
+&quot;<tt>^</tt>&quot; (caret) on Windows.
+</p>
+
+<p>
+<span class="tip">Tip</span> To cut and paste the following example,
+omit the prompt (i.e. do not include <tt>unix %</tt> or <tt>C:\&gt;</tt>).
+On Windows, do each line separately, omitting all leading blank space.
+</p>
+
+<pre>
+    <span class="nobr">unix % $MOE/bin/sdstereo -noenum '[NX3+0\!r3\!r4][C+,B+0,$(*=*),a;\!r3\!r4]' \</span>
+	   <span class="nobr">-jctfilter good_mols.sdf -f bad_stereo.sdf -o stereo_mols.sdf</span>
+
+    <span class="nobr">C:\> %MOE%\bin\sdstereo -noenum [NX3+0!r3!r4][C+,B+0,$(*=*),a;!r3!r4] ^</span>
+	   <span class="nobr">-jctfilter good_mols.sdf -f bad_stereo.sdf -o stereo_mols.sdf</span>
+</pre>
+
+<!--
+    $MOE/bin/sdstereo -enumlimit 1000 -mseq id good_mols.sdf -f bad_stereo.sdf -o stereo_mols.sdf
+-->
+
+<p>Here is an explanation of the options:</p>
+
+<p><center>
+<table class="titlebar" width="90%">
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+<tr>
+<td><span class="switch">-jctfilter</span></td>
+<td>Prevent enumeration of
+stereo configurations of small fused rings
+in which the junction is trans-substituted (puckered).
+
+<center>
+<img src="prep3ddb/jct_trans_5_5.png"
+alt="Junction of fused 5 rings in trans configuration" />
+&nbsp;
+&nbsp;
+&nbsp;
+<img src="prep3ddb/jct_cis_5_5.png"
+alt="Junction of fused 5 rings in cis configuration" />
+</center>
+
+</td>
+</tr>
+<tr>
+<td><span class="switch">-noenum '[NX3+0\!r3\!r4][C+,B+0,$(*=*),a;\!r3\!r4]'</span>
+<span class="switch">-noenum [NX3+0!r3!r4][C+,B+0,$(*=*),a;!r3!r4]</span>
+</td>
+<td>Prevent enumeration
+of the atoms that match the specified SMARTS pattern.
+The pattern here specifies planar, rigid nitrogen atoms:
+neutral 3-bonded nitrogen atoms
+(not in small rings), single-bonded to carbocation-type atoms or
+to pi-systems (double bond, aromatic) that are not part of small rings.
+
+<br /><br />
+On Unix, the quotation marks are used to prevent
+interpretation by the command shell, with the additional escape
+character (<tt>\</tt>) needed for the <tt>!</tt> character.
+Do not use quotation marks if the <span class="switch">-noenum</span>
+statements are stored in a file to be invoked using the
+@<i>filename</i> construct.
+</td>
+</tr>
+<!--
+<tr>
+<td><tt>-noenum pattern</tt></td>
+<td> Do not enumerate stereochemistry centers that match the given pattern.</td>
+</tr>
+-->
+</table>
+</center></p>
+
+<p>The input is the file <tt>good_mols.sdf</tt> from the previous step.
+The output is written to the file <tt>stereo_mols.sdf</tt>.  Molecules
+rejected because of too many possible stereochemistry states are
+written to the file <tt>bad_stereo.sdf</tt>.
+</p>
+
+<a name="Name"></a>
+<h3>Name the Structures</h3>
+
+<p>For ease of identification later, the molecules are
+assigned SMILES strings as molecule names.
+The SMILES strings are first generated, then
+assigned.
+</p>
+
+<pre>
+    <span class="nobr">unix % $MOE/bin/sdwash -savesmi smiles stereo_mols.sdf -o stereo_mols_smi.sdf</span>
+    <span class="nobr">unix % $MOE/bin/sdwash -setname smiles stereo_mols_smi.sdf -drop smiles -o named_stereo_mols.sdf</span>
+
+    <span class="nobr">C:\&gt; %MOE%\bin\sdwash -savesmi smiles stereo_mols.sdf -o stereo_mols_smi.sdf</span>
+    <span class="nobr">C:\&gt; %MOE%\bin\sdwash -setname smiles stereo_mols_smi.sdf -drop smiles -o named_stereo_mols.sdf</span>
+</pre>
+
+<p>Here is an explanation of the options:</p>
+
+<p><center>
+<table class="titlebar" width="90%">
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td><span class="switch">-savesmi&nbsp;smiles</span></td>
+<td>Store the structure of the molecule as a SMILES string
+in the field <tt>smiles</tt>.
+</td>
+</tr>
+
+<tr>
+<td><span class="switch">-setname&nbsp;smiles</span></td>
+<td>Set the molecule name to the value in the field <tt>smiles</tt>.
+</td>
+</tr>
+
+<tr>
+<td><span class="switch">-drop&nbsp;smiles</span></td>
+<td>Do not write the field <tt>smiles</tt> to the output.
+</td>
+</tr>
+
+</table></center></p>
+
+<p>The input is the file <tt>stereo_mols.sdf</tt> from the previous step.
+The final output is written to <tt>named_stereo_mols.sdf</tt>.
+</p>
+
+<a name="Pipelining"></a>
+<h3>Pipelining</h3>
+
+<p>
+The various stages of data preparation can be piped together,
+eliminating the need to save intermediate results and
+allowing the stages to run in parallel (assuming a
+multiprocessor machine).
+The command invocations are identical to the non-piped
+case with the exception that the <span class="switch">-o</span> switch is
+absent except at the end, and the input files are absent except at the
+beginning.
+</p>
+
+<p>The commands have been placed on separate lines for
+readability, but could be input all on a single line.
+On Windows, if the maximum command-line line length is
+exceeded, save options to a file and use the
+<a href="#@filename">@<i>filename</i></a> argument construction.
+</p>
+
+<p>
+In the following examples, the
+&quot;<tt>\</tt>&quot; (backslash) is the line continuation character on Unix,
+&quot;<tt>^</tt>&quot; (caret) on Windows.
+</p>
+
+<p>
+<span class="tip">Tip</span> To cut and paste the following example,
+omit the prompt (i.e. do not include <tt>unix %</tt> or <tt>C:\&gt;</tt>).
+On Windows, do each line separately, omitting all leading blank space.
+</p>
+
+<p>Here is an illustration of how to pipe the above cleaning steps together:
+</p>
+
+<pre>
+    <span class="nobr">unix % $MOE/bin/sdwash <i>raw_data</i>.sdf @$MOE/lib/sdabbrev.txt -strict \</span>
+	    <span class="nobr">-compfield lost_frag -ylide -chiral -wedge -f wash_fail.sdf | \</span>
+        <span class="nobr">$MOE/bin/sdfilter -smarts '[#T]' 0 -smarts '[\!D0\!D1\!D2\!D3\!D4]' 0 \</span>
+	    <span class="nobr">-elements C,H,N,O,S,P,F,Cl,Br,I -f bad_mols.sdf -o clean_mols.sdf</span>
+
+    <span class="nobr">C:\&gt; %MOE%\bin\sdwash <i>raw_data</i>.sdf @%MOE%\lib\sdabbrev.txt -strict ^</span>
+	    <span class="nobr">-compfield lost_frag -ylide -chiral -wedge -f wash_fail.sdf | ^</span>
+        <span class="nobr">%MOE%\bin\sdfilter -smarts [#T] 0 -smarts [!D0!D1!D2!D3!D4] 0 ^</span>
+	    <span class="nobr">-elements C,H,N,O,S,P,F,Cl,Br,I -f bad_mols.sdf -o clean_mols.sdf</span>
+</pre>
+
+<p>Here is an illustration of how to pipe the filtering, enumeration, and naming
+steps together:
+</p>
+
+<pre>
+    <span class="nobr">unix % $MOE/bin/sdwash -protomers -depracids -protbases -enumsize 1000 clean_mols.sdf | \</span>
+	<span class="nobr">$MOE/bin/sdfilter -leadlike -nonreactive -smallring -chiral 4- \</span>
+	    <span class="nobr">-racemic 3- @smarts_filter.txt -f nonlead_mols.sdf | \</span>
+	<span class="nobr">$MOE/bin/sdstereo -noenum '[NX3+0\!r3\!r4][C+,B+0,$(*=*),a;\!r3\!r4]' \</span>
+	    <span class="nobr">-jctfilter -f bad_stereo.sdf | \</span>
+	<span class="nobr">$MOE/bin/sdwash -savesmi smiles | \</span>
+	<span class="nobr">$MOE/bin/sdwash -setname smiles -drop smiles -o named_stereo_mols.sdf</span>
+
+    <span class="nobr">C:\&gt; %MOE%\bin\sdwash -protomers -depracids -protbases -enumsize 1000 clean_mols.sdf | ^</span>
+	<span class="nobr">%MOE%\bin\sdfilter -leadlike -nonreactive -smallring -chiral 4- ^</span>
+	    <span class="nobr">-racemic 3- @smarts_filter.txt -f nonlead_mols.sdf | ^</span>
+	<span class="nobr">%MOE%\bin\sdstereo -noenum [NX3+0!r3!r4][C+,B+0,$(*=*),a;!r3!r4] ^</span>
+	    <span class="nobr">-jctfilter -f bad_stereo.sdf | ^</span>
+	<span class="nobr">%MOE%\bin\sdwash -savesmi smiles | ^</span>
+	<span class="nobr">%MOE%\bin\sdwash -setname smiles -drop smiles -o named_stereo_mols.sdf</span>
+</pre>
+
+<a name="Generating_Conformations"></a>
+<h2>Generating Conformations</h2>
+
+<a name="Using_MOE_Conformation_Import"></a>
+<h3>Using MOE Conformation Import</h3>
+
+<p>
+MOE's <a href="../apps/confgui.htm">Conformation Import</a>
+calculates low-energy conformations of molecules by decomposing
+each ligand into constituent overlapping fragments, performing
+stochastic conformational search on each fragment,
+and then assembling the fragments into unique conformers.
+The application was designed for speed and
+intended for high-throughput processing of large databases.
+</p>
+
+<p>
+Conformation Import can read both SD and
+<a href="../mdb/db.htm">MDB</a> files, and writes MDB files.
+Although Conformation Import includes its own
+washing and filtering stages, it is preferable, when
+processing SD files, to use the SD tools described above to perform the
+washing and filtering tasks.
+Not only do <tt>sdwash</tt> and <tt>sdfilter</tt> provide a greater variety
+of options, they also include options exclusive to SD files.
+Furthermore, Conformation Import does not have a built-in
+enumeration stage, which can be provided by
+<tt>sdwash</tt> and <tt>sdstereo</tt>.
+</p>
+
+<p>
+<span class="tip">Note:</span>
+MOE provides other
+<a href="../apps/confsrch.htm">conformational search</a> methods
+such as
+<a href="../apps/confsrch.htm#LowModeMD">LowModeMD</a>
+which operate on MOE databases or molecules loaded in MOE.
+To use these methods, first
+<a href="../mdb/dbio.htm">import</a> the SD data into a
+MOE database or load the data directly into MOE using
+<span class="menu">MOE | File | Open</span>.
+</p>
+
+<h4>Multi-Processor Mode</h4>
+
+<p>A primary motivation for using Conformation Import is that it
+will automatically run in multi-processor mode when executing in
+<a href="../install/smp_inst.htm">MOE/cluster</a>.
+MOE/cluster (MOE/smp) refers to a special invocation of MOE or MOE/batch made
+using the <a class="svl" href="../install/install.htm#RunSwitch">-mpu</a>
+command-line switch which allows MOE to run on a MOE/cluster cluster.
+Running Conformation Import in multi-processor mode
+requires only that the MOE/cluster cluster be configured and that MOE
+or MOE/batch be invoked in multi-processor mode.
+The actual invocation of Conformation Import remains the same.
+For more details about MOE/cluster, please see
+<a href="../install/smp_inst.htm">Installing and Running MOE/cluster</a>.
+</p>
+
+<p>
+In the simplest scenario, the MOE/cluster multi-processor is specified
+on a single multi-processor computer; the CPUs on that computer
+become the nodes of the MOE/cluster cluster.
+For example, the following will
+initiate MOE on a cluster of size 2 on a dual-processor
+machine (assuming the
+<a href="../install/install.htm#RunEnv">environment variable</a> <tt>MOE</tt>
+has been set to point to the root of the MOE installation directory tree):
+</p>
+
+<blockquote>
+    <span class="nobr"><tt>unix % $MOE/bin/moe -mpu 2</tt></span>
+<br />
+    <span class="nobr"><tt>C:\&gt; %MOE%\bin\moe -mpu 2</tt></span>
+</blockquote>
+
+<p>or, equivalently, MOE/batch:
+</p>
+
+<blockquote>
+    <span class="nobr"><tt>unix % $MOE/bin/moebatch -mpu 2</tt></span>
+<br />
+    <span class="nobr"><tt>C:\&gt; %MOE%\bin\moebatch -mpu 2</tt></span>
+</blockquote>
+
+<p>Here 2 refers to the cluster size.  For a computer with more
+CPUs, the cluster size should be adjusted accordingly.
+</p>
+
+<p>Running on multiple machines requires a
+<i>machine file</i> in which the nodes
+of the cluster are specified.
+Each machine in the
+cluster must have been configured for remote execution and be able
+to locate and run MOE.  This configuration usually needs to be
+done only once.  For more details, please see
+<a href="../install/smp_inst.htm">Installing and Running MOE/cluster</a>.
+The following will initiate MOE on a multiple-machine cluster using
+the machine file <tt>machine.txt</tt>:
+</p>
+
+<blockquote>
+    <span class="nobr"><tt>unix % $MOE/bin/moe -mpu machine.txt</tt></span>
+<br />
+    <span class="nobr"><tt>C:\&gt; %MOE%\bin\moe -mpu machine.txt</tt></span>
+</blockquote>
+
+<p>and similarly for MOE/batch:</p>
+
+<blockquote>
+    <span class="nobr"><tt>unix % $MOE/bin/moebatch -mpu machine.txt</tt></span>
+<br />
+    <span class="nobr"><tt>C:\&gt; %MOE%\bin\moebatch -mpu machine.txt</tt></span>
+</blockquote>
+
+<!--
+
+<h4>Running in MOE/batch</h4>
+
+<p>Conformation Import can be run in MOE/batch using the command line
+invocation of the application <tt>conf_Import</tt>.
+A complete list of options is displayed when Conformation Import is run,
+either at the command line or in graphical MOE.
+For example, in MOE/batch, the following will cause all
+options with their default values to be displayed:
+</p>
+
+<pre>
+    moe> conf_Import []
+</pre>
+
+<p>To pipeline Conformation Import, <tt>moebatch</tt> can be invoked with
+the <a class="svl" href="../install/install.htm#-exec">-exec</a>
+command-line switch.  For example (Unix),
+</p>
+
+<pre>
+    unix&gt; $MOE/bin/moebatch -exec "conf_Import []"
+</pre>
+
+<p>will cause <tt>moebatch</tt> to run Conformation Import with the
+specified options and then terminate.  To also run in multi-processor
+mode, simply append the appropriate <tt>-mpu</tt> switch, e.g.
+</p>
+
+<pre>
+    unix&gt; $MOE/bin/moebatch -exec "conf_Import []" -mpu 2
+</pre>
+
+<p>An example of the calling sequence of <tt>conf_Import</tt> which could be
+used in a script (batch file) is as follows:
+</p>
+
+<p border="1" margin="10px">
+<pre>
+    conf_Import [
+	input_file1, input_file2, ..., input_filen,
+	...
+    ];
+</pre>
+</p>
+
+<h4>Running in MOE</h4>
+-->
+
+<h4>Running Conformation Import</h4>
+
+<p>
+Conformation Import can be run from graphical MOE
+by choosing <span class="menu">MOE | Compute | Pharmacophore |
+<a href="../apps/confgui.htm">Conformation Import</a></span>.
+If MOE was invoked on a MOE/cluster cluster, Conformation Import
+will run automatically in multi-processor mode.
+</p>
+
+<p>
+The following panel opens:
+</p>
+
+<p>
+<center>
+<img src="../apps/confgui/conf_ui.png" alt="Conformation Import panel" />
+</center>
+</p>
+
+<ol>
+<p><li>
+<i>Specify the input files</i>.
+<br />
+Press <b>Add</b> which opens the
+Select Files for Import panel, shown here.  The image illustrates
+the use of the wildcard expression <tt>*.sdf</tt>, which
+was typed into the <b>Filter</b> field, to
+restrict the <b>Files</b> list to SD files only.
+</p>
+
+<p>
+<center>
+<img src="prep3ddb/confimport_selinput_panel.png"
+alt="Select Files for Input panel" />
+</center>
+</p>
+
+<p>
+<ol class="alpha">
+<li>
+Select the desired input file and press <b>Add</b>.  Multiple input files
+can be specified by repeating this procedure.
+</li>
+<li>
+When the list of input files is complete,
+press <b>OK</b>.  This will load the input filenames into the
+<b>Input Files</b> list in the Conformation Import panel.
+</li>
+</ol>
+</p>
+
+</li></p><p><li>
+<i>Remove all <b>Input Filters</b>.</i>
+<br />
+Under the assumption that all filtering has already been done using SD tools,
+no further pre-filtering is necessary.  If there are any descriptors listed in 
+the <b>Descriptor Filter</b> line, press <b>Clear</b> in the Conformation 
+Import panel.
+
+</li></p><p><li>
+<i>Specify the output database chunk size.</i>
+<br />
+By default, the output is split into numbered chunks of equal size
+(except possibly the last).  Use the
+<b>Size Limit</b> field to specify the maximum size of each output database.
+
+</li></p><p><li>
+<i>Specify whether to refine conformations.</i>
+<br />
+Although refinement is built in at the level of the
+fragment conformational search, refinement after fragment assembly
+must be explicitly specified if desired using the
+<b>Refine Conformations</b> option.
+
+</li></p><p><li>
+Press <b>OK</b> to start conformation generation.
+
+</li></p>
+</ol>
+</p>
+
+<a name="Using_Omega"></a>
+<h3>Using Omega</h3>
+
+<p>Omega is a conformation generator obtainable under license from
+<a href="http://www.eyesopen.com">OpenEye Scientific Software</a>.
+Both SD and SMILES are among the accepted input formats.
+The output files can be generated in a variety of formats,
+including SD; the OpenEye binary (OEB) format, however, is the 
+recommended one, and is the format recognized by MOE's Pharmacophore
+Search application.  OEB files have extension <tt>.oeb</tt>, and
+can also be generated in <a href="http://www.gzip.org">gzip</a>ped form
+(this is the recommended output format), with extension <tt>.oeb.gz</tt>.
+</p>
+
+<h4>Setting Up the Omega Environment</h4>
+
+<p>Assuming Omega is already installed, the
+</p>
+
+<blockquote>
+    <tt>$OE_DIR</tt> (Unix)
+<br />
+    <tt>%OE_DIR%</tt> (Windows)
+</blockquote>
+
+<p>environment variable is expected to point to the top of the
+OpenEye installation directory tree.
+For running with Pharmacophore Search, a utility
+is used to convert (at run-time) the OEB data
+into SD format with
+a special convention for conformation and energy encoding.
+The converter should be located either in the OE <tt>bin</tt>
+subdirectory:
+</p>
+
+<blockquote>
+    <tt>$OE_DIR/bin</tt> (Unix)
+<br />
+    <tt>%OE_DIR%\bin</tt> (Windows)
+</blockquote>
+
+<p>or in one of the directories listed in the
+</p>
+
+<blockquote>
+    <tt>$PATH</tt> (Unix)
+<br />
+    <tt>%PATH%</tt> (Windows)
+</blockquote>
+
+<p>environment variable.</p>
+
+<p>
+The default converter, <tt>oeb2sdconf</tt>, is
+provided by OpenEye.  If a different converter is to be used,
+it must be specified by setting the MOE
+<a href="fcnref/rc.htm">resource configuration</a> (RC) variable
+<tt>'oe_omega'</tt>.  This can be done
+from within MOE by typing at the
+<a href="gui/svlcommands.htm">SVL command line</a>:
+
+<pre>
+    <a class="svl" href="fcnref/rc.htm">SetRC</a> ['oe_omega', 'my_special_oeb2sdconf']
+</pre>
+
+<p>
+or by directly editing the resource configuration (RC) file
+</p>
+
+<blockquote>
+    <tt>$HOME/.moe-rc</tt> (Unix)
+<br />
+    <tt>%HOME%\moe-rc</tt> (Windows)
+</blockquote>
+
+<p>and adding a line containing the name of the file (or the
+full path if located in a directory not found in the PATH
+variable),
+</p>
+
+<pre>
+    oe_omega='my_special_oeb2sdconf'
+</pre>
+
+<p><span class="tip">Tip</span>
+Close all open MOE and MOE/batch sessions <i>before</i> editing the RC file as
+they overwrite the file on termination.
+</p>
+
+<h4>Running Omega</h4>
+
+<p>Omega is not part of MOE and is run independently (there is
+no graphical interface within MOE for invoking Omega).  An example
+of how to invoke Omega at the system shell command line to read in
+an SD file and output an OEB file is as follows:
+
+<pre>
+    omega -in sdfile.sdf -out omega_conf.oeb.gz
+</pre>
+
+<p>Please refer to the
+<a href="http://www.eyesopen.com/docs/omega/2.3.2/html/index.html">Omega
+Manual</a> for more information on running Omega and a full list of
+options.</p>
+
+<a name="Post-Processing"></a>
+<h2>Post-Processing</h2>
+
+<p>
+If some knowledge of the binding properties or structure of the ligand
+are known, it may be possible to filter the generated conformations
+to reduce the data set.
+Possible filtering methods in MOE include the following calculations:
+</p>
+
+<ul>
+<p><li><a href="../quasar/descr.htm">QSAR descriptors</a>.
+A wide variety of descriptors exist,
+from simple &quot;counts&quot; such as number of carbons or
+molecular weight, to connectivity (bonding) measures,
+to surface area, volume, and energy estimates.
+Descriptor value range limits can be used to filter
+molecules for specific properties.
+
+<p>A property of particular interest is given by the
+<tt>rsynth</tt> descriptor, which calculates a retrosynthetic
+feasibility score for a molecule.
+The retrosynthetic feasibility can also be calculated directly
+on molecules or databases using the SVL
+<a class="svl" href="fcnref/rsynthfcn.htm">Retrosynth*</a> functions.
+</p>
+
+</li></p><p><li><a href="../quasar/model.htm">QSAR models</a>.
+Linear regression and binary fit models can be calculated
+from molecular descriptors and other fields to model activity.
+Using such models, molecules can be screened for predicted activity.
+
+
+</li></p><p><li><a href="../mdb/ph4intro.htm">Fingerprints</a>.
+Fingerprints represent a set of features derived from the structure
+of a molecule.  Similarity searching can yield molecules with
+the desired feature set.
+
+</li></p><p><li><a href="../apps/ph4_guide.htm">Pharmacophores</a>.
+Pharmacophores are 3D models that encode the location and ligand atom type
+of important binding interactions.  Pharmacophore searching relies
+on accurate 3D structure, and can screen conformations for
+suitable binding geometry.
+</li></p>
+</ul>
+
+<p>Perhaps the simplest way in which to apply post-processing filters
+is to create a <a href="../quasar/modcomp.htm">model file</a>
+which can then be
+<a href="../quasar/modcomp.htm#Eval">evaluated over a database</a>
+(the evaluation will automatically run in parallel if MOE/cluster is enabled).
+The model file is typically tuned on a small or medium-sized
+data set (e.g. of known actives).  It can be as simple
+as a single model weighted and thresholded, or a complex
+composition of several models, combined using a custom expression.
+The result of the
+evaluation can be used to filter the database, for example,
+by selecting database entries with <span class="menu">DBV | Edit |
+<a href="../mdb/db.htm#SelectingEntries">Select</a></span>.
+</p>
+
+
+<!--
+<a name="Appendix"></a>
+<h2>Appendix: Working with Other File Formats</h2>
+
+<p>
+Although ligand data is most commonly obtained from
+SDF files, there are cases where the data is in other
+formats, for example, when the database is built
+in MOE using one of the avaible fragment-based techniques, e.g.
+<a href="../apps/breed.htm">BREED</a>,
+<a href="../apps/scaffold.htm">Scaffold Replacement</a>
+(including fragment linking),
+<a href="../apps/recap.htm">RECAP Analysis and Synthesis</a>,
+and <a href="../apps/combitools.htm">exhaustive</a> or
+<a href="../apps/combitools.htm#Diverse">diverse</a>
+combinatorial methods.
+</p>
+
+<p>
+For 3D database preparation using MOE,
+the input data must be of one of the following formats:
+</p>
+
+<p>
+<center>
+<table class="titlebar">
+<tr>
+<th>Type</th>
+<th>File Extension</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td>SD</td>
+<td><tt>.sdf</tt></td>
+<td>Molecular Design Ltd. (MDL) Structure Data (SD) file.
+</tr>
+
+<tr>
+<td>SMILES</td>
+<td>e.g. <tt>.txt</tt></td>
+<td>Text (ASCII) file of
+of <a href="molsystems/smiles.htm">SMILES</a> strings.
+</tr>
+
+<tr>
+<td>MDB</td>
+<td><tt>.mdb</tt></td>
+<td><a href="../mdb/db.htm">MOE database</a>.
+</tr>
+
+</table>
+</center>
+</p>
+
+<p>As described above, SD data can be processed directly using MOE's SD tools.
+SMILES can be accepted directly into some SD tools, but
+should otherwise be imported into a MOE database.
+</p>
+
+<div class="example">
+<h3>Import an SD File into a MOE Database</h3>
+
+<p><ol>
+
+<p><li><i>Open a new MOE database.</i>
+
+<blockquote>
+<span class="menu">MOE | File | New | Database</span>
+</blockquote>
+Press <b>OK</b>.
+</li>
+</p>
+
+<p>
+<li>
+<i>Use the</i> Database Import <i>panel import the data from an SD file.</i>
+
+<blockquote>
+<span class="menu">DBV | File | <a href="../mdb/dbio.htm">Import</a></span>
+</blockquote>
+
+    <p>
+    <ol class="alpha">
+
+    <p><li>
+    Press <b>Add</b> to open the Select Files for Database Import panel.
+
+    <p>
+    <center>
+    <img src="prep3ddb/add_dbimport_panel.png" alt="Select Files for
+	Database Import panel" />
+    </center>
+    </p>
+
+    <p>
+    Select the desired file in the <b>Files</b> box; press <b>Add</b>.
+    For example, to select the file <tt>$MOE/sample/mol/imidpka.sdf</tt>:
+    </p>
+
+    <blockquote>
+	In the <b>Path</b> popup, select <tt>$MOE/sample/mol</tt>.
+	<br />
+	Type <tt>*.sdf</tt> in the <b>Path</b> field to list all SD files.
+	<br />
+	In the <b>Files</b> box, select <tt>imidpka.sdf</tt>
+	<br />
+	Press <b>Add</b>.
+    </blockquote>
+
+    <p>
+    <b>Remove</b> will delete files from the <b>List</b> of files to import.
+    Press <b>OK</b>.  The files and a list of their fields will be displayed in
+    the Database Import panel.
+    </p>
+
+    </li></p>
+    </ol>
+    </p>
+
+</li></p><p><li>
+In the Database Import panel, the fields to import can be selected
+(default is all), and their import names and types can be modified.
+The source file can be included as a field in the database.
+Press <b>OK</b>.
+
+</li></p>
+</ol></p>
+</div>
+
+<p>If molecular data is stored in individual molecule files, these
+should be collected into a single database.
+</p>
+
+<div class="example">
+<h3>Create a New Database and Append a New Molecular Entry</h3>
+
+<p>
+<ol>
+
+<p>
+<li><i>Open a new MOE database.</i>
+<blockquote>
+<span class="menu">MOE | File | New | Database</span>
+</blockquote>
+Press <b>OK</b>.
+</li>
+</p>
+
+<p>
+<li>
+<i>Close the current system, open the molecule file in MOE.</i>
+<blockquote>
+<span class="menu">MOE | RHS | Close</span>
+<br />
+<span class="menu">MOE | File |
+<a href="gui/fileopen.htm">Open</a> | <tt><i>filename</i></tt></span>
+</blockquote>
+Press <b>OK</b>.
+</li>
+</p>
+
+<p>
+<li>
+<i>Copy the molecule from MOE to the database.</i>
+<blockquote>
+<span class="menu">DBV | Molecule Field Popup |
+<a href="../mdb/dbedit.htm#CopyFromMOE">Copy Molecule from MOE</a></span>
+</blockquote>
+Press <b>OK</b>.
+
+<p>If the molecule is on the clipboard, it can be added directly to
+the database using
+</p>
+
+<blockquote>
+<span class="menu">DBV | Edit |
+<a href="../mdb/dbedit.htm#Copying_and_Pasting_Using_the_Clipboard">Paste</a></span>
+</blockquote>
+
+<p>
+which will create a new entry containing the molecule.
+</p>
+
+</li>
+</p>
+
+<p>
+<li>
+<i>Save the database.</i>
+<blockquote>
+<span class="menu">DBV | File |
+<a href="../mdb/db.htm#Saving">Save As</a></span>
+</blockquote>
+
+<p>Enter the filename and press <b>OK</b>.
+
+</p>
+
+</li>
+</p>
+
+</ol>
+</p>
+
+</div>
+
+<p>MOE databases can be prepared in MOE directly, or can be exported
+to SD format and processed as SD files.  The advantage of processing
+in SD format is that the computations are easily performed in
+batch mode using MOE's SD tools.  The output from one tool are
+piped as input into the next tool, in a simple processing cascade,
+described in more detail in the sections to follow.  The advantage of
+processing directly on MOE databases is that the results of the
+processing steps can be immediately examined.
+</p>
+
+<div class="example">
+<h3>Export a MOE database to an SD file</h3>
+
+<p>
+<ol>
+
+<p>
+<li><i>Open the MOE database.</i>
+
+<blockquote>
+<span class="menu">MOE | File |
+<a href="gui/fileopen.htm">Open</a> | <tt><i>db_filename</i></tt></span>
+</blockquote>
+
+</li>
+</p>
+
+<p>
+<li>
+<i>Use the</i> Database Save As <i>panel to convert to SD format.</i>
+
+<blockquote>
+<span class="menu">DBV | File |
+<a href="../mdb/db.htm#Saving">Save As</a></span>
+</blockquote>
+
+<center>
+<img src="../mdb/db/saveas.png" alt="Database Save As" />
+</center>
+
+<p>Select
+<span class="menu">Output: SD File (.sdf)</span>
+and choose whether to omit H and LP atoms or to depict as 2D using
+the options provided.  Enter the filename and press <b>OK</b>.
+</p>
+
+</li>
+</p>
+
+</ol>
+</p>
+
+</div>
+
+<p>
+For ligands stored as a MOE database, the
+<span class="menu">DBV | Compute | Molecule</span>
+menu invokes applications for cleaning and refining compounds.
+Washing is a desirable step prior to such operations
+as conformation enumeration or docking.
+Energy minimization (geometry optimization)
+is often necessary when importing molecules, for example
+from SD files which typically supply molecules
+with 2D coordinates only, or when converting from
+SMILES strings to 3D structures.
+The applications are typically used in the order in which
+they are listed here:
+</p>
+
+</p>
+
+<ol>
+
+<p>
+<li><a href="../mdb/wash.htm"><b>Wash</b></a>.
+Removes extraneous salts, enumerates
+tautomers and protonation states, and adjusts hydrogen atoms.
+
+</li></p><p><li>
+<a href="pot.htm#Charge"><b>Partial Charges</b></a>.
+Calculates partial charges according to the selected forcefield.
+This application can also adjust hydrogen and lone pair counts.
+Partial charges are required for energy minimization.
+
+</li></p><p><li>
+<a href="../apps/emin.htm#DBMin"><b>Energy Minimize</b></a>.
+Opens the Database Minimize application for
+energy minimizing the compounds in the database.
+As an alternative to minimization,
+Database Minimize also allows
+the external program Corina to be used instead to
+generate the atomic coordinates.
+Database Minimize can also add hydrogens and calculate partial
+charges, and can be used to generate 2D depictions.
+
+</li></p><p><li>
+<a href="../apps/confsrch.htm"><b>Conformational Search</b></a>.
+Generates conformations using systematic, stochastic, or
+low-mode methodologies.
+
+</li></p><p><li>
+<a href="../apps/confsrch.htm#Superposing"><b>Conformation Geometry:
+Superposition</b></a>.
+Superposes the molecules in a database.
+
+</li></p><p><li>
+The <span class="menu">MOE | Compute | Conformations |
+<a href="../apps/confgui.htm">Conformation Import</a></span>
+application generates low-energy conformations of databases
+of molecules.  An initial configurable washing and filtering stage
+precedes conformation generation.  Conformations are generated by
+decomposing
+each ligand into constituent overlapping fragments each of
+whose conformations are stochastically searched and then
+assembled into unique conformations.
+</li></p>
+</ol>
+-->
+
+<a name="See_Also"></a>
+<h2>See Also</h2>
+
+    <ul class="nobullet_novspace">
+    <li><a href="../mdb/dbio.htm">Import and Export Data</a>
+    </li><li><a href="../apps/ligx.htm#Prepare">LigX:
+	Prepare a Molecular System</a><br />
+    </li><li><a href="mol_prep.htm">Prepare
+	a Small Molecule</a>
+    </li><li><a href="moldb_prep.htm">Prepare
+	a Small Molecule Dataset</a>
+    </li><li><a href="../apps/structprep.htm">Prepare
+	a Protein or Protein-Ligand Complex</a>
+    </li>
+    </ul>
+<br />
+Cleaning the Data
+    <ul class="nobullet_novspace">
+    <li><a href="../mdb/wash.htm">Wash: Wash Database Molecules</a>
+    </li><li><a href="../apps/protoview.htm">Protomer and Tautomer Viewer</a>
+    </li><li><a href="../apps/sdtools.htm">SD Tools</a>
+    </li><li><a href="../apps/protonate3d.htm">
+	Protonate&nbsp;3D: Macromolecular Protonation</a>
+    </li>
+    </ul>
+<br />
+Generating Conformations
+    <ul class="nobullet_novspace">
+    <li><a href="../apps/confgui.htm">
+	Conformation Import: High Throughput Generation</a>
+    </li><li><a href="../apps/confsrch.htm">Conformational Search</a>
+    </li><li><a href="../apps/md.htm">Molecular Dynamics Simulation</a>
+    </li><li><a href="../apps/confsrch.htm#ConfGeometries">
+	Conformation Geometries</a>
+    </li>
+    </ul>
+<br />
+Refining 3D Structures
+    <ul class="nobullet_novspace">
+    <li><a href="pot.htm#Charge">Partial Charges</a>
+    </li><li><a href="../apps/emin.htm#DBMin">Database Minimize:
+	Refine 3D Structures</a>
+    </li><li><a href="../apps/emin.htm">Energy Minimize</a>
+    </li>
+    </ul>
+<br />
+Validating Molecular Structure
+    <ul class="nobullet_novspace">
+    <li><a href="../apps/progeom.htm">
+	Protein Geometry: Assess Stereochemical Quality</a>
+    </li><li><a href="../apps/prolig2d.htm">
+	Ligand Interactions: Site Wall Clash</a>
+    </li><li><a href="fcnref/rsynthfcn.htm">
+	Retrosynthetic Feasibility Descriptor</a>
+    </li><li><a href="moeweb_intro.htm#SFCHECK">
+	SFCHECK (MOE/web application)</a>
+    </li>
+    </ul>
+
+<br />
+<a href="http://www.chemcomp.com/journal/sdtools.htm">SD File Processing with
+MOE Pipeline Tools (<i>JCCG article</i>)</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

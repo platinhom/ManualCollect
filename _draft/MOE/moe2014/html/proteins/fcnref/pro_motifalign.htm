@@ -1,0 +1,256 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--	pro_motifalign.htm
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+
+<meta keywords>
+<meta functions pro_MotifAlign, pro_MotifSuperpose, pro_MotifFindPairs>
+
+<title>Protein Functions: pro_MotifAlign ...</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    aligninfo = <a class="fcnlink" href="#pro_MotifAlign">pro_MotifAlign</a> [a1, a2, options]
+    [N, S, R, T] = <a class="fcnlink" href="#pro_MotifSuperpose">pro_MotifSuperpose</a> [a1, a2, options]
+
+    options = [
+	matchdir           : flag,
+	showquery          : flag,
+	ca_radius          : real,
+	max_crossing_angle : real,
+	min_match_fraction : real,
+	bbcolor            : 'token',
+	superpose          : flag
+    ]
+
+    [pairs, rpos1, rpos2] = <a class="fcnlink" href="#pro_MotifFindPairs">pro_MotifFindPairs</a> [ch1, ch2]
+</pre>
+
+<h2>Description</h2>
+
+<p>The following functions deal with protein structural superposition,
+independent of protein sequence.</p>
+
+<p><a name="pro_MotifAlign"></a></p>
+<p><a name="pro_MotifSuperpose"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+aligninfo = <span class="fcndef">pro_MotifAlign</span> [a1, a2, options]
+[N, S, R, T] = <span class="fcndef">pro_MotifSuperpose</span> [a1, a2, options]
+</pre>
+
+<p>Superposes two proteins using the same algorithm as that
+employed by the <a href="../motifsearch.htm">Domain Motif Similarity
+Search</a>.  Structures are converted to a series of secondary structure
+vectors, and these are exhaustively superposed to maximize the number of
+vectors which can be paired up.</p>
+
+<p><tt>pro_MotifAlign</tt> will also align the sequences and set the
+<a href="../../moe/fcnref/residue.htm#rPos">rPos</a> for the structures, and
+color the residues in the Sequence Editor by aligned segment (gapless aligned
+stretches in the two sequences).
+</p>
+
+<p>
+The return vector of <tt>pro_MotifAlign</tt>, <tt>aligninfo</tt> is a vector of
+scalars describing the superposition found (see below); these values are
+printed to the CLI as well.  <tt>pro_MotifSuperpose</tt> returns four elements:
+the <tt>N</tt> and <tt>S</tt> as described for <tt>aligninfo</tt> below,
+followed by the rotation matrix <tt>R</tt> and translation <tt>T</tt> which
+maps <tt>a2</tt> onto <tt>a1</tt>.  Thus <tt>R a2 + T</tt> will produce the
+optimal superposition of <tt>a2</tt> onto <tt>a1</tt>. 
+</p>
+
+<h4>Arguments</h4>
+
+<dl>
+
+<dt><tt>a1, a2</tt>
+<dd>Each argument is a vector of chain, residue or atom keys comprising one
+of the two structures to be aligned.  Note only pairwise alignment is supported.
+</dd></dt>
+
+<p><dt><tt>options</tt>
+<dd>Vector of parameters, applies to both functions unless otherwise noted.
+Optional arguments are attribute-value colon-separated pairs:
+
+<dl>
+<p><dt><tt>matchdir : flag</tt>
+<dd>If non-zero, the direction of secondary structure elements (N-to-C terminus)
+must match in the superposition; default is 1.
+</dd></dt></p>
+
+<p><dt><tt>showquery : flag</tt>
+<dd>If non-zero, arrows representing the secondary structure elements &ndash;
+pink for helices and orange for strands &ndash; will be shown in the MOE
+Window; default is 0.
+</dd></dt></p>
+
+<p><dt><tt>ca_radius : real</tt>
+<dd>Maximum distance between corresponding points on secondary structure
+elements, in &Aring;, for them to be considered superposed; default is
+2.0&Aring;.  The value is ignored for <tt>pro_MotifSuperpose</tt> - a
+pre-optimized value is used in this case.
+</dd></dt></p>
+
+<p><dt><tt>max_crossing_angle : real</tt>
+<dd>Maximum angle, in degrees, at which two secondary structure elements can
+intersect for any of their points to still be considered superposed; default
+is 25&deg;.
+</dd></dt></p>
+
+<p><dt><tt>min_match_fraction : real</tt>
+<dd>Similarity cutoff value, ranging from 0 to 1; this is the minimum fraction
+of secondary structure elements that must match for the superposition
+to succeed.  If too large, the alignment will fail.  Regardless of this
+setting, at least 6 points must superpose for a superposition to succeed, and
+for very large structures, any superposition with 12 or more matched points
+is considered a successful superpositon; default value is 0.5.
+</dd></dt></p>
+
+<p><dt><tt>bbcolor : 'token'</tt>
+<dd>A token with two permissible values: if 'chain', the ribbons in the
+MOE Window will be colored by chain.  If 'segment', ribbons will be colored by
+the aligned segments (gapless aligned stretches in the two structures);
+default is 'chain'.
+</dd></dt></p>
+
+<p><dt><tt>superpose : flag</tt>
+<dd>Applies only to <tt>pro_MotifSuperpose</tt>.  If non-zero, the chains
+will be optimally superposed, otherwise they will not be moved; default is 0.
+<tt>pro_MotifAlign</tt> always moves the chains.
+</dd></dt></p>
+
+</dl>
+</dd></dt></p>
+</dl>
+
+<h4>Return Values</h4>
+
+<p>The return value of the function, <tt>aligninfo</tt>, consists of the
+following elements describing the superposition, in the order given:</p>
+
+<dl>
+
+<p><dt><tt>N</tt>
+<dd>Number of points that were successfully superposed, within the tolerances
+specified by <tt>ca_radius</tt> and <tt>max_crossing_angle</tt>, as well
+as the <tt>matchdir</tt> option.  A value of zero indicates that no valid
+superposition was found.
+</dd></dt></p>
+
+<p><dt><tt>S</tt>
+<dd>A score indicating the quality of the superposition, with higher scores
+being better.  The score is described in detail with the
+<a href="../motifsearch.htm">Domain Motif Similarity</a> panel.
+</dd></dt></p>
+
+<p><dt><tt>n_aligned</tt>
+<dd>The number of &alpha;-carbons that were superposed.  This is derived
+strictly from the superposition itself with no attempt to perform any sequence
+alignment.
+</dd></dt></p>
+
+<p><dt><tt>n_id</tt>
+<dd>The number of superposed residue pairs, out of <tt>n_aligned</tt> in total,
+which are comprised of the same amino acid in each structure.
+</dd></dt></p>
+
+<p><dt><tt>n_query</tt>
+<dd>The total number of amino acid residues in the <i>query</i> structure
+(the first argument to the function).
+</dd></dt></p>
+
+<p><dt><tt>RMSD</tt>
+<dd>The C&alpha; root mean square deviation (RMSD), in &Aring;, for the
+superposed residues.
+</dd></dt></p>
+</dl>
+
+<p><a name="pro_MotifFindPairs"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[pairs, rpos1, rpos2] = <span class="fcndef">pro_MotifFindPairs</span> [ch1, ch2]
+</pre>
+
+<p>Takes two sets of chain keys that have already been
+superposed, either by the <tt>pro_Motif*</tt> functions or some other method,
+and determines the pairings of corresponding residues in a sequence independent
+manner, strictly using structural proximity.  The method used is based on that
+of [Slater&nbsp;2013].
+</p>
+
+<p>The return value is a laminated vector of the residue key pairs,
+<tt>pairs</tt>, as well as a set of rpos values which are consistent with the
+pairing.  The length of <tt>rpos1</tt> will match
+<tt>length uniq cat oResidues ch1</tt> and similarly the
+length of <tt>rpos2</tt> will match <tt>length uniq cat oResidues ch2</tt>.
+</p>
+
+
+<h2>See Also</h2>
+
+<a href="intropro.htm">Protein Functions</a><br />
+<a href="../motifsearch.htm">Domain Motif Similarity Search</a>
+
+<!-- ============================ REFERENCES ============================= -->
+
+<p><a name="Ref"></a></p><h2>References</h2>
+
+<table cellpadding="5" width="100%">
+<tbody>
+<tr>
+<td valign="top">[Slater&nbsp;2013]
+</td><td valign="top">
+Slater, A.W., Castellanos, J.I., Sippl, M.J. and Melo, F.;
+Towards the Development of Standardized Methods for Comparison, Ranking and
+Evaluation of Structure Alignments;
+<i>Bioinformatics 29(1)</i> (<b>2013</b>) 47-53.
+</td></tr>
+</tbody></table>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+
+

@@ -1,0 +1,1369 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	buildrotlib.htm	Building Rotamer Library
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Build Rotamer Library</title>
+
+<meta panel Build Rotamer Library>
+<meta main_keywords protein design, non-natural amino acid,
+non-standard amino acid, unnatural amino acid, rotamer library
+/>
+
+
+</head>
+
+<body>
+<div id="useMathJax"></div>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Introduction">Introduction</a></li>
+<li><a href="#Methodology">Creating Rotamers for Amino Acids</a></li>
+	<ul>
+	<li><a href="#HistoricalLib">Historical Rotamer Libraries</a></li>
+	<li><a href="#PDBLib">PDB-Derived Rotamer Library</a></li>
+	<li><a href="#LowModeMDLib">LowModeMD-Derived Rotamer Library</a></li>
+	<li><a href="#CompareLib">Comparison of PDB-Derived and LowModeMD-Derived Rotamer Libraries</a></li>
+	</ul>
+<li><a href="#Input">Creating the Input Database</a></li>
+<li><a href="#Run">Running the Build Rotamer Library Application</a></li>
+	<ul>
+	<li><a href="#InputOutput">Input/Output Options</a></li>
+	<li><a href="#LibraryOptions">Library Options</a></li>
+	</ul>
+<li><a class="example" href="#Examples">Examples</a></li>
+	<ul>
+	<li><a class="example" href="#Example1">
+	Example 1: Adding a New Amino Acid to the Rotamer Library</a></li>
+	<li><a class="example" href="#Example2">
+	Example 2: Adding an Amino Acid with Multiple Protonation States</a></li>
+	<li><a class="example" href="#Example3">
+	Example 3: Adding a Glycosylated Amino Acid</a></li>
+  </ul>
+<li><a href="#References">References</a></li>
+<li><a href="#SeeAlso">See Also</a></li>
+</ul>
+
+<a name="Introduction"></a>
+<h2>Introduction</h2>
+
+<p>
+Biologics are molecules derived from human or animal proteins. Such substances
+play an ever-increasing role in everyday life, from laundry to therapeutics,
+and their great promise has given rise to an urgent need for efficient methods
+for engineering new biomolecules. Computational techniques can assist by
+suggesting modifications to existing structures for obtaining desirable
+properties and functions. In MOE, the Rotamer Library 
+<!--(see <a href="../appendix/settings.htm#ProteinDefaults">Protein Defaults</a>)-->
+is used to define the allowed set of amino acids for multiple applications, such as
+<a href="../proteins/promodel.htm">Homology Modeler</a>,
+<a href="../apps/prodesign.htm">Protein Design</a>,
+<a href="../proteins/probuild.htm#RotamerExplorer">Rotamer Explorer</a>, and
+<a href="../proteins/probuild.htm">Protein Builder</a>. The Build Rotamer
+Library application aids in the creation of new non-natural amino acids for use
+in these applications.
+
+<a name="Methodology"></a>
+<h2>Creating Rotamers for Amino Acids</h2>
+<p>
+A rich discrete all-atom backbone-independent rotamer library
+is used by multiple applications in MOE, both for sidechain conformation
+exploration and for residue mutation. 
+</p>
+
+<a name="HistoricalLib"></a>
+<h3>Historical Rotamer Libraries</h3>
+<p>
+Historically, rotamer libraries were conformations of protein
+sidechains created using ideal bond lengths and angles but with
+dihedral angles derived from observations in the PDB. For example, Lovell's
+Penultimate Rotamer Library (PRL) [Lovell 2003] contains 152 rotamers,
+with 34 rotamers for Arg, 27 for Lys, 13 for Met, 9 for Gln, and 8 for Glu.
+The Dunbrack rotamer library
+[Dunbrack 1993,2002] contains roughly 350 rotamers
+along with statistically <span class='LaTeX'>\( (\phi , \psi ) \)</span>
+dependent preferences, which act as a kind of pseudo strain energy.
+</p>
+<p>
+These historical rotamer libraries are intended for crystallographic refinement
+applications. The reason for having so few rotamers, even for the
+flexible sidechains, is that no uncommon rotamers should be introduced
+into the crystallographic structures. It is intended that further
+refinement will be conducted, so that sidechains can adapt
+to a folded protein environment. 
+Typically, <span class='LaTeX'>\( \chi _1 \)</span> preferences are well characterized;
+however, <span class='LaTeX'>\( \chi _2 \)</span>, <span class='LaTeX'>\( \chi _3 \)</span>, <i>etc.</i>, preferences are poorly
+characterized, if at all. Given the small size of these libraries 
+it is not surprising that over 10% of residues in high resolution
+crystal structures cannot be matched by rotamers in the PRL or Dunbrack libraries.
+</p>
+<p>
+For the exploration of the rotamer space, as intended in MOE, 
+a much larger rotamer library is desired. In addition, the
+use of ideal bond lengths and angles in the rotamer libraries
+mentioned above can often result in self-clashing rotamers
+since variations from ideal bond angles are required
+to accommodate certain combinations of dihedral angles.
+</p>
+
+<a name="PDBLib"></a>
+<h3>PDB-Derived Rotamer Library</h3>
+<p>
+The previous rotamer library in MOE was a collection of all-atom sidechain
+conformations derived from high quality x-ray crystal structures.
+These conformations differed markedly from the traditional rotamer libraries
+in that the bond lengths and angles could vary.
+The intent of this rotamer library was to provide adequate coverage
+of the conformational space available to a sidechain and not
+just encode dihedral preferences. 
+</p>
+<p>
+A collection of ~2,000 high quality PDB
+structures was assembled; each structure had a resolution
+of 1.5 &Aring;, a Free R of 0.24, an R Value of 0.2, and contained 
+less than 30 atom overlaps per 1,000 atoms. From each such 
+structure all residues with the following properties were identified:
+1.0 occupancy, no missing atoms,
+B-factors of 30 for the backbone, B-factors of 40 for the sidechain,
+and without close contacts.
+</p>
+
+<p>
+The coordinates of each such residue were extracted and
+refined with the AMBER10:EHT (AMBER99 prior to 2012)
+forcefield with strong flat-bottomed
+tethers applied to all atoms (ACE and NME caps were used as termini).
+The resulting AMBER bond angle energies, dihedral energies, and van der Waals energies
+were calculated and stored with the refined coordinates in a database.
+Duplicates were removed by retaining the lowest energy conformation among
+the duplicates. Two conformations were considered duplicates
+if the maximum corresponding interatomic distance was less than 0.3 &Aring;.
+</p>
+
+<p>
+The resulting library contained ~35,500 conformations with associated
+AMBER strain energies; Arg had more than 12,000 rotamers, and Glu/Gln
+had several thousand each, in marked contrast to the historical rotamer
+libraries. Consequently, little or no coordinate refinement was required
+(unlike the historical rotamer libraries), with bond angle variations
+explicitly taken into account. The rotamers of this library are located
+in <tt>$MOE/lib/amber10.mdb</tt> (<tt>$MOE/lib/amino.mdb</tt> prior to 2012)
+in a packed conformation field associated with each sidechain. 
+</p>
+
+
+<a name="LowModeMDLib"></a>
+<h3>LowModeMD-Derived Rotamer Library</h3>
+<p>
+The rotamers of non-natural amino acids, however, could not be
+derived from the above PDB set, due to these amino acids
+not being present. Therefore, a different method was required to simulate the original
+conformations derived from the PDB set. For this,  
+<a href="../apps/confsrch.htm#LowModeMD">LowModeMD</a> was used.
+</p>
+
+<p>
+The amino acids were capped using ACE and NME (when necessary) and
+charged using AMBER10 charges (RESP) for standard amino acids or
+<a href="../moe/fcnref/chrgfcn.htm">AM1-BCC</a> for others. LowModeMD was
+used with a distance-dependent dielectric of 4, while setting the 
+<a href="../moe/pot.htm#Equation">electrostatics buffering constant</a>
+to 1 to allow a greater variation of conformations by weakening electrostatic
+interactions. The number of LowModeMD
+iterations was set to be a variable of the number of rotatable bonds.
+(This is identical to when <b>Iterations</b> is set to <i>Auto</i> 
+in the <a href="#LibraryOptions">Library Options</a> when 
+running the Build Rotamer Library application.)  
+</p>
+
+<p>
+Once the conformations had been generated they were
+superimposed onto a common backbone and refined with the
+AMBER10:EHT forcefield with strong flat-bottomed
+tethers applied to all heavy atoms
+(ACE and NME caps were used as termini).
+</p>
+
+<p>
+In the same manner as the PDB-generated library, 
+the resulting AMBER bond angles, dihedrals, and van der Waals energies
+were calculated and stored with the refined coordinates in a database.
+Duplicates were removed by retaining the lowest energy conformation among
+the duplicates. Two conformations were considered duplicates
+if the maximum corresponding interatomic distance was less than 0.3 &Aring;.
+</p>
+
+<p>
+When the same amino acid, but with different termini (polymer vs N-termini)
+or protomers (ARG vs ARN) were processed, the first-processed amino acid used LowModeMD to generate
+the rotamers. Rotamers for the other near-same amino acids (after the first-processed) 
+were derived from the rotamers of the first-processed amino acid.
+</p>
+
+<p>
+The resulting library contained ~1,400,000 conformations with associated
+AMBER10:EHT energies for free, N-termini, C-Termini, and polymeric versions
+of the 20 standard amino acids, as well as some non-natural and protomer versions.
+These conformations are stored in <tt>$MOE/lib/amber10.mdb</tt> in
+a packed conformation field.
+</p>
+
+<a name="CompareLib"></a>
+<h3>Comparison of PDB-Derived and LowModeMD-Derived Rotamer Libraries</h3>
+
+<p>
+The conformations generated by LowModeMD for the 20 standard amino acids
+compare well against the PDB-derived conformations (see <b>Figure 1</b>), with
+similar recovery rates and average RMSD for the closest rotamer.
+</p>
+
+<p align="center">
+<img src="buildrotlib/lowmode_coverage.png"
+alt="PDB vs LowMode MD Rotamer Coverage" />
+</p>
+<p>
+<b>Figure 1:</b> PDB vs LowModeMD Rotamer Coverage for 600 1.8 &Aring;
+PDB crystal structures. <b>% Recovery</b> is the percentage of the side chains
+in the dataset that have a rotamer within 5 kcal/mol and 0.75 &Aring; RMSD
+of the crystal structure. <b>Average RMSD</b> is the average RMSD from the crystal
+structure of the closest (best) match.
+</p>
+
+<p>
+When the LowModeMD rotamers are used in a repacking scenario,
+similar performance as compared to the PDB-derived rotamers is found
+for success rates and average RMSD for the best scoring rotamer (see <b>Figure 2</b>). 
+</p>
+
+<p align="center">
+<img src="buildrotlib/lowmode_reconstruction.png"
+alt="PDB vs LowModeMD Rotamer Reconstruction" />
+</p>
+<p>
+<b>Figure 2:</b> PDB vs LowModeMD Sidechain prediction for 600 1.8 &Aring;
+PDB crystal structures. <b>% Success for <span class='LaTeX'>\( \chi _1 \)</span></b> is the percentage
+of the sidechains in the dataset where the predicted rotamer's <span class='LaTeX'>\( \chi _1 \)</span> is
+within <span class='LaTeX'>\( 40^{\circ} \)</span> of the crystal structure. <b>Average RMSD</b> is the average
+RMSD from the crystal structure of the best scoring rotamer.
+</p>
+
+<p>
+Due to the similar performance of the LowModeMD rotamers as compared to
+PDB-derived rotamers, the LowModeMD rotamers are used for the 20 standard amino
+acids (located in <tt>$MOE/lib/amber10.mdb</tt>) as well as for any
+additional amino acids that are added using the Build Rotamer Library application.
+</p>
+
+
+<a name="Input"></a>
+<h2>Creating the Input Database</h2>
+
+The Build Rotamer Library application takes as input an MDB file with the
+following fields. Please note that only one version of an amino acid (either
+free or capped) is required for the input database. All forms of the amino acid
+(Polymer, Free, N-Term and C-Term) are then derived from the input
+amino acid. To create new molecular databases, and for more
+information on how to add to the entries, see
+<a href="../mdb/db.htm">MOE Molecular Databases</a>.
+
+<p>
+<table class="titlebar" cellpadding="5" border="1">
+<tbody>
+<tr>
+<th valign="top"><b><nobr>Field Name</nobr></b></th>
+<th valign="top"><b><nobr>Field Type</nobr></b></th>
+<th valign="top"><b>Significance</b></th>
+<th valign="top"><b>Description</b></th>
+</tr>
+<tr>
+<td valign="top">mol</td>
+<td valign="top">molecule</td>
+<td valign="top"><b><i>Required</i></b></td>
+<td valign="top">
+This field stores the amino acid either in its free form or capped with ACE and
+NME. Other than ACE and NME, only one residue can be present in
+the <b>mol</b> field. If more than one is present, the corresponding entry will be
+skipped. If the application has trouble determining the amino acid
+backbone, capping it with ACE and NME will force the application to use the caps to
+determine the backbone.
+</td>
+</tr>
+
+<tr>
+<td valign="top">rName</td>
+<td valign="top">char</td>
+<td valign="top"><b><i>Required</i></b></td>
+<td valign="top">
+This field is used to determine the 3- or 4-letter code used for
+the amino acid. If this field is missing, empty, or of a wrong type,
+the application will not run.
+</td>
+</tr>
+
+<tr>
+<td valign="top">rClass</td>
+<td valign="top">char</td>
+<td valign="top"><i>Optional</i></td>
+<td valign="top">
+This field allows
+amino acids with different <b>rNames</b> to be considered simultaneously. 
+It should be
+used only when there are competing protomers of an amino acid. For example,
+ARG and ARN have different <b>rNames</b> but are
+within the same <b>rClass</b> of ARG. When the 
+<a href="../apps/prodesign.htm#Using_the_Panel">Alternate Protomers</a>
+generation option in Protein Design is used,
+the <b>rClass</b> field is used to extract both of these amino acids when ARG
+has been specified. This field can be used in conjunction with the <b>pKa</b> field
+to favor one protomer over another at varying pH values.
+This field by default is set to the <b>rName</b> field. 
+</td>
+</tr>
+
+<tr>
+<td valign="top">pKa</td>
+<td valign="top">char</td>
+<td valign="top"><i>Optional</i></td>
+<td valign="top">
+This field is typically left empty except in cases where there are multiple
+protomeric versions of an amino acid within the same <b>rClass</b>. For an amino acid
+that can give a proton, use the appropriate pKa from the literature. When
+the amino acid cannot give another proton and is negatively charged
+(such as ASP or GLU), use a &quot;-&quot; character as the pKa value. In cases where
+the amino acid cannot give another proton but is neutral (such as 
+ARN or LYN), use a &quot;+&quot; character as the pKa value.
+</td>
+</tr>
+
+<tr>
+<td valign="top">class</td>
+<td valign="top">char</td>
+<td valign="top"><i>Optional</i></td>
+<td valign="top">
+This field is a comma-separated list of user-defined chemical classes. By default,
+<i>Amino</i>, <i>RNA</i>, and <i>DNA</i> are assigned automatically, 
+and <i>d-Amino</i> is assigned automatically for the
+d-versions of the 20 standard amino acids. Additionally, <i>Protomer</i> 
+is assigned to amino acids that are protomers of the standard 20 amino acids.
+Additional user-defined classes can be given any name (except
+names that match the 3- or 4-letter codes for defined amino acids) and can be added
+to the comma-separated <b>class</b> list. These classes will automatically be detected
+by the protein builder and will be used to separate newly added amino acids for
+easy browsing.
+</td>
+</tr>
+
+
+</tbody>
+</table>
+
+<a name="Run"></a>
+<h2>Running the Build Rotamer Library</h2>
+
+<p>To build additional amino library files, select
+<span class="menu">MOE | Edit | Build | Rotamer Library...</span>.
+The following panel will open:
+</p>
+
+<p align="center">
+<img src="buildrotlib/buildrotlib_panel.png"
+alt="Build Rotamer Library Panel" />
+</p>
+
+<a name="InputOutput"></a>
+<h3>Input/Output Options</h3>
+
+The Build Rotamer Library application uses a molecular database as input.
+Before running, ensure that the database has been creating with the
+necessary required and optional fields 
+(see <a href="#Input">Creating the Input Database</a>).
+
+<table cellpadding="5">
+
+<tr>
+<td valign="top"><b>Input</b></td>
+<td valign="top">
+Specifies the MOE database (MDB) file that will be used
+to generate new Rotamer Library entries. Enter a filename in the 
+text field, or use the <b>Browse</b> button to select a file
+through a file browser. To build new entries correctly,
+the MDB must have the required fields specified in 
+<a href="#Input">Creating the Input Database</a>.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Output</b></td>
+<td valign="top">
+Specifies the MDB output file name.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Append to MDB</nobr></b></td>
+<td valign="top">
+When enabled, the new Rotamer Library entries are appended to the output
+MDB file; otherwise, a new MDB file will be created. By default, this option
+is cleared. NOTE: After the new entries are appended, the output MDB file
+is then sorted according to rClass, rName, and variant; therefore, new entries
+may not be located at the end of the MDB file when this option is enabled.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Create logfile</nobr></b></td>
+<td valign="top">
+When enabled, all information output to the SVL command line interface
+is saved in a log file (.log) with the base name of the <b>Output</b> MDB file name.
+By default, this option is cleared.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Remove duplicates</nobr></b></td>
+<td valign="top">
+When enabled, duplicate amino acids (as defined by structure, not residue
+name) will be skipped and will not be processed. By default, this option is set.
+</td>
+</tr>
+
+</table>
+
+
+<a name="LibraryOptions"></a>
+<h3>Library Options</h3>
+
+<table cellpadding="5">
+
+<tr>
+<td valign="top"><b>Calculate Partial Charges</b></td>
+<td valign="top">
+When enabled, partial charges are calculated for the amino acids according to the method
+specified in the <b>Method</b> option. Charges are calculated for the entire amino
+acid when it does not meet the traditional alpha-amino acid backbone
+definition (NH&ndash;C<span class='LaTeX'>\(_\alpha\)</span>&ndash;C=O, with no N branching, and only 1 sidechain off
+C<span class='LaTeX'>\(_\alpha\)</span>). When the traditional definition is met, the partial charges are calculated
+for the sidechain only and spliced with the backbone charges from alanine.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Method</b></td>
+<td valign="top">
+The method used when <b>Calculate Partial Charges</b> is enabled. 
+For information on the methods, see
+<a href="../moe/pot.htm">Partial Charge</a>. The default method is <i>AM1-BCC</i>.
+If <i>AM1-BCC</i> fails (for example, if the molecule is too large, or an element is not supported),
+the method automatically falls back to <i>MMFF94*</i>.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Generate Rotamers</b></td>
+<td valign="top">
+Enables the generation of rotamers. By default, this option is set.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Iterations</b></td>
+<td valign="top">
+Specifies the number of LowModeMD iterations that are used to generate the initial set of rotamers prior
+to clustering. When <b>Iterations</b> is set to <i>Auto</i>, the number of iterations
+is set to vary according to the number of rotatable bonds:
+<p align="center"><span class='LaTeX'>
+\[
+N _{iterations} = 1000 * N _{rot} ^2
+\]
+</span></p>
+<p>
+NOTE: The number of <b>Iterations</b> will be greater than or equal to
+the number of output rotamers since redundant rotamers are removed through
+clustering. For more information, see <a href="#Methodology">Creating Rotamers
+for Amino Acids</a>.
+</p>
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Assign atom names</b></td>
+<td valign="top">
+When enabled, PDB-like atom names are automatically generated for the
+amino acid. By default, this option is set.
+</td>
+</tr>
+
+</table>
+
+
+<!-- ------------------------ Examples ---------------------------- -->
+
+<a name="Examples"></a>
+<h2>Examples</h2>
+
+<!-- Example 1 --> 
+
+<a name="Example1"></a>
+<div class="example">
+<h3>Example 1: Adding a New Amino Acid to the Rotamer Library</h3>
+
+This example demonstrates how to add new amino acids to the
+rotamer library.
+
+<ol>
+
+<li>
+<i>Create a new amino acid in the MOE window</i>
+
+<blockquote>
+<span class="menu">MOE | Edit | Build | Protein... | Ala</span>
+</blockquote>
+
+<p>
+This will create a new Alanine amino acid in the MOE window, which we will
+use as our starting point for modifying and creating a non-natural amino acid.
+</p>
+<br clear="all">
+</li>
+
+
+<li>
+
+<i>Modify the amino acid</i>
+<p>
+This can be done with either the
+<a href="../moe/molsystems/build.htm">Molecule Builder</a>
+(<span class="menu">MOE | RHS | Builder</span>)
+or the 
+<a href="../moe/gui/mainwin.htm#2DEditing">Sketcher</a>
+(<span class="menu">MOE | RHS | Sketch</span>)
+</p>
+<p>
+Create alpha-Aminoadipic acid, shown below.
+</p>
+<p align="center">
+<img src="buildrotlib/example1_nonnatural.png" alt="alpha-Aminoadipic acid" />
+</p>
+<br clear="all">
+</li>
+
+
+<li>
+<div class="floatright">
+<img src="buildrotlib/example1_newdatabase.png" alt="New database" />
+</div>
+
+<i>Create a new MDB for the non-natural amino acid</i>
+
+<blockquote>
+<span class="menu">MOE | File | New | Database... </span>
+</blockquote>
+
+<p>
+<ul>
+<li>Fill in database's name as <tt>aminoadipic_inp.mdb</tt>.</li>
+
+<li>The first field should be of <b>Type</b> <i>molecule</i>
+with a <b>Name</b> <i>mol</i>.</li>
+
+<li>The second field should be of <b>Type</b> <i>char</i>
+with a <b>Name</b> <i>rName</i>.</li>
+
+<li>The third field should be of <b>Type</b> <i>char</i>
+with a <b>Name</b> <i>class</i>.</li>
+
+<li>Click <b>OK</b>.</li>
+
+</ul>
+</p>
+<p>
+For more information on the fields of the input database and their meaning,
+see <a href="#Input">Creating the Input Database</a>.
+</p>
+<br clear="all">
+</li>
+
+<li>
+
+<div class="floatright">
+<img src="buildrotlib/example1_newentry.png" alt="New Entry" />
+</div>
+
+
+<i>Create a new entry in <tt>aminoadipic_inp.mdb</tt></i>
+
+<blockquote>
+<span class="menu">DBV | Edit | New | Entry... </span>
+</blockquote>
+
+<ul>
+<li>If more than one molecule is in the MOE window, see
+<a href="../mdb/dbedit.htm#AddingEntries">Adding new MDB entries</a>.</li>
+
+<li>Set <b>rName</b> field to <i>AAD</i>. This will be the three-letter 
+residue name that will be used for the residue.</li>
+
+<li>It is possible to set classes, which will be automatically
+detected in the Protein Builder and can be used to easily narrow
+the search for your new amino acid. Assign the following classes by using a
+comma-separated list in the <b>class</b> field:
+<i>Polar,Charged,Negative Charge</i>.</li>
+
+<li>Click <b>OK</b> and the new entry will be added to your MDB.</li>
+</ul>
+
+<br clear="all">
+</li>
+
+<li>
+
+<i>Create a new field in <tt>aminoadipic_inp.mdb</tt></i>
+
+<blockquote>
+<span class="menu">DBV | Edit | New | Field... </span>
+</blockquote>
+
+<p>
+Create a new field of type <b>char</b> and name <i>name</i>. As a <b>Value</b>
+enter the name of the amino acid, <i>Aminoadipic acid</i>. 
+</p>
+<br clear="all">
+</li>
+
+
+<li> 
+<div class="floatright">
+<img src="buildrotlib/example1_buildrotlib.png"
+alt="Build Rotamer LIbrary" />
+</div>
+
+<i>Start the Build Rotamer Library application</i>
+
+<blockquote>
+<span class="menu">DBV | Compute | Build Rotamer Library... </span>
+</blockquote>
+
+<p>
+Normally, at this stage, <b>OK</b> can be pressed, causing
+all of the default values to be used. To speed up the calculation, you can
+change <b>Iterations</b> to <i>100</i>. Note that when generating a rotamer
+library for production use, <i>Auto</i> should be used for <b>Iterations</b>
+to ensure adequate coverage of the conformational space.
+</p>
+<ul>
+<li>Set the <b>Output</b> to <tt>aminoadipic_nnaa.mdb</tt>.</li>
+
+<li>Change <b>Iterations</b> to <i>100</i>.</li>
+
+<li>Click <b>OK</b>. </li>
+
+</ul>
+<br clear="all">
+</li>
+
+<li> 
+<div class="floatright">
+<img src="../appendix/settings/config_pro_defaults.png"
+alt="Protein Defaults" />
+</div>
+
+<i>Add <tt>aminoadipic_nnaa.mdb</tt> to the Rotamer Library</i>
+
+<ul>
+<li>First create a new directory in <i>$HOME</i> called <i>nnaa</i>.</li>
+
+<li>Move <tt>aminoadipic_nnaa.mdb</tt> to <i>$HOME/nnaa</i>.</li>
+
+<li>Open the <b>Protein Defaults</b> <a href="../appendix/settings.htm#ProteinDefaults">settings panel</a>.
+
+<blockquote>
+<span class="menu">MOE | Settings | Protein Defaults... </span>
+</blockquote>
+</li>
+
+<li>Add the new rotamer library MDB 
+<i>$HOME/nnaa/aminoadipic_nnaa.mdb</i>
+to the <b>Rotamer Library</b> field,
+separating them using a comma (",") or semi colon (";").</li>
+
+<li>Click <b>Apply</b>.</li>
+</ul>
+
+<br clear="all">
+</li>
+
+<li>
+<i>Validate the new Rotamer Library files</i>
+<p>
+To ensure that your new rotamer library files are properly registered and contain
+no errors, click on <i>Validate</i>.
+</p>
+<p align="center">
+<img src="buildrotlib/example1_validate.png"
+alt="Protein Defaults" />
+</p>
+
+<p>
+The newly added rotamer library MDB (<i>$HOME/nnaa/aminoadipic_nnaa.mdb</i>
+should now be listed as a defined rotamer library file.
+</p>
+<br clear="all">
+</li>
+
+
+<li><i>Use the new amino acid in MOE applications</i>
+
+<p>The new amino acid should now appear in the
+<a href="../proteins/probuild.htm">Protein Builder</a> <i>More...</i> list.
+The amino acid can also be used in <a href="../apps/prodesign.htm">
+Protein Design</a> using the 
+<a href="../apps/prodesign.htm#MutationEditor">Mutation List Editor</a>
+and its three-letter residue name <i>AAD</i>.
+</p>
+</li>
+</ol>
+</div>
+
+<!-- Example 2 --> 
+
+<a name="Example2"></a>
+<div class="example">
+<h3>Example 2: Adding an Amino Acid with Multiple Protonation States</h3>
+This example demonstrates how to add new amino acids with 
+multiple protonatation states to the
+rotamer library.
+
+<ol>
+
+<li>
+<i>Create a new amino acid in the MOE window</i>
+
+<blockquote>
+<span class="menu">MOE | Edit | Build | Protein... | Ala</span>
+</blockquote>
+
+<p>
+This will create a new Alanine amino acid in the MOE window, which we will
+use as our starting point for modifying and creating an amino acid with 
+multiple protonation states.
+</p>
+<br clear="all">
+</li>
+
+
+<li>
+
+<i>Modify the amino acid</i>
+<p>
+This can be done with either the
+<a href="../moe/molsystems/build.htm">Molecule Builder</a>
+(<span class="menu">MOE | RHS | Builder</span>)
+or the 
+<a href="../moe/gui/mainwin.htm#2DEditing">Sketcher</a>
+(<span class="menu">MOE | RHS | Sketch</span>)
+</p>
+<p>
+Create alpha-Aminoadipic acid, shown below.
+</p>
+<p align="center">
+<img src="buildrotlib/example1_nonnatural.png" alt="alpha-Aminoadipic acid" />
+</p>
+<br clear="all">
+</li>
+
+
+<li>
+
+<div class="floatright">
+<img src="buildrotlib/example2_newdatabase.png" alt="New database" />
+</div>
+
+<i>Create a new MDB for the non-natural amino acid</i>
+
+<blockquote>
+<span class="menu">MOE | File | New | Database... </span>
+</blockquote>
+
+<p>
+<ul>
+<li>Fill in database's name as <tt>aminoadipic_multi_inp.mdb</tt>.</li>
+
+<li>The first field should be of <b>Type</b> <i>molecule</i>
+with a <b>Name</b> <i>mol</i>.</li>
+
+<li>The second field should be of <b>Type</b> <i>char</i>
+with a <b>Name</b> <i>rName</i>.</li>
+
+<li>The third field should be of <b>Type</b> <i>char</i>
+with a <b>Name</b> <i>class</i>.</li>
+
+<li>Click <b>OK</b>.</li>
+
+</ul>
+</p>
+<p>
+For more information on the fields of the input database and their meaning,
+see <a href="#Input">Creating the Input Database</a>.
+</p>
+<br clear="all">
+</li>
+
+<li>
+
+<div class="floatright">
+<img src="buildrotlib/example2_newentry1.png" alt="New Entry" />
+</div>
+
+
+<i>Create a new entry in <tt>aminoadipic_multi_inp.mdb</tt></i>
+
+<blockquote>
+<span class="menu">DBV | Edit | New | Entry... </span>
+</blockquote>
+
+<ul>
+<li>If more than one molecule is in the MOE window, see
+<a href="../mdb/dbedit.htm#AddingEntries">Adding new MDB entries</a>.</li>
+
+<li>Set the <b>rName</b> field to <i>AAD</i>. This will be the three-letter 
+residue name that will be used for the residue.</li>
+
+<li>It is possible to set classes, which will be automatically
+detected in the Protein Builder and can be used to easily narrow
+the search for your new amino acid. Assign the following classes by using a
+comma-separated list in the <b>class</b> field:
+<i>Polar,Charged,Negative Charge</i>.</li>
+
+<li>Click <b>OK</b> and the new entry will be added to your MDB.</li>
+</ul>
+
+<br clear="all">
+</li>
+
+<li>
+<i>Create new fields in <tt>aminoadipic_multi_inp.mdb</tt></i>
+
+<blockquote>
+<span class="menu">DBV | Edit | New | Field... </span>
+</blockquote>
+
+<ul>
+<li>Create a new field of type <b>char</b> and name <i>name</i>. As a <b>Value</b>
+enter the name of the amino acid, <i>Aminoadipic acid</i>.</li>
+
+<li>Create a new field of type <b>char</b> and name <i>pKa</i>. As a <b>Value</b>
+enter "-". When the amino acid can not give another proton and is 
+negatively charged, such as in the case of ASP or GLU, then insert a "-"
+character as the <b>Value</b>. (In cases where the amino acid can not give another proton but
+is neutral, such as in the case of ARN or LYN, then insert a "+" character as the <b>Value</b>.) </li>
+
+<li>Create a new field of type <b>char</b> and name <i>rClass</i>.
+As a <b>Value</b> enter "AAD". When multiple residues have the same rClass 
+this indicates that they are protomers of each other.</li>
+</ul>
+<br clear="all">
+
+</li>
+
+<li>
+<div class="floatright">
+<img src="buildrotlib/example2_newentry2.png" alt="New Entry" />
+</div>
+
+<i>Create a neutral version of alpha-Aminoadipic acid and add it to
+<tt>aminoadipic_multi_inp.mdb</tt></i>
+
+<ul>
+<li>Protonate the side chain carboxyl group.</li>
+<li>Add as a new entry to <tt>aminoadipic_multi_inp.mdb</tt></li>
+
+<blockquote>
+<span class="menu">DBV | Edit | New | Entry... </span>
+</blockquote>
+
+<li>Set <b>rName</b> to <i>AADH</i>.</li>
+<li>Set <b>class</b> to <i>Polar,Neutral</i>.</li>
+<li>Set <b>name</b> to <i>Neutral Aminoadipic acid</i>.</li>
+<li>Set <b>pKa</b> to <i>4.8</i> (the pKa of the carboxyl group of adipic acid).</li>
+<li>Set <b>rClass</b> to <i>AAD</i>.</li>
+<li>Click <b>OK</b> and the new entry will be added to the MDB.</li>
+
+</ul>
+<br clear="all">
+
+</li>
+
+
+<li> 
+<div class="floatright">
+<img src="buildrotlib/example2_buildrotlib.png"
+alt="Build Rotamer LIbrary" />
+</div>
+
+<i>Start the Build Rotamer Library application</i>
+
+<blockquote>
+<span class="menu">DBV | Compute | Build Rotamer Library... </span>
+</blockquote>
+
+<p>
+Normally, at this stage, <b>OK</b> can be pressed, causing
+all of the default values to be used. To speed up the calculation, you can
+change <b>Iterations</b> to <i>100</i>. Note that when generating a rotamer
+library for production use, <i>Auto</i> should be used for <b>Iterations</b>
+to ensure adequate coverage of the conformational space.
+</p>
+<ul>
+<li>Set the <b>Output</b> to <tt>aminoadipic_multi_inp.mdb</tt>.</li>
+
+<li>Disable <b>Remove duplicates</b>.</li>
+
+<li>Change <b>Iterations</b> to 100.</li>
+
+<li>Click <b>OK</b>. </li>
+
+</ul>
+<br clear="all">
+</li>
+
+<li> 
+<div class="floatright">
+<img src="buildrotlib/example2_proteindefaults.png"
+alt="Protein Defaults" />
+</div>
+
+<i>Add <tt>aminoadipic_multi_nnaa.mdb</tt> to the Rotamer Library</i>
+
+<ul>
+<li>First create a new directory in <i>$HOME</i> called <i>nnaa</i>.</li>
+
+<li>Move <i>aminoadipic_multi_nnaa.mdb</i> to <i>$HOME/nnaa</i></li>
+
+<li>Open the <b>Protein Defaults</b> settings.</li>
+
+<blockquote>
+<span class="menu">MOE | Settings | Protein Defaults... </span>
+</blockquote>
+
+<li>Add the new rotamer library MDB 
+<i>$HOME/nnaa/aminoadipic_multi_nnaa.mdb</i>
+to the <b>Rotamer Library</b> field,
+separating them using a comma (",") or semi colon (";").</li>
+
+<li>Click <b>Apply</b>.</li>
+</ul>
+
+<br clear="all">
+</li>
+
+<li>
+<i>Validate the new Rotamer Library files</i>
+<p>
+To ensure that your new rotamer library files are properly registered and contain
+no errors, click on <b>Files</b> <i>Validate</i>.
+</p>
+<p align="center">
+<img src="buildrotlib/example2_validate.png"
+alt="Protein Defaults" />
+</p>
+
+<p>
+The newly added rotamer library mdb (
+<i>$HOME/nnaa/aminoadipic_multi_nnaa.mdb</i>
+should now be listed as a defined rotamer library file.
+</p>
+</li>
+
+<li><i>Use the new amino acids in MOE applications</i>
+
+<p>The new amino acids should now appear in the
+<a href="../proteins/probuild.htm">Protein Builder</a> <i>More...</i> list.
+The amino acids can also be used in <a href="../apps/prodesign.htm">
+Protein Design</a> using the 
+<a href="../apps/prodesign.htm#MutationEditor">Mutation List Editor</a>
+and the residue names <i>AAD</i> or <i>AADH</i>. In addition, when enabling the
+<a href="../apps/prodesign.htm#Using_the_Panel">Alternate Protomers</a>
+option in Protein Design, it will
+allow <i>AAD</i> and <i>AADH</i> to compete against each other when doing
+a mutation.
+</p>
+</li>
+</ol>
+</div>
+
+<!-- Example 3 --> 
+
+<a name="Example3"></a>
+<div class="example">
+<h3>Example 3: Adding a Glycosylated Amino Acid</h3>
+
+<p>
+This example demonstrates how to add a new amino acid
+to the rotamer library which can be the composite of multiple residues (for
+example glycosylated amino acids). This example will focus on creating an
+N-linked Asparagine.
+</p>
+
+<ol>
+
+<li>
+<i>Create a new amino acid in the MOE window</i>
+
+<blockquote>
+<span class="menu">MOE | Edit | Build | Protein... | Asn</span>
+</blockquote>
+
+<p>
+This will create a new Asparagine amino acid in the MOE window, which we will
+use as our starting point for modifying and creating an N-linked
+glysolyated amino acid.
+</p>
+<br clear="all">
+</li>
+
+<li>
+<i>Modify Asparagine with N-Acetylglucosamine</i>
+<p>
+<div class="floatright">
+<img src="buildrotlib/example3_carbobuilder.png" 
+alt="Carbohydrate Builder" />
+</div>
+</p>
+
+<ul>
+<li>Select the sidechain nitrogen of Asparagine.</li>
+
+<li>Open the <a href="../apps/carbo.htm">Carbohydrate Builder</a></li>
+
+<blockquote>
+<span class="menu">MOE | Edit | Build | Carbohydrate...</span>
+</blockquote>
+
+<li>Add N-Acetylglucosamine to Asparagine.</li>
+<p>
+Ensure that <b>Library</b> is set to <i>amino-pyranose</i>, <b>Unit</b>
+is set to <i>aDGlcNAc</i> and <b>O1</b> is enabled. After all three options are set
+correctly, click <b>Build</b>.
+</p>
+
+<p align="center">
+<img src="buildrotlib/example3_nlinked_sugar.png" 
+alt="N-Linked Asn" />
+</p>
+</ul>
+
+<br clear="all">
+</li>
+
+<li>Merge ASN and GLC into one residue.
+<p>
+Open the <a href="../moe/gui/se.htm">Sequence Editor</a>. Notice
+that the N-Acetylglucosamine (GLC) has been added as a separate residue
+from the Asparagine (ASN). Since the Build Rotamer Library
+application assumes that only one residue (excluding ACE and NME) will be
+defined in an MDB entry, the ASN and GLC residues must be merged together.
+</p>
+
+<ul>
+<li>Select the N-glycosylate amino acid.
+<p>
+Ensure that all atoms of both the ASN and GLC residue have been selected. To
+ensure this, extend the selection to the entire molecule.
+</p>
+<blockquote>
+<span class="menu">MOE | RHS | Extend | Molecule</span>
+</blockquote>
+</li>
+
+<li>Open the SVL Commands window.
+<blockquote>
+<span class="menu">MOE | SVL</span>
+</blockquote>
+</li>
+
+<li>Merge the residue using the <a href="../moe/fcnref/obj.htm">oReparent</a>
+svl function.
+<pre>
+svl> oReparent [SelectedAtoms [], aResidue first SelectedAtoms []]
+</pre>
+
+<p>
+The above SVL function moves all of the selected atoms into the residue of the
+first selected atoms (in this case ASN). 
+</p>
+</li>
+
+<li>Delete the GLC residue.
+<p>
+Open the <a href="../moe/gui/se.htm">Sequence Editor</a> and select the GLC
+residue. Then delete it.
+</p>
+<blockquote>
+<span class="menu">SEQ | Edit | Delete</span>
+</blockquote>
+</li>
+</ul>
+
+<br clear="all">
+</li>
+
+
+<li>
+<div class="floatright">
+<img src="buildrotlib/example3_newdatabase.png" alt="New database" />
+</div>
+
+<i>Create a new MDB for the N-linked amino acid</i>
+
+<blockquote>
+<span class="menu">MOE | File | New | Database... </span>
+</blockquote>
+
+<p>
+<ul>
+<li>Fill in database's name as <tt>nlinked_sugar.mdb</tt>.</li>
+
+<li>The first field should be of <b>Type</b> <i>molecule</i>
+with a <b>Name</b> <i>mol</i>.</li>
+
+<li>The second field should be of <b>Type</b> <i>char</i>
+with a <b>Name</b> <i>rName</i>.</li>
+
+<li>The third field should be of <b>Type</b> <i>char</i>
+with a <b>Name</b> <i>class</i>.</li>
+
+<li>Click <b>OK</b>.</li>
+</ul>
+</p>
+
+<p>
+For more information on the fields of the input database and their meaning,
+see <a href="#Input">Creating the Input Database</a>.
+</p>
+<br clear="all">
+</li>
+
+<li>
+<div class="floatright">
+<img src="buildrotlib/example3_newentry.png" alt="New Entry" />
+</div>
+
+<i>Create new entry in <tt>nlinked_sugar.mdb</tt></i>
+
+<blockquote>
+<span class="menu">DBV | Edit | New | Entry... </span>
+</blockquote>
+
+<p>
+<ul>
+<li>If more than one molecule is in the MOE window, see
+<a href="../mdb/dbedit.htm#AddingEntries">Adding new MDB entries</a>.</li>
+
+<li>Set the <b>rName</b> field to <i>SGLC</i>. This will be the four-letter
+ residue name that will be used for the residue.</li>
+
+<li>It is possible to set classes, which will be automatically
+detected in the Protein Builder and can be used to easily narrow
+the search for your new amino acid. Assign the following classes by using a
+comma-separated list in the <b>class</b> field:
+<i>N-Linked GLC</i>.</li>
+
+<li>Click <b>OK</b> and the new entry will be added to your MDB.</li>
+</ul>
+</p>
+
+<br clear="all">
+</li>
+
+<li>
+<i>Create new fields in <tt>nlinked_sugar.mdb</tt></i>
+
+<blockquote>
+<span class="menu">DBV | Edit | New | Field... </span>
+</blockquote>
+
+<p>
+Create a new field of type <b>char</b> and name <i>name</i>. As a <b>Value</b>
+enter the name of the amino acid, <i>Asparagine N-linked to N-Acetylglucosamine</i>.
+</p>
+
+<br clear="all">
+</li>
+
+
+<li> 
+<div class="floatright">
+<img src="buildrotlib/example3_buildrotlib.png"
+alt="Build Rotamer LIbrary" />
+</div>
+
+<i>Start the Build Rotamer Library application</i>
+
+<blockquote>
+<span class="menu">DBV | Compute | Build Rotamer Library... </span>
+</blockquote>
+
+<p>
+Normally, at this stage, <b>OK</b> can be pressed, causing
+all of the default values to be used. To speed up the calculation, you can
+change <b>Iterations</b> to <i>100</i>. Note that when generating a rotamer
+library for production use, <i>Auto</i> should be used for <b>Iterations</b>
+to ensure adequate coverage of the conformational space.
+</p>
+<ul>
+<li>Set the <b>Output</b> to <tt>nlinked_sugar_nnaa.mdb</tt>.</li>
+
+<li>Change <b>Iterations</b> to <i>100</i>.</li>
+
+<li>Click <b>OK</b>. </li>
+</ul>
+
+<br clear="all">
+</li>
+
+<li> 
+<div class="floatright">
+<img src="buildrotlib/example3_proteindefaults.png"
+alt="Protein Defaults" />
+</div>
+
+<i>Add <tt>nlinked_sugar_nnaa.mdb</tt> to the Rotamer Library</i>
+
+<ul>
+<li>First, create a new directory in <i>$HOME</i> called <i>nnaa</i>. 
+(If this directory already exists, use the existing one.)</li>
+
+<li>Move <tt>nlinked_sugar_nnaa.mdb</tt> to <i>$HOME/nnaa</i></li>
+
+<li>Open the <b>Protein Defaults</b> settings.</li>
+
+<blockquote>
+<span class="menu">MOE | Settings | Protein Defaults... </span>
+</blockquote>
+
+<li>Add the new rotamer library MDB 
+<i>$HOME/nnaa/nlinked_sugar_nnaa.mdb</i>
+to the <b>Rotamer Library</b> field
+separating them using a comma (",") or semi colon (";").</li>
+
+<li>Click <b>Apply</b>.</li>
+</ul>
+
+<br clear="all">
+</li>
+
+<li>
+<i>Validate the new Rotamer Library files</i>
+<p>
+To ensure that your new rotamer library files are properly registered and contain
+no errors, click on <b>Files</b> <i>Validate</i>.
+</p>
+<p align="center">
+<img src="buildrotlib/example3_validate.png"
+alt="Protein Defaults" />
+</p>
+
+<p>
+The newly added rotamer library mdb (
+<i>$HOME/nnaa/nlinked_sugar_nnaa.mdb</i>
+should now be listed as a defined rotamer library file.
+</p>
+<br clear="all">
+</li>
+
+<li><i>Use the new amino acid in MOE applications</i>
+
+<p>The new amino acid should now appear in the
+<a href="../proteins/probuild.htm">Protein Builder</a> <i>More...</i> list.
+The amino acid can also be used in <a href="../apps/prodesign.htm">
+Protein Design</a> using the 
+<a href="../apps/prodesign.htm#MutationEditor">Mutation List Editor</a>
+and its four-letter residue name <i>SGLC</i>. 
+</p>
+</li>
+</ol>
+
+</div>
+
+<!-- ---- ---- ---- ---- END OF EXAMPLES ---- ---- ---- ---- -->
+
+<a name="References"></a>
+<h2>References</h2>
+
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="top">[Lovell&nbsp;2000]</td>
+<td valign="top">
+Lovell, S.C., Word, J.M., Richardson, J.S., Richardson, D.C.;
+The Penultimate Rotamer Library;
+<i>Proteins 40</i> (<b>2000</b>) 389&ndash;408.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Dunbrack&nbsp;1993]</td>
+<td valign="top">
+Dunbrack, R.L., Karplus, M.;
+Backbone-dependent Rotamer Library for Proteins:
+Application to Side-chain prediction;
+<i>J. Mol. Biol. 230</i> (<b>1993</b>) 543&ndash;574.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Dunbrack&nbsp;2002]</td>
+<td valign="top">
+Dunbrack, R.L.;
+Rotamer Libraries in the 21st Century;
+<i>Curr. Opin. Struct. Biol. 12</i> (<b>2002</b>) 431&ndash;440.
+</td>
+</tr>
+
+</table>
+
+<a name="SeeAlso"></a>
+<h2>See Also</h2>
+
+<ul>
+<li><a href="../apps/prodesign.htm">Protein Design</a>
+<li><a href="../proteins/probuild.htm">Protein Builder</a>
+</ul>
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

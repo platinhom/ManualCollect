@@ -1,0 +1,455 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!  printfcn.htm			printer support
+!! -->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<title>Printer Functions</title>
+<meta functions printer_list, printer_info>
+<meta functions printer_open, printer_key, printer_close>
+<meta functions printer_cancel, printer_iscancelled>
+<meta functions printer_beginpage, printer_draw, printer_endpage>
+<meta functions printer_job>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    prtokens = <a class="fcnlink" href="#printer_list">printer_list</a>        []
+    info     = <a class="fcnlink" href="#printer_info">printer_info</a>        'prtoken'
+
+    jobkey   = <a class="fcnlink" href="#printer_open">printer_open</a>        [ 'prtoken', opt ]
+    jobkey   = <a class="fcnlink" href="#printer_open">printer_open</a>        jobkey
+    jobkey   = <a class="fcnlink" href="#printer_key">printer_key</a>         jobkey
+               <a class="fcnlink" href="#printer_close">printer_close</a>       jobkey
+
+               <a class="fcnlink" href="#printer_cancel">printer_cancel</a>      jobkey;
+    flag     = <a class="fcnlink" href="#printer_iscancelled">printer_iscancelled</a> jobkey;
+
+               <a class="fcnlink" href="#printer_beginpage">printer_beginpage</a>   jobkey 
+               <a class="fcnlink" href="#printer_draw">printer_draw</a>        [jobkey, graphic, xform, clip]
+               <a class="fcnlink" href="#printer_endpage">printer_endpage</a>     jobkey 
+
+    flag = <a class="fcnlink" href="#printer_job">printer_job</a> [ cfcn, cdata, opt, 'prtoken', pfcn, pdata ]
+</pre>
+
+<h2>Description</h2>
+<p>
+The SVL printer functions are used to render flat graphics data to printers
+or print output files.  Printer devices are given unique names and these
+names are used to specify print destinations.  Printer data are sent to
+a printer by opening a print job for the printer, rendering flat graphics
+data to the job, and finally, closing the printer job.  A typical block
+of SVL code to print graphics data would resemble:
+<p>
+<blockquote><pre>local prdev = first printer_list [];         // get default printer
+
+local jobkey = printer_open [prdev, [        // open a job on the printer
+    pagesize:  'Letter',                     // job options...
+    landscape: 0
+]];
+
+for i = 1, npages loop
+    printer_beginpage jobkey;                // start a page
+    local gkey = gr_create [];               // create some graphics
+    ...
+    printer_draw [jobkey, gkey];             // send graphics to printer
+    gr_destroy gkey;
+    ...
+    printer_endpage jobkey;                  // end the page
+endloop
+
+printer_close jobkey;                        // close the job
+</pre></blockquote>
+
+<p>
+On Unix systems, the <tt>lpstat -a</tt> command is used to determine the list
+of supported printers and the <tt>lp -P</tt> command is used to send data to
+the printer.  All printers on Unix are assumed to be PostScript printers.
+<p>
+On Windows systems, the Windows printer services are used to determine the
+list of supported printers.  This list may be modified in the Windows
+Control Panel.  PostScript data files may also be created.
+<p>
+Alternatively, the <tt>printer_job</tt> function provides an interface
+for printing content specified by a callback function.  In this case,
+most of the work is done by <tt>printer_job</tt> and an application need
+not bother with the lower level printer functions.  A typical to print
+on the default printer would resemble
+<blockquote><pre>local function Content;
+printer_job #Content;
+</pre></blockquote>
+<p>
+For more information, please see the entry below on <tt>printer_job</tt>.
+
+<p><a name="printer_info"></a></p>
+<p><a name="printer_list"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>prtokens = <span class="fcndef">printer_list</span> []
+info = <span class="fcndef">printer_info</span> 'prtoken'
+</pre>
+<p>
+The <tt>printer_list</tt> function returns a vector of tokens each of which
+is the name of a printer device.  Only these device names can be given as
+arguments to <tt>printer_info</tt> or <tt>printer_open</tt>.  Printer
+devices may change between invocations of <tt>printer_list</tt> (due to
+changes in the list of installed printers).
+<p>
+The <tt>printer_info</tt> function returns information about a particular
+printer given by the token argument. If the argument is null or the empty
+token then info is returned for the first printer returned by
+<tt>printer_list</tt>.  The returned information is in the form of a
+tagged vector:
+<blockquote><dl>
+<dt><tt>color : flag</tt>
+<dd>
+A boolean with value 1 if the printer can print in color and 0 otherwise.
+Grayscale is considered uncolored.
+<p>
+<dt><tt>collate : flag</tt>
+<dd>
+A boolean with value 1 if the printer can collate multiple copies.  Collated
+copies are printer in order (1,2,3,...,1,2,3,...) whereas uncollated copies
+are printed in order (1,1,1,...,2,2,2,...,3,3,3...).
+<p>
+<dt><tt>copies : flag</tt>
+<dd>
+A boolean with value 1 if the printer can replicate pages and 0 otherwise.
+<p>
+<dt><tt>margin : [ left, bottom, right, top ]</tt>
+<dd>
+The smallest margins in units points (1 point = 1/72 inch) that can be
+safely used; in other words, pages with smaller margins may not print
+correctly.  Each of <tt>left</tt>, <tt>bottom</tt>, <tt>right</tt>
+and <tt>top</tt> is a non-negative scalar.
+<p>
+<dt><tt>name : 'devicename'</tt>
+<dd>
+The name of the printer device
+(equal to the argument to <tt>printer_info</tt>).
+<p>
+<dt><tt>pagesize : dim</tt>
+<dd>
+A tagged vector of known or supported page sizes for the printer.
+Each element of <tt>dim</tt> is of the form <tt>[width,height]</tt>
+in units of points (1 point = 1/72 inch).  For example, for most printers
+<tt>dim.Letter</tt> is <tt>[612,792]</tt>; and <tt>'Letter'</tt> can be
+given as a <tt>pagesize</tt> in <tt>printer_open</tt>.
+<p>
+<dt><tt>twosided : number</tt>
+<dd>
+A number in {0,1,2} indicating the level of support for two-sided printing.
+0 means that two-sided printing is not supported; 1 means that two-sided
+is supported but with left-binding only (applications must perform their
+own rotation for top binding); 2 means that two-sided printing is supported
+and that left- and top- binding are supported.
+</dl></blockquote>
+<p>
+For some printer devices (such as PostScript) a list of common page sizes
+is returned by <tt>printer_info</tt>; however, an acutal printer may not
+support the pagesize when the PostScript file is printed.  A similar caveat
+applies to the other elements of <tt>printer_info</tt>.
+
+<p><a name="printer_close"></a></p>
+<p><a name="printer_key"></a></p>
+<p><a name="printer_open"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>jobkey = <span class="fcndef">printer_open</span> [ 'prtoken', opt ]
+jobkey = <span class="fcndef">printer_open</span> jobkey
+jobkey = <span class="fcndef">printer_key</span> jobkey
+<span class="fcndef">printer_close</span> jobkey
+</pre>
+<p>
+The <tt>printer_open</tt> function initiates a print job on a named printer.
+The <tt>'prtoken</tt> argument must be one of the tokens returned by
+<tt>printer_list</tt>.  The second form of <tt>printer_open</tt> is used
+to reopen a printer job (for example, to prevent automatic closing of the
+job when a creating task ends) and may possibly return a different key.
+The <tt>printer_close</tt> function must be called for each
+<tt>printer_open</tt> prior to actual printing (although printing may
+possibly occur in non-spooling direct printing environments).  The
+<tt>printer_key</tt> function returns 0 if the given argument is not
+a valid job key; otherwise it returns its argument.
+<p>
+The <tt>opt</tt> tagged vector argument to <tt>printer_open</tt> defines
+print job specific options:
+<blockquote><dl>
+<dt><tt>color : flag</tt>
+<dd>
+If <tt>flag</tt> is true then color printing will be enabled for the job;
+otherwise color printing will be disabled.  This flag does not affect the
+actual content of the print data; it is present in case the printer
+is capable of printing black and white more efficiently than color.
+Note that color printing will only occur if the printer devices support color.
+The default is 1.
+<p>
+<dt><tt>collate : flag</tt>
+<dd>
+Enables or disables collation of multiple copies provided that the printer
+supports collation.  If the printer does not support collation then this
+flag is ignored and it is up to the application to collate the output.
+Collated output is in the order (1,2,3,...,1,2,3,...) while uncollated output
+is in the order (1,1,..,2,2,...,3,3,...).  The default is 0.
+<p>
+<dt><tt>copies : num</tt>
+<dd>
+The number of replicas of each page to print provided that the printer
+supports multiple copies.  If the printer does not support multiple copies
+then this number is ignored and it is up to the application to replicate
+each page.  The default is 1.
+<p>
+<dt><tt>draft : flag</tt>
+<dd>
+Enables or disables draft mode printing.  If the printer device supports
+a draft, or lower quality, printing mode, then it will be enabled if
+<tt>flag</tt> is true.  The default is 0.
+<p>
+<dt><tt>filename : 'printtofile'</tt>
+<dd>
+The name of the file into which print data will be written.  For most printers,
+if <tt>filename</tt> is non-null and not the empty token print data will
+be written into a file instead of sent to the printer.  The default is
+the empty token. 
+<p>
+<dt><tt>landscape : flag</tt>
+<dd>
+Enables or disables Landscape printing.  If the page dimensions are
+[<i>w</i>,<i>h</i>] and <tt>flag</tt> is true then the page size will be
+set to [<i>h</i>,<i>w</i>].  The default is false (0) for Portrait printing.
+<p>
+<dt><tt>pagesize : 'page'<br />pagesize : [width,height]</tt>
+<dd>
+Determines the dimensions of each page in the print job.  If the given
+value is a token then it is interpreted to be one of the page size tags
+returned by <tt>printer_info</tt> (e.g., <tt>'Letter'</tt>).  If the
+supplied token is not recognized then the page size will be set to
+one of the page sizes supported by the printer.  If the supplied value
+is a <tt>[width,height]</tt> pair then the pair is interpreted as the
+dimensions of the page in units of points (1 point = 1/72 inch).  The
+printer will use a supported page size that is closest to the given dimensions;
+the printer may possibly isotropically scale the data proportionately.
+<p>
+<dt><tt>twosided : number</tt>
+<dd>
+Sets the two-sided (or duplex) printing mode provided that the printer
+devices supports two-sided printing.  A mode of 0 disables two-sided
+printing (the default).  A mode of 1 means left-binding two-sided printing.
+A mode of 2 means top-binding two-sided printing (even pages are rotated
+180 degrees).
+</dl></blockquote>
+
+<p><a name="printer_iscancelled"></a></p>
+<p><a name="printer_cancel"></a></p>
+<p><hr noshade="noshade" />
+
+<pre><span class="fcndef">printer_cancel</span> jobkey;
+flag = <span class="fcndef">printer_iscancelled</span> jobkey;
+</pre>
+<p>
+The <tt>printer_cancel</tt> function is used to cancel a print job.  The
+job key is still valid and active; however, drawing requests will be ignored
+and, if possible, the printer data for the entire job will not be sent
+to the printer (or to the file if printing to a file).  Invoking
+<tt>printer_cancel</tt> does not obviate the need to call
+<tt>printer_close</tt>, which is still required for each <tt>printer_open</tt>.
+The <tt>printer_iscancelled</tt> function is used to query the cancel state
+of a given print job.
+
+<p><a name="printer_endpage"></a></p>
+<p><a name="printer_draw"></a></p>
+<p><a name="printer_beginpage"></a></p>
+<p><hr noshade="noshade" />
+
+<pre><span class="fcndef">printer_beginpage</span> jobkey 
+<span class="fcndef">printer_draw</span> [jobkey, graphic, xform, clip]
+<span class="fcndef">printer_endpage</span> jobkey 
+</pre>
+<p>
+Prior to specifying print data per page the <tt>printer_beginpage</tt>
+function must be called.  Page data are only printed when
+<tt>printer_endpage</tt> is called.  It is permitted to call
+<tt>printer_beginpage</tt> more than once per page; however, extra
+invocations do not start new physical pages.
+A call to <tt>printer_endpage</tt> must be made for each call to
+<tt>printer_beginpage</tt>.
+<p>
+The <tt>printer_draw</tt> function is used to specify print content graphics
+and must be invoked after a <tt>printer_beginpage</tt> otherwise the
+data will be ignored.  The arguments to <tt>printer_draw</tt> are:
+<p>
+<blockquote><dl>
+<dt><tt>jobkey</tt>
+<dd>A print job key returned by <tt>printer_open</tt>.
+<p>
+<dt><tt>graphic</tt>
+<dd>A graphics object key returned by <tt>gr_create</tt> or
+a <tt>[header,data]</tt> vector as returned by <tt>gr_data</tt>.
+<p>
+<dt><tt>xform</tt>
+<dd>
+A numeric vector describing a coordinate transformation.  A null vector
+means that no transformation will be used.  A two-element vector is
+interpreted as a translation <tt>[tx,ty]</tt>.  A four element vector
+is interpreted as a translation preceded by a scaling <tt>[tx,ty,sx,sy]</tt>.
+Translation values are in units of points (1 point = 1/72 inch).
+<p>
+<dt><tt>clip</tt>
+<dd>
+A four-element numeric vector specifying a clip rectangle.  If <tt>clip</tt>
+is null then no clipping is performed.  Otherwise the clip rectangle is
+taken to be <tt>[xmin,ymin,xmax,ymax]</tt>.
+The clip rectangle is applied after scaling and translation.
+</dl></blockquote>
+
+<p><a name="printer_job"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>flag = <span class="fcndef">printer_job</span> [ cfcn, cdata, opt, devname, pfcn, pdata ]
+</pre>
+<p>
+The <tt>printer_job</tt> function is an interface to printing graphics content
+specified by a callback function.  The arguments are
+<blockquote><dl>
+<dt><tt>cfcn<br />cdata</tt>
+<dd>
+<tt>cfcn</tt> is the token name, or function address, of a function that
+will supply content via flat graphic object keys.
+The <tt>cdata</tt> argument
+is initial data to supply to <tt>cfcn</tt> (to specify its content).  The
+<tt>cfcn</tt> function should resemble
+<blockquote><pre>local function Content [data, cmd, cmdarg]
+    if cmd == 'begin' then          // cmdarg = opt
+	data = [                    // argument in printer_job
+            orgdata: data,          // initial data
+	    opt:     cmdarg,        // job options
+            grkey:   0              // cache for graphics data
+        ];
+	local npages = ...          // compute total pages from 'data'
+        return [data, npages];      // this will be passed back
+
+    elseif cmd == 'end' then        // cmdarg = []
+	gr_destroy data.grkey;      // destroy previously used graphics
+
+    elseif cmd == 'page' then       // cmdparg = pagenum
+	gr_destroy data.grkey;      // destroy previously used graphics
+
+	data.grkey = = gr_create [];     // create a graphic for this page
+        ... render into data.grkey ...
+
+        return [data, data.grkey];
+
+    else
+	return [];
+    endif
+endfunction
+</pre></blockquote>
+<p>
+On the first call to <tt>cfcn</tt> the <tt>data</tt> argument will the
+<tt>printer_job</tt> <tt>cdata</tt> argument.
+On subsequent calls, the <tt>data</tt> argument will be the value returned
+by <tt>cfcn</tt>.  In this way <tt>cfcn</tt> can manage any resources required.
+<b>Note!</b> the return value of <tt>cfcn</tt> for the <tt>'page'</tt> command
+is <tt>[data, grob, xform, cliprect]</tt> where <tt>grob(i)</tt>,
+<tt>xform(i)</tt> and <tt>cliprect(i)</tt> are passed to <tt>printer_draw</tt>
+one at a time.
+
+<p>
+<dt><tt>opt</tt>
+<dd>
+A job options tagged vector in the same format as for <tt>printer_open</tt>.
+Additional options are interpreted for <tt>printer_job</tt>:
+<blockquote><dl>
+<dt><tt>margin : [left,bottom,right,top]</tt>
+<dd>
+The margins in units of points (1 point = 1/72 inch) to use for arranging
+content.
+<p>
+<dt><tt>pagelist : numeric_vector</tt>
+<dd>
+A vector of page numbers to print; duplicates are permitted.  If this vector
+is null then all pages will be printed (as returned by <tt>cfcn</tt>).
+<p>
+<dt><tt>*</tt>
+<dd>
+All other tags are accepted and passed through to the <tt>cfcn</tt>.
+</dl></blockquote>
+
+<p>
+<dt><tt>devname</tt>
+<dd>
+A printer token name as returned by <tt>printer_list</tt>.  If this argument
+is null or the empty token then the first printer returned by
+<tt>printer_list</tt> is used.
+
+<p>
+<dt><tt>pfcn<br />pdata</tt>
+<dd>
+The <tt>pfcn</tt> argument is token name or function address of a progress
+function to use when printing; both are optional.  The function should resemble
+<p>
+<blockquote><pre>local function Progress [data, jobkey, cmd, cmdarg]
+    if     cmd == 'begin' then     // cmdarg = totalpagecount
+    elseif cmd == 'page'  then     // cmdarg = [curpage,totalpagecount]
+    elseif cmd == 'end'   then     // cmdarg = []
+    endif
+    return data;
+endfunction
+</pre></blockquote>
+<p>
+Like <tt>cfcn</tt>, the return value of <tt>pfcn</tt> is passed in to the
+next call to <tt>pfcn</tt>.  The <tt>pfcn</tt> will be called at the
+start, end and after each page of the print job.  At any time, <tt>pfcn</tt>
+may issue a call to <tt>printer_cancel</tt> to cancel the job.
+</dl></blockquote>
+
+<p>
+The <tt>printer_job</tt> function will return a flag which is true if
+the job completed and false if it was cancelled with <tt>printer_cancel</tt>.
+
+
+<h2>See Also</h2>
+<p>
+<a href="grfcn.htm">Flat Graphics Object Functions</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+
+
+
+

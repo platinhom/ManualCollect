@@ -1,0 +1,1192 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--	/svl/fcnref/svlmpu.htm	MPU functions
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions MPU_HOSTCOUNT>
+<meta functions MPU_PORTCOUNT>
+<meta functions MPU_THISHOST>
+<meta functions MPU_HOSTNAMES>
+<meta functions MPU_DIGITBITS>
+<meta functions MPU_DIGITCOUNT>
+<meta functions MPU_NEIGHBORS>
+
+<meta functions mpu_batch>
+<meta functions mpu_call>
+<meta functions mpu_eval>
+<meta functions mpu_load>
+<meta functions mpu_run>
+<meta functions mpu_script>
+<meta functions mpu_portalloc>
+<meta functions mpu_portfree>
+<meta functions mpu_send>
+<meta functions mpu_receive>
+<meta functions mpu_reply>
+<meta functions mpu_cprint>
+<meta functions mpu_print>
+<meta functions mpu_cwrite>
+<meta functions mpu_write>
+<meta functions mpu_charencode>
+<meta functions mpu_chardecode>
+<meta functions SVL_MPU_PASSWORD>
+<meta functions SVL_MPU_USER>
+<meta functions mpu_password>
+<meta functions mpu_distance>
+
+<style type="text/css">
+dd { padding-bottom: 0.5em; }
+table.display {
+    width: 90%;
+    border: solid thin grey;
+}
+table.display th {
+    border: solid thin grey;
+    background-color: #cccccc;
+}
+table.display td {
+    border: solid thin grey;
+    padding: 0.25em 0.5em;
+}
+</style>
+
+
+<title>SVL Multi-Processor Functions</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    <a class="fcnlink" href="#MPU_HOSTCOUNT">MPU_HOSTCOUNT</a>
+    <a class="fcnlink" href="#MPU_PORTCOUNT">MPU_PORTCOUNT</a>
+    <a class="fcnlink" href="#MPU_THISHOST">MPU_THISHOST</a>
+
+    <a class="fcnlink" href="#MPU_HOSTNAMES">MPU_HOSTNAMES</a>
+
+    <a class="fcnlink" href="#MPU_DIGITBITS">MPU_DIGITBITS</a>
+    <a class="fcnlink" href="#MPU_DIGITCOUNT">MPU_DIGITCOUNT</a>
+    <a class="fcnlink" href="#MPU_NEIGHBORS">MPU_NEIGHBORS</a>
+
+    <a class="fcnlink" href="#mpu_print">mpu_print</a> expr
+    <a class="fcnlink" href="#mpu_cprint">mpu_cprint</a> expr
+    <a class="fcnlink" href="#mpu_write">mpu_write</a> ['format', arg1, arg2, ...]
+    <a class="fcnlink" href="#mpu_cwrite">mpu_cwrite</a> ['format', arg1, arg2, ...]
+
+    [result,code,seqno,udata] = <a class="fcnlink" href="#mpu_batch">mpu_batch</a>  [ cmd, arg1, arg2, udata ]
+
+    [result,code] = <a class="fcnlink" href="#mpu_call">mpu_call</a>   [ host, fcn, arg, file ]
+    [result,code] = <a class="fcnlink" href="#mpu_eval">mpu_eval</a>   [ host, expr, arg ]
+    [result,code] = <a class="fcnlink" href="#mpu_load">mpu_load</a>   [ host, src ]
+    [result,code] = <a class="fcnlink" href="#mpu_run">mpu_run</a>    [ host, src, arg, fcn ]
+    [result,code] = <a class="fcnlink" href="#mpu_script">mpu_script</a> [ host, src, arg ]
+
+    port = <a class="fcnlink" href="#mpu_portalloc">mpu_portalloc</a> []
+    <a class="fcnlink" href="#mpu_portfree">mpu_portfree</a> port
+
+    reply = <a class="fcnlink" href="#mpu_send">mpu_send</a> [receiver_port, msg, reply_port]
+    reply = <a class="fcnlink" href="#mpu_send">mpu_send</a> [receiver_port, msg, reply_port, timeout]
+    [reply_port, msg] = <a class="fcnlink" href="#mpu_receive">mpu_receive</a> receiver_port
+    [reply_port, msg] = <a class="fcnlink" href="#mpu_receive">mpu_receive</a> [receiver_port, timeout]
+    <a class="fcnlink" href="#mpu_reply">mpu_reply</a> [reply_port, reply_msg]
+
+    char_data = <a class="fcnlink" href="#mpu_charencode">mpu_charencode</a> value
+    value     = <a class="fcnlink" href="#mpu_chardecode">mpu_chardecode</a> char_data
+
+    scrambled_token = <a class="fcnlink" href="#mpu_password">mpu_password</a> password_token
+    n_hops = <a class="fcnlink" href="#mpu_distance">mpu_distance</a> [hostA, hostB]
+</pre>
+
+
+<h2>Description</h2>
+
+<p><b>Distributed computing.</b>
+
+An N-node multi-processor is comprised of N mutually connected instances
+of the SVL execution environment.  The number of processors, N, is stored in 
+the SVL constant <tt>MPU_HOSTCOUNT</tt>.  Each processor, or <i>host</i>,
+is assigned a <i>host number</i>, an integer from 1 to <tt>MPU_HOSTCOUNT</tt>.
+Each host stores its host number in the SVL constant <tt>MPU_THISHOST</tt>.
+
+<p>
+SVL multi-processor environment is controlled by functions and
+constants whose names are prefixed by <tt>mpu_</tt> or <tt>MPU_</tt>.
+For many applications, the only multi-processor function needed is
+the function <tt>mpu_batch</tt>, which automatically handles
+distribution of jobs and collection of results (and/or errors).
+
+Explicit distribution of jobs is accomplished with <tt>mpu_call</tt> and
+related functions.  Explicit transfer of data between hosts is
+accomplished with functions <tt>mpu_send/receive/reply</tt>.
+
+<p><b>Command line.</b>
+
+The application command line switches <tt>-mpu</tt> and <tt>-mpulog</tt> are
+used on application startup to define and monitor a multi-processor session.
+
+For example, a Unix application called <tt>pgm</tt> using an SVL
+multi-processor would use the command line switches as follows:
+
+<pre>    user% pgm -mpu machinefile -mpulog logfile
+</pre>
+
+<p>
+The configuration file, <tt>machinefile</tt>,
+identifies hosts of the multi-processor.
+
+The report file, <tt>logfile</tt>, contains information about
+the multi-processor startup and the errors detected during the execution.
+The <tt>logfile</tt> is intended for troubleshooting and is generally
+not used.
+
+<p>
+If <tt>machinefile</tt> is a dash (<tt>-</tt>), then the
+configuration is read from the process' standard input
+stream (<tt>stdin</tt>).  If <tt>logfile</tt> is a dash (<tt>-</tt>),
+then the output text is written to the process'
+standard error stream (<tt>stderr</tt>).
+
+<p>
+The simplest way to start a multi-processor application on a single
+computer is to use the <tt>-mpu&nbsp;N</tt> command line switch.
+For example to start a 2-node multi-processor, use:
+
+<pre>    user% pgm -mpu 2
+</pre>
+
+On a network, the <tt>-mpu&nbsp;machinefile</tt> form must be used.
+
+<p><b>Configuration file.</b>
+
+The configuration file, <tt>machinefile</tt>, is a text file that
+identifies network computers that will serve as hosts of the
+multi-processor; an SVL processor will be started on each such computer.
+
+The initiating computer must be identified first - by its name or its IP
+address or simply as <tt>localhost</tt> - and will serve as the root
+host, with host number 1.
+
+
+<p>
+The configuration file uses a line-based format.
+Empty lines or lines that start with "<tt>#</tt>" are ignored.
+
+Each configuration line may be one of:
+
+<dl>
+
+<dt><tt>$mpu-user</tt> <i>username</i>
+
+<dd>
+Defines the login user account under which multi-processor processes will
+run.  The user must exist on the destination machine.  If this line does
+not appear in the machine file then the contents of the environment variable
+<tt>SVL_MPU_USER</tt> will be used.  If this variable does not exist then
+the <tt>USER</tt> environment variable will be used.  If this variable does
+not exist then the contents of the environment variable <tt>USERNAME</tt>
+will be used.  If this does not exist then the string <tt>nobody</tt> is used.
+Note: if an environment variable is used then it is that of the first
+processor only; other processors will receive a copy of the first processor's
+environment variable.
+
+<dt><tt>$mpu-password</tt> <i>scrambledpassword</i>
+
+<dd>
+Defines the password to use on login to network machines.  This must be
+the password of <tt>$mpu-user</tt> (above).  For security reasons, the
+value of the password is not plain text but scrambled.  The SVL function
+<tt>mpu_password</tt> must be used to compute scrambled passwords from
+plain text.
+If this line does not appear in the machine file then the contents of the
+environment variable <tt>SVL_MPU_PASSWORD</tt> will be used.  If this
+variable does not exist then the empty string.  Note: if an environment
+variable is used then it is that of the first processor only; other
+processors will receive a copy of the first processor's environment variable.
+
+<dt><tt>$mpu-rexec</tt> <i>shellcommand</i>
+
+<dd>
+Defines the default command to execute on each host computer.  This default
+can be over-ridden for particular hosts (see below).  In general, it is best
+to use a generic host/OS-independent command.  Environment variables will
+be expanded locally (on each host separately).
+The shell command must specify <tt>-mpu -</tt> as a command line switch.
+
+<dt><tt>$mpu-timeout</tt> <i>k</i>
+
+<dd>
+Defines the maximum number of seconds that the multi-processor is given
+to initialize.  If the time expires each processor will exit with an error.
+The multi-processor is started in tree fashion and the amount of time
+given for initialization is approximately <i>k</i>&nbsp;log&nbsp;<i>n</i>
+seconds where <i>n</i> is the number of processors (log base 2).   The
+default value for <i>k</i> is 10.
+
+<dt><tt>$mpu-digitbits</tt> <i>k</i>
+
+<dd>
+Defines the base of the multi-processor connection network.  The base
+is defined as <i>b</i>&nbsp;=&nbsp;2<sup><i>k</i></sup>.  Each host
+will connect to (<i>b</i>-1)&nbsp;ceil&nbsp;log<sub><i>b</i></sub>&nbsp;<i>n</i>
+host where <i>n</i> is the total number of hosts.  The default for <i>k</i> is
+2; the maximum legal value is 10 and the minimum is 1.  Larger values will
+allow more efficiency in message routing at the expense of more operating
+system communication resources for each host.  On some systems (e.g., Windows)
+communications resources are quite limited.
+
+<dt><i>IP</i> &nbsp; <i>shellcommand</i>
+
+<dd>
+Lines that do not start with a <tt>$</tt> or <tt>#</tt> are treated as
+<i>host lines</i>.  Each host line consists of an IP address (of the
+form a.b.c.d) or a hostname (e.g., myhost@company.com) followed by
+the shell command to be used on the host computer.  This shell command
+overrides the <tt>$mpu-rexec</tt> default.  If nothing is specified for
+the shell command then the value specified with <tt>$mpu-rexec</tt> is
+used.  The shell command must specify <tt>-mpu -</tt> as a command line switch.
+
+<dt><tt>$eof</tt>
+
+<dd>
+Marks the end of the file.  Lines past the <tt>$eof</tt> will not be read.
+If the <tt>$eof</tt> line is not present then the entire file will be
+processed.
+</dl>
+
+<p>
+The following is an example of an 8-processor configuration file using a
+base 2 network to run <tt>pgm</tt> under the account of <tt>someuser</tt>
+on several machines.
+
+<pre>    $mpu-user someuser
+    $mpu-password albcmnjgdaohandamkcilgjofaihjjlnbcpipigkgmnhgp
+    $mpu-digitbits 2
+    $mpu-rexec pgm -mpu -
+    192.1.1.1 
+    192.1.1.2 
+    192.1.1.3 
+    192.1.1.4 
+    192.1.1.5 
+    192.1.1.6 
+    192.1.1.7 
+    192.1.1.8 
+    $eof
+</pre>
+
+<p>
+The <tt>$mpu-rexec</tt> lines specifies that <tt>pgm -mpu -</tt>
+defines the remote command for all processors.
+(The <tt>-mpu -</tt> part of the command is compulsory.)
+
+<p>
+<b>Warning!</b> The SVL multi-processor system requires the <tt>rexec</tt> or
+<tt>ssh</tt> remote execution protocol to launch remote executables; therefore,
+at least one of these protocols must be installed and running on each processor
+specified in the machine file. In the case of <tt>rexec</tt>, be aware that not
+all <tt>rexecd</tt> daemon implementations are complete. The GNU
+<tt>rexecd</tt> is complete.
+
+
+<p><a name="MPU_PORTCOUNT"></a></p>
+<p><a name="MPU_HOSTCOUNT"></a></p>
+<p><a name="MPU_THISHOST"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">MPU_THISHOST</span>
+<span class="fcndef">MPU_HOSTCOUNT</span>
+<span class="fcndef">MPU_PORTCOUNT</span>
+</pre>
+
+Constant <tt>MPU_THISHOST</tt> stores the host number of the executing
+host.  The host number is an integer ranging in value from 1 to
+the number of hosts, stored in the constant <tt>MPU_HOSTCOUNT</tt>.
+Constant <tt>MPU_PORTCOUNT</tt> stores the maximum number of communication
+ports (used by functions <tt>mpu_send/receive/reply</tt>) that can be
+allocated at the same time.
+
+<p><a name="MPU_HOSTNAMES"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">MPU_HOSTNAMES</span>
+</pre>
+
+Constant <tt>MPU_HOSTNAMES</tt> stores the names of all hosts of the
+multiprocessor.
+
+<tt>MPU_HOSTNAMES(K)</tt> stores the value of the (local) constant
+<tt>HOSTNAME</tt> on host <tt>K</tt>.
+
+When all hosts of the SVL multi-processor are part of the same machine,
+the expression
+
+<pre>
+    eqL MPU_HOSTNAMES
+</pre>
+
+will evaluate to non-zero.
+
+
+<p><a name="mpu_cprint"></a></p>
+<p><a name="mpu_print"></a></p>
+<p><hr noshade="noshade" />
+
+<pre><span class="fcndef">mpu_print</span> expr
+<span class="fcndef">mpu_cprint</span> expr
+</pre>
+
+Function <tt>mpu_print</tt> will print the result of a given
+expression on the console of the root host, no matter
+which host called the function.  The printed value is prefixed
+by the host number of the caller.  The function is intended
+primarily for testing and debugging purposes.  Similarly to
+function <tt>pr</tt>, when <tt>mpu_print</tt> is used in an expression,
+it both prints and returns its argument.
+
+<p>
+For example, on a 3-node multi-processor,
+
+<pre>
+    svl&gt; mpu_eval [igen MPU_HOSTCOUNT, 'mpu_print [host: MPU_THISHOST]'];
+</pre>
+
+will cause the following messages to be printed (not necessarily in this order)
+on the console of host #1:
+
+<pre>
+    #1: [ host:1 ]
+    #2: [ host:2 ]
+    #3: [ host:3 ]
+</pre>
+
+<p>
+Function <tt>mpu_cprint</tt> provides two additional features
+useful in the debugging of applications on a small number of hosts:
+1) messages from different hosts are indented by different amounts
+of leading white space and 2) consecutive messages from the same
+host will appear consecutive on the console of host #1,
+uninterrupted by messages from other hosts.
+
+<p><a name="mpu_cwrite"></a></p>
+<p><a name="mpu_write"></a></p>
+<p><hr noshade="noshade" />
+
+<pre><span class="fcndef">mpu_write</span> ['format', arg1, arg2, ...]
+<span class="fcndef">mpu_cwrite</span> ['format', arg1, arg2, ...]
+</pre>
+
+Similarly to function <tt>mpu_print</tt>, functions
+<tt>mpu_write</tt> and <tt>mpu_cwrite</tt>
+will print the formatted message on the console of the root host,
+prefixed by the host number of the caller.  The syntax of both functions
+is identical to the syntax of function <tt>write</tt>.
+
+<p>
+For example, on a 3-node multi-processor,
+
+<pre>
+    svl&gt; mpu_eval [igen MPU_HOSTCOUNT, <span
+    class="fcndef"></span>'mpu_write [\'host={}\\n\', MPU_THISHOST]']
+</pre>
+
+will cause the following messages to be printed (not necessarily in this order)
+on the console of host #1:
+
+<pre>
+    #1: host=1
+    #2: host=2
+    #3: host=3
+</pre>
+
+<p>
+Function <tt>mpu_cwrite</tt> provides two additional features
+useful in debugging of applications on a small number of hosts:
+1) messages from different hosts are indented by different amounts
+of leading white space and 2) consecutive messages from the same
+host will appear consecutive on the console of host #1,
+uninterrupted by messages from other hosts.
+
+<!-- ============================  mpu_batch ============================  -->
+
+<a name="MPU_BATCH"></a>
+<p><a name="mpu_batch"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>[result,code,seqno,udata] = <span
+    class="fcndef">mpu_batch</span> [cmd, arg1, arg2, udata]
+</pre>
+
+<p>
+For most applications, <tt>mpu_batch</tt> is the only multi-processor function
+needed.  The <tt>mpu_batch</tt> function automatically handles distribution of
+jobs and collection of results (and/or errors).  The function is to be called
+iteratively for many items of data.  In each call, the function find the
+next available multi-processor host and send its input data  to that host
+for evaluation.  At the same time, the function retrieves the result from
+a host that has already finished evaluating data from some of the previous
+calls and returns that result to the caller.
+<p>
+The first <tt>MPU_HOSTCOUNT</tt> items will be sent to the next available host
+without waiting for a result.  The last <tt>MPU_HOSTCOUNT</tt> calls will only
+wait for the result from the remote hosts without passing any new items
+for evaluation.  The end of the evaluation is signaled to the caller
+by <tt>mpu_batch</tt> returning the <tt>eof</tt> result code (with
+no result data).  Therefore, to evaluate <tt>N</tt> data items, the function
+will be called <tt>N+MPU_HOSTCOUNT+1</tt> times.
+
+<p> The first three arguments (<tt>cmd</tt>, <tt>arg1</tt>,
+<tt>arg2</tt>) specify what is to be done on the next available host:
+
+<p>
+<table align="center" class="display" border="1" cellpadding="5">
+<tr><th><tt>cmd</tt>
+    <th>Description
+
+<tr><td><tt>''</tt>
+
+    <td>If the empty token is given as a command then no calculations
+    will be started. <tt>mpu_batch</tt> will wait for any outstanding
+    calculations to complete.  <tt>arg1</tt>, <tt>arg2</tt> and
+    <tt>udata</tt> are ignored.  After <tt>mpu_batch</tt> is called with
+    a non-empty command for all input data items, it must be called
+    another <tt>MPU_HOSTCOUNT+1</tt> times with the empty command
+    (<tt>''</tt>) to retrieve the <tt>MPU_HOSTCOUNT</tt> outstanding
+    results from all of the remote hosts and, when all results are retrieved,
+    the <tt>eof</tt> result code.
+
+
+<tr><td><tt>'call'</tt>
+
+    <td>The SVL expression <tt>call[arg1,arg2]</tt> will be executed on
+    the next available host.  Its result will be returned by some of
+    the subsequent calls to <tt>mpu_batch</tt>. <tt>arg1</tt>
+    must be a token containing the name of a global function defined on all of
+    the hosts and <tt>arg2</tt> the argument that will be given to the
+    function.
+
+<tr><td><tt>'eval'</tt>
+
+    <td>The SVL expression <tt>eval[arg1,arg2]</tt> will be executed on
+    the next available host.  Its result will be returned by some of
+    the subsequent calls to <tt>mpu_batch</tt>. <tt>arg1</tt>
+    must be a token or string containing the expression to evaluate and
+    <tt>arg2</tt> is ignored.
+
+
+<tr><td><tt>'load'</tt>
+
+    <td>The SVL expression <tt>load[arg1]</tt> will be executed on the
+    next available host.  Its result will be returned by some of the
+    subsequent calls to <tt>mpu_batch</tt>.  If <tt>arg1</tt> is a
+    token, then it is taken to be a filename of an SVL source file to be
+    loaded.
+
+    The file must be accessible on all remote hosts.
+
+    If <tt>arg1</tt> is a string, then it is taken to be the entire source
+    code of the SVL program to be loaded.  <tt>arg2</tt> is ignored.
+
+<tr><td><tt>'run'</tt>
+
+    <td>The SVL expression <tt>run[arg1,arg2]</tt> will be executed on
+    the next available host.  Its result will be returned by some of
+    the subsequent calls to <tt>mpu_batch</tt>.  If <tt>arg1</tt>
+    is a token, then it is taken to be a filename
+    of an SVL source file to be run.
+
+    The file must be accessible on all remote hosts.
+
+    If <tt>arg1</tt> is a string, then it is taken to be the entire source
+    code of the SVL program to be run.  <tt>arg2</tt> is the argument given
+    to the main function of the program run.
+
+<tr><td><tt>'script'</tt>
+
+    <td>The SVL expression <tt>script[arg1,arg2]</tt> will be executed on
+    the next available host.  Its result will be returned by some of
+    the subsequent calls to <tt>mpu_batch</tt>.  If <tt>arg1</tt>
+    is a token, then it is taken to be a filename
+    of an SVL script file.
+
+    The file must be accessible on all remote hosts.
+
+    If <tt>arg1</tt> is a string, then it is taken to be the entire source
+    code of the SVL script to be executed.  <tt>arg2</tt> is the argument
+    given to the script.
+
+</table>
+
+<p>
+The <tt>udata</tt> argument is a "user data" argument.  It is a value that
+will be returned in the <tt>udata</tt> return value when the results are ready
+but is otherwise not interpreted.  The <tt>udata</tt> is useful for identifying
+the results when they are ready.
+
+<p>
+The return values of <tt>mpu_batch</tt> are the results of the remote
+asynchronous calculations.  The <tt>code</tt> indicates the nature of the
+result:
+
+<p>
+<table align="center" class="display" border="1" cellpadding="5">
+<tr><th><tt>code</tt>
+    <th>Description
+
+<tr><td><tt>'skip'</tt>
+
+    <td>This is the result code for the first <tt>MPU_HOSTCOUNT</tt>
+    calls to <tt>mpu_batch</tt>.  It indicates that no result is (yet)
+    ready.
+
+    <tt>result</tt> is the null vector, <tt>[]</tt>. <tt>seqno</tt> is
+    zero. <tt>udata</tt> is the null vector, <tt>[]</tt>.
+
+<tr><td><tt>''</tt>
+
+    <td>After the first <tt>MPU_HOSTCOUNT</tt> calls, <tt>mpu_batch</tt>
+    will wait until one of the hosts has finished its command (issued by
+    one of the previous <tt>mpu_batch</tt> calls).
+
+    If command has been successfully completed on its remote host,
+    <tt>mpu_batch</tt> returns with the empty token result code.
+
+    <tt>result</tt> stores the return value of the command.
+
+    <tt>udata</tt> stores the user data of the command.
+    <tt>seqno</tt> indicates which result is being returned:  It is
+    the ordinal number of the <tt>mpu_batch</tt> call initiating the command.
+    The call numbers are integers starting from 1.
+
+<tr><td><tt>'error'</tt>
+
+    <td>After the first <tt>MPU_HOSTCOUNT</tt> calls, <tt>mpu_batch</tt>
+    waits for the next host that has finished its command.
+
+    If command has been terminated due to an error,
+    <tt>mpu_batch</tt> returns with the result code <tt>'error'</tt>.
+
+    <tt>result</tt> stores the generated error message.
+    <tt>udata</tt> and <tt>seqno</tt> are the same as those for the
+    result code <tt>''</tt> above.
+
+<tr><td><tt>'eof'</tt>
+
+    <td>After all results for all data items have been retrieved from
+    the remote hosts, <tt>mpu_batch</tt> returns with the return
+    code <tt>eof</tt>.
+
+    <tt>result</tt> is the null vector, <tt>[]</tt>.  <tt>seqno</tt> is
+    zero. <tt>udata</tt> is the null vector, <tt>[]</tt>.
+
+</table>
+
+<p> The first <tt>MPU_HOSTCOUNT</tt> calls to <tt>mpu_batch</tt> will
+return <tt>'skip'</tt> indicating that there are no more results.  The
+next call will wait until one of the previous calculations is completed
+and the new calculation will be sent to the host that completed its
+calculation.  The last <tt>MPU_HOSTCOUNT+1</tt> calls will be given a
+<tt>cmd</tt> of <tt>''</tt>, the empty token.  The first
+<tt>MPU_HOSTCOUNT</tt> of these will return results while the last will
+return <tt>'eof'</tt>.
+
+<p>
+For example, suppose that a global function <tt>MyFcn</tt> exists on
+all hosts.  Suppose that on host number 1, a function called
+<tt>GetNextItem</tt> returns the next value to give to <tt>MyFcn</tt>
+and <tt>[]</tt> when there are no more (e.g., read from a file).  Then, to
+distribute the calls to <tt>MyFcn</tt> the following code could be
+used:
+
+<blockquote>
+<pre>
+global function MyFcn_mpu []
+    local item, cmd = 'call';
+
+    loop
+	if cmd &lt;&gt; '' then
+	    item = GetNextItem [];
+	    if isnull item then cmd = ''; endif
+	endif
+
+        local [res, code, seqno, udata] = mpu_batch [cmd, 'MyFcn', item, item];
+
+        if code == '' then
+            // ... res contains the successful result
+            // ... udata contains the original item passed
+        elseif code == 'error' then
+            // ... res contains the token error message
+            // ... udata contains the original item passed
+        elseif code == 'skip' then
+	    // ... no results available
+        elseif code == 'eof' then
+	    break;
+        endif
+     endloop
+endfunction
+</pre>
+</blockquote>
+
+<p>
+If there are <tt>N</tt> items returned by <tt>GetNextItem</tt> then the loop
+in the above code will be executed
+
+<tt>N+MPU_HOSTCOUNT+1</tt>
+
+times.
+
+<!-- ======== mpu_call, mpu_eval, mpu_load, mpu_run, mpu_script ======== -->
+
+<a name="MPU_CALL"></a>
+<p><a name="mpu_script"></a></p>
+<p><a name="mpu_run"></a></p>
+<p><a name="mpu_load"></a></p>
+<p><a name="mpu_eval"></a></p>
+<p><a name="mpu_call"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>[result,code] = <span
+    class="fcndef">mpu_call</span>   [ host, fcn, arg, file ]
+[result,code] = <span class="fcndef">mpu_eval</span>   [ host, expr, arg ]
+[result,code] = <span class="fcndef">mpu_load</span>   [ host, src ]
+[result,code] = <span class="fcndef">mpu_run</span>    [ host, src, arg, rfcn ]
+[result,code] = <span class="fcndef">mpu_script</span> [ host, src, arg ]
+</pre>
+
+<p>
+The <tt>mpu_call</tt>, <tt>mpu_eval</tt>, <tt>mpu_load</tt>, <tt>mpu_run</tt>
+and <tt>mpu_script</tt> functions are multi-processor analogues of the
+<tt>task_*</tt> functions of the same suffix.
+
+Unlike the <tt>task_*</tt> functions, however, the <tt>mpu_*</tt>
+functions are vectorized.
+
+For example, <tt>mpu_load</tt> will load the source in <tt>src(i)</tt>
+on host <tt>host(i)</tt> and return the result of the
+operation in <tt>result(i)</tt> with return code in <tt>code(i)</tt>.
+
+The <tt>result</tt> and <tt>code</tt> return values are the same as for the
+<tt>task_*</tt> versions of these functions.
+
+Parameters <tt>fcn</tt>, <tt>expr</tt>, <tt>src</tt>, <tt>arg</tt>,
+<tt>file</tt> and <tt>rfcn</tt> specify the arguments supplied to the
+corresponding SVL functions on the remote hosts.
+
+<p>
+The trailing parameters <tt>arg</tt>, <tt>file</tt> and <tt>rfcn</tt>
+are optional.  A missing (or empty) trailing parameter will cause the
+corresponding SVL functions be given an empty argument (on each of
+the remote hosts).  In other words, a missing (or empty) trailing value
+is interpreted as <tt>[[]]</tt>.
+
+<p>
+For example, the expression
+
+<pre>
+    first mpu_call [K, 'cd']
+</pre>
+
+<p>returns the current working directory of host K, while the expression
+
+<pre>
+    first mpu_eval [K, 'HOSTNAME']
+</pre>
+
+<p>returns the name of host K.
+
+In <tt>mpu_eval</tt>, each parameter <tt>expr(i)</tt>
+must be a token or a string containing a valid SVL expression.
+
+<p>
+In <tt>mpu_load</tt>, <tt>mpu_run</tt>, or <tt>mpu_script</tt>,
+each parameter <tt>src(i)</tt> must specify a valid SVL program.
+
+If <tt>src(i)</tt> is a token, then it is interpreted by <tt>host(i)</tt>
+as the name of a file (on that host).
+
+If <tt>src(i)</tt> is a string, then it is interpreted as the contents
+of an SVL source file.
+
+<p>
+For example, to cause all hosts in a multi-processor to individually run
+the SVL file <tt>'~user/myfile.svl'</tt> with argument <tt>[]</tt>, one can use
+
+<pre>
+    mpu_run [igen MPU_HOSTCOUNT, '~user/myfile.svl']
+</pre>
+
+<p>assuming that <tt>~user/myfile.svl</tt> is visible on each processor.  An
+alternative method is to supply the source code directly:
+
+<pre>
+    src = freadb [ '~user/myfile.svl', 'char', INT_MAX ];
+    mpu_run [igen MPU_HOSTCOUNT, [src]]
+</pre>
+
+<p>which requires only that <tt>'~usr/myfile.svl'</tt> be visible from the host
+calling <tt>mpu_run</tt>.
+
+<p><b>Cancellation.</b>
+
+Functions such as <tt>mpu_call</tt>, <tt>mpu_eval</tt> or <tt>mpu_batch</tt>
+cause a new task being created on each of the (specified) remote hosts.
+
+The remote tasks perform the requested action and send their results
+back to the calling task on the sender host.  If the calling task
+terminates before the <tt>mpu_*</tt> function returns with its result,
+all these remote tasks are automatically cancelled.
+
+<p>For example, command
+
+<pre>
+    expr = 'for i=1, Inf loop sleep 0.5; mpu_print i; endloop';
+    t = task_key -1; mpu_eval [2, expr]
+</pre>
+
+<p>will continue to print messages on the root console until the
+calling task is cancelled from the cancel menu or by
+
+<pre>
+    task_kill t
+</pre>
+
+<p>Note, however, that messages sent by a (subsequently) cancelled task
+and not yet received by some other task will <i>not</i> be destroyed.
+
+<p><b>Latency.</b>
+
+Evaluation of <tt>mpu_*</tt> functions is subject to significant latencies.
+To maintain efficient use of the communication channels, it is
+recommended that <tt>mpu_*</tt> functions are called infrequently
+(a few calls per second) and that program data are transferred
+in sizeable chunks (several KB).
+
+<p>
+The following code fragment measures the approximate time
+required to send a 32 KB message to host K and back:
+
+<pre>
+    msg = rep [" ", 0x8000]
+    tm = clock[];
+    mpu_call [K, 'id', [[msg]]];
+    print clock[] - tm;
+</pre>
+
+
+<!-- ================== mpu_portalloc, mpu_portfree ================== -->
+
+<a name="ALLOC"></a>
+<p><a name="mpu_portfree"></a></p>
+<p><a name="mpu_portalloc"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>port = <span class="fcndef">mpu_portalloc</span> []
+<span class="fcndef">mpu_portfree</span> port
+</pre>
+
+<p>
+SVL tasks on different hosts communicate with each other via communication
+objects called <i>ports</i>.  Each task can allocate its own unique
+communication port or ports with function <tt>mpu_portalloc</tt>.
+Each port also encode the host of the calling task.
+
+The maximum number of ports that can be allocated on a single host
+at once is stored in the constant <tt>MPU_PORTCOUNT</tt>.
+
+<tt>mpu_portalloc</tt> generates an error if no more ports are available.
+
+<p>
+When a communication port is no longer needed by the task,
+it should be released for use by other by calling <tt>mpu_portfree</tt>.
+Only the task that allocated the port can free it.  Any attempts to
+free a port that was allocated by other tasks or that does not exist
+will be quietly ignored.
+
+<p>In order to send a message to another host, the destination port
+must be allocated on the destination host and communicated to the sender,
+for example as a parameter of a remote procedure call.
+
+<!-- ================== mpu_send ================== -->
+
+<a name="SEND"></a>
+<p><a name="mpu_send"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>reply_msg = <span
+    class="fcndef">mpu_send</span> [receiver_port, msg, reply_port]
+reply_msg = <span
+    class="fcndef">mpu_send</span> [receiver_port, msg, reply_port, timeout]
+</pre>
+
+<p>
+The <tt>mpu_send</tt> function is used to initiate communication with another
+task assumed to be (or soon be) performing an <tt>mpu_receive</tt>.
+The communication sequence is as follows: Task A <i>receives</i> (task A
+waits); Task B <i>sends</i> to Task A (task B waits); Task A continues and
+<i>replies</i> to task B; Task B continues.
+The arguments and return value of <tt>mpu_send</tt> are:
+
+<dl>
+
+<dt><tt>receiver_port</tt>
+
+<dd> The port  upon which the intended receiver is assumed
+to wait.  This port must be (somehow) communicated to senders prior to
+communication.
+
+If <tt>receiver_port</tt> is zero, then the function examines the state
+of <tt>reply_port</tt>.  If a reply message from a previously issued
+<tt>mpu_send</tt> call (that has timed out) is still expected to arrive
+at the port, the function will wait for the reply.  Otherwise, the function
+will return immediately with its <tt>msg</tt> argument.
+
+If <tt>receiver_port</tt> is nonzero and <tt>reply_port</tt> is zero
+then the argument <tt>msg</tt> will be sent to <tt>receiver_port</tt>.
+However, the calling task will not wait and <tt>mpu_send</tt> will
+return immediately with <tt>[]</tt>.  Otherwise, the calling task
+will wait while the message is sent to <tt>receiver_port</tt> and
+until a reply is transmitted back.  <tt>mpu_send</tt> will then return
+with the reply.
+
+If <tt>receiver_port</tt> is found to be invalid when the message
+is delivered to the remote host or becomes invalid before the remote
+hosts responds to the sender with <tt>mpu_reply</tt>, the originating task
+will report an error.  However, if <tt>receiver_port</tt> was given as
+a negative number, then the originating task will not report an
+error, even if the port is invalid.
+
+<dt><tt>msg</tt>
+
+<dd>
+The arbitrary value that will be transmitted to the intended receiver.  There
+are no pre-set limits on how large <tt>msg</tt> can be; however, in general,
+it is not a good idea to send very large messages.
+
+<dt><tt>reply_port</tt>
+
+<dd> The local port that the receiver is supposed to use to
+reply to the transmission.  If <tt>reply_port</tt> is 0 then no reply
+is expected and <tt>mpu_send</tt> will return immediately (the receiver
+will be given a <tt>reply_port</tt> of zero).  It is an error for
+<tt>reply_port</tt> to be remote.
+
+If <tt>reply_port</tt> is given as negative number, it will be transmitted
+to the receiver also as a negative number.  When using a negative
+<tt>reply_port</tt>, the receiver will not report an error in case
+of <tt>reply_port</tt> becoming invalid before the transmission
+is completed.
+
+<dt><tt>reply_msg</tt>
+
+<dd>
+The arbitrary value that will be transmitted back from the receiver.
+If the <tt>reply_port</tt> is 0, then the sender will not wait for
+the reply and the <tt>reply_msg</tt> is set to <tt>[]</tt>.
+
+<dt><tt>timeout</tt>
+
+<dd>
+If the timeout value is specified, the function will always return
+within the given time.   If a reply was requested (with non-zero value
+of <tt>reply_port</tt>) and no reply value has been received,
+the function will return <tt>[]</tt>;
+the user is then expected to wait for the reply by calling
+<tt>mpu_send</tt> with the same reply port but zero receiver port.
+
+</dl>
+
+<p>
+For example:
+<pre>
+    mpu_send [ receiver_port, 'hello', 0 ]
+</pre>
+sends <tt>'hello'</tt> to <tt>receiver_port</tt> without waiting for a reply,
+while
+<pre>
+    local port = mpu_portalloc [];
+    reply_msg = mpu_send [ receiver_port, 'hello', port ];
+    mpu_portfree port;
+</pre>
+sends <tt>'hello'</tt> to <tt>receiver_port</tt> and waits for a reply on
+the allocated local port <tt>port</tt>.  A task that repeatedly asks
+a dispatcher task for work to do will typically have the following structure:
+
+<pre>
+    function Worker boss_port
+        local my_port = mpu_portalloc [];
+
+        while not done loop
+	    local work = mpu_send [ boss_port, 'hello', my_port ];
+            .... perform the work ...
+        endloop
+
+	mpu_portfree my_port;
+    endfunction
+</pre>
+
+<p>
+<b>Warning!</b>
+A call to <tt>mpu_send</tt> may never return if no task calls
+<tt>mpu_receive</tt> on the intended receiver host.  If two tasks attempt
+to send to each other a <i>deadlock</i> can result and both tasks will
+wait indefinitely.
+
+
+<!-- ================== mpu_receive, mpu_reply ================== -->
+
+<a name="RECV"></a>
+<p><a name="mpu_reply"></a></p>
+<p><a name="mpu_receive"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>[reply_port, msg] = <span
+    class="fcndef">mpu_receive</span> receiver_port
+[reply_port, msg] = <span
+    class="fcndef">mpu_receive</span> [receiver_port, timeout]
+<span class="fcndef">mpu_reply</span> [reply_port, reply_msg]
+</pre>
+
+<p>
+When a task wants to wait for another task to send information (via
+<tt>mpu_send</tt>) it must call <tt>mpu_receive</tt> followed by
+<tt>mpu_reply</tt>.  The communication sequence follows: Task A
+<i>receives</i> (task A waits); Task B <i>sends</i> to Task A (task B waits);
+Task A continues and <i>replies</i> to task B; Task B continues.
+
+<p>
+The argument and return values of <tt>mpu_receive</tt> are:
+
+<dl>
+
+<dt><tt>receiver_port</tt>
+
+<dd>
+The local port upon which the calling task will wait.  If no sender
+sends to this port then the calling task will wait forever.  It is an
+error to wait on the zero port or a remote port.
+
+<dt><tt>timeout</tt>
+
+<dd>
+If the timeout value is specified, the function will always return
+within the given time.  If no message has arrived within that time,
+the function will return <tt>[]</tt>.
+
+<dt><tt>reply_port</tt>
+
+<dd>
+The port to which a reply must be sent.  If the <tt>reply_port</tt> is zero
+then a reply is not expected and does not have to be sent.  If a reply is
+sent to port zero, it will be discarded.
+
+<dt><tt>msg</tt>
+
+<dd>
+The value that the caller of <tt>mpu_send</tt> sent.
+</dl>
+
+<p>
+Unless the <tt>reply_port</tt> is zero, the sender of the message
+waits for the message to be received and a reply to be sent back.
+To send a reply back to the sender, the receiver must call
+function <tt>mpu_reply</tt> with the following arguments:
+
+<dl>
+
+<dt><tt>reply_port</tt>
+
+<dd>
+The port upon which the sender is waiting; this is the <tt>reply_port</tt>
+value returned by <tt>mpu_receive</tt>.  If the <tt>reply_port</tt> is zero
+then the <tt>reply_msg</tt> is discarded.
+
+If <tt>reply_port</tt> is found to be invalid when the reply message
+is delivered to the remote (sender) host, the task calling <tt>mpu_reply</tt>
+will report an error.  However, if <tt>reply_port</tt> is given as
+a negative number, then the calling task will not report an
+error, even if the port is invalid.
+
+<dt><tt>reply_msg</tt>
+
+<dd>
+The arbitrary value to be transmitted back to the sender.
+There are no pre-set limits on how large <tt>reply_msg</tt> can be; however,
+in general, it is not a good idea to return very large messages.
+</dl>
+
+<p>
+A typical dispatcher of work to various worker tasks can have the
+following structure:
+
+<pre>
+    function Dispatcher []
+        local my_port = mpu_portalloc [];
+
+        while not done loop
+            local [worker_port, msg] = mpu_receive my_port;
+	    local work = ... find some work to do ...
+            mpu_reply [ worker_port, work ];
+        endloop
+
+	mpu_portfree my_port;
+    endfunction
+</pre>
+
+
+<!-- ================== mpu_chardecode, mpu_charencode ================== -->
+
+<a name="ENCODE"></a>
+<p><a name="mpu_chardecode"></a></p>
+<p><a name="mpu_charencode"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>char_data = <span class="fcndef">mpu_charencode</span> value
+value     = <span class="fcndef">mpu_chardecode</span> char_data
+</pre>
+
+<p>These functions are used internally to convert SVL values before and after
+transmission to another processor.  The function <tt>mpu_charencode</tt>
+converts an arbitrary vector <tt>value</tt> into a flat vector of
+non-printable, binary character data <tt>char_data</tt>.  The function
+<tt>mpu_chardecode</tt> does the reverse: it converts a flat vector of
+characters (as returned by <tt>mpu_charencode</tt>) into the original vector
+<tt>value</tt>.  An error results if the data passed to <tt>mpu_chardecode</tt>
+doesn't have the correct format.
+
+<!-- ms: not needed - all SVL values (had better) work
+<p>
+Portability considerations mean that SVL guarantees accurate transmission of
+8-bit characters, 32-bit integers, 64-bit IEEE floating point numbers.  These
+functions can be used to test if values can be sent and received accurately.
+If <tt>(y&nbsp;= mpu_chardecode mpu_charencode&nbsp;x)</tt> and
+<tt>neL[x,y]</tt> then
+<tt>x</tt> contains non-portable data.
+-->
+
+<p>
+<b>Note:</b> In general, there is no need to use these functions for
+multi-processor communication: all message values are automatically converted.
+<p>
+<b>Warning!</b>
+The encoded format may change from version to version: <i>do not rely on
+the format being fixed and do not save the character data in files</i>.
+
+<!-- ================== mpu_password ================== -->
+
+<a name="PASSWD"></a>
+<p><a name="mpu_password"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>scrambled_token = <span class="fcndef">mpu_password</span> password_token
+</pre>
+
+<p>
+The <tt>mpu_password</tt> function is used to compute scrambled password
+values from plain text password values for use in machine file specifications
+and the <tt>SVL_MPU_PASSWORD</tt> environment variable.  The plain text
+password must contain no more than 20 characters.
+
+<!-- ================== mpu_distance ================== -->
+
+<a name="DIST"></a>
+<p><a name="mpu_distance"></a></p>
+<p><a name="MPU_NEIGHBORS"></a></p>
+<p><a name="MPU_DIGITBITS"></a></p>
+<p><a name="MPU_DIGITCOUNT"></a></p>
+
+<p><hr noshade="noshade" />
+
+<pre>n_hops = <span class="fcndef">mpu_distance</span> [hostA, hostB]
+</pre>
+
+<p>
+The <tt>mpu_distance</tt> function can be used for subtle optimizations
+of communication patterns between hosts.  The function returns then number
+of message repeats ("hops") necessary for transmitting a message between
+the two given hosts.  When the second argument is null, it is assumed
+to be the current host (the caller).  Larger values will generally indicate
+longer communication delays between the hosts.
+</p>
+
+<pre>
+MPU_NEIGHBORS
+MPU_DIGITBITS
+MPU_DIGITCOUNT
+</pre>
+
+<p>
+These constants can be used for subtle optimizations of communication
+patterns between hosts.
+
+Constant <tt>MPU_NEIGHBORS</tt> contains the list of hosts whose
+distance to the current host is exactly 1 (hop).
+
+Constant <tt>MPU_DIGITBITS</tt> stores the value of the machine file
+parameter <tt>$mpu-digitbits</tt>.
+
+Constant <tt>MPU_DIGITCOUNTS</tt> stores the smallest number such that
+any host number is representable in <tt>MPU_DIGITBITS*MPU_DIGITCOUNTS</tt>
+bits.
+</p>
+
+
+
+<h2>See Also</h2>
+
+<table border="0">
+<tr>
+<td valign="top">
+    <a class="svl" href="calletc.htm#call">call</a><br />
+    <a class="svl" href="runetc.htm#eval">eval</a><br />
+    <a class="svl" href="loadetc.htm#load">load</a><br />
+    <a class="svl" href="runetc.htm#run">run</a><br />
+    <a class="svl" href="runetc.htm#script">script</a>
+
+<td valign="top">
+    <a class="svl" href="tskcall.htm#task_call">task_call</a><br />
+    <a class="svl" href="tskcall.htm#task_eval">task_eval</a><br />
+    <tt>&nbsp;</tt><br />
+    <a class="svl" href="tskcall.htm#task_run">task_run</a><br />
+    <a class="svl" href="tskcall.htm#task_script">task_script</a>
+</table>
+
+<p>
+<a href="introcomm.htm">SVL Task Communication Functions</a>
+</p>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

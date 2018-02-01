@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:MadCap="http://www.madcapsoftware.com/Schemas/MadCap.xsd" xml:lang="en-us" lang="en-us" data-mc-search-type="Stem" data-mc-help-system-file-name="Documentation.xml" data-mc-path-to-help-system="../" data-mc-target-type="WebHelp2" data-mc-runtime-file-type="Topic" data-mc-preload-images="false" data-mc-in-preview-mode="false" data-mc-toc-path="Command References|FEP+ Command Reference">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link href="../Skins/Default/Stylesheets/Slideshow.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/TextEffects.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Topic.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Components/Styles.css" rel="stylesheet" type="text/css" data-mc-generated="True" /><title>Troubleshooting FEP Mapper Jobs </title>
+        <link href="../Resources/Stylesheets/docs.css" rel="stylesheet" />
+        <script src="../Resources/Scripts/custom.modernizr.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/jquery.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.config.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/foundation.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/plugins.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/MadCapAll.js" type="text/javascript">
+        </script>
+    </head>
+    <body><a name="aanchor7967"></a>
+        <MadCap:concept term="Command Reference" /><a name="aanchor7968"></a>
+        <MadCap:concept term="FEP+" />
+        <h1>Troubleshooting FEP Mapper Jobs </h1>
+        <p>FEP jobs may fail due to various technical reasons. If you see the following commonly occurring technical failures, please follow the suggestions to debug. </p>
+        <p>To get technical support, create a postmortem and file a support request at <a href="http://www.schrodinger.com/supportcenter">http://www.schrodinger.com/supportcenter</a>. See <a href="http://www.schrodinger.com/kb/1473">Knowledge Base Article 1473</a> for more information. </p>
+        <h4>Memory allocation error:</h4>
+        <p>The error message on memory allocation is:</p><pre>&gt;DIAGNOSIS: The GPU ran out of memory. It may be that your system is too large to run on this GPU model or that more than one simulation is running on the GPU due to an incorrect configuration.<br />&gt;Cleaning up files…</pre>
+        <p>By default the 12 lambda windows are running on 4 GPU cards, and 3 replicas are running on the same card in the production stage. If the system size is too large to fit on the GPU memory, the following traceback and error reporting occurs: </p><pre>allocate_mol: malloc failed for 22258152 bytes</pre>
+        <p>If this happens, you should use more GPUs to run the job (6 or 12), or reduce your system size. </p>
+        <p>The information about how much memory is required for different sized systems can be found in the following document: &lt;Add link&gt; </p>
+        <h4>NO GPU available error</h4><pre>&gt;DIAGNOSIS: Desmond cannot find a GPU to run on. Your hardware, queuing system and/or&#160; schrodinger.hosts file may be incorrectly configured.<br />&gt;Cleaning up files...</pre>
+        <p>This error should not happen if the jobs are submitted correctly and the queuing system is configured properly. It suggests there is a problem with a compute node (GPU error or hung gdesmond process).</p>
+        <p>Sometimes Job Control loses track of certain subjobs. If this happens, the subjob keeps running on the computing node, and Job Control and the queuing system regared the compute node as available. When new subjobs are submitted to that particular compute node, the following error occurs:</p><pre>no GPU is available</pre>
+        <p>If this happens,try to determine which compute node this error is occurring for, and ask your sysadmin to fix it.</p>
+        <p>Note that if the required NVIDIA&#160;driver is not installed you will also get a <code>no GPU is available</code> error.</p>
+        <h4>Kernel synchronization failed error</h4>
+        <p>Kernel synchronization errors occur when the backend crashes. The ‘Kernel synchronization failed’ message is not indicative of any single problem and is just the beginning of most tracebacks such as the two scenarios above. </p>
+        <p>It could be that the system went to a very high energy nonphysical geometry and the simulation blew up; or it could be that the particular compute node is having some hardware problem; or it could be due to a backend bug.</p>
+        <p>If this happens, please restart the job to see whether the error can be reproduced.</p>
+        <p>If the error is reproducible, please look at the trajectory of the failed job to check whether the ligand or protein went to a nonphysical geometry.</p>
+        <p>If no problem was found, please file a support case and attach the input <code>mae </code>file and <code>msj </code>file for that failed edge.</p>
+    </body>
+</html>

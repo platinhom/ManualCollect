@@ -1,0 +1,473 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<title>Control Flow</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<p>
+[<a href="data.htm">Previous Chapter</a>] 
+[<a href="funcs.htm">Next Chapter</a>] 
+[<a href="index.htm">Table of Contents</a>]</p>
+
+<ul>
+  <li><a href="#if Statement: Conditional Execution">if Statement: Conditional Execution</a></li>
+  <li><a href="#Looping">Looping</a><ul>
+      <li><a href="#loop Statement">loop Statement</a></li>
+      <li><a href="#for Loop">for Loop</a></li>
+      <li><a href="#for-in Loop">for-in Loop</a></li>
+      <li><a href="#for = Loop">for = Loop</a></li>
+      <li><a href="#for count Loop">for count Loop</a></li>
+      <li><a href="#while Loop">while Loop</a></li>
+      <li><a href="#until Loop">until Loop</a></li>
+    </ul>
+  </li>
+  <li><a href="#Jump Statements">Jump Statements</a><ul>
+      <li><a href="#break and continue">break and continue</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p>Control flow statements dictate the order in which computations are
+done. By default, statements are executed linearly, in the order in which
+they appear in a program.  Conditional execution, looping and jump
+statements alter the flow of a program, allowing certain pieces of code to
+be by-passed, and others to be repeated.</p>
+
+<p>Linear execution does not necessarily imply <i>sequential</i>
+execution. In a multi-tasking SVL environment, a piece of code may run
+concurrently with code that was invoked at an earlier time.</p>
+
+
+<h2><a name="if Statement: Conditional Execution">if Statement: Conditional Execution</a></h2>
+
+<p>The <tt>if</tt> statement is used to make a multi-way decision. A piece
+of code is executed only <tt>if</tt> a certain condition is satisfied. The
+optional <tt>elseif</tt> and <tt>else</tt> branches of the <tt>if</tt>
+statement allow for alternative routes of possibly conditioned execution,
+in the event that earlier conditions are not met. The formal syntax is
+</p>
+
+<pre>
+    if <i>expr</i> then [<i>statement list</i>]
+    [ elseif  <i>expr</i> then [<i>statement list</i>]
+    ...
+    [ else [<i>statement list</i>] ]
+    endif
+</pre>
+
+<p>Here, square brackets [ ] enclose optional statements. There is no
+limit on the number of <tt>elseif</tt> statements that may be present. The
+<tt>if</tt>, <tt>then</tt> and <tt>endif</tt> keywords must all be
+present. The terminating semi-colon may be omitted after the
+<tt>endif</tt>.</p>
+
+<p>The expression following the <tt>if</tt> is the condition being tested.
+It is a boolean expression; furthermore, it must evaluate to a scalar.</p>
+
+<p>The <tt>if</tt> statement is traversed in sequential order. As soon as
+a condition is found to be true, the associated statement list is
+executed, and the <tt>if</tt> statement terminated. Exactly one and only
+one statement list is evaluated.</p>
+
+<p>Here is an example of an <tt>if</tt> statement: </p>
+
+<pre>
+    if gradient &gt; 100000 then
+	Opt_func [ method:'CG', gtest:1000 ];
+    elseif gradient &lt; 0.1 then
+	Opt_func [ gtest:0.00001 ];
+    else
+	Opt_func [ gtest:0.1 ];
+    endif 
+</pre>
+
+<h2><a name="Looping">Looping</a></h2>
+
+<p>In non-vector languages, loops are conventionally used to apply a fixed
+set of statements against a collection of similar objects. In SVL, the
+function <tt>app</tt> is employed for this purpose, and in such cases,
+loops should be religiously avoided. Where loops are needed is in
+implementations of iterative algorithms, or where the complexity of
+manipulations warrants.</p>
+
+<h3><a name="loop Statement">loop Statement</a></h3>
+
+<p>The most general SVL loop construction is of the form: </p>
+
+<pre>
+    [ for   ... ]
+        [ while <i>expr</i> ]
+        ...
+        [ while <i>expr</i> ]
+        loop
+           [<i>statement list</i>]
+        [ until <i>expr</i> ]
+        ...
+        [ until <i>expr</i> ]
+    endloop 
+</pre>
+
+<p>where the <tt>for</tt> construct is one of: </p>
+
+<pre>
+    for <i>expr</i>
+    for <i>lvalue</i> in <i>expr</i>
+    for <i>lvalue</i> = <i>start_expr</i>,<i>end_expr</i>[,<i>incr_expr</i>]
+</pre>
+
+<p>Looping is effected with the <tt>loop</tt> keyword. The set of
+statements to be repeated is bracketed by the keywords <tt>loop</tt> and
+<tt>endloop</tt>. The terminating semi-colon may be omitted after the
+<tt>endloop</tt>.</p>
+
+<p>Loop termination tests may be present at both start <i>and </i>end of a
+loop. The <tt>for</tt>, <tt>while</tt> and <tt>until</tt> tests are all
+optional. A plain <tt>loop-endloop</tt> sequence is an infinite loop. </p>
+
+<pre>
+    loop // infinite loop waits on a window
+        local [values,trigger] = WindowWait [winkey,TRIGGERS];
+        if values.(trigger) === 'Optimize' then
+            Minimize [];
+         endif 
+    endloop
+</pre>
+
+<h3><a name="for Loop">for Loop</a></h3>
+
+<p>The <tt>for</tt> loop has most commonly been used in non-vector
+languages to step through a fixed-length data structure. We repeat that in
+SVL, it should not be used for this purpose unless computations are of
+high complexity.</p>
+
+<p>The <tt>for</tt> loop has an explicit counter associated with it. The
+starting, ending, and increment expressions (if any), are
+evaluated only once, at the very start of the loop (this is in contrast to
+<tt>while</tt>, which evaluates its termination condition expression at
+every loop iteration).</p>
+
+<p>There are 3 forms of <tt>for</tt> loop.</p>
+
+<h3><a name="for-in Loop">for-in Loop</a></h3>
+
+<pre>
+    for <i>lvalue</i> in <i>expr</i> loop
+        [<i>statement list</i>]
+    endloop
+</pre>
+
+<p>The <tt>in</tt> reserved word causes each element of <i>lvalue</i> to
+be assigned corresponding values in <i>expr</i> in sequence. <i>lvalue</i>
+acts as a counter, and can be either a single variable or a vector of
+variables. In this latter case, the number of values to be assigned should
+be the same for each variable; if they are of different number,
+nulls [] will be assigned to those variables having shortfalls. The values
+to be assigned need not be numeric data. The loop terminates when there
+are no more values to assign. Consider the following: </p>
+
+<pre>
+    for [a,b] in [ &quot;ab&quot;, &quot;cd&quot;, &quot;ef&quot; ] loop
+        print [a,b];
+    endloop
+</pre>
+
+<p>The result of this is:</p>
+
+<pre>
+    &quot;ab&quot;
+    &quot;cd&quot;
+    &quot;ef&quot; 
+</pre>
+   
+<p>In the following example, the transpose function <tt>tr</tt> in the
+<tt>for</tt> loop is needed to change the pair of lists of values to be
+assigned into a list of pairs; each pair is then assigned to
+<tt>[a,b]</tt>. 
+
+<pre>
+    v = &quot;abcde&quot;
+    for [a,b] in tr [ x_id v, sort v ] loop
+        print [a,b]; 
+    endloop
+</pre>
+
+
+
+<p>The output is: </p>
+
+<pre>
+    [ 1, &quot;a&quot; ]
+    [ 2, &quot;b&quot; ]
+    [ 3, &quot;c&quot; ]
+    [ 4, &quot;d&quot; ]
+    [ 5, &quot;e&quot; ] 
+</pre>
+
+<h3><a name="for = Loop">for = Loop</a> </h3>
+
+<pre>
+    for <i>lvalue</i> = <i>start_expr</i>,<i>end_expr</i>[,<i>incr_expr</i>] loop
+           [<i>statement list</i>] 
+
+    endloop 
+</pre>
+
+<p>This is the vector analogue to a Fortran loop.<i> start_expr</i> is the
+starting value of the counter <i>lvalue</i>, and <i>end_expr</i> the
+termination value. Looping continues until <tt>abs</tt>
+(<i>lvalue</i>-<i>end_expr</i>) &lt; <tt>e</tt>, where <tt>e</tt> is some
+small number approaching <tt>EPS_M</tt>. <i>incr_expr</i> is an optional
+increment, and can be both negative and non-integer. When the increment
+parameter is omitted, <i>lvalue</i> is incremented by 1.</p>
+
+<p>For example: </p>
+
+<pre>
+    for a = 10, 6, -1 loop
+        print a;
+    endloop 
+</pre>
+
+<p>produces the result: </p>
+
+<pre>
+    10
+    9
+    8
+    7
+    6 
+</pre>
+
+<h3><a name="for count Loop">for count Loop</a> </h3>
+
+<pre>
+    for <i>expr</i> loop
+        [<i>statement list</i>] 
+    endloop 
+</pre>
+
+<p>This is a shorthand version of the <tt>for =</tt> loop, with
+<i>start_expr</i>=<i>count</i>, <i>end_expr</i>=0, and<i>incr_expr</i>=-1.
+In other words, a fictitious counter counts down from <i>expr</i>, which
+must evaluate to a scalar numeric value, and when it reaches zero, the
+loop terminates. The value of <i>expr </i>cannot be accessed. </p>
+
+<pre>
+    for max_iterations loop
+        ... minimization code, with termination check ... 
+    endloop 
+</pre>
+
+<h3><a name="while Loop">while Loop</a></h3>
+
+<p>The <tt>while</tt> loop, like the <tt>for</tt> <tt>loop</tt>, tests for
+loop termination at the top of a loop. However, in the <tt>while</tt> loop
+no explicit assignment is performed, although since the <tt>while
+</tt>condition is an expression, it could also be an assignment.
+Furthermore, <tt>while</tt> re-evaluates its termination condition
+expression every iteration, whereas <tt>for</tt> does not (the expressions
+are evaluated just once).</p>
+
+<p>The syntax is: </p>
+
+<pre>
+    while <i>expr</i>
+        ...
+    while <i>expr</i> loop
+        [<i>statement list</i>]
+    endloop 
+</pre>
+
+<p>There is no limit on the number of <tt>while</tt> conditions present.
+Multiple conditions are evaluated sequentially, and the loop terminates as
+soon as one condition is found to be false. The reason <tt>for</tt> using
+many <tt>while</tt> tests instead of an <tt>andL</tt> call is to permit
+loop termination with the remaining condition expressions unevaluated.</p>
+
+<p>Do not confuse a loop with multiple <tt>while</tt> conditions with multiply-nested
+loops. A loop with three <tt>while</tt> conditions: </p>
+
+<pre>
+    while ...
+    while ...
+    while ... loop 
+        ...
+    endloop 
+</pre>
+
+<p>is a single loop with three termination conditions. Compare to: </p>
+
+<pre>
+    while ... loop
+        while ... loop
+            while ... loop
+                ...
+            endloop 
+        endloop 
+    endloop
+</pre>
+
+<p>which is a triply-nested set of loops each with a single termination
+condition.</p>
+
+<pre>
+    // evaluate first order Bessel function J0(x) 
+
+    local J0 = 1, term = 1, i = 0;
+    local xx = sqr (x/2);
+
+    while (i = inc i) &lt; MAX_ITERATIONS
+    while abs term &gt; EPSILON
+    loop
+       term = -term * xx / sqr i;
+       J0 = J0 + term; 
+    endloop 
+</pre>
+
+<h3><a name="until Loop">until Loop</a></h3>
+
+<p>The <tt>until</tt> loop tests for> loop termination at the <i>end</i>
+of a loop, ensuring that at least one iteration of the loop will be
+performed. </p>
+
+<pre>
+    loop
+       [<i>statement list</i>] 
+    until <i>expr</i>
+    ...
+    until <i>expr</i>
+    endloop
+</pre>
+
+<p>There is no limit on the permissible number of <tt>until</tt>
+statements in a loop. </p>
+
+<pre>
+    // evaluate first order modified Bessel function I0(x)
+    
+    local I0 = 1, term = 1, i = 1; 
+    local xx = sqr (x/2), fac = xx;
+
+    loop
+        local fact = xx / sqr (i=inc i);
+        term = term * fac;
+        I0 = I0 + term;
+
+        if i &gt;= 2 then fac = fact; endif
+        local bd = term / (sgn [1,(1-fact)] * maxE [abs(1-fact),EPSILON]);
+    until i &gt; MAX_ITERATIONS
+    until abs bd &lt; EPSILON // error bound 
+    endloop 
+</pre>
+
+<h2><a name="Jump Statements">Jump Statements</a></h2>
+
+<p>A jump statement causes program execution to unconditionally transfer
+to another point in the code. There are two jump statements:
+<tt>break</tt> and <tt>continue</tt>.</p>
+
+<h3><a name="break and continue">break and continue</a></h3>
+
+<p>Normally, looping terminates when one of the loop termination
+conditions is triggered.  However, it may be desirable to allow early
+exits or to allow exits at arbitrary points in the iterated code, not just
+at the top or bottom of a loop. <tt>break</tt> and <tt>continue</tt> are
+used to do this.</p>
+
+<p>In the following, the labels are used to mark the points jumped to by
+the <tt>break</tt> and <tt>continue</tt> statements. </p>
+
+<pre>
+    ...
+
+    loop
+        ...
+
+        continue;
+        ...
+        break;
+    con:
+       &lt;until ...&gt;
+    endloop 
+    brk: 
+      ...
+</pre>
+
+<p>The <tt>continue</tt> statement causes a jump to <tt>con</tt> in the
+above code sequence, and the <tt>break</tt> statement causes a jump to
+<tt>brk</tt>. Thus, <tt>continue</tt> results in early termination of the
+<i>current </i>iteration, <tt>while</tt> <tt>break</tt> results in early
+termination of the entire loop. </p>
+
+<p>The use of <tt>break</tt> and <tt>continue</tt> is restricted to bodies
+of loops, and apply to only the <i>innermost</i> loop in which they
+appear.</p>
+
+<p>The modified Bessel function example from above can be re-written as
+follows: </p>
+
+<pre>
+	// evaluate first order modified Bessel function I0(x)
+    
+    local I0 = 1, term = 1, i = 1;
+    local xx = sqr (x/2), fac = xx;
+   
+    loop
+        local fact = xx / sqr (i=inc i);
+        term = term * fac;
+        I0 = I0 + term;
+
+        if i &gt;= 2 then 
+	    fac = fact; 
+	endif
+
+        local bd = term / (sgn [1,(1-fact)] * maxE [abs(1-fact),EPSILON]);
+
+        if abs bd &lt EPSILON then
+	    break;
+	elseif i &gt MAX_ITERATIONS then 
+	    break;
+       endif 
+    endloop 
+</pre>
+
+<p>Next: <a href="funcs.htm">Functions, Programs and Scoping Rules</a></p>
+
+<p><a href="../../fcnindex.htm">Function Index</a></p>
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

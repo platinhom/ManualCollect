@@ -1,0 +1,1017 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	frag_combi.htm	Combinatorial building in the cleft
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+
+<title>Combinatorial Builder</title>
+
+<meta panel Combinatorial Builder>
+<meta keywords batch file />
+</head>
+
+<body>
+<div id="useMathJax"></div>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Method">Methodology</a>
+<li><a href="#TorsDriver">Torsion Driver</a>
+<li><a href="#RunCombi">Running the Combinatorial Builder</a>
+<li><a href="#Example" class="example">Examples</a>
+<li><a href="#Ref">References</a>
+</ul>
+
+<p>
+The Combinatorial Builder enumerates a virtual library of all possible
+products that are combinatorially generated from a core scaffold and a set of
+monodentate R-group databases.  The user indicates the atom(s) to be used as
+<i>attachment points</i> and associates an R-group library with each (or
+accepts the default).  For substituents with multiple connections,
+<a href="../apps/scaffold.htm">Scaffold Replacement</a> or
+<a href="../apps/combitools.htm">Combinatorial Library</a> should
+be used.  If a receptor is available, Forcefield Refinement can be used
+to generate bound poses along with various docking scores.
+
+
+<!-- ============================= METHODOLOGY -=========================== -->
+
+<p>
+<a name="Method"></a>
+<h2>Methodology</h2>
+
+<p>
+The Combinatorial Builder application performs a series of operations on
+behalf of the user, as indicated in the following flowchart.  Each will
+be described in detail in following sections.
+
+<p align="center">
+<img src="frag_combi/combiflow.png" alt="Combinatorial Builder Flowchart" /></p>
+
+<p>
+The starting point for the Combinatorial Builder is a ligand that will be
+used as the scaffold.  If a receptor is present, the scaffold is assumed to
+be in the cleft and pocket atoms are used to constrain molecular construction.
+In such cases, Forcefield Refinement and Scoring can be used to evaluate
+protein/ligand poses.
+
+<h3>Generate Rotamers</h3>
+<p>
+Attachment points define the sites where R-groups from the user-specified (or
+default) libraries are connected to the scaffold.  Thus, they define an axis
+about which low-energy, rigid-body rotamers of each R-group can be generated.
+The sets of rotamers for each axis are used to construct output
+molecules.  A multi-step process is applied to each R-group for each axis:
+
+<p>
+<ol start="1">
+<li>
+If present, a SMARTS filter is used to eliminate undesirable chemistry (such
+as forming a peroxide).  This can be tailored for individual R-groups and
+is stored in the R-group library.
+<p>
+<li>
+The Torsion Driver (described below) is used to generate all possible
+rotamers.  Clashes with the scaffold and the receptor (if present) are
+removed via a soft clash energy filter.
+<p>
+<li>
+Duplicate and/or high-energy structures are removed and the remaining
+rotamers are sorted by increasing energy.
+</ol>
+
+<a name="TorsDriver"></a>
+<h3>Torsion Driver</h3>
+<p>
+Many modeling applications require finding the minimum-energy or the set
+of low-energy rotamers about a bond:
+
+<p align="center">
+<img src="frag_combi/bondrot3.png" alt="Bond Rotation Example" /></p>
+
+The <a href="../moe/gui/mainwin.htm#FooterEditing">Profile</a> button in
+the MOE footer is such an example, using the current forcefield
+to provide a graphical tool to review and set the torsion angle of the
+selected bond.
+
+<p>
+The Torsion Driver assumes that a library of rigid-body R-groups
+(which might be large) will be oriented about an axis defined by a rotatable bond.
+As with
+<a href="../apps/ph4_search.htm">pharmacophore search</a>,
+R-group libraries should contain one or more
+conformations of each structure as appropriate.
+The possible positions of R-group atoms can be visualized as a cylindrical
+grid, with each point specified by a particular distance along the bond axis
+and distance perpendicular to the axis.  Interaction energies with the
+scaffold (and
+the receptor if present) can be calculated at each point using a soft
+clash 800R3 potential:
+
+
+<span class='LaTeX'>
+\begin{align}
+E_{ij} = 800 \sqrt{\epsilon_{i} \epsilon_{j}} \left[ 1 - \frac{r_{i}}{R_{i} + R_{j}} \right]^{3}
+\end{align}
+</span>
+
+<p>
+where atom <span class='LaTeX'>\(i\)</span> is an sp3 carbon probe and atom <i>j</i> is an
+atom of the scaffold or receptor.
+<span class='LaTeX'>\(\epsilon_{i}\)</span> and
+<span class='LaTeX'>\(\epsilon_{j}\)</span> are
+the van der Waals well-depths (in kcal/mol), <span class='LaTeX'>\(r_{ij}\)</span> is the
+point-atom distance and
+<span class='LaTeX'>\(R_{i}\)</span>
+and <span class='LaTeX'>\(R_{j}\)</span> are the van der Waals radii.
+The parameters are modified OPLS-AA van der Waals parameters tuned to
+reproduce the free energy of solvation of a collection of small molecules.
+A clash energy cutoff can be used to exclude points with unfavorable
+interactions with the scaffold (or protein, if present).  This yields
+the set of positions where a R-group atom is sterically allowed:
+
+<p align="center">
+<img src="frag_combi/bonddots4.png" alt="Bond Axis Example" /></p>
+
+In this example, you can see the grid of valid atom locations (in green)
+along with
+the regions excluded by contact with the receptor or scaffold.  Receptor
+excluded volumes are located at the top and bottom (white regions) and
+the scaffold excluded volume is indicated at the right.  
+The atoms of
+a small portion of the receptor are shown as space-filled spheres, which lie
+in an excluded region.
+
+<p>
+The clash grid can be used to reduce the number of rotamers that must be
+examined when adding an R-group to the scaffold.  Each R-group (passing
+any SMARTS filter that might be present) is joined to the scaffold in a
+standard orientation and the position of the R-group atoms relative to the
+grid is determined.  The location of each atom is used to define a
+circular set of points at a common distance and radius about the bond
+axis:
+
+<p align="center">
+<img src="frag_combi/bondarcs3.png" alt="Atom Allowed Example" /></p>
+
+The points in blue define the permitted positions for each atom (several
+are superimposed).  The indicated gaps
+for the meta hydrogen atoms result from steric clash with the receptor.
+The specific geometry of the pyridyl group does not clash with the scaffold,
+so there are no restrictions on the ortho hydrogens.  The radial resolution
+of the clash grid used to generate these points was 5 degrees.
+
+<p>
+For calculations involving free rotors (such as <b>-CH<sub>3</sub></b> or
+<b>-NH<sub>2</sub></b>), the Combinatorial Builder (by default) assumes the
+hydrogen positions are not well-defined.  In such cases (below left), an
+initial scan is done:
+
+<ol start="1">
+<li>Substitute a methyl for the selected hydrogen.
+<p><li>Generate the unique, low-energy rotamers for the bond connecting the
+terminal heavy atom to the scaffold
+(in this case <b>-CH<sub>2</sub>CH<sub>3</sub></b>).
+<p><li>Record the position(s) of the carbon atom of the methyl group.
+<p><li>Restore the original molecule.
+</ol>
+
+<p><table align="center">
+<tr>
+<td><img src="frag_combi/rotpix1b.png" alt="Original Selection" />
+<td><img src="frag_combi/rotpix2b.png" alt="Low-Energy Alternatives" />
+<tr>
+<td align="center">original selection
+<td align="center">low-energy alternatives
+</table></p>
+
+The position(s) of the methyl carbon atom (above right) are used as attachment
+point locations and the rotamers for each generated axis are combined.  This
+results in better sampling of the available conformation space of the free
+rotor.  This process is not used if more than one hydrogen on the heavy atom
+is selected.  Fixed atoms are considered invariant.
+
+<p>
+The circular set of points associated with each R-group atom can be expressed
+as bit strings, where 1 is an allowed location and 0 is a forbidden one.
+These can be compared if they are transformed into a standard orientation
+relative to the bond axis.  This is done via circular shifts, rotating each
+set of bits by an offset set to the
+negative of the atom's initial torsion angle.  In the pyridyl example
+above, the offsets would be 0<sup style="font-size: 70%">o</sup> and
+180<sup style="font-size: 70%">o</sup>, but the specific geometry of
+individual R-groups determines the offset for each atom.   Once transformed,
+a boolean AND of the 1's and 0's of the transformed sets yields the torsion
+angle subset that must be checked.
+
+<p>
+A toy example is provided below, using a low-resolution grid with a radial
+resolution of 30 degrees (12 points per circular set).
+The R-group is assumed to have an arbitrary 3D geometry, with different
+offsets for each atom.  The bits for four of the atoms are shown below left:
+
+<p align="center">
+<img src="frag_combi/andOp2.png" alt="Angle Subset Example" /></p>
+
+The bits in <font color="red">red</font> are those that must be circularly
+shifted to transform them into standard orientation.  Once this is done,
+the bits on the right can be ANDed together to yield the torsion angle
+subset.  These are indicated in <font color="#3090C7">blue</font>,
+corresponding
+to 30<sup style="font-size: 70%">o</sup>,
+210<sup style="font-size: 70%">o</sup> and
+330<sup style="font-size: 70%">o</sup> angles.  This can greatly reduce
+the number of forcefield calculations required to generate rotamers,
+particularly for cases involving tight receptor pockets.  If multiple
+attachment points are generated, the boolean calculation is performed for
+each and the results are merged.
+
+<p>
+The rotamer energy must be calculated for each value in the torsional angle
+subset, given by
+
+<span class='LaTeX'>
+\begin{align}
+\textbf{E}_{rot} = \textbf{E}_{rp} + \left( \textbf{E}_{rs} - \textrm{min } \textbf{E}_{rs} \right)
+\end{align}
+</span>
+
+where <span class='LaTeX'>\(\textbf{E}_{rp}\)</span>
+is the R-group/protein energy and
+<span class='LaTeX'>\(\textbf{E}_{rs}\)</span> is the R-group/scaffold energy.
+<span class='LaTeX'>\(\textbf{E}_{rp}\)</span> is calculated from the van der Waals and charge
+terms of the current forcefield, while <span class='LaTeX'>\(\textbf{E}_{rs}\)</span> uses these
+terms along with the torsional energy of the R-group/scaffold bond.
+As the system is a rigid rotor, the other terms are constant and
+can be ignored.  The second term is
+always positive and is a conformation energy penalty for higher-energy
+rotamers.  Duplicates, defined as higher-energy rotamers within the specified
+torsional angle window, and rotamers failing the maximum energy threshold are
+removed. The remaining rotamers (if any) are returned (sorted by increasing
+<span class='LaTeX'>\(\textbf{E}_{rot}\)</span>).
+
+<h3>Construct Molecule</h3>
+<p>
+The information provided by the Torsion Driver for each bond is used
+to construct candidate molecules.  This is a two-step process:
+
+<p>
+<ol start="1">
+<li>
+For each bond, all rotamers whose <span class='LaTeX'>\(\textbf{E}_{rp}\)</span> exceeds the
+Protein-Ligand Clash Energy parameter and/or all rotamers whose
+<span class='LaTeX'>\(\textbf{E}_{rs}\)</span> exceeds the Intra-Ligand Clash Energy parameter
+are discarded.
+<p>
+<li>
+If only one bond is present, the axis rotamer energy is used as the
+candidate molecule energy.  However, if more than one bond is present,
+the conformation energy penalty for R-group interactions must be determined
+as well.  The candidate molecule energy becomes:
+
+<span class='LaTeX'>
+\begin{align}
+\textbf{E}_{mol} =
+    \sum_{bond} \textbf{E}_{bond}
+    + \sum_{i \lt j} \left( \textbf{E}_{ij} - \textrm{min } \textbf{E}_{ij} \right)
+\end{align}
+</span>
+
+where <span class='LaTeX'>\(\textbf{E}_{bond}\)</span> is the rotamer energy returned by the Torsion
+Driver and <span class='LaTeX'>\(\textbf{E}_{ij}\)</span> is the interaction energy between R-groups
+<span class='LaTeX'>\(i\)</span> and <span class='LaTeX'>\(j\)</span>.
+Candidate molecules exceeding the maximum
+energy threshold are discarded.
+</ol>
+
+<h3>Filters</h3>
+<p>
+Constructed molecules can be filtered in three ways.  First, a
+<a href="../quasar/fcnref/descrfcn.htm#DescriptorExprSyntax">
+Descriptor Filter</a> can be specified and the calculated MOE
+<a href="../quasar/descr.htm">Descriptors</a>
+must satisfy the range/boolean values specified.  Second, a
+<a href="../quasar/modcomp.htm#Composer">Model file</a> can be provided,
+and each new molecule must satisfy the specified criterion.  Finally,
+a pharmacophore query can be provided, which the absolute positions of each
+new molecule must satisfy.
+Structures failing any of these filters are discarded.  For the
+molecules that pass the filters, all calculated properties are written
+to the output database.
+
+<h3>Synthetic Score</h3>
+<p>
+A <a href="../moe/fcnref/rsynthfcn.htm">Synthetic Feasibility Score</a> is
+calculated for every new molecule that has passed the specified filters.
+This is a score in the range of 0 to 1 with 1 meaning fully synthesizable
+and 0 meaning not feasible.  This can be used as a term in the
+Descriptor Filter via the <tt>rsynth</tt> descriptor.
+
+<h3>Refine + Score</h3>
+<p>
+If a receptor is present,
+<a href="docking.htm#Refinement">Forcefield Refinement</a> can be used to
+relax each new molecule in the pocket.  Sidechains can be treated flexibly
+(with or without a tether), but backbone atoms are always held fixed.
+This generates an energy score using the
+<a href="../moe/pot.htm#Equation">Generalized Born solvation model (GB/VI)</a>
+[Labute&nbsp;2008].  This value, along with the protein coordinates if the
+sidechains were not fixed, is written to the output database.
+Molecules can be scored using one of the methods in MOE's
+<a href="docking.htm#Scoring">Docking</a> application.
+
+If the
+<tt>London&nbsp;dG</tt> score is calculated, the ligand efficiency (estimated
+pKi divided by the number of heavy atoms) is also written to the output
+database.
+
+<p>
+If no Receptor is present, tethered minimization (using the current forcefield)
+can be used to generate relaxed structures with as little global change
+in ligand alignment or orientation as possible.  A variable, parabolic
+force constant is applied to each heavy atom of the scaffold.
+This allows the portion of the scaffold in each new structure proximate to
+the R-groups to relax freely while preserving the overall geometry.
+
+<p>
+If a pharmacophore query filter is used, minimization or refinement will
+use forcefield restraints between the features in the query and the
+pharmacophore annotations in the molecule.  Such restraints will only be
+applied if the pharmacophore query uses the
+<a href="ph4_annot.htm">Unified Annotation Scheme</a>.
+
+
+<!-- ============================ RUNNING ================================ !-->
+
+<p>
+<a name="RunCombi"></a>
+<h2>Running the Combinatorial Builder</h2>
+
+<p>
+To start the Combinatorial Builder, load a ligand (and associated
+receptor structure if available) into the main MOE window and select
+<span class="menu">MOE | Compute | Fragments | Combinatorial Builder</span>.
+
+<p align="center">
+<img src="frag_combi/fcpanel.png" alt="Combinatorial Builder Panel" /></p>
+
+<table cellpadding="5">
+<tr>
+<td valign="top">
+<b>Ligand</b>
+<td valign="top">
+The atoms that define the ligand used by the Combinatorial Builder.  This
+will be the scaffold to which all R-groups will be connected.  Press the
+<b>?</b> button to the right to briefly highlight (in the MOE window) the
+specified atoms.
+<tr>
+<td valign="top">
+<b>Receptor</b>
+<td valign="top">
+The atoms that define the protein used by the Combinatorial Builder.  Press the
+<b>?</b> button to the right to briefly highlight (in the MOE window) the
+specified atoms.  This atom collection can also be manually specified by
+selecting objects in the Sequence Editor and choosing the appropriate atom
+set.
+<tr>
+<td valign="top">
+<b>Operation</b>
+<td valign="top">
+Specifies the method used to generate structures, using Scaffold Replacement,
+MedChem Transformations, BREED or Combinatorial Builder.  Choose
+<b>Combinatorial Builder</b> to run the Combinatorial Builder application.
+Select atoms or edit the atom names to define attachment points.  The GUI
+reports whether it is possible to proceed: the number of connections (in green)
+or an error message (in red).
+<tr>
+<td valign="top">
+<b>Specify connection points</b>
+<td valign="top">
+This radio button specifies how attachment points are identified.  If
+<b>Selected Atoms</b> is pressed, selected terminal atoms or free rotors
+are used.  If <span class="nobr"><b>Atom Names</b></span> is
+pressed, terminal atoms or rotors with names of <b>A1...An</b> are used.
+Valid attachment points are labeled in green, and the GUI indicates the
+number of connections and whether the calculation can proceed.
+<tr>
+<td valign="top">
+<b>Attach R-groups</b>
+<td valign="top">
+The <b>Define Connections</b> button allows the user to
+associate R-group libraries with individual attachment points and provides
+the number of possible combinations.  The following panel appears:
+
+<p align=center><img src="frag_combi/fcdefineconn.png"
+alt="Define Connections Panel"></p>
+
+<table cellpadding="5" width="90%">
+<tr>
+<td valign="top">
+<b>R-group</b>
+<td valign="top">
+This file browser allows the user to select R-group libraries.  Double-click
+on individual databases to add them using the next available attachment point.
+<tr>
+<td valign="top">
+<b>Add Connection</b>
+<td valign="top">
+Adds the currently selected database as an R-group library using the next
+available attachment point.
+<tr>
+<td valign="top">
+<b>Connections</b>
+<td valign="top">
+This lists R-group libraries associated with each attachment point
+and whether only the selected entries in the database will be used
+(selections made in the Database Viewer).  The maximum number of combinations
+due to the current selection is also provided.
+<tr>
+<td valign="top">
+<b>Remove</b>
+<td valign="top">
+Deletes the selected entries of the Connections list.
+<tr>
+<td valign="top">
+<b>Refresh</b>
+<td valign="top">
+Pressing Refresh recalculates the maximum number of combinations and would
+be used to update the value after changing R-group selection in the Database
+Viewer.
+<tr>
+<td valign="top">
+<b>Change Ports</b>
+<td valign="top">
+Pressing one of these buttons changes the attachment point of a selected
+entry in the Connections list.  A warning will appear if the new attachment
+point is in use.
+<tr>
+<td valign="top">
+<b>Use selected entries only</b>
+<td valign="top">
+If on, only the selected entries of the specified R-group libraries will be
+used. If the library is not open in the Database Viewer, all entries will
+be used.  This is applied to all selected entries in the Connections list.
+<tr>
+<td valign="top">
+<b>Set Atom Names</b>
+<td valign="top">
+Set the atom names of the Ligand atom set to reflect the currently active
+connection points.  Atom names of <b>A1...An</b> are changed to their
+element symbol if inactive.
+</table>
+
+<tr>
+<td valign="top">
+<b>Configure...</b>
+<td valign="top">
+This button brings up a sub-panel, allowing the user to change some of the
+more technical parameters for the Combinatorial Builder:
+
+<p align=center><img src="frag_combi/fcsettings.png"
+alt="Settings Panel"></p>
+
+<table cellpadding="5" width="90%">
+<tr>
+<td valign="top">
+<b>Intra-Ligand Clash Energy</b>
+<td valign="top">
+Sets the intra-ligand soft clash energy threshold (in kcal/mol/ligand atom).
+This calculation is done over the R-group atoms.
+<tr>
+<td valign="top">
+<b>Protein-Ligand Clash Energy</b>
+<td valign="top">
+Sets the protein-ligand soft clash energy threshold (in kcal/mol/ligand atom).
+This calculation is done over the R-group atoms.
+<tr>
+<td valign="top">
+<b>Scaffold Atom Tether</b>
+<td valign="top">
+If specified, a fixed-value tether is used for refinement and minimization.
+<tr>
+<td valign="top">
+<b>Duplicate Window</b>
+<td valign="top">
+Sets the threshold (RMSD value) below which new structures will be considered
+duplicates of those generated previously.
+<tr>
+<td valign="top">
+<b>Clash Grid Energy Threshold</b>
+<td valign="top">
+The maximum soft clash energy (in kcal) used by the Torsion
+Driver when determining accessible regions of space.
+</td></tr>
+<tr>
+<td valign="top">
+<b>Torsion Driver Stepsize</b>
+<td valign="top">
+The stepsize (in degrees) used by the Torsion 
+Driver when generating rotamers of individual bonds.
+</td></tr>
+<tr>
+<td valign="top">
+<b>Rotamer Energy Threshold</b>
+<td valign="top">
+The energy threshold (in kcal) used by the Torsion
+Driver when discarding higher-energy rotamers.  This is calculated
+using the current forcefield.
+</td></tr>
+<tr>
+<td valign="top">
+<b>Rotamer Duplicate Window</b>
+<td valign="top">
+The threshold (in degrees) used by the Torsion
+Driver when determining duplicate rotamers.  The lowest-energy structure
+within the duplicate window is used.
+<tr>
+<td valign="top">
+<b>Variable terminal rotors</b>
+<td valign="top">
+If on, multiple attachment point positions  will be generated for terminal
+free rotors.  Otherwise, the specific input positions will be used.
+<tr>
+<td valign="top">
+<b>Write R-group molecules</b>
+<td valign="top">
+If on, the R-groups will be written to the output database as molecules.
+Otherwise, only R-group names are written out.
+</td></tr>
+</table>
+
+<tr>
+<td valign="top">
+<b>Descriptor Filter</b>
+<td valign="top">
+If specified, this defines the criteria that generated molecules must
+satisfy.  Molecules whose properties fall outside the specified range(s)
+will be omitted.  Any MOE QuaSAR descriptor can be specified and the
+condition to be satisfied can be a range of values, a boolean value,
+numeric comparisons, etc. evaluated on descriptors or SMARTS patterns.
+Descriptor Filters can include files, specified as <tt>@<i>filename</i></tt>.
+If the filename contains spaces or other non-alphanumeric characters, it
+must be enclosed in double quotes.  Files can be nested.
+The current Filter can be written to a file by
+pressing <b>Save...</b> and providing a filename.  Examples include:
+</p>
+<p>
+<table class="titlebar">
+<tr>
+<th>Expression</th>
+<th>Meaning</th>
+</tr><tr>
+<td><tt>Weight[100,500]  SlogP<5</tt></td>
+<td>Molecular weight &ge; 100 and &le; 500 and SlogP &lt; 5</td>
+</tr><tr>
+<td><tt>!reactive 'b_1rotN'<4</tt>
+<td>Not reactive and less than 4 rotatable single bonds<br />
+(<b>Note:</b> Descriptor codes containing digits must be quoted.)</td>
+</tr><tr>
+<td><tt>"[NX3](=[OX1])[OX1]"<=2  not "[#M]"</td>
+<td>Two or fewer nitro/nitrate groups and not metal atom</td>
+</tr><tr>
+<td><tt>@filter.txt TPSA>80</td>
+<td>Use the contents of <tt>filter.txt</tt> and TPSA &gt 80</td>
+</tr>
+</table>
+
+<br>
+If a Descriptor Filter is specified, the color of the <b>Check Filters</b>
+button indicates whether the input ligand passes (black) or fails (red).
+Clicking the button displays in the MOE window the Descriptor values
+and indicates whether the ligand passes the Model or Pharmacophore filters.
+</tr>
+
+<tr>
+<td valign="top">
+<b>Model file</b>
+<td valign="top">
+Output molecules may optionally be filtered with a QSAR <tt>.fit</tt> file,
+a Model Composer <tt>.mom</tt> file, a Fingerprint Model <tt>.fpt</tt> file
+or a Pharmacophore Query <tt>.ph4</tt> file.  Specify the name of an existing
+file, or click on  <b>Browse...</b> to select a file.  Generated molecules
+that fail to satisfy the given threshold condition (specified in the fields
+below) will be omitted.
+<tr>
+<td valign="top">
+<b>Pharmacophore</b>
+<td valign="top">
+If specified, the pharmacophore query to be used as a filter.  Specify the
+name of an existing file or open the
+<a href="ph4_query.htm">Pharmacophore Query Editor</a> by pressing
+<b>Editor...</b> to create or edit a query.  Molecules whose absolute
+coordinates fail to satisfy the pharmacophore filter will be omitted.
+<tr>
+<td valign="top">
+<b>Output Database</b>
+<td valign="top">
+The Output Database contains the structures created by the Combinatorial
+Builder
+along with various calculated properties.  If <b>Open Database Viewer</b> is
+on then a molecular Database Viewer will be opened with the output database.
+If <b>Minimize generated structures</b> is on and a Receptor is present,
+<b>Forcefield Refinement</b> will be used.  Use the <b>Configure...</b>
+button to modify the parameters, or to enable sidechain flexibility.
+<p>
+If no Receptor is present, tethered minimization (using the current
+forcefield) with a variable force constant will be used to generate relaxed
+structures with as little global change in scaffold geometry as possible.
+A parabolic force constant, <span class="nobr">
+<i>k</i> = <i>5r <sup style="font-size:70%">2</sup></i></span>,
+is applied to each scaffold atom, where <i>r</i> is the minimum distance to a
+connection point.  If a Pharmacophore Filter is present, its features
+will be used as constraints in both refinement and minimization.
+<tr>
+<td valign="top">
+<b>Scoring</b>
+<td valign="top">
+Specifies which <a href="docking.htm#Scoring">scoring methodology</a>
+to use for ranking the structures created by the Combinatorial Builder.
+Use the <b>Configure...</b> button to the right to configure the parameters
+of the selected method (if appropriate).
+<tr>
+<td valign="top">
+<b>Isolate</b>
+<td valign="top">
+Press the <b>Isolate</b> button to render the molecular system near the
+Ligand atom set and hide the remaining atoms of the system.
+<tr>
+<td valign="top">
+<b>Batch File</b>
+<td valign="top">
+Press the <b>Batch File</b> button to bring up the Combinatorial Builder
+Batch File panel:
+
+<p align=center><img src="frag_combi/fcbatchfile.png" alt="Batchfile Panel"></p>
+
+Pressing the <b>Save</b> button writes the current molecules and settings
+into the specified SVL run file.  Pressing the <b>Load</b> button loads
+the contents of the batch file into MOE and restores the GUI settings.
+Pressing <b>Cancel</b> exits the panel.  Such files can be run later via
+<a href="../install/install.htm#RunBatch">MOE/batch</a> or at the
+SVL or system command prompt.
+<tr>
+<td valign="top">
+<b>Close</b>
+<td valign="top">
+Press the <b>Close</b> button to exit the Combinatorial Builder.
+This does not terminate the current search.
+</table>
+
+<p>
+After filling in the appropriate entries, press <b>Search</b> to start the
+calculation. Progress information is provided in the SVL Commands window
+along with
+the bottom of the panel (if open).  Pressing <b>Stop Search</b> while the
+calculation is running terminates the search.  If the Combinatorial Builder
+application has been closed, the current search can be terminated via
+<span class="menu">MOE | Cancel</span>, 
+by selecting <span class="nobr"><b>Combinatorial Builder Search</b></span>.
+<p>
+Upon completion, the output database will contain the following fields:
+<blockquote><table class="titlebar">
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="top">
+<b>mol</b>
+<td valign="top">
+A molecule field containing the structures generated by the Combinatorial
+Builder.
+<tr>
+<td valign="top">
+<b>mseq</b>
+<td valign="top">
+The molecular sequence number, starting at 1 and incrementing with every
+new molecule.  Conformers share mseq values.
+<tr>
+<td valign="top">
+<b>ERgr</b>
+<td valign="top">
+The energy of the R-group(s), which is the sum of the R-group/receptor
+interaction energy (if present), the conformation energy penalties for
+each R-group and the inter-R-group conformation energy penalty (if present).
+<tr>
+<td valign="top">
+<b>AcidBase</b>
+<td valign="top">
+The strong acid/base warning flag, set to 1 when acidic or basic atoms are
+present (those whose protonation state would be changed when washed).
+<tr>
+<td valign="top">
+<b>rsynth</b>
+<td valign="top">
+The synthetic feasibility score, which is the fraction of the atoms of each
+new structure that ultimately appear in a retrosynthetic fragment found
+in the starting materials database.  A value of one indicates that the
+molecule is very likely synthesizable.
+<tr>
+<td valign="top">
+<b>Rgroup<i>n</i></b>
+<td valign="top">
+The R-group(s) used to create the current structure.  This can be the actual
+molecule (default) or the name of the particular R-group.
+<tr>
+<td valign="top">
+<b>PH4 RMSD</b>
+<td valign="top">
+The RMS deviation of the fit of the output molecule to the pharmacophore
+filter (if present).
+<tr>
+<td valign="top">
+<b>RMSD</b>
+<td valign="top">
+The RMS deviation of the heavy atoms of the scaffold before and after
+minimization (if performed).
+<tr>
+<td valign="top">
+<b>MM/GBVI</b>
+<td valign="top">
+If <b>Forcefield Refinement</b> is performed, this is a measure of the
+non-bonded interaction between the receptor and ligand.  It is the sum
+of van der Waals, Coulomb and generalized Born implicit solvent interaction
+energies. If <b>Use GB/VI</b> is deselected, the protein/ligand energy
+using the current forcefield is reported as <b>E_refine</b>
+<tr>
+<td valign="top">
+<b>receptor</b>
+<td valign="top">
+If <b>Forcefield Refinement</b> is performed with sidechain flexibility,
+this contains the revised coordinates of the receptor.
+<tr>
+<td valign="top">
+<b><i>score</i></b>
+<td valign="top">
+If Scoring is used, this field contains the specific score value
+<b>ASE</b>, <b>Affinity dG</b>, <b>Alpha HB</b>, <b>GBVI/WSA dG</b> or
+<b>London dG</b>.  If <b>London dG</b> scoring is used, the
+<b>Ligand Efficiency</b> is calculated for the output structures as well.
+</table></blockquote>
+
+<p>
+If Descriptor or Model filtering is used, additional columns are created
+in the output database to receive the various calculated properties.  This
+database can be analyzed using any of the other analysis tools in MOE.
+
+
+<!-- =============================== EXAMPLE ============================= -->
+
+<p>
+<a name="Example"></a>
+<h2>Examples</h2>
+<p>
+In this section we will present a number of example calculations using the
+Combinatorial Builder, using both user-specified and default R-group libraries.
+
+<div class="example">
+
+<h3>Prepare Input</h3>
+<p>
+<ol start="1">
+<li><i>Prepare the protein/ligand pair.</i><br />
+First clear the system:
+<p class="indent_novspace">
+<span class="menu">MOE | File | Close</span></p><br />
+Open the PDB file:
+<p class="indent_novspace">
+<span class="menu">MOE | File | Open</span></p>
+In the Open panel, select
+<span class="nobr"><tt>$MOE/sample/mol/1ioe.pdb</tt></span>.<br /><br />
+Set the optimal protonation state:
+<p class="indent_novspace">
+<span class="menu">MOE | Compute | Prepare | Protonate 3D</span></p>
+Take the default options and press <b>OK</b>.  This will take a minute or
+so to complete.<br /><br />
+Hide the Receptor, ribbons and hydrogen atoms:
+<p class="indent_novspace">
+<span class="menu">RHS | Hide | Receptor</span></p>
+<p class="indent_novspace">
+<span class="menu">MOE | Footer | Ribbon | Style | 
+<img src="../tutorials/protalign_tut/apat_image011.png" alt="ribbon style" style="vertical-align: bottom;" />
+</span></p>
+<p class="indent_novspace">
+<span class="menu">RHS | Hydrogens</span></p><br />
+Select and delete pyridine terminal group:
+<p class="indent_novspace">
+<span class="menu">RHS | Delete</span></p>
+This creates a hydrogen that will be used in the next two examples.<br /><br />
+Save it to disk:
+<p class="indent_novspace">
+<span class="menu">MOE | File | Save</span></p>
+In the Save panel, enter
+<span class="nobr"><tt>CBtest.moe</tt></span>.  This can be used
+when rerunning the sample calculations.
+<p>
+<li><i>Start the Combinatorial Builder.</i>
+<p class="indent_novspace">
+<span class="menu">MOE | Compute | Fragments | Combinatorial Builder</span></p>
+Ensure that the Receptor set is set to Receptor Atoms and the Ligand set is
+set to Ligand Atoms.  Toggle on
+<span class="nobr"><b>Open Database Viewer</b></span> to see the output
+as it is created.
+</ol>
+</div>
+
+<div class="example">
+
+<h3>Simple Addition</h3>
+
+<ol start="1">
+<li>
+<div class="floatright">
+<img src="frag_combi/selpix1.png" alt="Single Bond Selection">
+</div>
+
+<i>Decrease the filtering.</i><br />
+Change the <b>Descriptor Filter</b> to <tt>Weight<600</tt>
+<tt>SlogP[-4,8]</tt> <tt>TPSA[40,140]</tt>.  This increases the maximum
+molecular weight that will be accepted.
+<p>
+<li>
+<i>Set up the calculation.</i><br />
+Select the hydrogen created when setting up <span class="nobr">
+<tt>CBtest.moe</tt></span> (it should be the only one visible).  The
+atoms should be labeled <font color="#00CC00"><b>A1</b></font> and the
+GUI will indicate a single connection is present.
+</ol>
+
+<p>
+Press <b>Search</b> to start the Combinatorial
+Builder.  The calculation will run quickly as the default library,
+<span class="nobr"><tt>$MOE/lib/buildfrag.mdb</tt></span>, is small.
+Progress is reported at the bottom of the GUI.  The output molecules have
+molecular weights less than 600,
+logP's in the range of -4 to 8 and TPSA in the range of 40 to 140.
+The <span class="nobr"><b>SVL Commands</b></span> window provides information
+about the calculation.
+
+</div>
+
+<div class="example">
+
+<h3>Variable Free Rotor</h3>
+
+<ol start="1">
+<li>
+<div class="floatright">
+<img src="frag_combi/selpix2.png" alt="Free Rotor Selection">
+</div>
+
+<i>Show the hydrogens.</i><br />
+Clear the atom selection, and display the hydrogens:
+<span class="menu">RHS | Hydrogens
+<p>
+<li>
+<i>Set up the calculation.</i><br />
+Select one of the hydrogens of the terminal methyl group.  As above, the
+GUI will indicate a single connection is present.
+</ol>
+
+<p>
+Press <b>Search</b> to start the Combinatorial Builder.  The portion of the
+scaffold containing the selected atom is outside the cleft, so it is likely
+that the <b>-O-CH<sub>3</sub></b> rotor will have several possible positions.
+The calculation should take less than a minute, with progress reported at
+the bottom of the GUI and in the
+<span class="nobr"><b>SVL Commands</b></span> window.
+
+<p>
+You can examine the output, <tt>combibuild.mdb</tt> in the Database
+Viewer.  There are roughly 1200 structures, with multiple rotamers
+associated with each R-group.  Browsing the first few structures shows
+the orientations for each generated attachment point.
+
+</div>
+
+<div class="example">
+
+<h3>Combinatorial Building</h3>
+
+<ol start="1">
+<li>
+<i>Load the scaffold.</i><br />
+First, clear the system:
+<p class="indent_novspace">
+<span class="menu">RHS | Close</span></p><br />
+Open the scaffold database:
+<p class="indent_novspace">
+<span class="menu">RHS | Open</span></p>
+In the Open panel, select
+<span class="nobr"><tt>$MOE/sample/mol/gmp_scaffold.mdb</tt>
+</span>and press <b>OK</b>.<br />
+Double click on the molecule to load it into MOE.
+<p>
+<li>
+<i>Specify the connections</i><br />
+Press <b>Define Connections...</b> in the GUI.  This brings up the
+<span class="nobr"><b>Edit Connections</b></span> window.
+In the <b>R-group</b> file browser, enter
+<span class="nobr"><tt>$MOE/sample/mol</tt></span> and hit return.  This shows
+a collection of databases under <b>Files</b>.<br /><br />
+The four R-group libraries are <tt>gmp_r1.mdb</tt>, <tt>gmp_r2.mdb</tt>,
+<tt>gmp_r3.mdb</tt> and <tt>gmp_r4.mdb</tt>.  Select each in turn and
+press <span class="nobr"><b>Add Connection</b></span> or by double-clicking
+in the file list. The panel should look like this:
+
+<p align=center><img src="frag_combi/EditSel.png" alt="Connections Panel"></p>
+
+Press <b>OK</b> to accept the connections.
+<p>
+<li>
+<div class="floatright">
+<img src="frag_combi/selpix3.png"
+alt="Atom Name Selection" />
+</div>
+
+<i>Increase the filtering.</i><br />
+Change the <b>Descriptor Filter</b> to <tt>Weight<250</tt>.  This decreases
+the maximum molecular weight that will be accepted and removes the logP and
+TPSA filters.
+<p>
+<li>
+<i>Set up the calculation.</i><br />
+Change the Receptor Atom set to <b>None</b>.<br />
+Change <b>Specify connection points</b> to <b>Atom Names</b>.  The
+atoms with names <b>A1...A4</b> are labeled in green.  The GUI indicates
+there are 4 Connections and 6480 possible combinations to examine.
+</ol>
+
+<p>
+Press <b>Search</b> to start the Combinatorial Builder.  The calculation
+should take a few seconds, and generate roughly 1300 structures.  Progress
+is reported at the bottom of the GUI and in the <b>SVL Commands</b> window.
+
+<p>
+You can examine the output, <tt>combibuild.mdb</tt> in the Database
+Viewer.  As no receptor is present, <b>ERgr</b> (the R-group energies)
+reflects only R-group/scaffold and R-group/R-group conformation energy
+penalties.  You can extend the size of the <b>mol</b> field to see which
+R-groups were used to create each output molecule, or browse the results
+to see the various structures and rotamers that were generated.
+
+</p></div>
+
+
+<!-- ============================= REFERENCES ============================ -->
+
+<p>
+<h2>See Also</h2>
+<p>
+<a href="../quasar/fcnref/descrfcn.htm">QuaSAR-Descriptor Functions</a><br />
+<a href="../quasar/descr.htm">QuaSAR-Descriptor</a><br />
+<a href="ph4_guide.htm">Introduction to Pharmacophores in MOE</a><br />
+</p>
+
+<a name="Ref"></a>
+<h2>References</h2>
+<p>
+<table cellpadding="5" width="100%">
+<tr>
+<td valign="top">[Labute&nbsp;2008]
+<td valign="top">
+Labute, P.;
+The Generalized Born/Volume Integral Implicit Solvent Model: Estimation of
+the Free Energy of Hydration Using London Dispersion Instead of Atomic
+Surface Area;
+<i>J. Comput. Chem. 29</i> (<b>2008</b>) 1693&ndash;1698.
+
+</table>
+
+</font>
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+

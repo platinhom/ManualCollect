@@ -1,0 +1,1065 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    	prolig2d.htm		Ligand Interactions
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Ligand Interactions</title>
+<meta panel Protein Ligand Annotation Diagram>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Overview">Overview</a>
+<li><a href="#Method">Methodology</a>
+    <ul>
+    <li><a href="#MethodInteract">Calculate Interactions</a>
+    <li><a href="#MethodFlatten">Flattening Depiction</a>
+    <li><a href="#MethodPos1">Position Ligated Metals</a>
+    <li><a href="#MethodPos2">Position Hydrogen-bonded Residues</a>
+    <li><a href="#MethodPos3">Position Non-bonded Residues</a>
+    <li><a href="#MethodSurf">Proximity and Surfaces</a>
+    <li><a href="#MethodDraw">Drawing</a>
+    <li><a href="#MethodConcur">Concurrent Layout</a>
+    </ul>
+<li><a href="#Run">Running the Application</a>
+<li><a href="#Example1">Worked Examples</a>
+    <ul>
+    <li><a class="example" href="#Example1">Example 1: Biotin and receptor</a>
+    <li><a class="example" href="#Example2">Example 2: 1AWH hydrolase</a>
+    <li><a class="example" href="#Example3">Example 3: 1ATP Phosphotransferase</a>
+    <li><a class="example" href="#Example4">Example 4: Aligned Series</a>
+    </ul>
+<li><a href="#Ref">References</a>
+</ul>
+
+<!-- ============================== OVERVIEW ============================= -->
+
+<p><a name="Overview"></a><h2>Overview</h2>
+
+<p>The Ligand Interactions application provides a means to visualize an active
+site of a complex in diagrammatic form. The content is presented in a concise
+and stylized manner, and summarizes a large amount of spatial data making use of
+mnemonic glyphs where appropriate. The panel can be used as a complement to 3D
+visualization, as the 2D and 3D representations can be displayed alongside one
+another. The content can also be exported in graphical or tabular form, as well
+as printed.
+
+<p>The diagram itself consists of the selected ligand as the centerpiece, which
+is drawn using the traditional schematic style for molecules. A selection of
+interacting entities, which includes hydrogen-bonded residues, close but
+non-bonded residues, solvent molecules and ions are drawn about the ligand,
+their positions in 2D being chosen to be representative of the observed 3D
+distances, as well as taking into account aesthetic considerations. Additional
+properties such as solvent accessible surface area and the ligand proximity
+outline are also shown.
+
+<p>The user interface provides control over whether certain elements are drawn,
+and to some extent their color and style. The definition of hydrogen bonded,
+ionic and proximity interactions can be affected by modifying cutoff values. The
+interactions which are shown in the 2D diagram in the panel are reflected also
+in the MOE main window.
+
+<p><div align="center"><table border=0>
+<tr>
+<td><img src="prolig2d/overview1.png" alt="Biotin and Receptor">
+<td><img src="prolig2d/overview2.png" alt="Biotin and Receptor">
+</table>
+<p><i>Biotin and receptor</i></div>
+
+
+
+<!-- ============================ METHODOLOGY ============================ -->
+
+<p><a name="Method"></a><h2>Methodology</h2>
+
+<p>The information content displayed in the Ligand Interactions panel is similar
+to that presented by the popular program <tt>LIGPLOT</tt> [Wallace 1995], except
+with a stronger emphasis on aesthetics. A full treatment of the method is
+described in the literature [Clark 2007].
+
+<p>Generation of the protein-ligand annotation diagram consists of the
+following steps:
+
+<blockquote><ol>
+
+<p><li>Ascertain the interactions between the ligand and the species immediately
+surrounding it, and decide which residues, solvents and ions are to be included
+in the diagram.
+
+<p><li>Layout the coordinates of the ligand, taking into consideration the
+extent to which the flattened version is comparable to the 3D conformation.
+
+<p><li>Position the residues with strong hydrogen bonds to the ligand, arranging
+them in the plane and reproducing the 3D distances in 2D as best as possible.
+
+<p><li>Position the residues which are proximal to the ligand but do not have
+strong contacts, preserving 3D distances to the extent possible.
+
+<p><li>Calculate the proximity contour and solvent accessibility.
+
+<p><li>Draw each of the entities.
+
+</ol></blockquote>
+
+<p><a name="MethodInteract"></a><h3>Calculate Interactions</h3>
+
+<p>The atoms which constitute the ligand must first be decided upon. By default,
+this is the set of atoms which would be selected using <nobr><b>MOE | Select
+| Ligand</b></nobr>, further reduced by including only the largest continuously
+connected component. Other definitions of the ligand may be used, but the set
+must indicate a continuously connected molecular species.
+
+<p><b>Hydrogen Bonds</b>: Each pair of heavy atoms from the ligand set and the
+receptor set could be a hydrogen bond if: (1) there is a tautomer combination in
+which one of the atoms is a potential H-bond donor and the other is a potential
+H-bond acceptor, and (2) the distance and orientation are favorable for the
+particular functional group.  For each viable ligand:receptor atom pair an
+interaction energy is calculated, and it is possible to set the minimum bound
+for what is considered to be hydrogen bond.  The directionality of the hydrogen 
+bond is also noted; it is possible for a ligand:receptor pair to be 
+potentially both a donor <i>and</i> an acceptor.
+
+<p><b>Solvent Interactions</b>: Ligand atoms can form hydrogen bonds with
+solvent molecules, typically water. The perception and scoring is done in the
+same way as for ligand:receptor pairs, except that solvent hydrogen bonds are
+only retained if the solvent molecule has a qualifying hydrogen bond to the
+ligand.  If the solvent molecule has additionally a hydrogen bond to the
+receptor it is drawn as well.  Un-anchored solvent molecules are considered to
+be fluxional and transient, and do not appear in the diagram.
+
+<p><b>Metal Ligation</b>: Metal atoms which are bonded to the ligand, or are
+close enough to be within bonded distance, are classified as ligand:metal
+ligation interactions.  As with hydrogen bonds, energies for the metal
+ligation interactions are calculated, which may be used as a minimum bound
+for inclusion.
+
+<p><b>Nonbonded Residues</b>: Residues which approach closely to the ligand but
+do not have any qualifying strong interactions (i.e. hydrogen bonds) may be
+classified as non-bonded residues that have a significant effect on the
+orientation and binding of the ligand, but which may be spread out over a number
+of pairwise contacts, each of which is relatively weak. Classification of
+nonbonded residues is done by the following simple formula: 
+
+<p><div align="center">
+<i>cutoff</i> = parameter (default 4.5 &Aring;)<br>
+<i>num</i> = number of heavy atoms in the residue closer than <i>cutoff</i><br>
+<i>limit</i> = <i>cutoff</i> - 0.9 + 0.1 * <i>num</i>
+</div>
+
+<p>The residue must have at least one atom which approaches the ligand at a
+distance less than <i>limit</i> to qualify as having a nonbonded interaction. In
+this way, residues with few atoms which are particularly close, or many atoms
+which are quite close, are selected for inclusion in the diagram. They are not
+however assigned any kind of score, and are arranged much less rigorously than
+those with a specific strong interaction.
+
+<p><a name="MethodFlatten"></a><h3>Flattening Depiction</h3>
+
+<p>The focal point of the 2D diagram produced by the Ligand Interactions tool is
+the ligand itself, which is arranged prior to placement of the residues with
+which it interacts. In order to produce an aesthetic layout, the MOE depiction
+layout algorithm is invoked [Clark 2006]. If called without modification,
+however, the standard depiction method would produce a 2D layout that maximizes
+dispersion between non-bonded atoms, within its set of constraints. This is not
+always an ideal starting point, since there is often a viable solution which
+does not maximize dispersion, but more closely reflects the original 3D
+conformation.
+
+<p>In order to encourage a 2D layout solution which suits the needs of the
+Ligand Interactions diagram, the layout engine is provided with a callback
+function which offsets the scores of each proposed layout with its own criteria.
+The modifications are crafted so that they are of sufficient magnitude to
+overwhelm the depiction layout algorithm's inverse-distance-squared repulsions
+between nonbonded atoms, but not large enough to force the depictor prematurely
+into its damage-control methods.
+
+<p>The score for each proposed depiction layout is modified like so:
+
+<p><div align="center"><nobr>
+score = score
+    + &Sigma;<sub>torsion</sub> w |&theta;<sub>3D</sub> - &theta;<sub>2D</sub>|
+    + &Sigma;<sub>i,j</sub> w |dist3D<sub>ij</sub> - dist2D<sub>ij</sub>|
+</nobr></div>
+
+<p>The list of torsion quadruplets, and the original 3D angles, are determined
+before the process begins. In each case the 2D layout is penalized according to
+its relative deviation from the proper conformation, which rewards choices that
+resemble the original geometry.
+
+<p>Similarly, the distance matrix of heavy atom pairs [i,j] where i &lt; j is
+formed, and scaled such that the average bond length in 3D is the same as the 2D
+depiction ideal. The 2D layout is penalized less if the distances are similar to
+the 3D conformation. The weighting for this term is set to the inverse square
+of the 3D distance, in order to prevent long range terms from overly
+dominating the score. For pairs where one of the atoms has a strong contact to a
+residue, the weighting is 10-times heavier, and those for which both atoms have
+a strong contact are magnified 100-fold.
+
+<div align="center"><table border=0>
+
+<tr><td colspan="2" align="center">
+<img src="prolig2d/flat1.png">
+<p>3D conformation of ligand
+</tr>
+<tr><td align="center" valign="bottom"><img src="prolig2d/flat2.png">
+<p>Normal depiction
+<td align="center" valign="bottom"><img src="prolig2d/flat3.png">
+<p>Flattening depiction
+</tr>
+
+</table></div>
+
+<p>It is important to note that the resulting depiction is not at all guaranteed
+to resemble the 3D conformation, but rather it is encouraged to do so, as long
+as primary aesthetic constraints can still be satisfied. Highly non-planar
+molecules (e.g. the orthogonal conformations of biphenyl derivatives) require
+compromise. The techniques which are described subsequently <i>desire</i> but do
+not <i>require</i> faithful correspondence with the 2D ligand coordinates and
+the proper original conformation.
+
+<p><a name="MethodPos1"></a><h3>Position Ligated Metals</h3>
+
+<p>Metals which are classified as being ligated to the ligand are temporarily
+promoted to being a part of the ligand, immediately prior to the layout
+described above, then subsequently disconnected. This results in the position of
+the metal being obtained from the depiction layout.
+
+<p><a name="MethodPos2"></a><h3>Position Hydrogen-bonded Residues</h3>
+
+<p>Residues and solvent molecules which are bound to the ligand by a hydrogen
+bond are placed next. There are many competing effects which determine where a
+strongly interacting residue is positioned. Since a line will be drawn on the
+final diagram for each such interaction, it is very important to try to find a
+position in which the 2D distances of these interactions proportionally reflects
+the 3D distance. But it is also important to provide an impression of the
+spatial relationship to other nearby residues, and to  place them in such a way
+that they do not obscure other features such as bonds, atoms or other residues.
+
+<p><b>Initial placement</b>: Finding an initial guess position for each residue
+is very important, because the main placement criteria are expressed as a
+continuous multivariable optimization problem. Any starting point which is in a
+far-from-optimal local minimum must be avoided. As a general consideration,
+starting points should be far from atoms and bonds, and not inside rings,
+nor inside "pincer"-like formations.
+
+<p>In order to ensure that the basic requirements are met, a coarse grid is
+placed around the ligand, and the repulsions from specific regions are
+overlayed, as is shown in the following diagram:
+
+<p><div align="center"><table border=0>
+<tr>
+<td><img src="prolig2d/grid1.png" border=1>
+<td><img src="prolig2d/grid2.png" border=1>
+<tr>
+<td align="center">1. Base avoidance
+<td align="center">2. Specific attraction
+</table></div>
+
+<p>The base repulsive grid (1) is formed by adding Gaussian distributions at
+atom and ring centers, which ensure that the minimum point will be well outside
+of the molecular region. The grid in (2) shows the placement guide for a residue
+that has a single strong contact to the nitrogen atom which is highlighted with
+a circle. The overlay function is <nobr>[1 - d / max d]</nobr>, where d =
+distance between grid point and contacting atom. The grid point with the lowest
+value is shown by the X mark, and serves as the starting position for the
+residue.
+
+<p><b>Multivariable Refinement</b>: Each residue atom which has a strong contact
+to the ligand is placed in the method described above. Then, each of the (x,y)
+coordinates is defined as a variable, and they are collectively refined by
+minimization of the following continuously differentiable energy function:
+
+<div align="center"><table border=0>
+
+<tr><td>energy
+<td>= &Sigma;<sub>ij</sub> w<sub>ij</sub> (dist<sup>2</sup><sub>ij</sub> -
+D<sup>2</sup>)<sup>2</sup>
+<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<i>(variable-variable desired distances)</i>
+
+<tr><td><td>+ &Sigma;<sub>ij</sub> w<sub>ij</sub> 
+exp [-K dist<sup>2</sup><sub>ij</sub>]
+<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<i>(variable-variable short range repulsion)</i>
+
+<tr><td><td>+ &Sigma;<sub>ik</sub> w<sub>ik</sub> 
+(dist<sup>2</sup><sub>ik</sub> - D<sup>2</sup>)<sup>2</sup>
+<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<i>(variable-fixed point desired distances)</i>
+
+<tr><td><td>+ &Sigma;<sub>ik</sub> w<sub>ik</sub> 
+exp [-K dist<sup>2</sup><sub>ik</sub>]
+<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<i>(variable-fixed point short range repulsion)</i>
+
+<tr><td><td>+ &Sigma;<sub>&theta;</sub> w<sub>&theta;</sub>
+exp [-&frac12;K (1 - cos &theta;)<sup>2</sup>]
+<td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<i>(variable-fixed point angular repulsion)</i>
+
+</table></div>
+
+<p>The variable-variable terms are primarily based on the desired distance,
+which is that of the 3D environment of the receptor, which should be matched in
+2D when possible. Since the term is distance to the power of 4, the weighting is
+scaled down by the 3D distance, in order to ensure that nearby residues
+influence each other more significantly. Short-range repulsion between variable
+terms are expressed as a Gaussian type function, which is scaled such that it
+dominates in the region of <1 &Aring;, but fades quickly with greater distance.
+
+<p>Variable-fixed point desired distances are composed of the strong
+interactions to the ligand atoms. All ligand:receptor atom pairs which are not
+connected by a strong interaction are accumulated in the variable-fixed point
+repulsion terms.
+
+<p>Variable-fixed point angular repulsion terms appear when more than one
+receptor atom is connected to a single ligand atom, in which case the angle
+formed between each instance of <nobr>&theta =
+var<sub>i</sub>-fixed-var<sub>j</sub></nobr> is highly repulsive when &theta; is
+small.
+
+<p><b>Consolidation</b>: The atoms belonging to particular residues are
+collapsed into one point per residue by averaging positions. The energy function
+is updated accordingly with the interactions and distances merged, and the
+new variables are resubmitted to the energy minimization, to obtain final
+positions for the strongly-bound residues.
+
+<p><a name="MethodPos3"></a><h3>Position Non-bonded Residues</h3>
+
+<p>Nonbonded residues are subjected to the same initial placement algorithm
+described above, except that the already-placed residues are also included in
+the regions of the surface to avoid. The same energy minimization process is
+used, except that the terms are employed differently. The variable-variable
+desired distance terms are not used. The variable-fixed point desired distances
+are set to be the initial placement positions, with a very light weighting.
+Variable-fixed point repulsion terms include ligand atoms, as well as the
+positions of residues which have previously been placed, and there is no angular
+repulsion term.
+
+<p>The overall effect is that the nonbonded residues are more sensitive to the
+initial placement algorithm, which is relative to all of the ligand atoms within
+a mild proximity of each residue, but are also more flexible in terms of
+deviation therefrom. They tend to be spaced evenly, and take up space beyond or
+in between the previously placed entities.
+
+<p><div align="center"><table border=0>
+<tr>
+<td><img src="prolig2d/moesite.png">
+<td><img src="prolig2d/placemnt.png">
+<tr>
+<td align="center">3D Active Site
+<td align="center">2D Placement
+</table></div>
+
+<p>The above images show a portion of the 3D active site of a protein-ligand
+complex, including for clarity only the residues and water molecules which are
+connected to the ligand by a hydrogen bond.  It can be seen that the 2D
+arrangement shows the same orientation.
+
+<p><a name="MethodSurf"></a><h3>Proximity and Surfaces</h3>
+
+<p>While the arrangement of ligands and residues is frequently sufficient to
+gain an insight into the proximity of the species in the active site, the
+information content can be significantly enhanced by calculating properties
+based on the 3D data, then presenting this data in a pictorial summary form.
+
+<p><b>Proximity Contour</b>: It useful to be able to observe how much space is
+available to the more outward-facing parts of the ligand, which can be expressed
+in its final form as a contour line surrounding the ligand. In areas where the
+exterior of the ligand is close to the receptor cavity, the line will be drawn
+tightly around the ligand in 2D, and loosely when there is plenty of available
+space.
+
+<p>In order to calculate the data for the contour, for each atom some number of
+trajectories (possibly zero) are generated. The trajectories are dependent on
+the geometry of the atom and the number of substituents. If there are
+insufficient anchor points, as is the case for sp<sup>3</sup> and sp<sup>2</sup>
+atoms with only one neighbor, a sampling set is created. Otherwise, the
+trajectories are indicative of the positions that would typically be occupied by
+a hydrogen substituent:
+
+<p><div align="center"><table border=0>
+<tr>
+<td align="center" valign="middle"><img src="prolig2d/cannon1.png">
+<td align="center" valign="middle"><img src="prolig2d/cannon2.png">
+<td align="center" valign="middle"><img src="prolig2d/cannon3.png">
+<tr>
+<td align="center" valign="middle">sp<sup>3</sup>/3
+<td align="center" valign="middle">sp<sup>3</sup>/2
+<td align="center" valign="middle">sp<sup>3</sup>/1
+<tr>
+<td align="center" valign="middle"><img src="prolig2d/cannon4.png">
+<td align="center" valign="middle"><img src="prolig2d/cannon5.png">
+<td align="center" valign="middle"><img src="prolig2d/cannon6.png">
+<tr>
+<td align="center" valign="middle">sp<sup>2</sup>/2
+<td align="center" valign="middle">sp<sup>2</sup>/1
+<td align="center" valign="middle">sp/1
+</table></div>
+
+<p>For each of the trajectories, a "cannonball" of radius 0.8 &Aring; is fired
+along the line. Every other atom in the system, except the origin, is considered
+to be a ball of van der Waals size. The extent is the distance which the
+cannonball travels before intersecting with another atom, bounded below by zero
+and above by 1.5 &Aring;. If multiple trajectories are assigned to the atom, the
+average is used.
+
+<p>The contour that is plotted from the resulting extents is useful as a measure
+of substitution space. For example, if by examining the diagram it appears that
+there is room for a methyl group, this is likely to be the case in the actual
+active site:
+
+<p><div align="center"><img src="prolig2d/contour.png">
+<br>Proximity contour: 1RO6 Hydrolase</div>
+
+<p>In the above complex, it can clearly be seen that there is a
+significant amount of space available for direct substitution on any of the
+three ring systems, especially the terminal cyclopentyl group, but that the
+heteroatoms and one side of the aromatic ring are more congested.
+
+<p><b>Solvent Accessibility</b>: Two types of solvent accessibility metrics are
+available: ligand solvent accessibility, and residue solvent accessibility. Both
+of these quantities are based on measuring exposed surface area once each of the
+atoms has been assigned a van der Waals-like radius + 1.4 &Aring;, the latter
+part assuming that the solvent is water. Qualitatively, this means that if an
+atom's assigned sphere is completely subsumed by the spheres of other atoms in
+the ensemble, its exposure is 0. If an atom exists alone in space with no
+overlap, its exposure is 4&pi;r<sup>2</sup>. Deeply buried atoms tend to have
+almost zero exposed surface area, whereas for instance a terminal substituent on
+a ligand which is sticking out of the active site may have an exposed surface
+area on the order of half the maximum possible value.
+
+<p>For solvent accessibility of ligands, the surface accessibility calculation
+is carried out on the ligand + receptor complex, i.e. the receptor residues will
+also cover up the surfaces of the ligand atoms, if they are close enough. In the
+following example, the oligopeptide ligand is oriented "through" the active
+site, like an embedded arrow: 
+
+<p><div align="center"><img src="prolig2d/ligsurf.png">
+<br>Ligand solvent accessibility: 1AAQ Hydrolase</div>
+
+<p>The part of the ligand which is shown on the right hand side of the diagram
+projects significantly far from the active site, and two of the terminal methyl
+groups are very highly exposed to solvent. The opposite end of the ligand, shown
+on the left hand side, is also exposed, but to a lesser extent.
+
+<p>Solvent exposure of receptor residues is calculated by examining the
+difference between the solvent-exposed surface area of the receptor with and
+without the presence of the ligand. The differences are summed for the heavy
+atoms belonging to each residue. If the value is zero, then the residue exposure
+to solvent is not affected at all by the ligand. A high value probably
+means that a number of residue atoms are "covered up" by the ligand, which is
+often indicative of hydrophobic interactions which are collectively important. A
+small value likely means that just one or two of the residue atoms are
+moderately affected by the presence of the ligand.
+
+<p>In the following example:
+
+<p><div align="center"><img src="prolig2d/recsurf.png">
+<br>Receptor solvent accessibility: 1AAQ Hydrolase</div>
+
+<p>The receptor exposure differences are shown by the size and intensity of
+the turquoise discs surrounding the residues. The Arg<i>A</i>8 and Gly<i>B</i>48
+residues (on the right hand side) express a side-chain and backbone segment,
+respectively, which are both very highly exposed to solvent in the active site
+when the ligand is absent. The presence of the ligand greatly reduces the
+solvent accessible surface area.
+
+<p><a name="MethodDraw"></a><h3>Drawing</h3>
+
+<p>The Ligand Interactions panel calculates the desired properties using the
+contents of the MOE molecular system for input, modified by user-specified
+parameters. This data is then used to prepare a 2D <a 
+href="../svl/fcnref/grfcn.htm">graphics object</a>, in conjunction with
+user-specified aesthetic preferences. The graphics object is used to display the
+contents in the panel, and also for printing and exporting.
+
+<p><a name="MethodConcur"></a><h3>Concurrent Layout</h3>
+
+<p>Ligand Interactions operates differently when the input is specified as a
+series of bound complexes, rather than a single instance in isolation. Depending
+on the combination of options selected, the following additional circumstances
+apply:
+
+<ol>
+
+<li><p>The flattened ligands are co-aligned on a common manifold, so their
+relative orientations are preserved;
+
+<li><p>The residues are placed simultaneously around all of the ligands, so a
+single layout is found which suits all of the complexes;
+
+<li><p>The diagrams are labeled with additional annotations depending on the
+extent to which various properties are conserved.
+
+</ol>
+
+<p>The following example shows a single protein, to which two docked poses of a
+single ligand have been selected:
+
+<p><div align="center">
+<img src="prolig2d/concur1.png" border=1><p>
+<img src="prolig2d/concur2.png" border=1></div>
+
+<p>The two poses are oriented in an opposite way, and this observation is
+reflected in the 2D diagram. The residue positions are identical in both cases.
+In the first diagram there is a hydrogen bond to residue B35, which is annotated
+with a bar behind the directional arrow to show that the interaction is not
+conserved throughout the series. In the second diagram, the hydrogen bond does
+not exist, so the interaction is shown as "dangling". 
+
+<!-- ============================ APPLICATION ============================ -->
+
+
+<p><a name="Run"></a><h2>Running the Application</h2>
+
+<p>To use the Ligand Interactions panel, load a ligand-receptor
+complex into MOE and then select
+<span class="nobr"><b>MOE | Compute | Ligand Interactions</b></span> or
+<span class="nobr"><b>MOE | RHS | Ligand | Ligand Interactions</b></span>.
+The panel will open, displaying a 2D depiction of the
+ligand and its interactions with proximal residues of the protein.
+If the contents of the molecular system change while the panel
+is up, press <b>Apply</b> to recalculate the interaction data
+and update the depiction.
+</p>
+
+<p>In the panel below, the ligand-receptor interactions
+for the complex found in the file
+<nobr><tt>$MOE/sample/mol/1RO6.moe</tt></nobr> are shown.
+</p>
+
+<p><div align="center"><img src="prolig2d/panel.png"></div>
+
+<p>For most ligand/protein complexes, the default settings used to produce the
+diagram should be reasonable. 
+
+<p><table width="100%" cellpadding="5">
+
+<tr>
+<td valign="top" width="10%"><b>Receptor</b>
+<td valign="top">
+
+By default, the set of atoms with which the ligand may potentially interact
+is the union of the atoms which would be selected by <nobr><b>MOE | Select |
+Receptor</b></nobr> and by <nobr><b>MOE | Select | Solvent</b></nobr>. The
+receptor atoms can be changed to another set definition if necessary. Pressing
+the <b>?</b> button shows which atoms are included in the currently indicated
+set.
+
+<tr>
+<td valign="top"><b>Ligand</b>
+<td valign="top">
+
+The default ligand atoms are those which would be selected by
+<nobr><b>MOE | Select | Ligand</b></nobr>. Because the 2D diagram only
+includes one connected component, it is often necessary to provide more specific
+information if there are multiple disconnected species which are considered to
+be ligands. The simplest way to accomplish this is to select only the desired
+ligand, and change the value of the option widget to <nobr><tt>Selected
+Atoms</tt></nobr>. To check which atoms are included in the current set, click
+on the <b>?</b> button.
+
+<tr>
+<td valign="top"><b>... series</b>
+<td valign="top">
+
+Special circumstances arise when the MOE main window contains what are
+clearly indicated as multiple ligands, and one or more receptors. Instead of the
+default selection for the <b>Receptor</b> and <b>Ligand</b> fields, the content
+will look more like:
+
+<p align="center"><img src="prolig2d/complex.png">
+
+<p>Whenever the ligand+receptor pairs begin with the same complex number, the
+diagram which is generated uses the concurrent layout method. Also, the up and
+down buttons which appear to the right of the input selection allow for a quick
+and convenient way to step through the series of complexes.
+
+<tr>
+<td valign="top"><b>Options</b>
+<td valign="top">
+
+The <b>Options</b> pager controls the contents of the panel below it, which
+initially shows the <b>Legend</b> contents. Other pages present a variety of
+modifications which can be made to the way the ligand interaction data is
+calculated and presented.
+
+<p><b>Legend</b>: A graphical key to help interpret the 2D part of the Ligand
+Interactions panel is given. The legend changes to reflect the currently
+selected aesthetic annotation preferences.
+
+<p align="center"><img src="prolig2d/option1.png">
+
+<p><b>2D Contact Style</b>: The manner in which the contacts are drawn in 2D can
+be controlled using this page.  Hydrogen bonds between the ligand and the
+receptor are subdivided into bonds to the residue <b>Backbone</b> or the
+<b>Sidechain</b>. Interactions between the ligand and the <b>Solvent</b> are
+drawn distinctly. <b>Ionic</b> interactions include metals which were found
+to be chelated, or were bonded to the ligand in the original structure.
+In cases where the ligand is covalently bound to the protein, the severed
+bond which demarcates the link between the two is drawn
+using the same style policy as is used for ionic bonds.
+
+<p align="center"><img src="prolig2d/option3.png">
+
+<p>Line style options include None, Dot, Dash and Solid, and arbitrary colors
+may be chosen. When the <b>Distance</b> box is checked, the interaction types
+will be annotated by the distance between the two heavy atoms, in
+angstroms. When the <b>Energy</b> box is selected, the interaction
+energy is shown in kcal/mol.
+
+<p><b>2D Residue Colors</b>: Residue colors can be changed for the 2D diagram.
+The color of the residue specifically refers to the color with which the circle
+is filled, and any further annotation. By default, all types of residues are set
+to Auto.
+
+<p align="center"><img src="prolig2d/option4.png">
+
+<p>The residues occurring in the diagram are one of four types, respectively:
+<b>H-bonded</b> refers to residues with hydrogen bonds to the ligand.
+<b>Metal</b> refers to metals which are close enough to be included in the
+diagram, though not actually bonded (very tightly bound metals are treated
+specially, and drawn as part of the ligand). <b>Solvent</b> refers to solvent
+molecules, usually water, hydrogen bonded to the ligand. <b>Nonbonded</b> refers
+to receptor residues which are close to but do not have a hydrogen bond to the
+ligand.
+
+<p>The possible coloring schemes for each of the residue types are Auto, User,
+Residue, Chain and None. The meaning of Auto depends on the residue type. For
+receptor residues, whether they are bonded or not, the main color is light green
+if the residue is "greasy" (i.e. does not have a polar or charged sidechain), or
+light mauve otherwise. Furthermore if the side chain is basic, the residue is
+annotated with a blue ring; if it is acidic, it receives a red ring. Solvent
+residues of type Auto are drawn with no interior fill, and metal residues are
+colored gray.
+
+<p>Types User, Residue, Chain and None are interpreted in the same way
+regardless of the residue type. When User is selected, a Color-chooser widget
+appears, allowing the specific color to be selected. Residue and Chain cause the
+residue to be colored according to the corresponding color of the MOE object.
+Note that the default color for residues is black, which is translated into
+transparent in this case. Selecting None makes the residue transparent, i.e. it
+is drawn with only a border and text.
+
+<p><b>Diagram Options</b>: Additional annotations in the 2D diagram can be
+enabled or disabled. 
+
+<p align="center"><img src="prolig2d/option5.png">
+
+<ul>
+
+<li><b>Proximity Contour</b> refers to the dotted outline that surrounds the
+ligand, denoting distance to the active site interior. 
+
+<li><b>Ligand Solvent Exposure</b> refers to the blue smudges that are drawn
+behind some of the ligand atoms, to denote extent of solvent exposure. 
+
+<li><b>Receptor Solvent Exposure</b> refers to the turquoise discs that are
+drawn behind some of the residues, to denote the difference in solvent exposure
+due to the presence of the ligand. 
+
+<li><b>Inter-residue Contacts</b> allows hydrogen bonds and non-peptidic
+covalent bonds between receptor residues to be annotated. 
+
+<li><b>Bound Solvent Contacts</b> causes residues which interact with non-labile
+solvent molecules to be included in the diagram if they were otherwise
+insufficiently proximal.
+
+<li><b>Arene System Contacts</b> causes &pi;-&pi;, &pi;-H and &pi;-cation
+interactions to be annotated.  
+<li><b>Union of Receptor Residues</b> insists that for a series of complexes,
+any residue which qualifies for inclusion in any diagram is included in all
+diagrams. 
+
+<li><b>Fixed Receptor Positions</b> causes concurrent receptor optimization for
+a series; if not on, then the ligands will be co-aligned, but the receptors will
+arrange themselves separately for each diagram. 
+
+<li><b>Conserved Features</b> causes additional annotations to be added to a
+series to show any interactions which are only observed in some cases, as well
+as for residues which do not have the same amino acid type throughout the
+series.
+
+<li><b>Site Wall Clash</b> enables checking for ligand atoms which approach
+receptor atoms too closely. Cases where such heavy atoms are closer than 1.2
+&Aring; less than the sum of the van der Waals distances are marked as clashing
+atoms. If clashing atoms disconnect the ligand into multiple components, then
+all but the largest component is also categorized as clashing. Clashing
+atoms are drawn in red, and all interactions with the receptor are invalidated.
+
+</ul>
+
+<p><b>Rendering Options</b>: Several miscellaneous style preferences can be set
+within this option:
+
+<p align="center"><img src="prolig2d/option6.png">
+
+
+<p><b>Rotation</b> allows the diagram to be rotated by the given angle.
+If <b>Reflection</b> is checked, then the diagram is reflected across the
+X-axis prior to being rotated.
+<b>Residue Size</b> allows the amount of space taken up by the cartoonish
+residue labels to be modified from the default setting. <b>Single Letter
+Residues</b> allows the single letter residue codes to be used instead of the
+default 3 letter codes.
+
+
+<p><b>Parameters</b>: The criteria for the various types of contacts can be
+controlled on this page. The <b>H-bond</b>, and <b>Ionic</b> values refer
+to the minimum interactions energies (in kcal/mol) required in order to
+qualify.  Note that residues which possess a hydrogen bond or
+ionic metal bond to the ligand that does not meet the cutoff will most
+likely be reclassified as nonbonded residues, and still be represented in the
+diagram. Solvent residues which do not qualify for a sufficiently strong
+hydrogen bond generally do not feature in the diagram.
+
+<p>The <b>Cutoff</b> distance refers to the distance which a residue atom
+must be within in order to activate the calculation for deciding whether or not
+the whole residue meets the criteria, as described <a
+href="#MethodPos3">previously</a>.
+
+<p align="center"><img src="prolig2d/option7.png">
+
+<tr>
+<td valign="top"><b>Export</b>
+<td valign="top">
+
+The Export panel allows the main contents of the 2D Ligand Interactions
+diagram to be exported to a picture format:
+
+<p align="center"><img src="prolig2d/export.png">
+
+<p>A format must be selected, which may be one of the supported bitmap formats
+(PNG, JPG, BMP). On Microsoft Windows platforms, the Clipboard option is
+available, which will paste a BMP representation onto the clipboard instead of
+writing to a file.
+
+<p>The filename should have an extension appropriate for the type. The width and
+height default to an arbitrary but reasonable scale for the picture. The slider
+can be used to scale isotropically, or the width and height can be entered
+specifically to achieve anisotropic scaling.
+
+<p>The content can include the <b>Diagram</b> and/or the <b>Legend</b>, which is
+controlled by checkboxes.
+
+<p>The background can be either Transparent or White. Note that JPG and BMP
+formats do not support transparency.
+
+<tr>
+<td valign="top"><b>Apply</b>
+<td valign="top">
+
+To regenerate the 2D picture shown in the panel, as well as the annotations
+in the MOE Window, click the <b>Apply</b> button. The configuration options
+presented throughout the panel will not be updated until this button is clicked.
+
+<tr>
+<td valign="top"><b>Isolate</b>
+<td valign="top">
+
+To render the active site in 3D, click the <b>Isolate</b> button, which will
+hide all atoms which are not close to the active site.
+After this operation has been performed, the 2D and 3D presentations
+should be readily comparable.
+
+<tr>
+<td valign="top"><b>Print</b>
+<td valign="top">
+
+To prepare the 3D image for printing or output to a printer-like device,
+click the <b>Print</b> button, and prepare the content as necessary:
+
+
+</table>
+
+<p align="center"><img src="prolig2d/print.png">
+! 
+<p><table width="100%" cellpadding="5">
+<tr>
+<td valign="top" width="10%"></b>
+<td valign="top">
+
+<p>The right hand side of the printer setup dialog is in two parts: general
+print options which are common to all MOE print capabilities (top right), and
+configuration options specific to Ligand Interactions (bottom right).
+
+<p>The title is on by default, and is initially set to the description of the
+molecular system. Its text can be altered, as can its font, size and position.
+The title may contain simple HTML tags.
+The <b>Apply</b> button must be used to update the title.
+
+<p>A multiline footnote may be added, which will be displayed at the bottom left
+of the page. Its font and size may be edited, and simple HTML tags are
+supported. The <b>Apply</b> button must be used to update the footnote.
+
+<p>By default the picture scales to 100% of the maximum size remaining on the
+page, which may be changed. A thin black frame can optionally be added. The
+legend is not displayed by default, but it can be added by checking the
+<b>Legend</b> box.
+
+<p>If the current rendition is of a series of complexes, three additional
+options will be available: <b>Tiling</b>, <b>Ligand Name</b> and <b>Receptor
+Name</b>. The tiling affects how the aligned pictures of the series are arranged
+on the page(s). The other two options specify whether the chain names of the
+ligands and/or receptors are used as titles for the respective tiles.
+
+<p>
+To obtain a textual list of interactions to accompany the printout, toggle on
+the <b>List Interactions</b> checkbox. Note that this text may appear on
+a separate page from the interaction diagram.
+
+</table>
+
+<!-- ============================== EXAMPLES ============================= -->
+
+<a name="Example1"></a>
+<div class="example">
+<h3>Example 1: Biotin and receptor</h3>
+
+<p>Start by loading the example biotin complex, and setup a surface in order to
+view the active site in 3D:
+
+<ol>
+
+<li><p>Clear the molecular data in MOE with <nobr><b>MOE | File |
+Close</b></nobr>. 
+
+<li><p>Load biotin with <nobr><b>MOE | File | Open</b></nobr> and select both
+<tt>$MOE/sample/mol/biotin.moe</tt> and <tt>$MOE/sample/mol/biotin_rec.moe</tt>
+(using Ctrl-click), and press <b>OK</b>.
+
+<li><p>Open the Surfaces and Maps panel with <nobr><b>MOE | Compute | Surfaces
+and Maps | Molecular Surface...</b></nobr>. Without changing any of the
+default options, press the <b>Isolate</b> button, followed by <b>Create</b>. 
+
+<li><p>Adjust the transparency to suit, using the material widget
+<img src="prolig2d/material.png" alt="material" align="bottom" />.
+
+<li><p>Orient and zoom the system so that the groove of the active site is
+clearly visible, such as in the image shown below:
+
+<p><div align="center"><img src="prolig2d/ex1a.png" alt="example 1a" /></div>
+
+</ol>
+
+<p>To view the active site in schematic form:
+
+<ol start=6>
+
+<li><p>Open the Ligand Interactions panel with <nobr><b>MOE | Compute | Ligand
+Interactions</b></nobr>. The diagram shown in the main panel should resemble the
+following:
+
+<p><div align="center"><img src="prolig2d/ex1b.png" alt="example 1b" /></div>
+
+</ol>
+
+<p>The conformational similarity between the 2D and 3D layout of the ligand can
+be seen in the images shown above. Further examination of the two renditions
+shows that the placements of the H-bonded residues Asn49, Ser45 and Asp128 are
+qualitatively preserved. The three residues which are H-bonded to the urea
+carbonyl atom (Ser27, Tyr43, Asn23) in a triad cannot be shown in the same
+way as per the 3D source, but the selected orientation is a reasonable
+compromise.
+
+<p>Some impression of the hydrophobic region around the alkyl chain in the
+center of the biotin molecule is given by the proximity of "greasy" residues,
+which are colored light green. The polar ends of biotin are more closely
+affiliated with polar or ionic residues, both H-bonded and not. The proximity
+contour shows that the urea functional group is very closely hemmed-in by the
+active site. The remainder of the molecule enjoys relatively spacious
+conditions, yet despite there being a significant distance between the boundary
+of the active site and the carbon atoms of the alkyl connector segment, this
+region has a very low solvent accessible surface area.
+</div>
+
+<a name="Example2"></a>
+<div class="example">
+<h3>Example 2: 1AWH hydrolase</h3>
+
+<ol>
+
+<li><p>Clear the molecule data, and open the file
+<tt>$MOE/sample/mol/1awh.pdb</tt>.
+
+
+<li><p>Add explicit hydrogen atoms with
+<nobr><b>MOE | Compute | Prepare | Protonate 3D</b></nobr>
+(Press <b>OK</b> to accept the defaults in the Protonate 3D panel).
+
+<li><p>Open the Sequence Editor with <nobr><b>MOE | Window | Sequence
+Editor</b></nobr>, and select all of the atoms in chain #5
+(right click on the chain, then <b>Atoms | Select</b>).
+
+<li><p>Bring up the Ligand Interactions panel with <nobr><b>MOE | Compute |
+Ligand Interactions</b></nobr>. Note that the selection defaults to
+the selected ligand.
+
+<li><p>The resulting diagram should resemble the following:
+
+<p><div align="center"><img src="prolig2d/ex2a.png"></div>
+
+</ol>
+
+<p>This particular protein has a covalently bound ligand. Because there is some
+ambiguity as to the definition of the ligand, it is necessary for the user to
+specify which it is. In the diagram shown above, the covalent attachment point
+is Ser195. The covalent bond which was detached from the ligand is drawn using
+a thick black line in the above diagram. In the 3D structure, Ser195
+has a backbone hydrogen bonding interaction to the connected carbonyl group,
+which forms a 6-membered ring.
+
+<p>The covalent ligand has few strong interactions with the remainder of the
+protein. The steroid end of the ligand (right) projects far out of 
+the active site, as is indicated by
+the loosening contour, and the high solvent exposure of the terminal atoms.
+</div>
+
+<a name="Example3"></a>
+<div class="example">
+<h3>Example 3: 1ATP Phosphotransferase</h3>
+
+<ol>
+
+<li><p>Clear the molecule data, and open the file
+<tt>$MOE/sample/mol/1atp.pdb</tt>.
+
+<li><p>Bring up the Ligand Interactions panel with <nobr><b>MOE | Compute |
+Ligand Interactions</b></nobr>. The diagram shown in the main panel should
+resemble the following:
+
+<p><div align="center"><img src="prolig2d/ex3a.png"></div>
+
+</ol>
+
+<p>The diagram contains many points, as the ligand is large and ripe with
+interactions, including hydrogen bonds to sidechain and backbone residues,
+hydrogen bonds to solvent molecules, and two chelated metal ions. The
+encapsulating 3D nature of this interaction site cannot be fully captured in the
+flattened representation, but a reasonable indication of the conformation, and
+an enumeration of all the interactions are clearly presented.
+
+<p>Note that this particular protein is composed of two strands, both of which
+have contacts with the ligand. As shown on the diagram, the residue ID numbers
+are prefixed by <i>A</i> or <i>B</i> to denote the parent chain. Because the raw
+PDB data file was used, there are no hydrogen atoms in the structure, and they
+are not used or shown in the diagram aside from a few implicit ones.
+</div>
+
+<a name="Example4"></a>
+<div class="example">
+<h3>Example 4: Aligned Series</h3>
+
+<p>An aligned series of complexes can be used to view a collection of crystal
+structures which have been superposed in 3D, even if they do not have completely
+identical residues. The PDB codes 2EUF, 2F2C and 1CKP are shown below (click
+on an image to see it in full size):
+
+<p><div align="center">
+<a href="prolig2d/ex4a.png">
+    <img src="prolig2d/ex4a_small.png">
+</a>
+<a href="prolig2d/ex4b.png">
+    <img src="prolig2d/ex4b_small.png">
+</a>
+<a href="prolig2d/ex4c.png">
+    <img src="prolig2d/ex4c_small.png">
+</a></div>
+
+<p>The first two complexes are CDK2 inhibitors, the last is a CDK6 inhibitor.
+The ligands are overlaid in 2D in order to convey their relative binding modes,
+and the residues are laid out in the same way for all of the diagrams. Residues
+which are not consistently the same amino acid type throughout are marked with
+curved sidebars on the interior, whereas those which are invariant are drawn
+normally. Non-conserved interactions, in this case all of them, are drawn with a
+line behind the arrowhead, while missing interactions are drawn with a line to
+an "X".
+</div>
+
+<!-- ============================ REFERENCES ============================= -->
+
+<p>
+<h2>See Also</h2>
+<p>
+<a href="surfmap.htm">Surfaces and Maps</a><br>
+<a href="sitefind.htm">Site Finder</a><br>
+
+
+<p><a name="Ref"></a><h2>References</h2>
+
+<table cellpadding=5 width=100%>
+
+<tr>
+<td valign="top">[Wallace&nbsp;1995]
+<td valign="top">
+Wallace, A.C., Laskowski, R.A., Thornton, J.M.;
+LIGPLOT: a program to generate schematic diagrams of
+protein&ndash;ligand interactions;
+<i>Protein Engineering 8</i> (<b>1995</b>) 127&ndash;134.
+</tr>
+
+<tr>
+<td valign="top">[Labute 2001]
+<td valign="top">
+Labute, P.;
+Probabilistic Receptor Potentials;
+<i>Journal of the Chemical Computing Group</i> (<b>2001</b>)
+<a href="http://www.chemcomp.com/journal/cstat.htm">
+http://www.chemcomp.com/journal/cstat.htm</a>.
+
+<tr>
+<td valign="top">[Clark&nbsp;2006]
+<td valign="top">
+Clark, A.M., Labute, P., Santavy, M.;
+2D Structure Depiction;
+<i>J. Chem. Inf.  Model. 46</i> (<b>2006</b>) 1107&ndash;1123.
+</tr>
+
+<tr>
+<td valign="top">[Clark&nbsp;2007]
+<td valign="top">
+Clark, A.M., Labute, P.;
+2D Depiction of Protein&ndash;Ligand Complexes;
+<i>J. Chem. Inf. Model. 47</i> (<b>2007</b>) 1933&ndash;1944.
+</tr>
+
+</table>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

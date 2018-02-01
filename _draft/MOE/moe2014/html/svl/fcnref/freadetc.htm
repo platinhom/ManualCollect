@@ -1,0 +1,393 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions fread,fwrite,sread,swrite,twrite,write>
+
+<title>Read/Write Functions</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    [data, nchars, nfields] = <a class="fcnlink" href="#sread">sread</a> [ string_data, 'format' ];
+    [data, nchars, nfields] = <a class="fcnlink" href="#fread">fread</a> [ filenum, 'format' ];
+
+    string = <a class="fcnlink" href="#swrite">swrite</a> [ 'format', arg1, arg2, ... ];
+    token  = <a class="fcnlink" href="#twrite">twrite</a> [ 'format', arg1, arg2, ... ];
+    <a class="fcnlink" href="#fwrite">fwrite</a> [ filenum, 'format', arg1, arg2, ... ]; 
+    <a class="fcnlink" href="#write">write</a>  [ 'format', arg1, arg2, ... ];
+</pre>
+
+<h2>Description</h2>
+
+<ul>
+  <li><tt>sread</tt>: Read formatted data from a character string </li>
+  <li><tt>fread</tt>: Read formatted data from a file</li>
+  <li><tt>swrite</tt>: Write formatted data into a character vector. </li>
+  <li><tt>twrite</tt>: Write formatted data into a single token. </li>
+  <li><tt>fwrite</tt>: Write formatted data to a file. </li>
+  <li><tt>write</tt>: Write formatted data to the command window. </li>
+</ul>
+
+<p><tt>format</tt> is a token containing the formatting (data conversion)
+instructions. <tt>filenum</tt> is the file handle returned by
+<tt>fopen</tt>, <tt>fopenr</tt> or <tt>fopenw</tt>. File number zero, the
+display, cannot be used to provide input but may be written to. Explicit
+reading or writing with standard devices is accomplished using the special
+standard file identifiers '<tt>*cli*</tt>', '<tt>*stdin*</tt>',
+and'<tt>*stderr*</tt>'.</p>
+
+<p>The return values upon reading are the formatted data, the number of
+characters read, and the number of fields read. <tt>swrite</tt> returns a
+formatted string. </p>
+
+<h4>Global Format Language</h4>
+
+<p>The <tt>format</tt> is a character string containing plain characters
+(which include white space) and format fields. Format fields specify how
+the input or output data are to be converted. The fields are delimited by
+braces <tt>{}</tt>; the open brace character is itself specified using
+<tt>{{</tt>. </p>
+
+<p>On reading, plain characters must be matched by characters in the input
+stream. Input stream data are discarded until an exact match is found. On
+writing, plain characters are copied verbatim to the output. </p>
+
+<p>The format fields are used to match the input data or output arguments.
+On writing, the first format field applies to the first data argument
+(<tt>arg1</tt>), the second field to the second argument, and so forth. If
+the format is exhausted while data arguments remain, the excess data are
+discarded.</p>
+
+<p>At the very beginning of the format argument, an optional global format
+field may be specified. This format field establishes defaults that hold
+across the remainder of the format argument: </p>
+
+<pre>
+    { G w=` \t\n\f` r=`\n` }
+</pre>
+
+<p>The first character in the global field must be an upper case <tt>G</tt>.
+All other specifications are optional.
+
+<ul>
+  <tt> <li>w</tt> identifies which characters in the data stream are to be
+    treated as separators (or <em>white space</em>).
+    The default, shown above, is blanks, tabs
+    (<tt>\t</tt>), newlines (<tt>\n</tt>), and form feeds (<tt>\f</tt>).
+    </li>
+
+  <tt> <li>r</tt> specifies the record separator. Record separators are
+    important only on a read.
+    By default, the record separator is the newline character
+    <tt>\n</tt>.</li> </ul>
+
+<p>Note the use of backquotes when using the <tt>w</tt> and <tt>r</tt> options. 
+
+<pre>
+    { G r=`,;` } // new record separators are , and ;
+    { G w=`\n` } // only newline is white space
+</pre>
+
+<p>Only one global field should appear in a format argument, and it should
+appear before any other formatting instructions.</p>
+
+<h4>General Format Specifications</h4>
+
+<table border="1" cellspacing="1" cellpadding="5">
+  <tr>
+    <td width="10%" valign="baseline"><i><b>Symbol</b></i></td>
+    <td width="90%" valign="baseline"><i><b>Indication</b></i></td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>n:</tt></td>
+    <td valign="baseline">interpret data as numbers </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>t:</tt></td>
+    <td valign="baseline">interpret data as tokens </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>c:</tt></td>
+    <td valign="baseline">interpret data as characters </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><i>n</i></td>
+    <td valign="baseline">field width <i>n</i> </td>
+  </tr>
+</table>
+
+<h4>Specific Format Specifications for Reading</h4>
+
+<table border="1" cellspacing="1" cellpadding="5">
+  <tr>
+    <td width="10%" valign="baseline"><i><b>Symbol</b></i></td>
+    <td width="90%" valign="baseline"><i><b>Indication</b></i></td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>v:</tt></td>
+    <td valign="baseline">interpret data as syntactically correct vectors </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>X</tt></td>
+    <td valign="baseline">exclude this field </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>|<i>sep</i></tt></td>
+    <td valign="baseline">use <tt><i>sep</i></tt> as separator
+    character for this field only</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>|!</tt></td>
+    <td valign="baseline">treat separators as ordinary characters for this
+    field only</td>
+
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>*</tt>&lt;<i>n</i>&gt;</td>
+    <td valign="baseline">repeat the format field <tt><i>n</i></tt>
+    times <p>if <tt><i>n</i></tt> is absent, repeat until EOR
+    (end-of-record) or EOF (end-of-file), whichever comes first</td>
+  </tr>
+  <tr>
+    <td valign="baseline">&nbsp;</td>
+    <td valign="baseline"><i><b>Binary Data Only</b></i></td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>&quot;<i>c</i></tt></td>
+    <td valign="baseline"><i>c</i> is the character used in the input data
+stream for quoting data</td>
+
+  </tr>
+</table>
+
+<h4>Specific Format Specifications for Writing Numeric Data</h4>
+
+<table border="1" cellspacing="1" cellpadding="5">
+  <tr>
+    <td width="10%" valign="baseline"><i><b>Symbol</b></i></td>
+    <td width="90%" valign="baseline"><i><b>Indication</b></i></td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>-</tt></td>
+    <td valign="baseline">left justify within field </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>v</tt></td>
+    <td valign="baseline">convert arguments to vector notation</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>+</tt></td>
+    <td valign="baseline">always show sign </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>.<i>n</i></tt></td>
+    <td valign="baseline">precision: display <i>n</i> digits; if used
+in conjunction with <tt>f</tt> then display <i>n</i> digits after the decimal.
+  </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>e,E</tt></td>
+    <td valign="baseline">convert arguments to scientific notation,
+	with e or E as exponent character</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>f</tt></td>
+    <td valign="baseline">convert arguments to decimal notation </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>g,G</tt></td>
+    <td valign="baseline">convert arguments to either <tt>f</tt>, <tt>e</tt>,
+or <tt>E</tt> notation, depending on the value of the number: <tt>e</tt>
+and <tt>E</tt> will only be used if the resulting exponent is a negative
+number larger than -4 or is greater than the number of digits of
+precision</td>
+
+  </tr>
+</table>
+
+<h4>Order of Format Specifiers</h4>
+
+<p>The specifiers in a format field should appear in the following ordering: 
+
+<ul>
+  <li>type specifiers <tt>n:</tt>, <tt>t:</tt>, <tt>c:</tt>, or
+  <tt>v:</tt>, optionally preceded by <tt>X</tt> </li>
+
+  <li>field width </li>
+
+  <li>repeat character, optionally followed by the number of repeats </li>
+
+  <li>other specifications, such as justification, or, when writing,
+  numerical data-related specifiers</li>
+
+</ul>
+
+<p>When <tt>v:</tt> has been specified, any other formatting
+specifications within the same format field will be ignored.</p>
+
+<h4>Field Width</h4>
+
+<p>The <i>field width </i>specifies the number of characters to consume
+from the input or output data stream. Field widths cannot be smaller than
+1. Characters, by default, have field width of exactly 1, and any
+specification to the contrary is ignored. The field width specification
+must be used with numbers and tokens. For numbers, the width includes
+decimal point, exponent and sign field, if present. A field width of
+<tt>0</tt>, the default for tokens and numbers when no field width is
+specified, indicates that there is no limit on the field width, that is,
+that the data stream is to processed up to the next separator. Field
+widths less than <tt>0</tt> are ignored. </p>
+
+<p>Field widths for the 3 data types are summarized in the following table:</p>
+
+<table border="1" cellspacing="1" cellpadding="5">
+  <tr>
+    <td width="25%" valign="baseline"><i><b>Type</b></i></td>
+    <td width="24%" valign="baseline"><i><b>Default</b></i></td>
+    <td width="52%" valign="baseline"><i><b>Field Width
+	Specification</b></i></td>
+  </tr>
+  <tr>
+    <td valign="baseline">character</td>
+    <td valign="baseline">1</td>
+    <td valign="baseline">ignored </td>
+  </tr>
+  <tr>
+    <td valign="baseline">token</td>
+    <td valign="baseline">0</td>
+    <td valign="baseline">accepted </td>
+  </tr>
+  <tr>
+    <td valign="baseline">number</td>
+    <td valign="baseline">0</td>
+    <td valign="baseline">includes sign, decimal, exponent </td>
+  </tr>
+</table>
+
+<h3>Examples</h3>
+
+<ul>
+
+<li>
+Write a number as an integer with no exponent.
+
+<pre>
+    svl&gt; write ['{f.0}\n', 123456789.12345]
+    123456789
+</pre>
+
+Write a number as an integer using scientific notation (exponent).
+
+<pre>
+    svl&gt; write ['{e.0}\n', 123456789.12345]
+    1e+008
+</pre>
+
+Write a real number with no exponent.
+
+<pre>
+    svl&gt; write ['{f}\n', 123456789.12345]
+    123456789.12345
+</pre>
+
+Write a real number in scientific notation.
+
+<pre>
+    svl&gt; write ['{e}\n', 123456789.12345]
+    1.234568e+008
+</pre>
+
+Write a real number with no exponent with 2 digits of precision.
+
+<pre>
+    svl&gt; write ['{f.2}\n', 123456789.12345]
+    123456789.12
+</pre>
+
+</li><li>
+
+Read a series of numbers from a string; the comma and
+space are separators, and the <tt>*</tt> indicates that
+all numbers are to be read.
+
+<pre>
+    svl&gt; sread [ "12, 13, 14", '{G w=`, `}{n:*}' ]
+    [ [ [12,13,14] ], 9, 1 ]
+</pre>
+
+</li><li>
+
+Read two numbers, each 4 digits long, and a token from a string.  Note that
+the word <tt>&quot;and&quot;</tt> is matched in the
+format string and consumed.
+
+<pre>
+    svl&gt; sread [ &quot;123456789 and two&quot;, '{n:4*2} and {t:}' ]
+    [ [ [1234,5678], 'two', ], 21, 2 ]
+</pre>
+
+</li><li>
+
+Create a token from input data.
+
+<pre>
+    svl&gt; twrite [ 'Result #{}: {n:.4f}\n', 4, -132.678 ]
+    'Result #4: -132.6780\n'
+</pre>
+
+</li>
+
+</ul>
+
+<h2>See Also</h2>
+<a href="introio.htm">I/O functions</a>
+
+<p>
+<a class="svl" href="fopenetc.htm">fclose</a> 
+<a class="svl" href="fopenetc.htm">fopen</a> 
+<a class="svl" href="freadb.htm">freadb</a>
+<br />
+<a class="svl" href="freadb.htm">fwriteb</a> 
+<a class="svl" href="freadb.htm">sreadb</a> 
+<a class="svl" href="freadb.htm">swriteb</a>
+</p>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--	tagpeek.htm
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+
+<meta functions tagcat>
+<meta functions tagget>
+<meta functions tagpeek>
+<meta functions tagpoke>
+<meta functions tagput>
+<meta functions taguniq>
+
+<title>Tag Functions: tagpeek, tagpoke, ...</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    value = <a class="fcnlink" href="#tagpeek">tagpeek</a> [ v, 'attr' ] 
+    value = <a class="fcnlink" href="#tagpeek">tagpeek</a> [ v, tags ] 
+    
+    u = <a class="fcnlink" href="#tagpoke">tagpoke</a> [ v, 'attr', x ] 
+    u = <a class="fcnlink" href="#tagpoke">tagpoke</a> [ v, tags, x ] 
+
+    values = <a class="fcnlink" href="#tagget">tagget</a> [ v, tags ] 
+    u = <a class="fcnlink" href="#tagput">tagput</a> [ v, tags, x ] 
+
+    u = <a class="fcnlink" href="#tagcat">tagcat</a> [ v1, v2, ... ] 
+
+    u = <a class="fcnlink" href="#taguniq">taguniq</a> v
+</pre>
+
+<p><a name="tagpeek"></a></p>
+<h2>Description</h2>
+
+<pre>
+value = <span class="fcndef">tagpeek</span> [ v, 'attr' ]
+value = <span class="fcndef">tagpeek</span> [ v, tags ]
+</pre>
+
+<p>Searches vector
+<tt>v</tt> of tagged values and returns the first value
+found that is tagged by <tt>'attr'</tt>.</p>
+
+<pre>
+    svl&gt; v = [ a:1, b:2 ]; tagpeek [v, 'a'] 
+    1 
+    svl&gt; v = [ a:1, b:2, a:3 ]; tagpeek [v, 'a'] // finds first value 
+    1
+</pre>
+
+<p>The dot . operator is shorthand notation for <tt>tagpeek</tt>.</p>
+
+<pre>
+    svl&gt; v = [ a:1, b:2 ]; v.a 
+    1 
+    svl&gt; x = 'b'; v.(x) 
+    2
+</pre>
+
+<p>If a vector of tags is passed to <tt>tagpeek</tt>,
+the first value in <tt>v</tt> tagged by the
+first value in <tt>tags</tt> is itself searched in turn for
+the first value tagged by the second value in <tt>tags</tt>,
+and so forth.  In other words,</p>
+
+<pre>
+    value = tagpeek [ tagpeek [v, first tags], dropfirst tags] ]
+</pre>
+
+<p>The shorthand dot notation also supports multiple tags.</p>
+
+<pre>
+    svl&gt; v = [ a : [ p:1, q:2 ], b : [ r:3, s:4 ] ] 
+    svl&gt; tagpeek [v, ['a','q']] 
+    2 
+    svl&gt; v.b.r 
+    3
+</pre>
+
+<p><a name="tagpoke"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+u = <span class="fcndef">tagpoke</span> [ v, 'attr', x ]
+u = <span class="fcndef">tagpoke</span> [ v, tags, x ]
+</pre>
+
+<p>Returns the source vector
+<tt>v</tt> with the first value found that is tagged
+by <tt>'attr'</tt> replaced by
+<tt>x</tt>.  Note that <tt>tagpoke</tt>
+leaves the original source vector unaltered.</p>
+
+<pre>
+    svl&gt; v = [ a:1, b:2 ]; tagpoke [v, 'a', 10] 
+    [ a:10, b:2 ]
+</pre>
+
+<p>The dot operator . in conjunction with = also serves as shorthand for
+<tt>tagpoke</tt>, with assignment.  Note that
+using this shorthand will alter the source vector <tt>v</tt>.</p>
+
+<pre>
+    svl&gt; v = [ a:1, b:2 ]; v.a = 10; print v 
+    [ a:10, b:2 ]
+</pre>
+
+<p>If <tt>tagpoke</tt> is passed a vector of tags,
+the following operation is performed:</p>
+
+<pre>
+    tagpoke [ v, first tags, tagpoke [v.(first tags), dropfirst tags, x] ]
+</pre>
+
+</p>The shorthand notation also supports
+multiple tags.</p>
+
+<pre>
+    svl&gt; v = [ a : [ p:1, q:2 ], b : [ r:3, s:4 ] ] 
+
+    svl&gt; tagpoke [v, ['a','p'], 10] 
+    [ a : [ p:10, q:2 ], b : [ r:3, s:4 ] ] 
+    
+    svl&gt; v.b.r = 10; print v 
+    [ a : [ p:1, q:2 ], b : [ r:10, s:4 ] ] 
+</pre>
+
+<p><a name="tagget"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+values = <span class="fcndef">tagget</span> [ v, tags ] 
+</pre>
+
+<p>Searches vector <tt>v</tt> of tagged values and
+returns the (first) corresponding value for each tag
+in the vector <tt>tags</tt>.  The default values
+for tags not found is <tt>[]</tt>.
+</p>
+
+<pre>
+    svl&gt; v = [ a:1, b:2 ]; tagget [v, ['a','c']]
+    [1, []]
+</pre>
+
+<p><a name="tagput"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+u = <span class="fcndef">tagput</span> [ v, tags, x ] 
+</pre>
+
+<p>Searches vector <tt>v</tt> of tagged values and
+replaces the (first) corresponding value for each tag
+<tt>tags(i)</tt> with <tt>x(i)</tt>.  The tags and values
+not found in <tt>v</tt> are appended to <tt>v</tt>.
+The function returns the new tag vector.
+</p>
+
+<pre>
+    svl&gt; v = [ a:1, b:2 ]; tagput [v, ['a', 'c'], [10, 20]] 
+    [ a:10, b:2, c:20 ]
+</pre>
+
+<p><a name="tagcat"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+u = <span class="fcndef">tagcat</span> [ v1, v2, ... ] 
+</pre>
+
+<p>Returns a tag vector composed of unique tags from vectors
+<span class="nobr"><tt>v1</tt>, <tt>v2</tt>, ...</span>.
+The function first removes all tags that are associated with the
+null vector and then it removes all duplicate tags.
+The function is suited for adding the default values to a tagged
+vector of optional arguments, commonly passed to various applications.
+</p>
+
+<pre>
+    svl&gt; v1 = [a:11, b:12]; v2 = [a:21, c:22]; v3 = [b:31, c:32, d:33];
+    svl&gt; tagcat [v1, v2, v3]
+    [ a:11, b:12, c:22, d:33 ]
+
+    svl&gt; tagcat [[a:[], b:2], [a:3, b:4, c:5]]
+    [a:3, b:2, c:5]
+
+    svl&gt; opt = tagcat [opt, OPT_DEFAULT]	// append default values
+</pre>
+
+<p><a name="taguniq"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+u = <span class="fcndef">taguniq</span> v
+</pre>
+
+<p>Returns a tag vector composed of unique tags of vector <tt>v</tt>
+and the (first) corresponding values.
+The function first removes all tags that are associated with the
+null vector and then it removes all duplicate tags.
+</p>
+
+<pre>
+    svl&gt; taguniq [a:11, b:12, a:21, c:22, b:31, c:32, d:33]
+    [ a:11, b:12, c:22, d:33 ]
+
+    svl&gt; taguniq [a:[], b:[], b:3, c:4, c:5]
+    [b:3, c:4]
+</pre>
+
+<h2>See Also</h2>
+<p>
+    <a class="svl" href="tagetc.htm">tag</a>
+    <a class="svl" href="tagetc.htm">untag</a>
+    <a class="svl" href="tagetc.htm">tags</a>
+    <a class="svl" href="getpeek.htm">peek</a>
+    <a class="svl" href="putpoke.htm">poke</a>
+</p>
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

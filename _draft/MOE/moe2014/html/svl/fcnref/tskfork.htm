@@ -1,0 +1,391 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--	tskfork.htm	Task fork and related functions
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions task_fork, task_wfork>
+<meta functions task_prio, task_idle>
+
+<title>Task Functions</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    [result, return_code] = <a class="fcnlink" href="#task_fork">task_fork</a> options;
+    [result, return_code] = <a class="fcnlink" href="#task_wfork">task_wfork</a> options;
+
+    old_prio = <a class="fcnlink" href="#task_prio">task_prio</a> new_prio
+    curr_prio = <a class="fcnlink" href="#task_prio">task_prio</a> []
+
+    old_idle = <a class="fcnlink" href="#task_idle">task_idle</a> new_idle
+    curr_idle = <a class="fcnlink" href="#task_idle">task_idle</a> []
+</pre>
+
+<h2>Description</h2>
+
+<p><tt>task_fork</tt> and <tt>task_wfork</tt> fork the current task into
+two by creating a child task.  In <tt>task_fork</tt>, the child runs
+independently of its parent.  In <tt>task_wfork</tt>, the parent task will
+wait for the child task to finish (parent execution suspends until the
+child task terminates).
+
+<p><a name="task_fork"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[result, return_code] = <span class="fcndef">task_fork</span> options;
+</pre>
+
+Forks the current task into two by creating a child task.
+The child runs independently of its parent.
+<tt>options</tt> are described below.
+
+<p>This function returns:
+
+<dl>
+<dt><tt>result</tt>
+<dd>Task identifier
+of the &quot;other&quot; task:
+<ul>
+<li>If <tt>return_code</tt> is <tt>'child'</tt>, then
+<tt>result</tt> is the id of the parent
+<li>Otherwise, if <tt>return_code</tt> is <tt>''</tt>, then <tt>result</tt>
+is the id of the child
+</ul>
+
+<p><dt><tt>return_code</tt>
+<dd>Is the empty token <tt>''</tt> for the parent task, and
+<tt>'child'</tt> for the child task.
+
+</dl>
+
+
+<p><a name="task_wfork"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[result, return_code] = <span class="fcndef">task_wfork</span> options;
+</pre>
+
+Forks the current task into two by creating a child task.
+The parent task will wait for the child task to finish (parent execution
+suspends until the child task terminates). <tt>options</tt> are described below.
+
+<p>The child task returns (as it does in <tt>task_fork</tt>) the task
+identifier of its parent as the <tt>result</tt>, and <tt>'child'</tt> as
+the <tt>return_code</tt>.
+
+<p>However, the <tt>result</tt> and <tt>return_code</tt>
+of the parent task depend on whether the child task terminates normally:
+
+<ul>
+<p><li>In normal termination of the child task, the
+parent task returns the result of the child task as the
+<tt>result</tt> and <tt>''</tt> as the <tt>return_code</tt>.
+
+<p><li>If the child terminates with an
+error, the parent returns <tt>'error'</tt>
+as the <tt>return_code</tt>, and the
+error message as the <tt>result</tt>.
+</ul>
+
+<p><a name="task_fork"></a></p>
+<p><hr noshade="noshade" />
+
+
+<tt>options</tt>
+
+<p>Variable sharing, error handling and behavior on task cancellation can be
+optionally specified for the parent and child tasks using the
+<tt>options</tt> argument.
+
+<p><tt>options</tt> is a tagged vector of optional attribute-value
+pairs:
+
+<dl>
+<dt><tt>master</tt>
+<dd>Specifies which task is to be the &quot;master&quot;, and hence, which
+is to be the &quot;slave&quot;.  When a master task dies, all its slave
+tasks die with it.  If there is no master task, then the termination of
+the parent and the child tasks happen independently of one another.  If
+both tasks are declared to be masters (<tt>mutual</tt>), then when either
+one dies, the other dies with it. If the parent is the master, killing the
+child task will not kill the parent, but killing the parent will kill the
+child.
+
+<p>Possible values:
+<ul>
+<li><tt>'none'</tt> (default)</li>
+<li><tt>'mutual'</tt></li>
+<li><tt>'parent'</tt></li>
+</ul>
+
+<p><dt><tt>creator</tt>
+<dd>Specifies the behavior of a parent task with respect to its
+child. The parent can be blocked, i.e. it waits on the child;
+in this case, its behavior
+must be specified in case the child exits with an error.
+
+<p>Possible values:
+<ul>
+<li><tt>'detach'</tt> parent runs
+    independently of child (default for <tt>task_fork</tt>)<br />
+<li><tt>'blockEOK'</tt> ignore error
+(default for <tt>task_wfork</tt>)<br />
+<li><tt>'blockDOE'</tt> (die-on-error) parent dies with child
+</ul>
+
+<p><dt><tt>statics</tt>
+<dd>Specifies which static variables the newly created child task
+    will use.  Forked tasks (child tasks) can have new or shared
+    variables.  New static variables are private to the child task (in the
+    same way local variables are private to a function) and are
+    initialized at task start to either the values of the statics of the
+parent task at fork time or to <tt>[]</tt>.
+
+<p>Possible values:
+<ul>
+<li><tt>'share'</tt> share statics with parent (default)
+<li><tt>'copy'</tt> child has private statics, whose values are copied
+from parent
+
+<li><tt>'new'</tt> child has private statics, initialized to <tt>[]</tt>
+</ul>
+
+<p><dt><tt>errmsg</tt>
+<dd>Specifies whether, when the child task exits with an error, the error
+message is to be shown or ignored.  Independently of the value of the
+<tt>errmsg</tt> attribute, if the parent task is blocking on the child
+task, <tt>return_code</tt> will contain the status (<tt>'error'</tt>), and
+<tt>result</tt> the error message.
+
+<p>Possible values:
+<ul>
+<li><tt>'show'</tt> (default)
+<li><tt>'ignore'</tt>
+</ul>
+
+<p><dt><tt>prio</tt>
+<dd>Specifies the task priority level of the created task.
+When the priority level of the child task is lower or equal to the
+priority level of the parent task, the parent task is interrupted
+and the child task begins to run immediately.  When the value is not
+set (or <tt>[]</tt>), the child task starts at the default priority
+level of a new task.
+
+<p><dt><tt>idle</tt>
+<dd>Specifies whether the child task should be ignored when the system detects
+that it is in an <i>idle</i> state.  If the value is 0, the system will not
+become idle while the child task is running.  If the value is 1, the system
+<i>can</i> become idle while the child task is running.  When the value is not
+set (or <tt>[]</tt>), the child task acquires the idle value of the parent
+task.  Resource monitoring tasks and other auxiliary GUI tasks should set idle
+to 1.
+
+</dl>
+
+<p><tt>task_fork</tt> and <tt>task_wfork</tt> differ only in their default
+settings of the <tt>'creator'</tt> attribute.  Either function can be
+called for task forking.  For instance, <tt>task_wfork</tt> is equivalent
+to <tt>task_fork</tt><tt>[creator:'blockEOK']</tt>, and <tt>task_fork</tt>
+is equivalent to <tt>task_wfork[creator:'detach'].</tt>
+
+
+<p>
+The following example shows how to fork a task in order to
+execute while the forked task is executing.
+
+<pre>
+    if second <span class="fcndef">task_fork</span>[] == 'child' then
+	... child does calculation ...
+	exit[]; // exit from child task
+
+    else // parent task, running independently of child
+
+	... process other trigger values ...
+
+    endif
+</pre>
+
+<p>In this next example which uses <tt>task_wfork</tt>, a calculation is
+initiated from a panel, and the panel is hidden while the calculation is in
+progress. If calculation ends normally, the panel is closed; otherwise, if
+calculation exits prematurely due to error or manual cancellation of the child
+task, the panel is re-opened.
+
+<pre>
+    loop
+	[value,trigger] = WindowWait [ wkey, ...]; // wait for panel
+	if trigger == ... then
+	    local code = second task_wfork [];     // fork: parent blocks
+	    if code == 'child' then
+		WindowShow [wkey, 0];     // hide panel
+
+		//... child does calculation ...
+
+		exit[];                   // exit from child
+	    elseif code == '' then
+		exit[];                   // exit from parent
+	    else                          // abnormal termination of child
+		WindowShow [wkey, 1];     // show panel again
+	    endif
+	else
+	    //... process other window trigger values ...
+	endif
+    endloop
+</pre>
+
+
+<p><a name="task_prio"></a></p>
+<p><hr noshade="noshade" />
+
+
+<pre>
+old_prio = <span class="fcndef">task_prio</span> new_prio
+curr_prio = <span class="fcndef">task_prio</span> []
+</pre>
+
+<p><tt>task_prio</tt> resets the task priority level and returns the previous
+level.
+If passed a null argument, <tt>task_prio</tt> returns the current task priority
+level.
+
+<p>SVL tasks are executed at different priority levels.  Task of lower priority
+level are always executed before any task of higher priority level.  By
+default, each new tasks starts at priority level 1.  After a short period of
+time, the task's priority level automatically shifts to 2.  This is to allows
+the system to stay responsive to interactive commands: new commands always
+start as new tasks at priority level 1, while the continuing execution of
+previous commands at priority level 2 is temporarily shifted to the background.
+
+<p>The priority level 3 and higher should be used for background execution
+of tasks.
+
+<p>The priority level 0 is reserved for non-interruptible task execution.
+This execution mode must be used when cooperating
+tasks access the same resource.  Temporarily setting the task
+priority level to 0 while executing a piece of SVL code will guarantee
+that only one task is accessing the resource.
+
+<p>Example: Consider two cooperating tasks.  The parent task waits for the user
+input from a panel, while the child task periodically monitors the state of the
+system and updates the panel.  By setting the task priority level to 0 we
+guarantee that the panel is accessed only by one task at a time:
+
+<pre>
+    local wkey = WindowCreate PANEL;
+    WindowShow wkey;
+    local prio;
+
+	// the child task monitors the state of the system
+	// and updates the panel
+
+    if second task_fork [master:'mutual'] === 'child' then
+	loop
+	    sleep 1.0;
+	    if  ... state unchanged ... then continue; endif
+	    prio = task_prio 0;
+		... update panel wkey ...
+	    task_prio prio;
+	endloop
+    endif
+
+	// the parent task waits for the user input
+
+    loop
+	local [v, trigger] = WindowWait wkey;
+	prio = task_prio 0;
+	    ... respond to user actions ...
+	    ... update panel wkey ...
+	task_prio prio;
+    endloop
+
+    exit[];	// terminate execution of both tasks
+</pre>
+
+Note: if the computations required in response to the user actions require
+non-trivial amount of time, a separate task should be used to perform the
+computations.
+
+<p><a name="task_idle"></a></p>
+<p><hr noshade="noshade" />
+
+
+<pre>
+old_idle = <span class="fcndef">task_idle</span> new_idle
+curr_idle = <span class="fcndef">task_idle</span> []
+</pre>
+
+<p><tt>task_idle</tt> resets the task idle value and returns the
+previous value.  If passed a null argument, <tt>task_idle</tt> returns
+idle value of the current task.
+</p>
+
+<p>The idle value specifies whether the task should to be ignored when
+the system detects that it is in an <i>idle</i> state.  If the value is
+0, the system will not become idle while the task is running.  If the
+value is 1, the system <i>can</i> become idle while the task is running.
+The default idle value of new tasks is 0. Resource monitoring tasks and
+other auxiliary GUI tasks should set idle value to 1.
+</p>
+
+<p>When there are no active tasks in the system (all tasks are idle)
+and the <a class="svl" href="../../moe/fcnref/rc.htm">suspendTimeout</a>
+RC (<i>resource configuration</i>) variable
+is currently assigned a value greater than zero,
+MOE will suspend (the license
+will be returned to the license server) after the specified number
+of seconds.
+</p>
+
+<h2>See Also</h2>
+<p>
+   <a class="svl" href="tskcall.htm">task_call</a>
+   <a class="svl" href="tskcall.htm">task_eval</a>
+   <a class="svl" href="tskcall.htm">task_run</a>
+   <a class="svl" href="tskcall.htm">task_script</a><br />
+   <a class="svl" href="taskfcn.htm">task_getenv</a>
+   <a class="svl" href="taskfcn.htm">task_setenv</a>
+</p>
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

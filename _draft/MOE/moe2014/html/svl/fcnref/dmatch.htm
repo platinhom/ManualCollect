@@ -1,0 +1,670 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--	dmatch.htm	Manual page for dmatch_... routines
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions dmatch_open, dmatch_close, dmatch_nextmatch, dmatch_matchsize>
+<meta functions dmatch_cdist, dmatch_cpos, dmatch_cessential, dmatch_cimap>
+<meta functions dmatch_idist, dmatch_ipos, dmatch_icmap>
+<meta functions dmatch_break, dmatch_reset, dmatch_timeout>
+<meta subgraph substructure>
+
+<title>Distance Geometry Matching Functions: dmatch_open...</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    qkey = <a class="fcnlink" href="#dmatch_open">dmatch_open</a> []
+    qkey = <a class="fcnlink" href="#dmatch_open">dmatch_open</a> qkey
+
+    <a class="fcnlink" href="#dmatch_matchsize">dmatch_matchsize</a> [qkey, n]
+    <a class="fcnlink" href="#dmatch_cessential">dmatch_cessential</a> [qkey, [cidx1, cidx2, ...]]
+
+    <a class="fcnlink" href="#dmatch_cdist">dmatch_cdist</a> [qkey, SD_min, SD_max]
+    <a class="fcnlink" href="#dmatch_cpos">dmatch_cpos</a> [qkey, [x,y, ...], rad]
+
+    <a class="fcnlink" href="#dmatch_cimap">dmatch_cimap</a> [qkey, [iidxlist1, iidxlist2, ...]]
+    <a class="fcnlink" href="#dmatch_icmap">dmatch_icmap</a> [qkey, [cidxlist1, cidxlist2, ...]]
+
+    <a class="fcnlink" href="#dmatch_idist">dmatch_idist</a> [qkey, SD]
+    <a class="fcnlink" href="#dmatch_ipos">dmatch_ipos</a> [qkey, [x,y, ...]]
+
+    [iidx1, iidx2, ...] = <a class="fcnlink" href="#dmatch_nextmatch">dmatch_nextmatch</a> qkey
+    <a class="fcnlink" href="#dmatch_break">dmatch_break</a> qkey
+    <a class="fcnlink" href="#dmatch_reset">dmatch_reset</a> qkey
+    <a class="fcnlink" href="#dmatch_timeout">dmatch_timeout</a> qkey
+
+    <a class="fcnlink" href="#dmatch_close">dmatch_close</a> qkey
+</pre>
+
+<h2>Description</h2>
+Functions <tt>dmatch_...</tt> are intended to produce all possible
+matches (pairings) between features of a "constraint"
+and an "instance":
+
+<ul>
+<p><li>
+A <i>constraint</i> is a set of <i>features</i>
+together with a pair of numbers associated with every pair of
+features in the set.&nbsp;These numbers,
+<tt>D_MIN(y1,y2)</tt> and
+<tt>D_MAX(y1,y2)</tt>,
+are non-negative and represent minimum and maximum distances
+between the two features
+<tt>y1</tt> and <tt>y2</tt>.
+
+<p><li>
+An <i>instance</i> is a set of features together
+with a single number associated with every pair of features in the set.&nbsp;
+This number,
+<tt>D(x1,x2)</tt>,
+is non-negative and represents the distance between the two features
+<tt>x1</tt> and <tt>x2</tt>.
+
+<p><li>
+A <i>match</i> specifies a mapping between features of the constraint and
+the features of the instance, such that the distance between any two
+instance features <tt>x1</tt> and <tt>x2</tt> that map to
+two constraint features <tt>y1</tt> and <tt>y2</tt> satisfies the following:
+
+<center>
+<pre>
+    D_MIN(y1,y2) &lt;= D(x1,x2) &lt;= D_MAX(y1,y2)
+</pre>
+</center>
+
+</ul>
+
+<p>
+The matches are obtained by interrogating a special <i>query</i> object.
+The query must first be supplied
+with the parameters of the constraint, the instance and the
+required properties of the match.
+It is then iteratively interrogated for one match at a time,
+until all possible matches are obtained.
+The same query object can be used successively to match several instances
+to the same constraint or several constraints to the same instance.
+
+<p> Features are numbered from 1 to <i>K</i>, where <i>K</i> is the
+number of features.
+
+The distances between features are specified by a distance matrix.
+The element in row <i>i</i> and column <i>j</i> of the distance matrix
+represents the distance between feature <i>i</i> and <i>j</i>.
+
+The constraint is specified by setting
+the matrix of the minimum distances and the matrix of the maximum distances
+either explicitly, with <tt>dmatch_cdist</tt>,
+or implicitly, with <tt>dmatch_cpos</tt>.
+
+The instance is specified by setting
+the matrix of distances
+either explicitly, with <tt>dmatch_idist</tt>,
+or implicitly, with <tt>dmatch_ipos</tt>.
+
+<p>
+The matches are returned by iterative calls to function
+<tt>dmatch_nextmatch</tt>.  Each returned match will satisfy
+the constraint requirements on the distances of matched features.
+Additional requirements on the matches can be set with functions
+<tt>dmatch_matchsize</tt>,
+<tt>dmatch_cessential</tt>,
+<tt>dmatch_cimap</tt>,
+and <tt>dmatch_icmap</tt>.
+
+<p><a name="dmatch_open"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+qkey = <span class="fcndef">dmatch_open</span> []
+</pre>
+
+<p>
+Opens a new query.  The return value must be used by all
+subsequent <tt>dmatch_..</tt> functions.  Any number of queries can
+be open at the same time.  Each query is "attached" to the task
+that opened it.  When the task terminates, any attached opened
+queries are automatically closed.
+Programs should contain an explicit
+<tt>dmatch_close</tt> for each <tt>dmatch_open</tt>.
+
+<p><a name="dmatch_open"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+qkey = <span class="fcndef">dmatch_open</span> qkey
+</pre>
+<p>
+Reopens an existing query and attaches it to the current task
+(without breaking attachments to other tasks).
+This functionality is useful when <tt>qkey</tt> was opened in another
+task that could terminate while the query is still needed.
+The termination of that task would close the query.
+By reopening the query in the current task we can leave the query
+open and available to the current task.
+Programs should contain an explicit
+<tt>dmatch_close</tt> for each <tt>dmatch_open</tt>.
+
+<p><a name="dmatch_matchsize"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">dmatch_matchsize</span> [qkey, n]
+</pre>
+<p>
+Specifies the minimum number of pairs of features that
+must be matched for the match to be returned by <tt>dmatch_nextmatch</tt>.
+
+If <tt>n</tt> is positive, it indicates the minimum number of
+features that must be matched.
+If <tt>n</tt> is non-positive, it indicates the maximum number of
+features that do not have to be matched, i.e.,
+if the constraint has <tt>K</tt> features, the minimum number of
+features that must be matched is (<tt>K-|n|</tt>).
+The default value of <tt>n</tt> for a new query is 0, i.e., all
+features have to be matched.
+
+This function resets the query.
+
+<p><a name="dmatch_cessential"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">dmatch_cessential</span> [qkey, [cidx1, cidx2, ...]]
+</pre>
+<p>
+Specifies features of the constraint that must be present
+in every match returned by <tt>dmatch_nextmatch</tt>.
+The features are specified by their numbers.
+The default set of essential features is empty,
+i.e., no constraint feature is essential.
+
+This function resets the query.
+
+
+<p><a name="dmatch_cdist"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">dmatch_cdist</span> [qkey, SD_min, SD_max]
+</pre>
+
+<p>
+Specifies the minimum and maximum distance associated
+with each pair of constraint features.
+The square, symmetric matrices <tt>SD_min</tt> and <tt>SD_max</tt>
+store the <i>squares</i> of the minimum and maximum distances, respectively.
+
+This function resets the query.
+
+<p>Note:
+There is no default value for the minimum and maximum constraint
+distances: the values must be initialized either explicitly with
+<tt>dmatch_cdist</tt> or implicitly with <tt>dmatch_cpos</tt>.
+
+<p><a name="dmatch_cpos"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">dmatch_cpos</span> [qkey, [x,y...], rad]
+</pre>
+<p>
+Implicitly specifies the minimum and maximum distance associated
+with each pair of constraint features.
+
+The features are assumed to be spheres in Euclidean space
+of given positions, <tt>[x,y...]</tt>, and radii, <tt>rad</tt>.
+The minimum and maximum distances between two features are calculated
+as the minimum and maximum distances between points on the spheres.
+
+This function resets the query.
+
+<p>Note: The Euclidean space can be of any dimension.
+
+<p>Note:
+There is no default value for the minimum and maximum constraint
+distances: the values must be initialized either explicitly with
+<tt>dmatch_cdist</tt> or implicitly with <tt>dmatch_cpos</tt>.
+
+<p><a name="dmatch_cimap"></a></p><p><hr noshade="noshade" />
+<pre>
+<span class="fcndef">dmatch_cimap</span> [qkey, [iidxlist1, iidxlist2, ...]]
+</pre>
+<p>
+Specifies which features of the constraint and instance are
+to be considered for the match.
+For each constraint feature, <i>i</i>, the function expects
+a list of instance features, <tt>iidxlist</tt><i>i</i>,
+that can match <i>i</i>.
+
+By default, the lists are empty, resulting in
+no matches being reported.
+
+This function resets the query.
+
+<p><a name="dmatch_icmap"></a></p><p><hr noshade="noshade" />
+<pre>
+<span class="fcndef">dmatch_icmap</span> [qkey, [cidxlist1, cidxlist2, ...]]
+</pre>
+<p>
+Specifies which features of the constraint and instance are
+to be considered for the match.
+For each instance feature, <i>i</i>, the function expects
+a list of constraint features, <tt>cidxlist</tt><i>i</i>,
+that can match <i>i</i>.
+
+By default, the lists are empty, resulting in
+no matches being reported.
+
+This function resets the query.
+
+<p><a name="dmatch_idist"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">dmatch_idist</span> [qkey, SD]
+</pre>
+<p>
+Specifies the distance associated
+with each pair of instance features.
+The square, symmetric matrix <tt>SD</tt>
+stores the <i>squares</i> of the distances.
+
+This function resets the query.
+
+<p>Note:
+There is no default value for the instance distances: the
+values must be initialized either explicitly with <tt>dmatch_idist</tt>
+or implicitly with <tt>dmatch_ipos</tt>.
+
+<p><a name="dmatch_ipos"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">dmatch_ipos</span> [qkey, [x,y,z]]
+</pre>
+<p>
+Implicitly specifies the distance associated
+with each pair of instance features.
+
+The features are assumed to be points in Euclidean space
+of given positions, <tt>[x,y...]</tt>.
+The distance between two features is calculated
+as the distance between the points.
+
+Internally, each distance is calculated only when it is
+necessary for finding the match.  Therefore, it is generally
+more efficient to use <tt>dmatch_ipos</tt>
+than to pre-calculate all instance distances and use
+<tt>dmatch_idist</tt>.
+
+This function resets the query.
+
+<p>Note: The Euclidean space can be of any dimension.
+
+<p>Note:
+There is no default value for the instance distances: the
+values must be initialized either explicitly with <tt>dmatch_idist</tt>
+or implicitly with <tt>dmatch_ipos</tt>.
+
+<p><a name="dmatch_nextmatch"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[iidx1, iidx2, ...] = <span class="fcndef">dmatch_nextmatch</span> qkey
+</pre>
+
+<p> Returns the next match from the specified query.  Each match is a
+list of <i>K</i> indices, where <i>K</i> is the number of constraint
+features.  Each index is either the instance feature that matches the
+corresponding constraint feature, or it is 0, indicating that the
+constraint feature was not matched.  When there are no matches or all
+matches have been returned, the function returns the empty vector.
+
+Example:
+
+<pre>
+    while length (qm = dmatch_nextmatch qkey) loop
+	cidx = x_pack qm;	// matched constraint features
+	iidx = pack qm;		// matching instance features
+    endloop
+</pre>
+
+<p><a name="dmatch_reset"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">dmatch_reset</span> qkey
+</pre>
+
+<p>
+Resets the query object back to the state ready to emit the first match.
+The next call to <tt>dmatch_nextmatch</tt> will return the first match.
+
+<p><a name="dmatch_break"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">dmatch_break</span> qkey
+</pre>
+<p>
+Sets the query object to the state after reporting the last match.
+The next call to <tt>dmatch_nextmatch</tt> will return the empty vector.
+
+<p><a name="dmatch_timeout"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">dmatch_timeout</span> [qkey, new_delay]
+delay = <span class="fcndef">dmatch_timeout</span> qkey
+delay = <span class="fcndef">dmatch_timeout</span> [qkey, new_delay]
+</pre>
+<p>
+Returns the current timeout value for
+<tt>dmatch_nextmatch</tt>, and
+(optionally) sets a new timeout value.
+The timeout value is the approximate delay, in seconds, after which
+the <tt>dmatch_nextmatch</tt> function is forced to stop its execution.
+If the <tt>new_delay</tt> argument is positive,
+<tt>dmatch_nextmatch</tt> will report an error.
+If the <tt>new_delay</tt> argument is negative,
+<tt>dmatch_nextmatch</tt> will return with an empty vector.
+The default timeout value is 5, i.e., if the function cannot
+reach any conclusion in 5 seconds, it will report an error.
+
+This function does not reset the query.
+
+<p>Note: The <tt>dmatch_nextmatch</tt> function will test at least
+2<sup>24</sup> possible mappings between the constraint features and the
+instance features before checking whether the timeout has been reached.
+
+<p><a name="dmatch_close"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">dmatch_close</span> qkey
+</pre>
+<p>
+Closes (destroys) a given query.
+Unlike other <tt>dmatch_...</tt> functions, this function
+produces no error if <tt>qkey</tt> is not a valid query.
+Programs should contain a
+<tt>dmatch_open</tt> for each <tt>dmatch_close</tt>.
+
+<p><hr noshade="noshade" />
+<b>Example:</b>
+
+<p>The following code generates all permutations of numbers 1 to 5:
+
+<pre>
+    local idx, qkey = <span class="fcndef">dmatch_open</span> [];
+
+    <span class="fcndef">dmatch_cimap</span> [qkey, rep [igen 5, 5]];
+    <span class="fcndef">dmatch_cdist</span> [qkey, rep [0, 5, 5], 0];
+    <span class="fcndef">dmatch_idist</span> [qkey, rep [0, 5, 5]];
+
+    while length (idx = <span class="fcndef">dmatch_nextmatch</span> qkey) loop
+	print idx;
+    endloop
+
+    <span class="fcndef">dmatch_close</span> qkey;
+</pre>
+
+<p><hr noshade="noshade" />
+<b>Example:</b>
+
+<p>Consider two graphs G1 and G2, with vertex labels L1 and L2. It is possible to
+use distance matching to find candidate mappings for cases where G1 is a
+subgraph of G2:
+
+<pre>
+    local L1 = ['C', 'C', 'N'];
+    local G1 = [[2,3], 1, 2];
+    local D1 = graph_distance G1;
+
+    local L2 = ['C', 'C', 'N', 'C'];
+    local G2 = [[2,3], [1,3], [1,2,4], 3];
+    local D2 = graph_distance G2;
+
+    local qkey = <span class="fcndef">dmatch_open</span> [];
+
+    <span class="fcndef">dmatch_cdist</span> [qkey, 1, D1];
+    <span class="fcndef">dmatch_idist</span> [qkey, D2];
+    <span class="fcndef">dmatch_cimap</span> [qkey, indicesof [L1, L2]];
+
+    local qm;
+    while length (qm = <span class="fcndef">dmatch_nextmatch</span> qkey) loop
+
+    	// ...do something with the result...
+
+    endloop
+
+    <span class="fcndef">dmatch_close</span> qkey;
+</pre>
+
+<p>In each iteration, the variable <tt>qm</tt> contains a mapping
+between the vertices of G1 and the vertices of G2: each vertex
+<tt>i</tt> in G1 is matched with vertex <tt/>qm(i)</tt> in G2.  The
+mapped vertices of graph G2 induce a subgraph, G3, which has the same
+vertices as G1 and a superset of edges of G1:
+
+<pre>
+    G3 = graph_get [G2, qm];
+</pre>
+
+<p>To find out which edges occur only in G3 but not in G1, we can
+compare the adjacency matrices of both graphs:
+
+<pre>
+    m = graph_adjacency G3 and not graph_adjacency G1;
+    [e1A, e1B] = graph_uedges app x_pack m;
+    [e2A, eq2B] = [qm[e1A], qm[e1B]];
+</pre>
+
+<p>Mask <tt>m</tt> is the adjacency matrix of graph G3 from which we
+removed all edges that also occur in G1.  Variables
+<tt>e1A</tt>,&nbsp;<tt>e1B</tt> store the remaining edges in G1
+(or&nbsp;G3) as a laminated list of pairs of vertex indices.  Variables
+<tt>e2A</tt>,&nbsp;<tt>e2B</tt> store the corresponding edges in G2.
+
+<p>Note: since we do not use positions, we do not need to square
+distances passed to <tt>dmatch_cdist</tt> and <tt>dmatch_idist</tt>.
+
+<p>Note: The lower bound on distances in <tt>dmatch_cdist</tt> must be
+1, not <tt>D1</tt>, because of the following subtle property.  The
+shortest paths connecting two vertices of the matched subgraph in G2 may
+all contain vertices that do not belong to the subgraph; to connect such
+two vertices of the subgraph in the shortest way, we must travel outside
+the subgraph.  If we restrict ourselves only to paths within the matched
+subgraph, the shortest path between the two vertices will get longer.  The
+two vertices will therefore be closer to each other in G2 than in G1, or,
+in other words, smaller distances in G2 can match bigger distances in
+G1.
+
+<p>Note: In terms of the graph theory, G1 is <i>homomorphic</i> to G2
+and G1 is a <i>factor</i> (or a <i>spanning subgraph</i>) of G3.
+The above example solves the <i>subgraph isomorphism</i> problem,
+which is known to be <i>NP-complete</i> for general graphs, i.e.
+(most likely) not having any efficient (polynomial time) general
+solution.
+
+<p><hr noshade="noshade" />
+<b>Example:</b>
+
+<p>
+Consider a set of features defined by positions of atoms N, O, P, and S.
+The following code extracts the set of "receptor" features from the molecule
+in the main window and compares them to the set of "ligand" features
+extracted from each molecule in the molecular database
+<tt>'$MOE/sample/mol/mref.mdb'</tt>.
+We find all ligands whose features match almost all receptor features.
+For each such ligand we print out its number and the features that match.
+
+<pre>
+local function LigandMatch []
+
+	// Generate the receptor features from the molecule
+	// in the main window and initiate the query
+
+    local idx = indexof [aName Atoms[], ['N','O','P','S']];
+    local [rec_type, rec_pos] = [pack idx, aPos (Atoms[] | idx)];
+
+    local qkey = <span class="fcndef">dmatch_open</span> [];
+    <span class="fcndef">dmatch_cpos</span> [qkey, rec_pos, 0.5];
+    <span class="fcndef">dmatch_matchsize</span> [qkey, -1];	// All features except 1 must match
+
+	// Open and scan the database.  For each entry of the database,
+	// extract features of the ligand, match features of the receptor
+	// with those of the ligand and report all matches found.
+
+    local dbkey = db_Open '$MOE/sample/mol/mref.mdb';
+    local ent = 0;
+
+    local i;
+    for i=1, INT_MAX while ent = db_NextEntry [dbkey, ent] loop
+	local mol = first db_ReadFields [dbkey, ent, 'mol'];
+	local [chains] = db_CreateMolecule mol;
+	local atoms = cat cAtoms chains;
+
+	idx = indexof [aName atoms, ['N','O','P','S']];
+	local [lig_type, lig_pos] = [pack idx, aPos (atoms | idx)];
+
+	oDestroy chains;
+
+	<span class="fcndef">dmatch_ipos</span> [qkey, lig_pos];
+	<span class="fcndef">dmatch_icmap</span> [qkey, indicesof [lig_type, rec_type]];
+
+	local qm;
+	while length (qm = <span class="fcndef">dmatch_nextmatch</span> qkey) loop
+	    write ['{5}:\trec={|,}\tlig={|,}\n', i, x_pack qm, pack qm];
+	endloop
+    endloop
+
+    db_Close dbkey;
+    <span class="fcndef">dmatch_close</span> qkey;
+endfunction
+</pre>
+
+<p>Output of the function <tt>LigandMatch</tt> with
+DYPHYLLINE (molecule #535) as the receptor:
+
+<pre>
+534:  rec=1,2,3,4,5,6,7,8     lig=1,2,3,4,5,7,6,8
+534:  rec=1,2,3,4,5,6,7       lig=1,2,3,4,5,7,6
+534:  rec=1,2,3,4,5,6,8       lig=1,2,3,4,5,7,8
+534:  rec=1,2,3,4,5,7,8       lig=1,2,3,4,5,6,8
+534:  rec=1,2,3,4,6,7,8       lig=1,2,3,4,7,6,8
+534:  rec=1,2,3,5,6,7,8       lig=1,2,3,5,7,6,8
+534:  rec=1,2,4,5,6,7,8       lig=1,2,4,5,7,6,8
+534:  rec=1,3,4,5,6,7,8       lig=1,3,4,5,7,6,8
+534:  rec=2,3,4,5,6,7,8       lig=2,3,4,5,7,6,8
+535:  rec=1,2,3,4,5,6,7,8     lig=1,2,3,4,5,6,7,8
+535:  rec=1,2,3,4,5,6,7       lig=1,2,3,4,5,6,7
+535:  rec=1,2,3,4,5,6,8       lig=1,2,3,4,5,6,8
+535:  rec=1,2,3,4,5,7,8       lig=1,2,3,4,5,7,8
+535:  rec=1,2,3,4,6,7,8       lig=1,2,3,4,6,7,8
+535:  rec=1,2,3,5,6,7,8       lig=1,2,3,5,6,7,8
+535:  rec=1,2,4,5,6,7,8       lig=1,2,4,5,6,7,8
+535:  rec=1,3,4,5,6,7,8       lig=1,3,4,5,6,7,8
+535:  rec=2,3,4,5,6,7,8       lig=2,3,4,5,6,7,8
+550:  rec=1,2,3,4,5,6,8       lig=6,5,4,3,2,1,7
+558:  rec=1,2,3,4,5,6,7,8     lig=1,2,3,4,5,7,6,8
+...
+</pre>
+
+<p>The above example assumes that matches are allowed only
+between features of the same type.
+The following modification
+allows matches between features that are of "compatible types".
+
+<pre>
+    local N_like = x_join [rec_type, [1,3]];	// N-like: N, P
+    local O_like = x_join [rec_type, [2,4]];	// O-like: O, S
+    local ICMAP = [N_like, O_like, N_like, O_like];
+    ...
+    loop
+	...
+	dmatch_icmap [qkey, ICMAP[lig_type]];
+	...
+    endloop
+</pre>
+
+<p><a name="dmatch_close"></a></p>
+<p><a name="dmatch_nextmatch"></a></p>
+<p><a name="dmatch_ipos"></a></p>
+<p><a name="dmatch_cpos"></a></p>
+<p><a name="dmatch_cimap"></a></p>
+<p><a name="dmatch_open"></a></p>
+<p><hr noshade="noshade" />
+
+<b>Example:</b>
+
+<p>The distance matching functions must be used with caution.  The
+<tt>dmatch_nextmatch</tt> function attempts to systematically examine a
+great number of possible matchings and its cost may become prohibitive
+even for small-sized problems.
+
+<p> The following code forces <tt>dmatch_nextmatch</tt> to examine
+exponential number of possibilities before returning with no match found.
+For sufficiently large N, the function will time out.
+
+<pre>
+    local N = 20;
+    local x = resize [[0,1], N];
+
+    local idx, qkey = <span class="fcndef">dmatch_open</span> [];
+
+    <span class="fcndef">dmatch_cimap</span> [qkey, rep [x_id N, N]];
+    <span class="fcndef">dmatch_cpos</span> [qkey, [x], 0.001];
+    <span class="fcndef">dmatch_ipos</span> [qkey, [x + 0.1 * m_last x]];
+
+    print <span class="fcndef">dmatch_nextmatch</span> qkey; // times out
+
+    <span class="fcndef">dmatch_close</span> qkey;
+</pre>
+
+<h2>See Also</h2>
+
+<a href="../../svl/fcnref/graphlib.htm">Graph Functions</a><br />
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

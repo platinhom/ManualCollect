@@ -1,0 +1,357 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions mtz_Read>
+<meta functions cv_Read>
+<meta functions cif_ExtractStructureFactors>
+<meta functions mtz_Write>
+<meta functions cv_Write>
+<meta functions cif_StuffStructureFactors>
+<meta functions fread_CCP4>
+<meta functions fread_CNS>
+<meta functions fwrite_CCP4>
+<meta functions fwrite_CNS>
+
+<title>Electron Density I/O Functions</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+<pre>
+    sfinfo = <a class="fcnlink" href="#mtz_Read">mtz_Read</a> 'filename'
+    sfinfo = <a class="fcnlink" href="#cv_Read">cv_Read</a> 'filename'
+    sfinfo = <a class="fcnlink" href="#cif_ExtractStructureFactors">cif_ExtractStructureFactors</a> cif
+
+    <a class="fcnlink" href="#mtz_Write">mtz_Write</a> ['filename', sfinfo]
+    <a class="fcnlink" href="#cv_Write">cv_Write</a>  ['filename', sfinfo]
+    cif = <a class="fcnlink" href="#cif_StuffStructureFactors">cif_StuffStructureFactors</a> [sfinfo, 'entryid']
+
+    [data, shape, cell, label, skew, [mean, sd], [min, max]] = <a class="fcnlink" href="#fread_CCP4">fread_CCP4</a> 'filename'
+    [data, shape, cell, label, [mean, sd]] = <a class="fcnlink" href="#fread_CNS">fread_CNS</a>  'filename'
+
+    <a class="fcnlink" href="#fwrite_CCP4">fwrite_CCP4</a> ['filename', [data, shape, cell, label, skew, [mean, sd], [min, max]]]
+    <a class="fcnlink" href="#fwrite_CNS">fwrite_CNS</a>  ['filename', [data, shape, cell, label, [mean, sd]]]
+</pre>
+
+
+<h2>Description</h2>
+
+<p>These functions provide means for reading and writing
+structure factors and electron density, in various popular file formats.</p>
+
+<p><a name="cif_ExtractStructureFactors"></a></p>
+<p><a name="cv_Read"></a></p>
+<p><a name="mtz_Read"></a></p>
+<p><hr noshade="noshade" />
+<pre>
+    sfinfo = <span class="fcndef">mtz_Read</span> 'filename'
+    sfinfo = <span class="fcndef">cv_Read</span> 'filename'
+    sfinfo = <span class="fcndef">cif_ExtractStructureFactors</span> cif
+</pre>
+
+<p>The first three functions read in structure factor data stored in MTZ (CCP4), CNS/CNX
+or CIF format, respectively, into a common <tt>sfinfo</tt> tagged vector.
+Note that while the first two functions
+take a file on disk as their main argument, <tt>cif_ExtractStructureFactors</tt> takes a
+<tt>cif</tt> object, such as the <tt>blockdata</tt> returned by <tt>cif_fread</tt>.
+It is important that the CIF structure includes the cell parameters and space
+group information as well; otherwise a default value will be assigned.  Similarly,
+CNS structure factor files never specify this information, and so a default
+value is used for any calculations.</p>
+  
+<p>The last function can be used when the relevant information is already present
+in MOE and does not come from a file on disk.  A vector of the same shape
+and with the same tags as the other functions is returned,
+but instead of a file it requires the structure factor
+magnitudes <tt>F</tt> and <tt>phase</tt> in reciprocal space.  These are each flat
+vectors like a normal MOE grid, with HKL co-ordinates defined by <tt>shape</tt>.
+Additionally the cell parameters <tt>cell</tt> and <tt>resolution</tt> are needed.
+The latter is of the form <tt>[res_low, res_high]</tt>, where <tt>res_low > res_high</tt>
+are the low and high resolution limits of the experiment, respectively.</p>
+
+<p>
+<a name="sfinfo"></a>
+The <tt>sfinfo</tt> object mirrors the MTZ file format, and thus consists of
+the following tags:</p>
+
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr align="left"><th>Tag Name</th><th>Format</th><th>Description</th></tr>
+<tr>
+
+<td valign="top">version</td>
+<td valign="top">'version info'</td>
+<td valign="top">
+A tag for the version of the file format.</td></tr>
+<tr>
+<td valign="top">title</td>
+<td valign="top">'title'</td>
+<td valign="top">
+A description of how the file was generated or what is represents.
+</td></tr>
+<tr>
+<td valign="top">hist</td>
+<td valign="top">['history1', 'history2', ...]</td>
+<td valign="top">
+An audit trail or modification history of the file.  Each element is at
+most 80 characters long.  Optional.
+</td></tr>
+<tr>
+<td valign="top">cell</td>
+<td valign="top">['spacegroup',&nbsp;size,&nbsp;shape]</td>
+<td valign="top">
+The standard space group name followed by the unit cell parameters.
+</td></tr>
+<tr>
+<td valign="top">sort</td>
+<td valign="top">[n1,&nbsp;n2,&nbsp;n3,&nbsp;n4,&nbsp;n5]</td>
+<td valign="top">
+Maintained for compatibility with MTZ format; ignored.
+</td></tr>
+<tr>
+<td valign="top">nspgrp</td>
+<td valign="top">ispacegroup</td>
+<td valign="top">
+Number of the space group from the International Tables.
+</td></tr>
+<tr>
+<td valign="top">latticetype</td>
+<td valign="top">'type'</td>
+<td valign="top">
+Lattice abbreviation for the space group.  One of: 'A', 'M', 'O', 'T', 'H', 'C'.
+</td></tr>
+<tr>
+<td valign="top">pointgroupname</td>
+<td valign="top">'PGx'</td>
+<td valign="top">
+Name of the point group associated with the space group.
+</td></tr>
+<tr>
+<td valign="top">nsym</td>
+<td valign="top">n</td>
+<td valign="top">
+Number of symmetry operators for the space group, including the identity
+operator.
+</td></tr>
+<tr>
+<td valign="top">nsymp</td>
+<td valign="top">n</td>
+<td valign="top">
+Number of <i>primitive</i> symmetry operators.  <b>Currently not correct.</b>
+</td></tr>
+<tr>
+<td valign="top">sym</td>
+<td valign="top">['sym1', 'sym2', ...]</td>
+<td valign="top">
+Symmetry operators, in International Tables style (e.g. 'x+1/2,y,z'), including
+the identity operator.
+</td></tr>
+<tr>
+<td valign="top">resolution</td>
+<td valign="top">[res_low,&nbsp;res_high]</td>
+<td valign="top">
+The resolution limits of the experiment (with low resolution being the
+numerically larger value).  Note it is actually stored as 1 / R^2 however.
+</td></tr>
+<tr>
+<td valign="top">write</td>
+<td valign="top">flag</td>
+<td valign="top">
+If non-zero, cluster numbers will be written to a field of the source
+database.
+</td></tr>
+<tr>
+<td valign="top">missingvalue</td>
+<td valign="top">n</td>
+<td valign="top">
+The value placed in the structure factor data columns when a reflection
+is absent.
+</td></tr>
+<tr>
+<td valign="top">ncols</td>
+<td valign="top">n</td>
+<td valign="top">
+The number of columns of data in <tt>cdata</tt> (see below).
+</td></tr>
+<tr>
+<td valign="top">nrefs</td>
+<td valign="top">n</td>
+<td valign="top">
+The number of reflections stored in <tt>cdata</tt> (see below).
+</td></tr>
+<tr>
+<td valign="top">nbatch</td>
+<td valign="top">n</td>
+<td valign="top">
+The batch number.  Maintained for compatibility with MTZ ignored.
+</td></tr>
+<tr>
+<td valign="top">nproj</td>
+<td valign="top">n</td>
+<td valign="top">
+The number of projects present - always one.
+</td></tr>
+<tr>
+<td valign="top">pdata</td>
+<td valign="top">['project name', 'crystal name', 'dataset name', [a,&nbsp;b,&nbsp;c,&nbsp;alpha,&nbsp;beta,&nbsp;gamma], lambda]</td>
+<td valign="top">
+Information about the project including a project name, crystal name,
+dataset name, unit cell parameters (copied from the data in <tt>cell</tt>) and
+wavelength used to collect the data, if known.
+</td></tr>
+<tr>
+<td valign="top">cdata</td>
+<td valign="top">[['label1',&nbsp;...], ['type1',&nbsp;...], [min1,&nbsp;...], [max1,&nbsp;...], [id1,&nbsp;...],
+[data1,&nbsp;...]]</td>
+<td valign="top">
+This is where the actual data is stored.  Each of the 6 elements of this
+vector has length <tt>ncols</tt>, the number of columns of data in the file,
+and the 6th column has l_length of <tt>nrefs</tt>, the number of reflections.
+Element 1 stores column labels, such as 'FOBS', 'PHIC', which are arbitrary.
+Element 2 stores the MTZ column type, such as 'F' or 'P'.  Consult the MTZ
+file format documentation for details on all the possible values and their
+meanings.
+Elements 3 and 4 store the minimum and maximum values, respectively, of each
+column of data.
+Element 5 stores the id of the corresponding dataset for each data column, and
+is always set to ones.
+Element 6 is the actual data columns.  Note that there can be multiple data
+columns of the same type, and no columns of some types.  It is up to the
+called functions to decide what to do when columns are missing, or when there
+is more than one column of the same type to choose from.  Although some naming
+conventions are commonly used for column labels to have special meanings (for
+example FCALC for calculated structure factors), there is no way to know for
+certain where the data in a column has come from or what it really represents
+beyond its data type, only the user who created the structure factor file
+would have that knowledge.
+</td></tr></table>
+
+<p><a name="cv_Write"></a></p>
+<p><a name="mtz_Write"></a></p>
+<p><a name="cif_StuffStructureFactors"></a></p>
+<p><hr noshade="noshade" />
+<pre>
+    <span class="fcndef">mtz_Write</span> ['filename', sfinfo]
+    <span class="fcndef">cv_Write</span>  ['filename', sfinfo]
+    cif = <span class="fcndef">cif_StuffStructureFactors</span> [sfinfo, 'entryid']
+</pre>
+
+<p>These functions take an <tt>sfinfo</tt> tagged vector (see above) and write
+it out in MTZ (CCP4), CNS/CNX, or CIF format, respectively.  The first two
+functions write directly to disk using the given filename, while the latter
+returns a <tt>cif</tt> object which can then be written out to disk using
+<tt>cif_fwrite</tt>.  <tt>entryid</tt> is the name to be assigned to the cif
+datablock and is normally the PDB ID or some other unique identifier.  Note that
+the CNS/CNX format (<tt>cv_Write</tt>) is extremely limited and is missing
+much of the critical information such as cell parameters.
+</p>
+
+<p><a name="fread_CNS"></a></p>
+<p><a name="fread_CCP4"></a></p>
+<p><hr noshade="noshade" />
+<pre>
+    [data, shape, cell, label, skew] = <span class="fcndef">fread_CCP4</span> 'filename'
+    [data, shape, cell, label] = <span class="fcndef">fread_CNS</span>  'filename'
+</pre>
+
+<p>These functions read electron density files in either binary CCP4 map file format, or 
+ASCII CNS format, returning the density map and cell information.
+<tt>label</tt> is a free text description of the source of the file or any
+other pertinent information, split into 'lines' of at most 80 characters each.
+<tt>skew</tt> is the Skew Matrix S and translation T (both stored as flat vectors)
+representing the skew operation on the map (see CCP4map documentation for more
+details).  This is normally null. <tt>mean</tt> and <tt>sd</tt> contain the
+mean and standard deviation, respectively, of the density over
+the whole unit cell (and not necessarily the region actually in the file).
+<tt>min</tt> and <tt>max</tt> give the minimum and maximum values
+in the grid.
+</p>
+
+<p><a name="fwrite_CNS"></a></p>
+<p><a name="fwrite_CCP4"></a></p>
+<p><hr noshade="noshade" />
+<pre>
+    <span class="fcndef">fwrite_CCP4</span> ['filename', [data, shape, cell, label, skew, [mean, sd], [min, max]]]
+    <span class="fcndef">fwrite_CNS</span>  ['filename', [data, shape, cell, label, [mean, sd]]]
+</pre>
+
+<p>These functions write out an electron density map in either CCP4 
+binary map file format, or CNS ASCII format.  Along with the
+filename it requires the actual grid data <tt>[data, shape]</tt> as well as the
+cell parameters <tt>cell</tt>.  An optional skew matrix and text label can be
+added for CCP4 format.  All other required information is recalculated
+from this upon writing.  The <tt>mean</tt>, <tt>sd</tt>, <tt>min</tt> and
+<tt>max</tt> parameters allow for specifying explicit values for
+the mean, standard deviation, minimum value
+and maximum value of the grid, respectively.  If not provided, these will be
+calculated from the grid.  Note that most software interpret these values as
+originating from data covering the whole unit cell; thus if the grid only
+covers a portion of the unit cell, the mean, etc. cannot be correctly computed
+and should therefore be passed in.
+</p>
+
+<p><b>Warning:</b> For all grids,
+it is assumed that the unit cell boundaries
+<tt>[0,0,0]</tt> and <tt>[1,1,1]</tt> lie on grid points.
+This is true even for partial grids and therefore care
+must be taken when constructing the <tt>shape</tt> and <tt>data</tt>
+parameters.
+Should the <tt>shape</tt> and <tt>data</tt> parameters be such that
+the origin and boundaries of the cell would <i>not</i> fall on grid points
+if the grid were to be extended, they would still be interpreted
+as such, resulting in distortion of the grid with no warning.
+</p>
+
+<h2>See Also</h2>
+
+<p><a href="cif.htm">CIF</a> I/O functions<br />
+<a href="ed.htm">Electron Density Functions</a>
+
+<p>
+<h2>References</h2>
+
+
+<p><a href="http://www.ccp4.ac.uk/html/mtzformat.html">MTZ</a> File Format
+Specification
+
+<p><a href="http://www.ccp4.ac.uk/html/maplib.html#description">CCP4 MAP</a> File Format
+Specification
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

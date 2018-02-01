@@ -1,0 +1,349 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	quasar/fcnref/descrfcn.htm	QuaSAR_Descriptor FcnRef
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords @filename>
+<meta functions QuaSAR_DescriptorMDB>
+<meta functions DescriptorList>
+<meta functions DescriptorCalcOpen, DescriptorCalcClose, DescriptorCalcKey>
+<meta functions DescriptorCalcCheckDesc>
+<meta functions DescriptorCalcMOL, DescriptorCalc>
+<meta functions DescriptorExprSyntax, DescriptorExprCodes>
+<meta functions DescriptorExprEval>
+
+<title>QuaSAR-Descriptor</title>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    <a class="fcnlink" href="#QuaSAR_DescriptorMDB">QuaSAR_DescriptorMDB</a> [mdb_file, molecule_field , codes, sel_flag]
+
+    [codes, descriptions, classes, parms, calc_fcns, acalc] = <a class="fcnlink" href="#DescriptorList">DescriptorList</a> []
+
+    key   = <a class="fcnlink" href="#DescriptorCalcOpen">DescriptorCalcOpen</a>  []
+    key   = <a class="fcnlink" href="#DescriptorCalcOpen">DescriptorCalcOpen</a>  key
+            <a class="fcnlink" href="#DescriptorCalcClose">DescriptorCalcClose</a> keys
+    keys  = <a class="fcnlink" href="#DescriptorCalcKey">DescriptorCalcKey</a>   keys
+
+    vals  = <a class="fcnlink" href="#DescriptorCalc">DescriptorCalc</a>      [key, atomkeys, codes]
+    vals  = <a class="fcnlink" href="#DescriptorCalcMOL">DescriptorCalcMOL</a>   [key, mol, codes]
+
+    msgs  = <a class="fcnlink" href="#DescriptorCalcCheckDesc">DescriptorCalcCheckDesc</a> [key, codes]
+
+    msg   = <a class="fcnlink" href="#DescriptorExprSyntax">DescriptorExprSyntax</a> expr_token
+    codes = <a class="fcnlink" href="#DescriptorExprCodes">DescriptorExprCodes</a>  expr_token
+    value = <a class="fcnlink" href="#DescriptorExprEval">DescriptorExprEval</a>   [key, expr_token, codes, L, U]
+</pre>
+
+<h2>Description</h2>
+
+<p><a name="QuaSAR_DescriptorMDB"></a></p>
+<pre>
+<span class="fcndef">QuaSAR_DescriptorMDB</span> ['mdb_file', 'molecule_field', codes, opt]
+</pre>
+
+<p>Calculates specified descriptors for all entries in a database given
+a molecule field.  The function takes the following parameters:
+
+<blockquote>
+<dl>
+<dt><tt>'mdb_file'</tt>
+<dd>Molecular database filename token.
+<p>
+<dt><tt>'molecule_field'</tt>
+<dd>Molecule field name token.  The field type must be either
+<tt>'molecule'</tt> or <tt>'char'</tt> (containing a valid SMILES).
+<p>
+<dt><tt>codes</tt>
+<dd>Vector of descriptor code tokens as returned by
+<a class="fcnlink" href="#DescriptorList"><tt>DescriptorList</tt></a>.
+A field will be created in the database for each given descriptor code.
+A special class of code tokens is supported: if the code token has
+<tt>&lt;SMARTS&gt;</tt> as a prefix then the remainder of the code
+is interpreted as a SMARTS match pattern.  The descriptor value of these
+special codes is the number of matchings in a molecule.
+<p>
+<dt><tt>opt</tt>
+<dd>
+A tagged vector of options:
+<tt>esel</tt> is a boolean indicating that only selected entries in the
+Database Viewer will be affected (default 0);
+<tt>verbose</tt> is a boolean that enables printing to the command line
+(default 0).
+</dl>
+</blockquote>
+
+<p> For example, the following command calculates the number of carbon, 
+oxygen and nitrogen atoms of compounds in field <tt>mol</tt> of 
+database <tt>mymdb.mdb</tt>:
+
+<blockquote><pre>
+QuaSAR_DescriptorMDB [ 'mymdb.mdb', 'mol', ['a_nC','a_nO','a_nN']]
+</pre></blockquote>
+
+<p>The following command calculates the number nitro/nitrate groups in each
+molecule in the field <tt>mol</tt> of database <tt>mymdb.mdb</tt>:
+
+<blockquote><pre>
+QuaSAR_DescriptorMDB [ 'mymdb.mdb', 'mol', '&lt;SMARTS&gt;[NX3](=[OX1])[OX1]' ]
+</pre></blockquote>
+
+<p><a name="DescriptorList"></a></p><p><hr noshade="noshade" />
+
+<pre>
+[codes, descriptions, classes, parms, calc_fcns, acalc] = <span class="fcndef">DescriptorList</span> []
+</pre>
+
+<p>Returns information on all currently loaded descriptors.  For each
+descriptor <tt>i</tt>, <tt>codes(i)</tt> is the name of the descriptor
+(a token); <tt>descriptions(i)</tt> is a token containing a short
+description of the descriptor; <tt>parms(i)</tt> is reserved for future use;
+<tt>calc_fcns(i)</tt> is the token name of a function that calculates
+the descriptor; <tt>acalc(i)</tt> is a flag which is true if the
+calculation function requires atom keys instead of a molecule vector.
+</p>
+
+<p><a name="DescriptorCalcOpen"></a></p>
+<p><a name="DescriptorCalcClose"></a></p>
+<p><a name="DescriptorCalcKey"></a></p>
+<p><a name="DescriptorCalc"></a></p>
+<p><a name="DescriptorCalcMOL"></a></p>
+<p><a name="DescriptorCalcCheckDesc"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+key  = <span class="fcndef">DescriptorCalcOpen</span>  []
+key  = <span class="fcndef">DescriptorCalcOpen</span>  key
+       <span class="fcndef">DescriptorCalcClose</span> keys
+keys = <span class="fcndef">DescriptorCalcKey</span>   keys
+
+vals = <span class="fcndef">DescriptorCalc</span>      [key, atomkeys, codes]
+vals = <span class="fcndef">DescriptorCalcMOL</span>   [key, mol, codes]
+
+msgs = <span class="fcndef">DescriptorCalcCheckDesc</span> [key, codes]
+</pre>
+
+<p>
+These functions are used to calculate descriptor values.
+<tt>DescriptorCalcOpen[]</tt> creates a structure used for descriptor
+calculation with <tt>DescriptorCalc</tt> or <tt>DescriptorCalcMOL</tt>.  A
+key is returned containing context information required for descriptor
+calculation.  <tt>DescriptorCalcClose</tt> releases the resources associated
+with a created context.  <tt>DescriptorCalcKey</tt> returns zero if the
+given key is not a valid context and otherwise returns the input key.
+
+<p>
+Once a context is open, it can be used to calculate descriptor values.
+Use <tt>DescriptorCalc</tt> to calculate descriptor values from atom keys
+and descriptor code tokens.
+Use <tt>DescriptorMOL</tt> to calculate descriptor values from a database
+mol vector and descriptor code tokens.
+In either case, the return value <tt>vals</tt> has a descriptor value
+for each descriptor in <tt>codes</tt>.
+
+<p>
+For example, the following code can be used to calculate descriptors
+for molecules given the atom keys in <tt>atoms</tt>
+
+<blockquote><pre>local dctx = DescriptorCalcOpen [];
+local desc = ['a_count', 'Weight'];
+local vals = DescriptorCalc [dctx, atoms, desc];
+DescriptorCalcClose dctx;
+</pre></blockquote>
+
+<p>
+The return vector has <tt>vals(1)</tt> equal to the value of the
+<tt>a_count</tt> descriptor and <tt>vals(2)</tt> the value of the
+<tt>Weight</tt> descriptor.
+
+<p>
+The <tt>DescriptorCalcCheckDesc</tt> function is used to determine whether
+or not a descriptor code token is supported.  For each <tt>codes(i)</tt>
+the returned <tt>msgs(i)</tt> will be the empty token <tt>''</tt> if
+the code is supported; otherwise, <tt>msgs(i)</tt> will contain a diagnostic
+message token indicating that the descriptor is unknown.
+
+<p><a name="DescriptorExprSyntax"></a></p>
+<p><a name="DescriptorExprCodes"></a></p>
+<p><a name="DescriptorExprEval"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+msg   = <span class="fcndef">DescriptorExprSyntax</span>  expr_token
+codes = <span class="fcndef">DescriptorExprCodes</span>   expr_token
+value = <span class="fcndef">DescriptorExprEval</span>    [key, expr_token, codes, L, U]
+</pre>
+
+<p>
+These functions are used to evaluate value expressions involving descriptor
+values given the expression in the form of a token.  The expression has
+the following grammar:
+
+<blockquote><table cellpadding="1">
+<tr>
+<td><i>expr</i></td><td>:</td><td><b>{</b> <i>term</i> <b>}*</b></td>
+</tr><tr>
+<td><i>term</i></td><td>:</td>
+    <td><i>desc</i> <i>lt</i> <tt>number</tt> <b>|</b>
+    <i>desc</i> <i>gt</i> <tt>number</tt></td>
+</tr><tr>
+<td>&nbsp;</td><td>:</td><td><tt>number</tt> <i>lt</i> <i>desc</i>
+    <b>{</b> <i>lt</i> <tt>number</tt> <b>}</b></td>
+</tr><tr>
+<td>&nbsp;</td><td>:</td><td><tt>number</tt> <i>gt</i> <i>desc</i>
+    <b>{</b> <i>gt</i> <tt>number</tt> <b>}</b></td>
+</tr><tr>
+<td>&nbsp;</td><td>:</td><td><tt>not</tt> <i>desc</i> <i>range</i>
+    <b>|</b> <tt>!</tt> <i>desc</i> <i>range</i></td>
+</tr><tr>
+<td>&nbsp;</td><td>:</td><td><i>desc</i> <tt>=</tt> <tt>number</tt>
+    <b>|</b> <tt>number</tt> <tt>=</tt> <i>desc</i>
+    <b>|</b> <i>desc</i> <tt>==</tt> <tt>number</tt>
+    <b>|</b> <tt>number</tt> <tt>==</tt> <i>desc</i></td>
+</tr><tr>
+<td>&nbsp;</td><td>:</td><td><i>desc</i> <tt>&lt;&gt;</tt> <tt>number</tt>
+    <b>|</b> <tt>number</tt> <tt>&lt;&gt;</tt> <i>desc</i></td>
+</tr><tr>
+<td>&nbsp;</td><td>:</td><td><tt>@filename</tt>
+    <b>|</b> <tt>@"filename"</tt></td>
+</tr><tr>
+<td><i>desc</i></td><td>:</td><td><tt>descriptor</i>
+    <b>|</b> <tt>"SMARTS"</tt></td>
+</tr><tr>
+<td><i>lt</i></td><td>:</td><td>
+    <tt>&lt;</tt> <b>|</b> <tt>&lt;=</tt></td>
+</tr><tr>
+<td><i>gt</i></td><td>:</td><td>
+    <tt>&gt;</tt> <b>|</b> <tt>&gt;=</tt></td>
+</tr><tr>
+<td><i>range</i></td><td>:</td><td><tt>[</tt> <i>val</i> <tt>,</tt> <i>val</i>
+<tt>]</tt></td>
+</tr><tr>
+<td><i>val</i></td><td>:</td><td><tt>number</tt> <b>|</b> <tt>*</tt></td>
+</tr>
+</table></blockquote>
+
+<p>
+An expression is thus a concatenation of terms each of which specifies
+a condition on a molecular descriptor.  The condition can be a range of
+values, a boolean value, numeric comparisons, etc. evaluated on
+descriptors or SMARTS patterns.  If a filename is specified,
+preceded by the <tt>@</tt> symbol, the contents of the file
+is used as part of the expression.  Here are some examples:
+
+<blockquote><table class="titlebar" border="1" cellpadding="3">
+<tr>
+<th>Expression</th>
+<th>Meaning</th>
+</tr><tr>
+<td><tt>Weight[100,500]  SlogP<5</tt></td>
+<td>Molecular weight &ge; 100 and &le; 500 and SlogP &lt; 5</td>
+</tr><tr>
+<td><tt>!reactive 'b_1rotN'<4</tt>
+<td>Not reactive and less than 4 rotatable single bonds<br>
+(<tt>b_1rotN</tt> contains a number and must be quoted, see below)</td>
+</tr><tr>
+<td><tt>"[NX3](=[OX1])[OX1]"<=2  not "[#M]"</td>
+<td>Two or fewer nitro/nitrate groups and not metal atom</td>
+</tr>
+</table>
+</tr>
+</blockquote>
+
+<p>
+<tt>DescriptorExprSyntax</tt> returns the empty token <tt>''</tt> if
+the given <tt>expr_token</tt> has correct syntax and all referenced
+descriptors are valid; otherwise it returns a diagnostic message token
+indicating an invalid expression.
+<p>
+<tt>DescriptorExprCodes</tt> returns a vector of the descriptor tokens
+referenced by the expression <tt>expr_token</tt>.  If the expression
+is invalid an error will be generated.
+<p>
+<tt>DescriptorExprEval</tt> evaluates the expression <tt>expr_token</tt>
+using values of the descriptors in <tt>codes</tt> with bounds <tt>L</tt>
+and <tt>U</tt>.  A <tt>key</tt> returned by <tt>DescriptorCalcOpen</tt>
+is required.  An error is generated if the <tt>expr_token</tt> is an
+invalid expression or if <tt>codes</tt> does not contain a descriptor
+referenced by the expression.  The value of each <tt>codes(i)</tt> is
+taken to lie in the interval [<tt>L(i)</tt>,<tt>U(i)</tt>].  If <tt>U</tt>
+is not specifed then [<tt>L(i)</tt>,<tt>L(i)</tt>] is used (an exact value).
+The return value is 1 if the bounds satisfy the expression and 0 otherwise.
+
+<p>
+For example, the following code can be used to test if molecules specified
+by <tt>atoms</tt> satisfy the conditions that the molecular weight is less than
+500 and that they do not contain CF<sub>3</sub> groups.
+
+<blockquote><pre>local ctx = DescriptorCalcOpen [];
+local expr = 'Weight<500 !"C(F)(F)(F)"';
+local codes = DescriptorExprCodes expr;
+local values = DescriptorCalc [ctx, atoms, codes];
+local pass = DescriptorExprEval [ctx, expr, codes, values];
+DescriptorCalcClose ctx;
+</pre></blockquote>
+
+<p>
+In this example, the <tt>U</tt> values were not specified (indicating
+exact values).  If the value of the descriptors is known to lie
+in an interval then the <tt>U</tt> values would specify the upper bounds
+and the <tt>L</tt> values would specify the lower bounds.
+
+<p>
+<b>Note:</b> Several QuaSAR descriptors contain numbers and/or mathematical
+symbols in their name.  In such cases, the descriptor must be single-quoted
+in the expression language.  The following code can be used to test if
+molecules specified by <tt>atoms</tt> satisfy the condition that there are
+less than 4 rotatable single bonds:
+
+<blockquote><pre>local ctx = DescriptorCalcOpen [];
+local expr = '\'b_1rotN\'<4';
+local codes = DescriptorExprCodes expr;
+local values = DescriptorCalc [ctx, atoms, codes];
+local pass = DescriptorExprEval [ctx, expr, codes, values];
+DescriptorCalcClose ctx;
+</pre></blockquote>
+
+<h2>See Also</h2>
+
+<a href="../descr.htm">Calculate Descriptors Panel</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

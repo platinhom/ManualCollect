@@ -1,0 +1,2956 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	/apps/surfmap.htm		Surfaces and Maps
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Surfaces and Maps</title>
+<meta panel Surfaces and Maps>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Method">Methodology</a>
+    <ul>
+    <li><a href="#MolecularSurfaces">Molecular Surfaces</a>
+	<ul>
+	<li><a href="#MolSurface">Molecular Surface</a>
+	</li><li><a href="#InteractionSurface">Interaction VDW</a>
+	</ul>
+    <li><a href="#ElectrostaticFeatures">Electrostatic Feature Maps</a>
+    <li><a href="#ContactPreferences">Non-Bonded Contact Preferences</a>
+    <li><a href="#InteractionPotentials">Interaction Potentials</a>
+    <li><a href="#ElectronDensity">Electron Density Surface</a>
+    </ul>
+<li><a href="#Run">Running the Application</a>
+<li><a class="example" href="#Example">Examples</a>
+    <ul>
+    <li><a class="example" href="#ExampleData">
+Data Preparation for Examples</a>
+    <li><a class="example" href="#ExampleMSurf">
+Displaying a Molecular Surface of an Active Site</a>
+    <li><a class="example" href="#ExampleCSurf">
+Predicting Hydrophobic and Hydrophilic Contacts in an Active Site</a>
+    <li><a class="example" href="#ExampleESurf">
+Predicting Electrostatically Favorable Regions in an Active Site</a>
+    <li><a class="example" href="#ExampleIntPot">
+Displaying Interaction Potentials in an Active Site</a>
+    <li><a class="example" href="#ExampleGrids">
+Working with External Grids</a>
+    <li><a class="example" href="#ExampleEDensity">
+Displaying Electron Density</a>
+    </ul>
+<li><a href="#Ref">References</a>
+</ul>
+
+<p>The Surfaces and Maps application is used to generate visual
+representations of molecular surfaces, and can be used to predict the
+preferred locations of ligand atoms (in the absence of the ligand itself).
+The Surfaces and Maps application is capable of generating the following
+graphics:
+
+<blockquote>
+<ul>
+<li>
+
+<div class="floatright">
+<img src="surfmap/biotin_molsurf.png"
+alt="Molecular Surface Colored by Atom Color" />
+<p class="caption">
+Molecular surface colored by atom color
+</p>
+</div>
+
+<i>Molecular (Connolly) surfaces</i> that surround the van der
+Waals surface of a molecule (filling in solvent inaccessible gaps), colored
+by various properties.
+<p>
+
+<li><i>Van der Waals accessible surfaces (Interaction surfaces)</i> that
+contour the regions of space accessible to the center of ligand atoms,
+colored by various properties.
+
+<p>
+<li><i>Electrostatic Feature Maps</i> that predict the electrostatically
+preferred locations of hydrophobic, H-bond acceptor and H-bond donor sites
+from the solutions of the Poisson-Boltzmann Equation (this calculation requires
+hydrogens and partial charges).
+
+<p>
+<li><i>Probabilistic receptor preference maps</i> that predict non-bonded
+contact preferences -- the preferred
+locations of hydrophobic and hydrophilic ligand atoms (hydrogen-stripped
+and without partial charges).
+<p>
+<li><i>Interaction Potentials</i> that predict the preferred location
+of user-specified probe atoms of varying parameters, based on a force
+field incorporating van der Waals, charge and hydrogen bonding terms
+(this calculation requires hydrogens).
+<p>
+<li><i>External Grid Files</i>, rectilinear grids containing calculated
+properties that are used to color or generate iso-contour surfaces.  Such
+files can be generated internally or externally to MOE.
+<p>
+<li><i>Electron density surfaces</i> that represent the electron density
+distribution (obtained from X-ray diffraction experiments)
+in a unit cell.
+</ul>
+</blockquote>
+
+<p>
+Although entire macromolecules can be subjected to analysis, it is more
+typical that analyses will be restricted to an active site.  Such
+sites are determined by collections of atoms; for example, near a bound
+ligand or the known site residues of a protein. Alternatively, the
+<a href="sitefind.htm">Site Finder</a> can be used to locate candidate
+active sites in proteins and create dummy atoms for the purpose of
+specifying active sites.
+
+<p>
+The Surfaces and Maps panel also includes a Surfaces Manager
+area which can be used to hide, show, rename, or delete surfaces.
+</p>
+
+<!-- ========================== MOLECULAR SURFACES -====================== -->
+
+<p>
+<a name="Method"></a>
+<h2>Methodology</h2>
+
+<p>
+<a name="MolecularSurfaces"></a>
+<h3>Molecular Surfaces</h3>
+
+<p>
+The Surfaces and Maps application is capable of calculating a number of
+molecular surfaces &ndash; surfaces near to the van der Waals or solvent
+accessible surfaces of a molecule.
+</p>
+
+<p>
+<a name="MolSurface"></a>
+The <i>Molecular Surface</i> is an approximation to the
+<i>solvent-excluded</i> surface, widely known as the Connolly Surface.
+The solvent-excluded surface encloses the volume from which a
+probe sphere (usually with water radius 1.4 &Aring;)
+is excluded when it rolls over a molecule.
+If the atoms of the molecule are represented as spheres
+having van der Waals radii, then the solvent-excluded volume
+comprises these sphere volumes plus the regions in-between
+that are too small for the probe to fit into [Connolly&nbsp;1996].
+The surfaces of
+those regions between neighboring atoms are smooth concavities, and are
+sometimes referred to as <i>re-entrant</i> [Lee&nbsp;1971][Richards&nbsp;1977].
+The solvent-excluded surface is
+related to the accessible surface, which is the surface traced out by the
+center of a probe sphere rolling
+over the atoms of the molecule.  In contrast to the
+re-entrant surface, the accessible surface has sharp valleys where
+the probe surface touches the van der Waals spheres of two or more atoms.
+</p>
+
+<!--
+The re-entrant surface, originally proposed in [Lee&nbsp;1971] and
+developed further in [Richards&nbsp;1977], consists of the boundary
+of the volume of space defined by removing all points inside the van der Waals
+surface of spherical probe (that represents the solvent) located at all
+positions for which the probe does not contact the van der Waals volume of
+a molecule.  
+!-->
+
+<p>
+An analytical method to calculate the solvent-excluded surface
+was first described in [Connolly&nbsp;1983], and other methods
+have appeared over the years
+(e.g. [Sanner&nbsp;1996], [Liang&nbsp;1998] and [Rocchia&nbsp;2002]).
+MOE uses the method of level sets as proposed by
+[Sethian&nbsp;1998].  This grid-based method 
+is considerably faster than analytical approaches, and
+is based on a <i>wavefront propagation</i> or <i>grassfire</i> analogy.
+The method uses a fast solver for a particular case of a
+differential equation that describes the propagation of
+a wavefront (or fire front), taking into account direction and speed.
+The solvent-excluded surface is calculated using the
+accessible surface as a starting point.
+</p>
+
+<p>
+<a name="InteractionSurface"></a>
+The <i>Interaction Surface</i> is calculated on a lattice and is a
+0-potential contour of the van der Waals potential of a probe atom with
+a molecule.  The interior of the 0-potential surface contains those
+locations at which the probe van der Waals energy is positive; the
+exterior has negative interaction energy.  More precisely,
+define a potential <i>v</i>(<i>x</i>) as follows:
+<p>
+
+<!--
+<center>
+<i>v</i>(<i>x</i>) = Sum<sub><i>i</i></sub> [
+    <i>A<sub>i</sub></i> | <i>x</i> - <i>x<sub>i</sub></i> |<sup>-12</sup>
+    - <i>B<sub>i</sub></i> | <i>x</i> - <i>x<sub>i</sub></i> |<sup>-6</sup>
+]
+</center>
+-->
+
+<!-- LATEX surfmap/math_potentialfunction \[
+v(x) = \sum_{i} [A_{i}\mid x-x_{i} \mid^{-12} - B_{i}\mid x-x_{i} \mid^{-6}]
+\] ENDLATEX -->
+
+<p align="center">
+<img src="surfmap/math_potentialfunction.png" />
+
+<p>
+where <i>A<sub>i</sub></i> and <i>B<sub>i</sub></i> are the
+OPLSA-AA van der Waals parameters [Jorgensen&nbsp;1996] with a water oxygen
+used as a probe.  The interaction surface is close to the solvent
+accessible surface of a molecule - the points of close contact of
+water nucleus.
+
+<!-- ========================== ELECTROSTATIC MAPS ====================== -->
+
+<p>
+<a name="ElectrostaticFeatures"></a>
+<h3>Electrostatic Feature Maps</h3>
+
+<p>
+The Electrostatic Feature Map is an
+application of the Poisson-Boltzmann Equation (PBE) to the prediction of
+electrostatically preferred locations of hydrophobic, H-bond acceptor and
+H-bond donor locations.  The PBE is derived from the Poisson Equation and
+the Boltzmann distribution as follows.
+<p>
+The Poisson Equation can, at equilibrium, relate an electrostatic potential
+<i>u</i>, a charge density <i>f</i> and a mobile ion charge density
+<i>f<sub>I</sub></i> :
+
+<!-- NEWLATEX surfmap/math_poisson_equation \[
+\nabla^{2}u(r) + \left[ f_{I}(r) + f(r) \right] \frac{e^{2}}{e_{0}} = 0
+\] ENDNEWLATEX -->
+
+<p align="center">
+
+<!--
+  <b>L</b><i>u</i>(<i>r</i>)
++
+  [
+	<i>f<sub>I</sub></i>(<i>r</i>) + <i>f</i>(<i>r</i>)
+  ]
+  e<sup>2</sup> e<sub>0</sub><sup>-1</sup>
+= 0
+</p>
+-->
+
+<img src="surfmap/math_poisson_equation.png" />
+
+<p>
+subject to the boundary condition that <i>u</i>(<i>r</i>) tends to 0 for
+large |<i>r</i>|. In the equation, e is the charge of an electron,
+e<sub>0</sub> is the absolute permittivity, and the Laplacian operator
+is defined to be
+
+<!-- NEWLATEX surfmap/math_laplacian_operator \[
+\nabla^{2} = \frac{\partial^{2}}{\partial x^{2}} +
+\frac{\partial^{2}}{\partial y^{2}} +
+\frac{\partial^{2}}{\partial z^{2}}
+\] ENDNEWLATEX -->
+
+<!--
+<nobr><i>d</i><sup>2</sup>/<i>dx</i><sup>2</sup>
++ <i>d</i><sup>2</sup>/<i>dy</i><sup>2</sup>
++ <i>d</i><sup>2</sup>/<i>dz</i><sup>2</sup>
+</nobr>.
+-->
+
+<p align="center">
+<img src="surfmap/math_laplacian_operator.png" />
+
+<p>
+For multiple types of mobile ions, the foregoing equation is easily extended
+by replacing the lone <i>f<sub>I</sub></i> with a sum of similar densities
+(one for each type).  For the purposes of exposition, only one mobile ion type
+will be considered.
+
+Suppose that each mobile ion carries a charge of <i>q</i>; further suppose
+that the ions are subject to a spatial potential <i>v<sub>I</sub></i> that
+tends to 0 for large |<i>r</i>|.
+Fix a temperature <i>T</i> and assume a Boltzmann density of states for the
+mobile ions (ignoring mobile ion interactions); we can then write
+
+<!-- LATEX surfmap/math_poisson_fI \[
+f_{I}(r) = q \Pr(r) = \frac{q}{Q} \exp \left[-\frac{q u(r) + v_{I}(r)}{kT}}\right]
+\] ENDLATEX -->
+
+<p align="center">
+
+<!--
+<i>f<sub>I</sub></i>(<i>r</i>) =
+    <i>q</i> Pr(<i>r</i>) =
+    <i>q</i>
+    <i>Q</i><sup>-1</sup>
+    exp { - [
+	<i>q u</i>(<i>r</i>) + <i>v<sub>I</sub></i>(<i>r</i>)
+    ] / <i>kT</i>
+    }
+</p>
+-->
+
+<img src="surfmap/math_poisson_fI.png" />
+
+<p>
+where <i>Q</i> is the sum of states of the Boltzmann distribution
+(the normalizing constant).  For large |<i>r</i>| both <i>u</i> and
+<i>v<sub>I</sub></i> vanish and so we take 1/<i>Q</i> to be the bulk number
+concentration, <i>C</i>, of the mobile charge.
+
+Combining the Poisson Equation and Boltzmann density results in a
+Poisson-Boltzmann Equation:
+
+<!-- NEWLATEX surfmap/math_poissonboltzmann \[
+\nabla^{2}u(r) + \left(q \, C \exp \left[-\frac{q u(r) + v_{I}(r)}{kT}\right] + f(r) \right)
+	\frac{e^{2}}{e_{0}} = 0
+\] ENDNEWLATEX -->
+
+<p align="center">
+
+<!--
+  <b>L</b><i>u</i>(<i>r</i>)
++
+  [
+      <i>q C</i> exp {
+	- [ <i>q u</i>(<i>r</i>)
+	+ <i>v<sub>I</sub></i>(<i>r</i>) ] / <i>kT</i>
+      }
+    + <i>f</i>(<i>r</i>)
+  ]
+  e<sup>2</sup> e<sub>0</sub><sup>-1</sup>
+= 0.
+</p>
+-->
+
+<img src="surfmap/math_poissonboltzmann.png" />
+
+<p>
+Solving the PBE for <i>u</i> and related quantities has been well studied
+since the early work of [Gilson&nbsp;1987] and [Sharp&nbsp;1990] and,
+more recently, [Grant&nbsp;2001] (among others).  In MOE, the PBE is solved
+by a finite difference multi-grid technique.
+
+<p>
+Suppose we are given a collection of atoms (the receptor)
+with the <i>i</i>-th atom having
+3D coordinates <i>x<sub>i</sub></i>,
+partial charge <i>q<sub>i</sub></i>,
+van der Waals radius <i>R<sub>i</sub></i>,
+and homogeneous van der Waals well depth <i>E<sub>i</sub></i>.
+
+The receptor charge density <i>f</i> is modeled as a sum of atom-centered
+Gaussian densities each of which has the form
+
+<!-- LATEX surfmap/math_receptorchargedensity \[
+f_{i}(r) = q_{i}c_{i}\exp\left[-\frac{\mid r-x_{i} \mid^{2}}{2(a R_{i})^{2}}\right]
+\] ENDLATEX -->
+
+<p align="center">
+
+<!--
+<i>f<sub>i</sub></i>(<i>r</i>) = 
+    <i>q<sub>i</sub></i> <i>c<sub>i</sub></i> exp {
+	- | <i>r</i> - <i>x<sub>i</sub></i> |<sup>2</sup>
+	/ 2 (<i>a</i> <i>R<sub>i</sub></i>)<sup>2</sup>
+    }
+</p>
+-->
+
+<img src="surfmap/math_receptorchargedensity.png" />
+
+<p>
+where <i>a</i> is a scale parameter (<i>a</i>&nbsp;=&nbsp;0 results in a point
+charge) and <i>c<sub>i</sub></i> is the normalization constant
+that causes <i>f<sub>i</sub></i> to integrate to <i>q<sub>i</sub></i>.
+For positive <i>a</i>, this definition of the charge density results in
+finite self energies and remains true to Coulomb's in the immediate vicinity
+of the charge.  The Surfaces and Maps application uses OPLS van der Waals
+radii for the receptor atoms and an <i>a</i> parameter of 0.4.
+
+<p>
+The ion density term arising from the Boltzmann term requires specification
+of the <i>v<sub>I</sub></i> potential.  The Surfaces and Maps application
+uses OPLS [Jorgensen&nbsp;1996] van der Waals parameters for the receptor and
+the mobile ions in a Lennard-Jones 12-6 potential.
+Negative ions have OPLS water oxygen parameters and
+the positive ions have OPLS parameters for polar hydrogens.
+
+<p>
+With the relevant quantities defined, the Poisson-Boltzmann Equation is 
+solved for the electrostatic potential, <i>u</i>.  This potential is then
+used to generate predictive maps:
+
+<ol>
+<li>The Acceptor map is an iso-contour of the potential
+<i>q<sub>O</sub></i> <i>u</i> + <i>v<sub>O</sub></i> where
+<i>q<sub>O</sub></i> is the partial charge of the oxygen ion and
+<i>v<sub>O</sub></i> is the van der Waals potential of the oxygen atom.
+<p>
+<li>The Donor map is an iso-contour of the potential
+<i>q<sub>H</sub></i> <i>u</i> + <i>v<sub>H</sub></i> where
+<i>q<sub>H</sub></i> is the partial charge of the hydrogen ion and
+<i>v<sub>H</sub></i> is the van der Waals potential of the hydrogen atom.
+<p>
+<li>The Hydrophobic map is an iso-contour of the potential
+- (<i>q<sub>O</sub></i> + <i>q<sub>H</sub></i>)
+<i>u</i> + <i>v<sub>C</sub></i> where
+<i>v<sub>C</sub></i> is the van der Waals potential of a carbon atom.
+These are the locations of receptor contact and low preference of the ions.
+</ol>
+
+<p>
+The advantage of the present method is that fully screened electrostatic
+potentials are used: domination of the potential by ionic groups
+is avoided.  The nonlinear PBE methodology more accurately models the
+interactions with hypothetical ligands and a receptor than linear solvent
+screening methodologies.
+
+<!-- ========================== CONTACT PREFERENCES ====================== -->
+
+<p>
+<a name="ContactPreferences"></a>
+<h3>Non-Bonded Contact Preferences</h3>
+
+<p>
+The Surfaces and Maps application can calculate non-bonded contact
+preference probability maps ("contact statistics")
+similar in spirit to the X-Site
+[Laskowski&nbsp;1998], the SuperStar program [Nissink&nbsp;2000] and
+the methodology of [Rantanen&nbsp;2001] all of which are knowledge-based
+techniques (fitted distributions from crystallographic data).
+The purpose of these maps is to calculate, from the 3D atomic coordinates of
+a receptor, preferred locations for hydrophobic and hydrophilic ligand atoms.
+In particular, directional preferences of receptor atoms are taken into
+account and, moreover, hydrogen atoms and partial charges are not required
+for the calculation.  Fundamentally, Contact Preference maps are contours of
+probability densities indicating a percentage likelihood of a non-bonded
+contact with a particular ligand atom type.
+<p>
+Suppose that we are given a three dimensional molecular structure made up of
+individual atoms each with a <i>receptor atom type</i> (to be defined
+later).  We are interested in predicting the preferred positions of atoms
+in hypothetical bound partners in contact with the given structure.  We
+assume that bound partners are made up of atoms each of a <i>ligand atom
+type</i> (to be defined later).  Let <i>S</i> denote a random variable over
+molecular structures (assumed to be in a common frame of reference), <i>X</i>
+denote a random point over three dimensional space, <i>T</i> a random variable
+over the receptor atom types, and <i>L</i> a random variable over the ligand
+atom types.  In this work we will consider methods to determine and apply
+the joint probability density
+
+<p><table width=100%>
+<tr>
+<td align="center" width=95%>
+Pr (<i>L = l</i>, <i>X = x</i>, <i>S = s</i>)
+<td>
+(1)
+</table>
+
+<p>
+to the predictive problem of prediction of preferred ligand type locations.
+One can think of Eqn.(1) as the likelihood of observing a ligand atom of
+type <i>l</i> at location <i>x</i> in contact with a structure <i>s</i>.
+Note that this probability density includes the receptor atom types implicitly
+(through <i>S</i>).  In particular, the conditional density
+
+<p><table width=100%>
+<tr>
+<td align="center" width=95%>
+Pr (<i>L = l</i> | <i>X = x</i>, <i>S = s</i>)
+<td>
+(2)
+</table>
+
+<p>
+is the probability of observing a ligand atom of type <i>l</i> assuming that
+a ligand atom is located at position <i>x</i> in contact with structure
+<i>s</i>.  If <i>s</i> is a protein structure then Eqn.(2) provides the
+means to compare the structure's preference for different ligand types
+at particular point in space; for example, with two ligand atom types
+&quot;hydrophobic&quot; and &quot;hydrophilic&quot;, Eqn.(2) can be used
+to map the high probability hydrophobic and hydrophilic contact regions
+in a protein's active site.
+
+<p>
+Our intention is to approximate Eqn.(1) and Eqn.(2) using one-dimensional
+analytical functions whose parameters are estimated from a collection of
+X-ray crystallographic structures (the PDB).  We will choose atom types and
+functional forms intended to be useful for predicting hydrophobic and
+hydrophilic atom types.
+
+<p>
+<b>Contact Distributions</b>.
+The first approximation is to assume that each structure <i>s</i> is composed
+of atoms each of a receptor atom type and that, further, the statistics
+gathered on each of the receptor atom types can be composed to approximate
+the distribution over the entire structure.  More precisely, we assume that
+
+<p><table width=100%>
+<tr>
+<td align="center" width=95%>
+Pr (<i>X = x</i>, <i>L = l</i> | <i>S = s</i>) =
+<i>c</i> max<sub><i>i</i></sub>
+Pr (<i>X = x</i> | <i>L = l</i>, <i>T<sub>i</sub> = t<sub>i</sub></i>,
+<i>y<sub>i</sub></i>, Out(<i>x,l,s</i>))
+Pr (<i>L = l</i> | <i>T<sub>i</sub> = t<sub>i</sub></i>)
+<td>
+(3)
+</table>
+
+<p>
+where <i>c</i> is a normalization constant, <i>i</i> ranges over the atoms
+of <i>s</i>, <i>y<sub>i</sub></i> are the coordinates of atom <i>i</i> in the
+structure, and Out(<i>x,l,s</i>) denotes the condition that the atom type
+<i>l</i> at location <i>x</i> is exterior to the structure <i>s</i>.  The
+Pr(<i>L = l</i> | <i>T = t<sub>i</sub></i>) term is estimated straightforwardly
+using relative frequencies of contacts in a training set.  Eqn.(3) is the
+fundamental approximation that reduces the estimation of densities about
+entire structures to the estimation of densities about particular primary
+atom types <i>t</i>.  In other words, we compose probability densities over
+structures <i>s</i> from probability densities of the form
+
+<p><table width=100%>
+<tr>
+<td align="center" width=95%>
+Pr (<i>X = x</i> | <i>L = l</i>, <i>T = t</i>, <i>y<sub>i</sub></i>)
+<td>
+(4)
+</table>
+
+<p>
+We approximate Eqn.(4) by representing <i>x</i> in a local spherical-type
+coordinate system about the structure atom <i>i</i> located at
+<i>y<sub>i</sub></i> that is invariant to rotations and translations, namely
+
+<p><table width=100%>
+<tr>
+<td align="center" width=95%>
+Pr (<i>X = (r,a,p)</i> | <i>L = l</i>, <i>T = t</i>)
+<td>
+(5)
+</table>
+
+<p>
+For a given primary atom located at <i>x</i><sub>0</sub> and an interacting
+atom located at x different from <i>x</i><sub>0</sub>, we take
+
+<!-- LATEX surfmap/math_rapfunction \[
+r = \mid x-x_{0} \mid, \,
+a = \frac{180}{\pi}\cos^{-1}\left[
+    u \cdot \frac{x-x_{0}}{r}
+\right], \,
+p = \frac{180}{\pi}\sin^{-1}\left|
+    v \cdot \frac{x-x_{0}}{r}
+\right|
+\] ENDLATEX -->
+
+<p><table width=100%>
+<tr>
+<td align="center" width=95%>
+<!-- <img src="surfmap/rap.gif"> -->
+<img src="surfmap/math_rapfunction.png" />
+<td>
+(6)
+</table>
+
+<p>
+
+where <i>u</i> and <i>v</i> are local coordinate directions (described
+below).  If <i>x</i> is equal to <i>x</i><sub>0</sub>, we set <i>r = a =
+p</i> = 0.  The quantities can be thought of as the interaction distance
+<i>r</i> (&Aring;), the lone-pair interaction angle <i>a</i> (degrees)
+and the out-of-plane angle <i>p</i> (degrees).  The vectors <i>u</i> and
+<i>v</i> in Eqn.(6) depend only on the hybridization (HYB) and heavy atom
+coordination (HAV) of the primary atom or its neighbors and are calculated as
+follows (atoms participating in conjugated single bonds are considered sp2):
+
+<ol>
+<li>
+If HYB = {sp, dsp3, d2sp3, d3sp3} or HAV = 0 or HAV >3 then
+<i>u = v</i> = (0,0,0).
+<p>
+<li>
+
+If HYB = sp2 and HAV = 3 then <i>u</i> = (0,0,0); otherwise, <i>u</i> is the
+normalized sum of normalized heavy bond vectors; i.e. <i>u</i> is the unit
+vector in the direction of <i>b</i><sub>1</sub>+...+<i>b<sub>k</sub></i>
+where <i>b<sub>i</sub></i> is the unit vector in the direction of the
+receptor atom's <i>i</i>'th heavy neighbor to the receptor atom.  If HAV =
+1 then <i>u</i> has direction opposite to the receptor atom's lone heavy
+neighbor.  If HAV = 2 then <i>u</i> has the direction opposite to the
+bisector of the receptor atom's two heavy neighbors.
+
+<p>
+<li>
+
+If HYB = sp3 then a) if HAV = 2 then <i>v</i> is the unit vector orthogonal
+to the plane defined by the receptor atom and its two heavy neighbors;
+b) if HAV = 1 then the receptor atom is bonded to a pi system and
+<i>v</i> is the unit vector perpendicular to the lone heavy neighbor's pi
+system plane; otherwise c) <i>v</i> = (0,0,0).
+
+<p>
+<li>
+If HYB = sp2 then <i>v</i> is the unit vector perpendicular to the receptor
+atom's pi system plane.
+</ol>
+
+<p>
+With sufficient training data, the three-dimensional probability density of
+Eqn.(5) can be estimated with a histogram; however, for many type combinations
+there is insufficient available structural data to accurately estimate the
+required histogram.  For this reason, we assume independence of <i>r</i>,
+<i>a</i>, and <i>p</i> and approximate Eqn.(5) with a product of three
+one-dimensional densities:
+
+<p><table width=100%>
+<tr>
+<td align="center" width=95%>
+Pr(<i>X = (r,a,p)</i> | <i>L = l</i>, <i>T = t</i>)
+= Pr(<i>R | l, t</i>) Pr(<i>A | l, t</i>) Pr(<i>P | l, t</i>)
+<td>
+(7)
+</table>
+
+<p>
+where <i>R</i> denotes a random variable over the positive real numbers,
+<i>A</i> denotes a random variable over the interval [0,180] and <i>P</i>
+denotes a random variable over the interval [0,90].  Inspections of contact
+statistics revealed that the data were well described by a small number
+of independent analytical functional forms on <i>r</i>, <i>a</i> and <i>p</i>,
+the interaction distance, angle and out-of-plane angle, respectively.  The
+collection of functional forms includes the gamma, log normal, Cauchy, beta
+and Lennard-Jones densities.  Each probability density has a small number
+of parameters which must be estimated from sampled structure data.
+
+<p>
+The following procedure is used to estimate the parameters used in the
+approximation given in Eqn.(3):
+
+<ol>
+<li>
+For each combination of receptor atom type <i>t</i> and ligand atom type
+<i>l</i>, collect from the training set all atom pairs <i>i</i> and
+<i>j</i> in contact and for which the receptor type of <i>i</i> is <i>t</i>
+and the ligand type of <i>j</i> is <i>l</i>.  The definition of contact will
+be described below.
+<p>
+<li>
+For each such contact pair, use Eqn.(6) to calculate <i>r</i>, <i>a</i> and
+<i>p</i> (taking atom <i>i</i> as the receptor atom).  This calculation
+produces three sets of samples
+{<i>r<sub>k</sub></i>}, {<i>a<sub>k</sub></i>} and {<i>p<sub>k</sub></i>}
+each of size <i>m<sub>tl</sub></i>.
+<p>
+<li>
+Use the three sets of samples
+{<i>r<sub>k</sub></i>}, {<i>a<sub>k</sub></i>} and {<i>p<sub>k</sub></i>}
+to estimate the parameters of an analytical probability density chosen for
+the type combination (<i>t,l</i>).
+<p>
+<li>
+Estimate Pr(<i>L = l | T = t</i>) from Eqn.(3) as
+(<i>m<sub>tl</sub></i> + 1) / (<i>m<sub>t</sub></i> + <i>n<sub>l</sub></i>)
+where <i>n<sub>l</sub></i> is 
+the number of ligand atom types and <i>m<sub>t</sub></i> is
+the sum of the <i>m<sub>tl</sub></i> determined in Step 2 over all ligand
+atom types <i>l</i>.
+</ol>
+
+<p>
+In this way, we have composed the joint density of Eqn.(1) with a collection
+of one-dimensional probability densities of the form given in the right-hand
+side of Eqn.(7) each of which has parameters estimated from X-ray
+crystallographic data.
+
+<p>
+<b>Contact Criteria</b>.
+When are two atoms in non-bonded contact?  This is a surprisingly
+subtle question.  Broadly speaking, two atoms are in contact if they are
+&quot;close together&quot; with no other atoms &quot;in between&quot;
+and are not in bonded contact.  It is the quantification of these notions
+that is nontrivial, especially if no <i>a priori</i> radii are assumed
+for the atoms.  
+After much experimentation and inspection of
+X-ray crystal structures, we settled on the following definition of atomic
+non-bonded contact:
+
+<blockquote><i>
+Atom B is said to be in non-bonded contact with atom A if all of the
+following conditions are satisfied: a) the distance between A and B is less
+than 4.5 &Aring;;  b) the line joining A and B does not intersect any of
+the bonded neighbors of either A or B using a value of 1.0 for the radius of
+each neighbor; c) B is closer to A than to any other atom not related to
+B by a bond, angle or torsion; and d) A and B are not related by a bond,
+angle or torsion.
+</i></blockquote>
+
+<p>
+The choices of 4.5 as distance cutoff and of 1.0 as radius in the line of
+sight test tend to work well together in that it is rare for a clear
+non-bonded contact to be excluded and for cases such as second layer carbonyl
+carbons to be included and the derived distance histograms taper smoothly
+to zero within the cutoff.
+
+<p>
+<b>Atom Types</b>.
+In order to estimate reasonably accurate analytical forms for the
+distribution of atom interactions, it was necessary to subdivide the atom pair
+interactions into classes.  Both the primary atom and the ligand atom were
+classified into types, and for each combination of primary atom type and
+ligand atom type, separate statistics were gathered.  In other words, we
+estimated a collection of probability densities each of the form
+Pr(<i>R</i>=<i>r</i>, <i>A</i>=<i>a</i>, <i>P</i>=<i>p</i> |
+<i>T</i><sub>1</sub>=<i>I</i>, <i>T</i><sub>2</sub>=<i>J</i>),
+the likelihood of observing (<i>r<i>,</i>a</i>,<i>p</i>) assuming that the
+primary atom is of type <i>I</i> and the ligand atom is of type <i>J</i>.
+After initial inspection of contact statistics in high resolution protein
+structures, we settled upon the collection of primary atom types defined in
+the following table (u indicates whether the atom has a <i>u</i> direction
+and v indicates whether the atom has a <i>v</i> direction in the local
+coordinate system):
+
+<p><center><table class="titlebar" cellpadding="5" border="1">
+<tr>
+<th>Type</th>
+<th>u</th>
+<th>v</th>
+<th>Description</th>
+<tr>
+<td><tt>T_CH1</tt>
+<td>yes
+<td>no
+<td align="left"><i>sp</i>3 carbon with 1 hydrogen
+<tr>
+<td><tt>T_CH2</tt>
+<td>yes
+<td>yes
+<td align="left"><i>sp</i>3 carbon with 2 hydrogens
+<tr>
+<td><tt>T_CH3</tt>
+<td>yes
+<td>no
+<td align="left"><i>sp</i>3 carbon with 3 hydrogens
+<tr>
+<td><tt>T_cQ3</tt>
+<td>no
+<td>yes
+<td align="left"><i>sp</i>2 carbon with 3 heavy neighbors
+<tr>
+<td><tt>T_cQ2</tt>
+<td>yes
+<td>yes
+<td align="left"><i>sp</i>2 carbon with 2 heavy neighbors
+<tr>
+<td><tt>T_NQ1</tt>
+<td>yes
+<td>no
+<td align="left"><i>sp</i>3 nitrogen with 1 heavy neighbor
+<tr>
+<td><tt>T_NQ2</tt>
+<td>yes
+<td>yes
+<td align="left"><i>sp</i>3 nitrogen with 2 heavy neighbors
+<tr>
+<td><tt>T_NQ3</tt>
+<td>yes
+<td>no
+<td align="left"><i>sp</i>3 nitrogen with 3 heavy neighbors
+<tr>
+<td><tt>T_nQ1</tt>
+<td>yes
+<td>yes
+<td align="left"><i>sp</i>2 nitrogen with 1 heavy neighbor
+<tr>
+<td><tt>T_nQ2</tt>
+<td>yes
+<td>yes
+<td align="left"><i>sp</i>2 nitrogen with 2 heavy neighbors
+<tr>
+<td><tt>T_nQ3</tt>
+<td>no
+<td>yes
+<td align="left"><i>sp</i>2 nitrogen with 3 heavy neighbors
+<tr>
+<td><tt>T_o1</tt>
+<td>yes
+<td>yes
+<td align="left"><i>sp</i>2 oxygen with 1 heavy neighbor
+<tr>
+<td><tt>T_O1</tt>
+<td>yes
+<td>yes
+<td align="left"><i>sp</i>3 oxygen not bonded to pi system with 1 heavy neighbor
+<tr>
+<td><tt>T_O1i</tt>
+<td>yes
+<td>yes
+<td align="left"><i>sp</i>3 oxygen bonded to pi system with 1 heavy neighbor
+<tr>
+<td><tt>T_O2</tt>
+<td>yes
+<td>yes
+<td align="left">any oxygen with 2 heavy neighbors
+<tr>
+<td><tt>T_OW</tt>
+<td>yes
+<td>yes
+<td align="left">any oxygen with 0 heavy neighbors (water)
+<tr>
+<td><tt>T_SQ1</tt>
+<td>yes
+<td>no
+<td align="left">sulfur with 1 heavy neighbor
+<tr>
+<td><tt>T_SQ2</tt>
+<td>yes
+<td>yes
+<td align="left">sulfur with 2 heavy neighbors
+<tr>
+<td><tt>T_F1</tt>
+<td>yes
+<td>no
+<td align="left">fluorine with 1 heavy neighbor
+<tr>
+<td><tt>T_Cl1</tt>
+<td>yes
+<td>no
+<td align="left">chlorine with 1 heavy neighbor
+<tr>
+<td><tt>T_Br1</tt>
+<td>yes
+<td>no
+<td align="left">bromine with 1 heavy neighbor
+<tr>
+<td><tt>T_I1</tt>
+<td>yes
+<td>no
+<td align="left">iodine with 1 heavy neighbor
+<tr>
+<td><tt>T_TM</tt>
+<td>no
+<td>no
+<td align="left">transition metal
+</table></center>
+
+<p>
+Ligand atoms were divided into one of two classes: LPA and HYD.  The LPA type
+consisted of nitrogen and oxygen atoms capable of participating in hydrogen
+bonds or metal interactions and the HYD type consisted of carbon and sulfur
+(hydrophobic atoms).  The ligand atom types are invariant to protonation state
+and tautomer state.
+
+<p>
+<b>Training Data</b>.
+Non-bonded contact pairs of atoms were extracted from the Protein Data Bank as
+of December 31, 2004.  Approximately 4,000 x-ray structures with resolution
+2.0 Angstroms or better were used.  Non-bonded contact pairs between
+backbone atoms and beta carbons were omitted since it was felt they would
+introduce a strong bias in the statistics.
+The majority of contact pairs involved sidechain to sidechain contacts.
+
+<!-- ====================== INTERACTION POTENTIALS ======================== -->
+
+<p>
+<a name="InteractionPotentials"></a>
+<h3>Interaction Potentials</h3>
+
+<p> An Interaction Potential map provides a graphical representation of
+where a chemical probe has favorable interactions with a molecular surface.
+In this application, a probe is
+a united-atom representation of a particular chemical functionality.
+A variety of probes are available, spanning a range of
+different combinations of size, charge, and hydrogen bond
+donor/acceptor properties.  This application draws upon the work of GRID
+[Goodford&nbsp;1985] [Boobbyer&nbsp;1989], calculating a three-term
+interaction energy for each point in a rectilinear grid:
+
+<!-- LATEX surfmap/math_IP_Exyz \[
+E_{xyz} = \sum E_{lj} + \sum E_{ele} + \sum E_{hb}
+\] ENDLATEX -->
+
+<!-- <p align="center"> <img src="surfmap/g_equ_1.gif"> -->
+
+<p align="center">
+<img src="surfmap/math_IP_Exyz.png" />
+
+<p>
+where
+
+<!-- LATEX surfmap/math_IP_Elj \[
+E_{lj} = \frac{A}{r^{12}} + \frac{B}{r^{6}}
+\] ENDLATEX -->
+
+<p align="center">
+<!--
+<i>E<sub>lj</sub></i> = A / <i>r</i><sup>12</sup> - B / <i>r</i><sup>6</sup>
+-->
+
+<img src="surfmap/math_IP_Elj.png" />
+
+<!-- LATEX surfmap/math_IP_Eel \[
+E_{ele} = \frac{w_{ele}e^{2}}{4\pi \varepsilon_{0}d} =
+\sum_{i<j}q_{i}q_{j}\left[
+    \frac{1}{r_{ij}+b_{ele}} -
+    \frac{\alpha r_{ij}^{2}}{R_{c}^{3}} -
+    \frac{(1-\alpha)}{R_{c}}
+\right]
+\] ENDLATEX -->
+
+<p>
+E<sub><i>ele</i></sub> is given by a short-range Reaction Field formulation:
+
+<!-- <img src="surfmap/g_equ_2.gif"> -->
+
+<p align="center">
+<img src="surfmap/math_IP_Eel.png" />
+
+<p>
+where <i>w<sub>ele</sub></i> is a weight, <i>b<sub>ele</sub></i>
+is a buffering constant to prevent zero denominators,
+R<sub>c</sub> is a cutoff radius set to 4.0 and
+
+<!-- LATEX surfmap/math_IP_alpha \[
+\alpha = \frac{d-d_{x}}{d+2d_{x}}
+\] ENDLATEX -->
+
+<!-- <p align="center"> <img src="surfmap/g_equ_3.gif"> -->
+
+<p align="center">
+<img src="surfmap/math_IP_alpha.png" />
+
+<p>
+were d is the dielectric constant in the interior of the solute and
+d<sub>x</sub> is the dielectric constant of the solvent.  Values of d = 4.0
+and d<sub>x</sub> = 80.0 are used.
+E<sub><i>hb</i></sub> is the product of a radial and an angular term:
+
+<!-- LATEX surfmap/math_IP_Ehb \[
+E_{hb} = E_{r} \times E_{\theta}
+\] ENDLATEX -->
+
+<p align="center">
+<!--
+E<sub><i>hb</i></sub> = E<sub><i>r</i></sub> x E<sub>&theta;</sub>
+-->
+
+<img src="surfmap/math_IP_Ehb.png" />
+
+<p> with
+
+<!-- LATEX surfmap/math_IP_Er \[
+E_{r} = \frac{C}{r^{8}} - \frac{D}{r^{6}}
+\] ENDLATEX -->
+
+<!-- LATEX surfmap/math_IP_Etheta \[
+E_{\theta} = \cos^{n}\theta
+\] ENDLATEX -->
+
+<p align="center">
+<!--
+E<sub>r</sub> = C / r<sup>8</sup> - D / r<sup>6</sup>
+-->
+
+<img src="surfmap/math_IP_Er.png" />
+
+<p align="center">
+<!--
+E<sub>&theta;</sub> = cos<sup><i>n</i></sup> &theta;
+-->
+
+<img src="surfmap/math_IP_Etheta.png" />
+
+<p>
+where the parameters A, B, C, D and <i>n</i> are based on the selected
+probe and the individual atoms in the molecule being probed.
+Hydrogens must be present
+on proteins to correctly model hydrogen bond orientation.  The following
+table lists the probes that are available.  For each probe, the probe
+type, charge, and number of hydrogen bond acceptors (#HBA) and
+donors (#HBD) are given:
+
+<p><center><table class="titlebar" cellpadding="5" border="1">
+<tr>
+<th>Type</th>
+<th>Charge</th>
+<th>#HBD</th>
+<th>#HBA</th>
+<th>Description</th>
+<tr>
+<td><tt>C1=</tt>
+<td align="center">0.00
+<td align="center">0
+<td align="center">0
+<td align="left">Aromatic CH group
+<tr>
+<td><tt>C2</tt>
+<td align="center">0.00
+<td align="center">0
+<td align="center">0
+<td align="left">Methylene CH group
+<tr>
+<td><tt>C3</tt>
+<td align="center">0.00
+<td align="center">0
+<td align="center">0
+<td align="left">Methyl CH3 group
+<tr>
+<td><tt>N:</tt>
+<td align="center">0.00
+<td align="center">0
+<td align="center">1
+<td align="left">Nitrogen atom with lone pair
+<tr>
+<td><tt>N1</tt>
+<td align="center">-0.08
+<td align="center">1
+<td align="center">0
+<td align="left">Amide NH group
+<tr>
+<td><tt>N1=</tt>
+<td align="center">0.66
+<td align="center">1
+<td align="center">0
+<td align="left"><i>sp</i>2 cationic NH group
+<tr>
+<td><tt>N1:</tt>
+<td align="center">0.00
+<td align="center">1
+<td align="center">1
+<td align="left"><i>sp</i>3 NH group with lone pair
+<tr>
+<td><tt>N1+</tt>
+<td align="center">0.66
+<td align="center">1
+<td align="center">0
+<td align="left"><i>sp</i>3 NH cation
+<tr>
+<td><tt>N2</tt>
+<td align="center">0.00
+<td align="center">2
+<td align="center">0
+<td align="left">Amide NH2 group
+<tr>
+<td><tt>N2=</tt>
+<td align="center">0.66
+<td align="center">2
+<td align="center">0
+<td align="left"><i>sp</i>2 cationic NH2 group
+<tr>
+<td><tt>N2+</tt>
+<td align="center">0.66
+<td align="center">2
+<td align="center">0
+<td align="left"><i>sp</i>3 cationic NH2 group
+<tr>
+<td><tt>N3+</tt>
+<td align="center">0.66
+<td align="center">3
+<td align="center">0
+<td align="left"><i>sp</i>3 cationic NH3 group
+<tr>
+<td><tt>OC2</tt>
+<td align="center">-0.20
+<td align="center">0
+<td align="center">2
+<td align="left">Ether oxygen atom
+<tr>
+<td><tt>OES</tt>
+<td align="center">-0.20
+<td align="center">0
+<td align="center">0
+<td align="left">Ester oxygen atom
+<tr>
+<td><tt>O</tt>
+<td align="center">-0.25
+<td align="center">0
+<td align="center">2
+<td align="left">Carbonyl oxygen atom
+<tr>
+<td><tt>O::</tt>
+<td align="center">-0.45
+<td align="center">0
+<td align="center">2
+<td align="left">Carboxy oxygen atom
+<tr>
+<td><tt>ON</tt>
+<td align="center">-0.10
+<td align="center">0
+<td align="center">2
+<td align="left">Nitro oxygen atom
+<tr>
+<td><tt>O=</tt>
+<td align="center">-0.40
+<td align="center">0
+<td align="center">2
+<td align="left">Phosphate oxygen atom
+<tr>
+<td><tt>O-</tt>
+<td align="center">-0.50
+<td align="center">0
+<td align="center">2
+<td align="left">Anionic phenolate oxygen atom
+<tr>
+<td><tt>O1</tt>
+<td align="center">-0.10
+<td align="center">1
+<td align="center">2
+<td align="left">Aliphatic hydroxyl group
+<tr>
+<td><tt>OH</tt>
+<td align="center">-0.15
+<td align="center">1
+<td align="center">1
+<td align="left">Phenolic hydroxyl group
+<tr>
+<td><tt>F</tt>
+<td align="center">-0.30
+<td align="center">0
+<td align="center">0
+<td align="left">Fluorine atom
+<tr>
+<td><tt>F-</tt>
+<td align="center">-1.00
+<td align="center">0
+<td align="center">0
+<td align="left">Fluoride ion
+<tr>
+<td><tt>CL</tt>
+<td align="center">-0.25
+<td align="center">0
+<td align="center">0
+<td align="left">Chlorine atom
+<tr>
+<td><tt>CL-</tt>
+<td align="center">-1.00
+<td align="center">0
+<td align="center">0
+<td align="left">Chloride ion
+<tr>
+<td><tt>BR</tt>
+<td align="center">-0.20
+<td align="center">0
+<td align="center">0
+<td align="left">Bromine atom
+<tr>
+<td><tt>BR-</tt>
+<td align="center">-1.00
+<td align="center">0
+<td align="center">0
+<td align="left">Bromide ion
+<tr>
+<td><tt>I</tt>
+<td align="center">-0.10
+<td align="center">0
+<td align="center">0
+<td align="left">Iodine atom
+<tr>
+<td><tt>K+</tt>
+<td align="center">1.00
+<td align="center">0
+<td align="center">0
+<td align="left">Potassium cation
+<tr>
+<td><tt>NA+</tt>
+<td align="center">1.00
+<td align="center">0
+<td align="center">0
+<td align="left">Sodium cation
+<tr>
+<td><tt>POH4</tt>
+<td align="center">-1.00
+<td align="center">1
+<td align="center">7
+<td align="left">PO4H phosphate anion
+<tr>
+<td><tt>PO4</tt>
+<td align="center">-2.00
+<td align="center">0
+<td align="center">8
+<td align="left">PO4 dianion
+<tr>
+<td><tt>OH2</tt>
+<td align="center">0.00
+<td align="center">2
+<td align="center">2
+<td align="left">Water
+<tr>
+<td><tt>DRY</tt>
+<td align="center">0.00
+<td align="center">*
+<td align="center">*
+<td align="left">Dry (hydrophobic) probe
+</table>
+</center>
+<p>
+The DRY probe calculates the hydrophobic energies at each grid point using
+a modified interaction energy:
+
+<!-- LATEX surfmap/math_DRY_Exyz \[
+E_{xyz} = \sum E_{lj} + S - \sum E_{hb}
+\] ENDLATEX -->
+
+<!-- <img src="surfmap/g_equ_4.gif"> -->
+
+<p align="center">
+<img src="surfmap/math_DRY_Exyz.png" />
+
+<p>
+
+where <i>S</i>, the <i>entropy</i>, is a constant set to -0.848, and
+represents the favorable
+interactions of hydrophobic particles in an aqueous environment.
+E<sub><i>lj</i></sub> and E<sub><i>hb</i></sub> are calculated using
+the same van der Waals and hydrogen bonding parameters as
+for the OH2 probe.  E<sub><i>hb</i></sub> is
+subtracted to reflect the cost of breaking the hydrogen bonding networks
+in the solvent and in the protein's hydration shell.
+
+<!-- ===================== ELECTRON DENSITY SURFACES ====================== -->
+
+<p>
+<a name="ElectronDensity"></a>
+<h3>Electron Density Surface</h3>
+
+<p>
+An electron density surface is a representation of the electron-density
+distribution in a unit cell, sampled over a grid and visualized as an
+isosurface.  MOE calculates the electron density surface from reflection
+data stored in the MTZ (CCP4) file format.  Both structure factor amplitude
+and phase data are usually present in the file; MOE can calculate
+simulated values if desired.
+
+<p>
+Electron density is calculated from the expression:
+
+<!-- LATEX surfmap/math_rho_edensity \[
+\rho(xyz) = \frac{1}{V}\sum_{h}\sum_{k}\sum_{l}F(hkl)e^{-2\pi i (hx+ky+lz)}
+\] ENDLATEX -->
+
+<!-- LATEX surfmap/math_rho \( \rho\) ENDLATEX -->
+
+<!-- <img src="edsurf/edens.gif"></center> -->
+
+<p align="center">
+<img src="surfmap/math_rho_edensity.png" />
+
+<p>
+where
+ 
+<center>
+<table border="0" cellpadding="5">
+ 
+<tr>
+<td align="left">
+<img src="surfmap/math_rho.png" />
+<td align="left">
+electron density
+
+<tr>
+<td align="left"><i>x</i>, <i>y</i>, <i>z</i>
+<td align="left"> fractional coordinates in the unit cell
+
+<tr>
+<td align="left"><i>F</i>
+<td align="left">structure factor, having magnitude and phase
+
+<tr>
+<td align="left"><i>h</i>, <i>k</i>, <i>l</i>
+<td align="left">indices of reflection
+
+<tr>
+<td align="left"><i>V</i>
+<td align="left">volume of the unit cell
+
+</table>
+</center>
+
+<p>
+From this expression, it is seen that the electron density is
+the inverse Fourier transform of the structure factor.  In MOE,
+Fast Fourier Transform (FFT) techniques are used to perform the
+calculation.
+
+<!-- ============================ RUNNING ================================ !-->
+
+<p>
+<a name="Run"></a>
+<h2>Running the Application</h2>
+
+<p>
+<p>To open the Surfaces and Maps panel, select
+<b><nobr>MOE | RHS | Surface | Surfaces and Maps</b></nobr>.
+
+<p>
+<center><img src="surfmap/msurf_panel.png" alt="Surfaces and Maps Panel" />
+</center>
+
+<p>The panel can be used both to create new surfaces as well as to
+edit existing surfaces.  A new surface is created by providing a
+new surface name in the <b>Name</b> field.  To edit an existing surface,
+select it from the surfaces list.  The parameters in the lower half
+of the panel will be modified accordingly to reflect the selected surface.
+</p>
+
+<p><table width="100%" cellpadding="5">
+<tr>
+<td valign="top"><b>Surfaces Manager</b>
+</td>
+<td valign="top">
+This area of the panel lists the surfaces currently existing in the
+system.  Multiple surfaces can be selected, and operations performed
+on them simultaneously.
+
+<p>
+<table border="0" cellspacing="5" cellpadding="5">
+<tr>
+<td valign="top"><b>Hide</b></td>
+<td valign="top">The selected surfaces are no longer drawn in the
+MOE rendering area. The word <tt>[Hidden]</tt> appears beside
+the list entries.</td>
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Show</b></td>
+<td valign="top">The selected surfaces are
+drawn in the MOE rendering area. The word <tt>[Shown]</tt> appears beside
+the list entries.
+
+<br /><br />
+<span class="tip">Tip</span>&nbsp;&nbsp;
+Double-clicking on a list entry will cause that
+surface to be shown, hiding all others.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Toggle</b></td>
+<td valign="top">Toggles the visibility of the selected surfaces.
+A hidden surface becomes shown, and a shown, hidden.</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Rename</b></td>
+<td valign="top">Opens a popup for editing the names of the
+selected surfaces.  Enter the new name(s) and press <b>Apply</b>.
+Pressing <b>Cancel</b> or clicking outside the popup will
+take the popup panel down.
+</tr>
+
+<tr>
+<td valign="top"><b>Delete</b></td>
+<td valign="top">Deletes the selected surfaces.
+A confirmation dialog will open.
+</td>
+</tr>
+
+</table>
+</p>
+
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Name</b></td>
+<td valign="top">
+The name of the surface.  When the surface is created,
+its name appears in the Surfaces Manager area in the top part
+of the panel.  Surface names must be unique.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Surface</b>
+<td valign="top">
+The type of surface to generate: <b>Molecular Surface</b>,
+<b>Interaction (VDW)</b>,
+<b>Contact Preference</b>, <b>Electrostatic Map</b>,
+<b>Interaction Potential</b>, <b>External Grid File</b> or
+<b>Electron Density</b>.
+The particular selection will affect the appearance of the bottom half of the
+Surfaces and Maps application; the alternate appearances will be described
+below.
+<br /><br />
+The Electrostatic Map and Electrostatic coloring of
+molecular surfaces requires that both hydrogens be present and
+partial charges calculated.
+Interaction Potential surfaces also require that hydrogens be present.
+You can add hydrogens by using either
+<b><nobr>MOE | Compute | Prepare | Protonate 3D</nobr></b>, which assigns
+protonation states by optimizing titration energy,
+or
+<b><nobr>MOE | Edit | Build | Hydrogens | Add Hydrogens</nobr></b>,
+which quickly fills in hydrogens based on valence.
+Partial charges can be computed using
+<b><nobr>MOE | Compute | Prepare | Partial Charges</nobr></b>.
+
+<tr>
+<td valign="top"><b>Atoms</b></td>
+<td valign="top">
+The atoms that will define the particular surface or map; other atoms
+in the system will be ignored.  By default, the Receptor Atoms are used
+(excluding ligands and solvent).  Press the <b>?</b> to the right to
+briefly select (in the MOE window) the specified atoms.  The atom collection
+can be manually specified by selecting the appropriate atoms in the MOE
+window and choosing Selected Atoms from the list.
+If <b>Visible Only</b> is on, hidden atoms will be ignored.
+In all cases, dummy atoms and atoms flagged as inert will be ignored.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Near</b>
+<td valign="top">
+The generated graphics will be restricted, clipped, or truncated, so that
+they will appear within a specified distance of a collection of atoms.
+Press the <b>?</b> to the right to briefly select (in the MOE window) the
+specified atoms.  By default, graphics will display around ligand or
+dummy atoms.  The <b>Within</b> value specifies the clipping proximity
+(by default 4.5 angstroms).
+<br /><br />
+Press the <b>Isolate</b> button to render the molecular system around the
+<b>Near</b> atoms and hide the remaining atoms of the system.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Color</b>
+<td valign="top">
+Specifies the coloring method and appearance for molecular surfaces
+(Molecular or Interaction).  Contact Preference and Electrostatic
+Map coloring will be described below.  Each option in <b>Color</b> causes
+the generated surface to be colored in a particular manner.
+After the surface has been calculated, press the <b>?</b> to the right
+to briefly flash the displayed surface in the MOE window.
+
+<ul>
+<li><b>Active LP</b>
+colors the surface to indicate hydrophobic regions, mildly polar regions
+and hydrogen bonding (or metal-LonePair interaction) regions taking
+directionality into account.  Particular color choices appear to the right.
+<p>
+<li><b>Lipophilicity</b>
+colors the surface by the lipophilic potential calculated from the Wildman
+and Crippen SlogP parameters [Wildman 1999]:
+
+<!-- LATEX surfmap/math_Exyz_lipophilic \[
+E_{xyz} = \frac{\sum_{i}f_{i}g(d_{i})}{\sum_{i}g(d_{i})}
+\] ENDLATEX -->
+
+<!-- LATEX surfmap/math_fermi_distancefunction \[
+g(d_{i}) = \frac{e^{-ad_{\mathrm{cutoff}}} + 1}
+	{e^{-a(d_{i}-d_{\mathrm{cutoff}})} + 1}
+\] ENDLATEX -->
+
+<!-- <img src="surfmap/g_equ_5.gif"> -->
+
+<p align="center">
+<img src="surfmap/math_Exyz_lipophilic.png" />
+
+<p>
+where <i>f<sub>i</sub></i> is the contribution for atom <i>i</i> and
+g(d<sub>i</sub>) is the Fermi-type distance function proposed by
+Heiden <i>et al.</i> [Heiden 1993]:
+
+<!-- <img src="surfmap/g_equ_6.gif"> -->
+
+<p align="center">
+<img src="surfmap/math_fermi_distancefunction.png" />
+
+<p>
+with a proximity distance (<i>d<sub>cutoff</sub></i>) of 2.5&Aring; and
+&alpha; = 1.5.  The parameter <b>Cutoff</b> defines <i>d<sub>cutoff</sub></i>,
+while <b>Spread</b> defines the color range:
+[-0.50&nbsp;*&nbsp;<i>Spread</i>,&nbsp;0.25&nbsp;*&nbsp;<i>Spread</i>].
+<p>
+<li><b>Pocket</b>
+colors the surface so that "deep pocket" and solvent exposed regions are
+highlighted.  Within deeper regions, hydrophobic and polar regions
+are distinguished.  Particular color choices appear to the right.
+<p>
+<li><b>Electrostatics</b>
+colors the surface by a screened (localized) electrostatic potential.
+If <span class="nobr"><b>Poisson-Boltzman</b></span> is enabled, the
+electrostatic potential uses a charge density obtained by solving the
+Poisson-Boltzman Equation for the current system.  Note:
+hydrogens and partial charges are required for this coloring option.  The
+surface is colored according to the choices to the right.  The scale
+parameter <b>X</b> defines the range [-X,X] of the color scale, and the
+default is
+set according to the method chosen so as to generate similarly-colored
+surfaces.  Potential values outside the range are clamped to lie
+inside the range. 
+<p>
+<li><b>B-Factor</b>
+colors the surface by the crystallographic temperature factors (<i>B</i>) of the
+atoms.  Particular color choices are to the right.  Note that this option
+requires that temperature facture values be present (the <tt>aTempFactor</tt>
+field of the atoms).
+<p>
+<li><b>Atom Color</b>, <b>Carbon Color</b>, <b>Residue Color</b>, and
+<b>Chain Color</b>
+map atom, carbon, residue or chain colors onto a molecular surface.
+The surface is colored by the current display color of atoms or carbons in the
+MOE Window, or the current display color of residues or chains in the Sequence
+Editor.
+<p>
+<li><b>Atom Scalar</b> 
+colors the surface by the <tt>aScalar</tt> value of each atom (which lies
+between 0 and 1 inclusive).  The color scale can be specified to the right.
+<p>
+<li><b>Constant</b>
+colors the surface by a specific, constant color specified to the right.
+<p>
+<li><b>Grid File</b> colors the surface by the grid values contained in
+an external file.  The surface is colored according to the choices to the
+right.  The parameters define the range of the color scale, and reflect
+the magnitude of external grid points.  The <b>Grid Box</b> button
+highlights the region of the grid, and is grayed out until a grid is
+loaded.  The <b>Periodic</b> button indicates that the grid is periodic,
+and is grayed out unless the grid contains unit cell information.
+
+</ul>
+
+<p>Two additional coloring options exist:</p>
+
+<p>
+<ul>
+<p><li><b>Overlay H-bond information</b>.  When this option is enabled,
+additional colors will be added where hydrogen bonding geometry is optimal.
+The following two figures illustrate the effect of this option, on
+a molecular surface colored by atom color:
+
+<p>
+<center>
+<img src="surfmap/msurf_nooverlayH.png" />
+<img src="surfmap/msurf_overlayH.png" />
+<br />
+<i>Molecular surfaces.  Left: Overlay H-bond information off. Right:
+Overlay H-bond information on.
+</i>
+</center>
+</p>
+
+</li></p>
+
+<p><li><b>Use Element Color</b>.  If this option is on, the surface
+will be colored by atom element color independent of the actual
+current atom color.
+</li></p>
+</ul>
+</p>
+
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Rendering Style</b>
+<td valign="top">
+Surfaces can be rendered using different rendering modes and material
+properties.  The controls reside next to and
+below the <b>Color</b> pulldown menu.
+
+<p>
+<center>
+<table border="0" cellpadding="5">
+<tr>
+<td>
+<img src="surfmap/surfmap_panel_render.png" />
+</td>
+<td>
+<center>
+<img src="surfmap/matwidget.png" style="padding: 10px;" />
+<br />
+<i>Material chooser widget</i>
+</center>
+</td>
+</table>
+</center>
+</p>
+
+<p>
+Choose <b>Dot</b> for a surface of points,
+<b>Line</b> for a surface of lines; and <b>Solid</b> for a shaded solid.
+The two transparency sliders control front and back face transparency.
+These sliders are also available (named
+<b>TF</b> and <b>TB</b> for transparency of front and back faces,
+respectively) in the
+<a href="../moe/hellomoe.htm#Material">material chooser widget</a>,
+which is used to change the material properties of the surface.
+</p>
+
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Isolate</b>
+<td valign="top">
+Press the <b>Isolate</b> button to render the molecular system around the
+<b>Near</b> atoms and hide the remaining atoms of the system.
+
+<tr>
+<td valign="top"><b>Save</b>
+<td valign="top">
+The <b>Save</b>
+button is enabled for surfaces involving gridded data such as
+<b>Contact Preference</b>, <b>Electrostatic Map</b>, <b>Interaction
+Potential</b> or <b>Electron Density</b>.  The grid data can be
+saved in CNS (ascii) or CCP4 (binary) crystallographic formats, or as MOE
+<a href="../svl/fcnref/gridfile.htm">Binary Grid Files</a>.
+
+<tr>
+<td valign="top"><b>Close</b>
+<td valign="top">
+Pressing <b>Close</b> terminates
+the Surfaces and Maps application without deleting any of the
+surfaces.
+
+</table>
+
+<p>
+Press the <b>Create</b> button to calculate and display the surface.
+Some surfaces may take a few seconds to calculate.  
+
+<p>
+In the particular case of
+molecular surfaces (Molecular and Interaction), once
+the surface
+has been created, the <b>?</b> button will become available.
+Pressing the <b>?</b> will cause the displayed surface
+to briefly flash in the MOE window.
+Changes to transparency sliders, surface type options
+or color choosing widgets will now be applied immediately,
+and the displayed surface dynamically updated.
+
+<!--
+<p>
+In general, when parameters defining a surface change, for example,
+the name of the surface, the atom sets that define it or the
+method of its coloring, and no longer correspond to the currently
+displayed surface, it is assumed that a new surface is being
+specified.  As a result, any
+<b>?</b> buttons will become unavailable, and
+transparency, surface type and color widgets will not affect the surface;
+their values will be used only when the surface is recalculated
+by pressing <b>Apply</b> .
+-->
+
+<p>In the following, the Surfaces and Maps panel will be described
+for particular surfaces.
+
+<h4>Contact Preference</h4>
+
+<p>
+When <b>Surface</b> is set to <b>Contact Preference</b> the Surfaces and Maps
+application will appear as:
+
+<p>
+<center><img src="surfmap/msurf_cpref.png" /></center>
+
+<p>The Contact Preferences surface comprises two contact preference maps,
+one for each of
+two predictive interaction atom types, <b>L_HYD</b> (hydrophobic)
+and <b>L_LPA</b> (hydrophilic).
+Both maps are represented by
+a single entry in the Surfaces Manager list.
+Each of these maps can be rendered independently.  The checkboxes to the
+left turn on and off the visibilities of the associated maps.
+The rendering controls are as follows:
+
+<p>
+<ul>
+<li><em>Surface Rendering Mode.</em>
+Choose <b>Dot</b> (to the left of the color mode)
+for a surface of points, <b>Line</b> for a surface of lines, <b>Solid</b>
+for a shaded solid surface. 
+</li></p>
+
+<p>
+<li><em>Color.</em>
+Select a color value to color the iso-contour surface of a
+particular interaction atom type. 
+</li></p>
+
+<p>
+<li><em>Material.</em>
+Select the surface material properties, including transparency.
+</li></p>
+
+<p>
+<li><em>Iso-contour Level (%).</em>
+Use the slider or the text field
+to enter the display level.  The generated surface will be all points in
+space for which the probability of finding an atom of a particular type
+versus the other types is equal to the specified value.
+For example, a 90% value on the <b>L_HYD</b> slider, which
+controls the display of hydrophobic
+preference, will result in a surface of points for which
+a contact atom will have a 90% probability of being hydrophobic.
+The surface will dynamically update with changes to the slider value.
+</li></p>
+
+</ul>
+</p>
+
+<p>
+Note that hydrogen atoms are not required for Contact Preference Maps; indeed,
+they will have no effect upon the calculation.
+</p>
+
+<h4>Electrostatic Map</h4>
+
+<p>
+When <b>Surface</b> is set to <b>Electrostatic Map</b> the Surfaces and Maps
+application will appear as:
+
+<p>
+<center><img src="surfmap/msurf_estatic.png" /></center>
+
+<p>The Electrostatic surface comprises three maps associated
+with <b>Hyd</b> (hydrophobic), <b>Acc</b> (acceptor), and
+<b>Don</b> (donor) interaction atom types.
+All three maps are represented by
+a single entry in the Surfaces Manager list.
+Each of these maps can be rendered independently.  The checkboxes to the
+left turn on and off the visibilities of the associated maps.
+The rendering controls (<b>Level</b>) are as follows:
+</p>
+
+<p>
+<ul>
+<li><em>Surface Rendering Mode.</em>
+Choose <b>Dot</b> (to the left of the color mode)
+for a surface of points, <b>Line</b> for a surface of lines, <b>Solid</b>
+for a shaded solid surface.
+</li></p>
+
+<p>
+<li><em>Color.</em>
+Select a color value to color the iso-contour surface of a
+particular interaction atom type. 
+</li></p>
+
+<p>
+<li><em>Material.</em>
+Select the surface material properties, including transparency.
+</li></p>
+
+<p>
+<li><em>Iso-contour Level (kcal/mol).</em>
+Use the slider or the text field
+to enter the display level.  The generated surface will be all points in
+space for which the interaction potential (electrostatic and van der Waals)
+is equal to the specified value.
+The surface will dynamically update with changes to the slider.
+</li></p>
+
+</ul>
+</p>
+
+<p>
+Note that hydrogen atoms and partial charges are required for
+Electrostatic Maps.
+
+<h4>Interaction Potential</h4>
+
+<p>
+When <b>Surface</b> is set to <b>Interaction Potential</b> the Surfaces
+and Maps application will appear as:
+
+<p>
+<center><img src="surfmap/msurf_intpot.png" /></center>
+
+<p>The Interaction Potential surface comprises up to three maps associated
+with three probe types.
+All three maps are represented by
+a single entry in the Surfaces Manager list.
+Each of these maps can be rendered independently.  The checkboxes to the
+left turn on and off the visibilities of the associated maps.
+The rendering controls are as follows:
+</p>
+
+<p>
+<b>Probe</b>.
+Specifies which probes will be used and controls surface
+rendering and iso-contour
+level.  When a new probe is selected, <b>Create</b> must be
+pressed to calculate the new interaction potential surface.
+Once the surface has been calculated, changes to the
+display parameters will be applied immediately
+(the surface will dynamically update in the MOE window)
+so that <b>Create</b> need not be pressed:
+
+<ul>
+<li><em>Surface Rendering Mode.</em>
+Choose <b>Dot</b> (to the left of the color mode)
+for a surface of points, <b>Line</b> for a surface of lines, <b>Solid</b>
+for a shaded solid surface.
+</li></p>
+<p>
+<li><em>Color.</em>
+Select a color value to color the iso-contour surface of a
+particular probe type. 
+</li></p>
+<p>
+<li><em>Material.</em>
+Select the surface material properties, including transparency.
+</li></p>
+<p>
+<li><em>Iso-contour Level (kcal/mol).</em>
+Use the slider or the text field
+to enter the display level.  The generated surface will be all points in
+space for which the interaction potential
+is equal to the specified value.
+</li></p>
+</ul>
+
+<p>
+Note that hydrogen atoms are required for Interaction Potentials.
+
+<h4>External Grid File</h4>
+
+<p>
+When <b>Surface</b> is set to <b>External Grid File</b> the Surfaces
+and Maps application will appear as:
+
+<p>
+<center><img src="surfmap/msurf_grid.png" /></center>
+
+<p>
+<b>Path</b>.
+Specifies the name of the external grid file to use.  This can be either
+entered in the text field or selected
+using the <b>Load</b> button which opens a file browser.
+When the surface rendering controls are modified,
+the displayed surface
+will dynamically update (in the MOE Window) so that <b>Create</b> need not
+be pressed.
+</p>
+
+<p>
+<ul>
+<li><em>Surface Rendering Mode.</em>
+Choose <b>Dot</b> (to the left of the color mode)
+for a surface of points, <b>Line</b> for a surface of lines, <b>Solid</b>
+for a shaded solid surface.
+</li></p>
+<p>
+<li><em>Color.</em>
+Select a color value to color the iso-contour surface of a
+particular probe type.
+</li></p>
+<p>
+<li><em>Material.</em>
+Select the surface material properties, including transparency.
+</li></p>
+<p>
+<li><em>Iso-contour Level.</em>
+Use the slider or the text field to enter the
+display level.  The generated surface will be all points in space for which
+the external grid points are equal to the specified value.
+</li></p>
+</ul>
+</p>
+
+<p>
+<b>Grid Box</b>. Turns on and off the display
+of the box that delineates the region of the grid.  The button
+and is grayed out until a grid is loaded.
+</p>
+
+<p><b>Periodic</b>.  Indicates that the grid is periodic,
+and is grayed out unless the grid
+contains unit cell parameters.  Only grids saved in the crystallographic
+formats (<tt>.ccp4</tt>, <tt>.cns</tt>)
+can contain information about the unit cell; the MOE grid
+file format is a pure data format and does not have specialized fields
+for crystallographic information.
+</p>
+
+<h4>Electron Density</h4>
+
+<p>
+When <b>Surface</b> is set to <b>Electron Density</b> the Surfaces
+and Maps application will appear as:
+
+<p>
+<center><img src="surfmap/msurf_edens.png" /></center>
+
+<p>
+<b>Level</b>. Controls the appearance and iso-contour level of the
+electron density surface.  When the surface rendering controls are modified,
+the displayed surface will dynamically update (in the MOE window)
+so that <b>Create</b> need not be pressed:
+
+<ul>
+<p>
+<li><em>Surface Rendering Mode.</em>
+Choose <b>Dot</b> (to the left of the color mode)
+for a surface of points, <b>Line</b> for a surface of lines, <b>Solid</b>
+for a shaded solid surface.
+</li></p>
+<p>
+<li><em>Color.</em>
+Select a color value to color the iso-contour surface of a
+particular probe type.
+</li></p>
+<p>
+<li><em>Material.</em>
+Select the surface material properties, including transparency.
+</li></p>
+<p>
+<li><em>Iso-contour Level (units of sigma).</em>
+Use the slider or the text field to enter the
+display level.  The generated surface will be all points in space for which
+the electron density is equal to the specified value.
+</li></p>
+</ul>
+
+<p>The electron density surface is specified using the following parameters.
+Press <b>Create</b> to compute the electron density and render
+the new surface.
+
+<p>
+<ul>
+<p>
+<li><b>Load</b>. Opens a file browser for
+choosing an MTZ file to read.  The bubble help records the filename for future
+reference.  If no MTZ file has been loaded,
+most of the controls are unavailable (grayed). The default action is to
+calculate a simulated electron density.
+</li></p>
+<p>
+<li><b>Map</b>. Specifies the type of the electron density map.
+Values <b>Fo</b>, <b>2Fo-Fc</b>, <b>3Fo-2Fc</b> and special values
+<b>2FOFCWT</b> and <b>FWT</b> correspond to density maps and
+are displayed in one color, which defaults to blue.
+Values <b>Fo-Fc</b> and special values <b>FOFCWT</b> and <b>DELFWT</b>
+correspond to difference maps and are displayed in two colors,
+which default to green for positive and pink for negative.
+
+If <b>Map</b> is <b>Fo</b> or a formula involving <b>Fo</b> and <b>Fc</b>,
+then the MTZ data columns specified by <b>Fo</b> and <b>Fc</b> are used.
+
+If <b>Map</b> is the name of a special column, e.g. <b>2FOFCWT</b>,
+then the <b>Fo</b> and <b>Fc</b> parameters are not used and the <b>Phi</b>
+parameter is set to represent the appropriate corresponding phase, e.g.
+<b>PH2FOFCWT</b>.
+</li></p>
+<p>
+<li><b>Fo</b>.  The name of the MTZ data column containing the structure
+factor information.  Selecting <b>Simulated</b> (the initial default)
+displays a surface based on atomic position and number.
+If <b>Map</b> does not specify <b>Fo</b> or a difference formula that uses
+<b>Fo</b>, then the <b>Fo</b> option is unavailable.
+</li></p>
+<p>
+<li><b>Fc</b>.  The name of the MTZ data column containing the structure
+factor information for a difference map.  Selecting <b>Simulated</b> uses
+calculated information for the map.
+If <b>Map</b> does not specify a difference formula that uses <b>Fc</b>,
+then the <b>Fc</b> option is unavailable.
+</li></p>
+<p>
+<li><b>Phi</b>.  The name of the MTZ data column containing the structure
+factor phase information.  Selecting <b>Simulated</b> (the initial default)
+uses calculated phase data.  If <b>Fo</b> or <b>Fc</b> are <b>Simulated</b>,
+then <b>Phi</b> will be also <b>Simulated</b>.
+If <b>Map</b> specifies a special column, e.g. <b>2FOFCWT</b>, then
+<b>Phi</b> is set to represent the corresponding phase, e.g. <b>PH2FOFCWT</b>.
+</li></p>
+<p>
+<li><b>Res</b>.  The resolution of the calculated density or the resolution
+of the MTZ file.
+If no MTZ file is loaded, then <b>Res</b> can be changed to simulate alternate
+resolutions as desired.  Once the MTZ file is loaded, <b>Res</b> will be
+set and fixed to the resolution of the file.
+</li></p>
+<p>
+<li><b>Unit Cell</b>.  Turns on and off the display of
+the unit cell box.
+</li></p>
+</ul>
+</p>
+
+<!-- ============================== Examples ============================== -->
+
+<p>
+<a name="Example"></a>
+<h2>Examples</h2>
+
+<p>
+In this section we will present a number of example calculations using the
+Surfaces and Maps application.  The streptavidin-biotin complex will
+be used for the first four examples.
+
+<div class="example">
+
+<a name="ExampleData"></a>
+<h3>Data Preparation for Examples</h3>
+
+<ol>
+<li><i>Clear the molecular data in MOE.</i>
+<br />
+<p class="indent_novspace">
+<b><span class="nobr">MOE | RHS | Close</span></b>
+</p>
+</li>
+
+<p>
+<li><i>Ensure that there are no running tasks.</i>
+<br />
+Use the <b>Cancel</b> menu in the MOE Window.
+</li>
+</p>
+
+<p>
+<li><i>Load streptavidin.</i>
+<br />
+<p class="indent_novspace">
+<b><span class="nobr">MOE | RHS | Open</span></b>
+</p>
+
+Select <tt>$MOE/sample/mol/biotin_rec.moe</tt>.
+</li>
+</p>
+
+<p>
+<li><i>Identify the active site.</i>
+<br />
+Use the Site Finder application:
+<p class="indent_novspace">
+<b><span class="nobr">MOE | Compute | Site Finder</span></b>
+</p>
+Press <b>Apply</b>.
+In the list of sites, select only the first site and press the
+<b>Dummies</b> button to create dummy atoms in the active site.
+When prompted press <b>Yes</b> to create the dummy atoms.
+Press <b>Close</b> to close the Site Finder application.
+</li>
+</p>
+
+</ol>
+
+</div>
+
+<div class="example">
+
+<p>
+<a name="ExampleMSurf"></a>
+<h3>Example: Displaying a Molecular Surface of an Active Site</h3>
+
+<div class="floatright">
+<img src="surfmap/ex_molsurf.png" alt="Molecular Surface" />
+<p class="caption">
+Molecular surface of biotin receptor active site
+</p>
+</div>
+
+
+<p>
+With the streptavidin system set up as described
+<a href="#ExampleData">above</a>, start the Surfaces
+and Maps application:
+<blockquote>
+<b><span class="nobr">MOE | RHS | Surface | Surfaces and Maps</span></b>.
+</blockquote>
+</p>
+
+<p>
+Set <b>Atoms</b> to Receptor Atoms and <b>Near</b> to Dummy Atoms.
+With these settings, solvent atoms will be excluded and surfaces will be
+displayed near the dummy atoms created with the Site Finder.
+</p>
+
+<ol>
+<li>
+<i>Render the system near the dummy
+atoms only.</i>
+<br />
+Press the <b>Isolate</b> button.
+</li>
+
+<p>
+<li>
+<i>Draw the Molecular Surface.</i>
+<p class="indent_novspace">
+<span class="nobr"><b>Surface: Molecular Surface</b></span>
+</p>
+Select <span class="nobr"><b>Color: ActiveLP</b></span>
+for Active LP coloring.
+Press <b>Create</b>.  A molecular surface should result.
+</li>
+</p>
+</ol>
+
+<p>
+The Active LP coloring (by default) shows green for hydrophobic regions
+of the surface, blue for mildly polar regions (e.g. the hydrogens of
+benzene) and purple for hydrogen bonding regions.
+</p>
+
+<p>
+Press the <b>Delete</b> button to delete the surface.
+</p>
+
+</div>
+
+<div class="example">
+
+<p>
+<a name="ExampleCSurf"></a>
+<h3>Example: Predicting Hydrophobic and Hydrophilic Contacts in
+an Active Site</h3>
+
+<p>
+With the streptavidin system set up as described
+<a href="#ExampleData">above</a>, start the Surfaces
+and Maps application:
+<blockquote>
+<b><span class="nobr">MOE | RHS | Surface | Surfaces and Maps</span></b>.
+</blockquote>
+</p>
+
+<p>
+Set <b>Atoms</b> to Receptor Atoms and <b>Near</b> to Dummy Atoms.
+With these settings, solvent atoms will be excluded and surfaces will be
+displayed near the dummy atoms created with the Site Finder.
+</p>
+
+<div class="floatright">
+<img src="surfmap/ex_cpref.png" alt="Contact Preferences" />
+<p class="caption">
+Hydrophilic and hydrophobic contact preferences
+</p>
+</div>
+
+<ol>
+
+<p>
+<li>
+<i>Render the system near the dummy
+atoms only.</i>
+<br />
+Press the <b>Isolate</b> button.
+</li>
+</p>
+
+<p>
+<li>
+<i>Draw the Contact Preference Maps.</i>
+<p class="indent_novspace">
+<span class="nobr"><b>Surface: Contact Preference</b></span>
+</p>
+Press <b>Create</b>.  A contact preference map should result.
+</li>
+</p>
+
+<p>
+<li>
+<i>Adjust the map levels.</i>
+<br />
+Use the <b>L_HYD</b> and <b>L_LPA</b>
+sliders to adjust the probability levels for the Hydrophobic
+and Hydrophilic maps, respectively.  Set them to 92% (enter
+the new value in the textfields and press <tt>&lt;Enter&gt;</tt>).
+</li>
+</p>
+
+<p>
+<li><i>Load the biotin ligand.</i>
+<p class="indent_novspace">
+<b><span class="nobr">MOE | RHS | Open</span></b>
+</p>
+Select <tt>$MOE/sample/mol/biotin.moe</tt>.  With the ligand
+in place, the ligand/map complementarity can be verified.
+</li>
+</p>
+
+</ol>
+
+<p>
+By default, hydrophilic predictions are purple and hydrophobic predictions
+are green.  Here, the transparency of the surfaces has been increased
+using the material chooser widget,
+and the ligand rendered in ball-and-stick mode
+<blockquote>
+<b><span class="nobr">MOE | Popup | Select | Ligand</span></b>
+<br />
+<span class="nobr"><b>MOE | Popup | Atoms |</b>
+<img src="../moe/gui/mainwin/atom_render_ballstick.png" alt="Ball and Stick" /></span>
+</blockquote>
+for better visibility.
+Press the <b>Delete</b> button to delete the surface.
+</p>
+
+
+</div>
+
+<div class="example">
+
+<p>
+<a name="ExampleESurf"></a>
+<h3>Example: Predicting Electrostatically Favorable Regions in
+an Active Site</h3>
+
+<p>
+With the streptavidin system set up as described
+<a href="#ExampleData">above</a> (including the
+biotin ligand from the previous example), start the Surfaces
+and Maps application:
+<blockquote>
+<b><span class="nobr">MOE | RHS | Surface | Surfaces and Maps</span></b>.
+</blockquote>
+</p>
+
+<p>
+Set <b>Atoms</b> to Receptor Atoms and <b>Near</b> to Ligand Atoms.
+With these settings, solvent atoms will be excluded and surfaces will be
+displayed near the ligand atoms.
+</p>
+
+<ol>
+
+<p>
+<li>
+<i>Add hydrogens to the system.</i>
+<br />
+Calculating electrostatics requires
+partial charges; calculating partial charges
+requires that the system be protonated.
+The Add Hydrogens command adjusts the number of attached hydrogens
+to conform to valence. 
+To add hydrogens
+to all atoms in the system, first
+clear the selection (otherwise hydrogens will be added
+to selected atoms only):
+<p class="indent_novspace">
+<b><span class="nobr">MOE | Select | Clear</span></b>
+</p>
+Add hydrogens:
+<p class="indent_novspace">
+<b><span class="nobr">MOE | Edit | Build | Hydrogens | Add Hydrogens</span></b>
+</p>
+Hide the hydrogens:
+<p class="indent_novspace">
+<b><span class="nobr">MOE | Render | Hide | Hydrogens</span></b>
+</p>
+</li>
+</p>
+
+<p>
+<li>
+<div class="floatright">
+<img src="surfmap/ex_emap.png" alt="Electrostatic Map" />
+<p class="caption">
+H-bond acceptor, donor and hydrophobic electrostatic maps
+</p>
+</div>
+
+<i>Calculate partial charges.</i>
+<p class="indent_novspace">
+<b><nobr>MOE | Compute | Prepare | Partial Charges</nobr></b>
+Press <b>OK</b>.
+</p>
+</li>
+</p>
+
+<p>
+<li>
+<i>Render the system near the ligand
+atoms only.</i>
+<br />
+Press the <b>Isolate</b> button in the <b>Surfaces and Maps</b> panel.
+</li>
+</p>
+
+<p>
+<li>
+<i>Draw the Electrostatic Map.</i>
+<p class="indent_novspace">
+<span class="nobr"><b>Surface: Electrostatic Map</b></span>
+</p>
+Press <b>Create</b>.  An electrostatic map should result
+(after a few seconds).
+</li>
+</p>
+
+<p>
+<li>
+<i>Adjust the map energy levels.</i>
+<p class="none">
+The <b>Level</b> sliders can be adjusted to display different energy levels
+(in kcal/mol) of the hydrophobic, H-bond acceptor, and H-bond donor maps.
+Here, the maps are displayed for
+the default values of -3 for the Hydrophobic map and -2 for
+the others (with surface transparency adjusted as described in
+the previous example for better visualization).
+</p>
+</li>
+</p>
+
+<li><i>Render the ligand in ball-and-stick mode.</i>
+<blockquote>
+<b><span class="nobr">MOE | Popup | Select | Ligand</span></b>
+<br />
+<span class="nobr"><b>MOE | Popup | Atoms |</b>
+<img src="../moe/gui/mainwin/atom_render_ballstick.png" alt="Ball and Stick" /></span>
+</blockquote>
+</li>
+
+</ol>
+
+<p>
+Electrostatically positive regions (<b>Don</b>) are, by default colored
+blue, negative regions (<b>Acc</b>), red and neutral (<b>Hyd</b>) regions,
+green.  Press the <b>Delete</b> button to delete the surface.
+</p>
+
+<p>
+In order to fully exploit the subtleties of Electrostatic Maps,
+<a href="emin.htm">energy minimization</a>
+of a receptor or a receptor-ligand complex may be required to
+properly position hydrogen atoms.  Alternatively (or additionally), the
+<a href="protonate3d.htm">Protonate 3D</a> application for
+macromolecular protonation state assignment may be used
+for more sophisticated protonation and hydrogen positioning.
+In many cases, the accuracy of the maps
+is greatly improved; however, care must be taken in the charge calculation
+if metals are present.
+</p>
+
+</div>
+
+<div class="example">
+
+<p>
+<a name="ExampleIntPot"></a>
+<h3>Example: Displaying Interaction Potentials in an Active Site</h3>
+<p>
+With the streptavidin system set up as described
+<a href="#ExampleData">above</a> (including the
+biotin ligand from the previous example), start the Surfaces
+and Maps application:
+<blockquote>
+<b><span class="nobr">MOE | RHS | Surface | Surfaces and Maps</span></b>.
+</blockquote>
+</p>
+
+<div class="floatright">
+<img src="surfmap/ex_intpot.png" alt="Interaction Potential" />
+<p class="caption">
+Interaction potential surfaces of biotin
+</p>
+</div>
+
+<p>
+Set <b>Atoms</b> to Receptor Atoms and <b>Near</b> to Ligand Atoms.
+With these settings, solvent atoms will be excluded and surfaces will be
+displayed near the ligand atoms.
+</p>
+
+<ol>
+<p>
+<li>
+<i>Add hydrogens to the system.</i>
+<br />
+The Add Hydrogens command adjusts the number of attached hydrogens
+to conform to valence.  If any atoms are selected, only those
+atoms will have their hydrogens adjusted.  To add hydrogens
+to all atoms in the system,
+clear the selection (the menu item will be gray if no
+atoms are selected):
+<p class="indent_novspace">
+<b><span class="nobr">MOE | Select | Clear</span></b>
+</p>
+Add hydrogens:
+<p class="indent_novspace">
+<b><span class="nobr">MOE | RHS | Hydrogens</span></b>
+</p>
+Hide the hydrogens:
+<p class="indent_novspace">
+<b><span class="nobr">MOE | Render | Hide | Hydrogens</span></b>
+</p>
+</li>
+</p>
+
+<p>
+<li>
+<i>Draw the Interaction Potential surface.</i>
+<p class="indent_novspace">
+<span class="nobr"><b>Surface: Interaction Potential</b></span>
+</p>
+Press <b>Create</b>.  Isosurfaces for the three probes should result
+(after a few seconds).
+</li>
+</p>
+
+<p>
+<li>
+<i>Render the system near the ligand
+atoms only.</i>
+<br />
+Press the <b>Isolate</b> button.
+<br clear="all" />
+
+</li>
+</p>
+
+<p>
+<li>
+<div class="floatright">
+<img src="surfmap/ex_intpotlip.png"
+alt="Interaction Potential Colored by Lipophilicity" />
+<p class="caption">
+Receptor molecular surface colored by lipophilicity
+</p>
+</div>
+
+<i>Adjust the map energy levels.</i>
+<br />
+The <b>Probe</b> sliders can be adjusted to display different energy levels
+(in kcal/mol).
+Here, the maps are displayed for
+the default values of -5.5 for the OH2 probe and -2.5 for
+the others (with surface transparency adjusted as described in
+the previous example for better visualization).
+Hydrophobic regions (the DRY probe) are, by default, colored green,
+hydrophilic regions (the OH2 probe), purple, and hydrogen bond acceptors
+(the N: probe), red.
+</li>
+</p>
+
+<p>
+<li>
+<i>Examine a probe map in isolation.</i>
+<br />
+Turn the OH2 and N: probes visibility checkboxes off, leaving the
+hydrophobic region rendered.
+Note that the alkyl portions of the ligand
+occur in these regions.
+
+<p>Hide the DRY probe by turning off it's visibility checkbox
+and turn on the OH2 probe to view the hydrophilic regions.
+Note that the heteroatoms of the ligand occur in these regions.
+</li>
+</p>
+
+</ol>
+
+<p>
+We can compare this result to that obtained by coloring a molecular surface
+by lipophilicity:
+<blockquote>
+<span class="nobr"><b>Surface: Molecular Surface</b></span>
+<br />
+<span class="nobr"><b>Color: Lipophilicity</b></span>
+</blockquote>
+
+Press <b>Create</b>.
+The protein surface in the region near the ligand
+should appear.
+</p>
+
+<p>The surface is colored green for hydrophobic, white for neutral and purple
+for hydrophilic regions.  Note that the OH2 probe surfaces tend to occur
+near the hydrophilic regions. Select both surfaces in the Surfaces Manager
+and press <b>Delete</b> to delete the various isosurfaces.
+</p>
+
+</div>
+
+<div class="example">
+
+<p>
+<a name="ExampleGrids"></a>
+<h3>Example: Working with External Grids</h3>
+
+<div class="floatright">
+<img src="surfmap/ex_ext1.png" alt="Interaction Potential" />
+<p class="caption">
+Interaction potential surface of biotin
+</p>
+</div>
+
+<ol>
+
+<p>
+<li>
+<i>Load the biotin ligand.</i>
+<br />
+First clear the system:
+<p class="indent_novspace">
+<b><span class="nobr">MOE | RHS | Close</span></b>
+</p>
+Open the file:
+<p class="indent_novspace">
+<b><span class="nobr">MOE | RHS | Open</span></b>
+</p>
+In the Open panel,
+select <tt>$MOE/sample/mol/biotin.moe</tt> and press
+<b>OK</b>.  Center the molecule in the display using
+<p class="indent_novspace">
+<b><span class="nobr">MOE | RHS | Center</span></b>
+</p>
+</li>
+</p>
+
+<p>
+<li>
+<i>Add hydrogens to the system.</i>
+<p class="indent_novspace">
+<b><span class="nobr">MOE | RHS | Hydrogens</span></b>
+</p>
+For easier visualization, the hydrogens can be hidden with
+<p class="indent_novspace">
+<b><span class="nobr">MOE | Render | Hide Hydrogens</span></b>
+</p>
+</li>
+</p>
+
+<p>
+<li>
+<i>Draw the Interaction Potential surface.</i>
+<br />
+Start the Surfaces and Maps application by selecting
+<p class="indent_novspace">
+<b><span class="nobr">MOE | RHS | Surface | Surfaces and Maps</span></b>
+</p>
+Select
+<p class="indent_novspace">
+<b><span class="nobr">Surface: Interaction Potential</span></b>
+</p>
+Press <b>Create</b>.  Isosurfaces for the three probes should result
+(after a few seconds).
+</li>
+
+<p>
+<li>
+<i>Save the N: interaction potential field to an external file.</i>
+<br />
+Press <b>Save</b>.  In the Save Grid panel,
+enter <tt>save_grid.ccp4</tt>
+(<b>Surface</b> defaults to the first probe, in this case, N:)
+and change <b>Format</b> to <i>.ccp4</i>, then press <b>Save</b>.
+This creates a binary grid file in the CCP4 file format.
+</li>
+</p>
+
+<p>
+<li>
+<div class="floatright">
+<img src="surfmap/ex_grid_vdw.png" alt="Interaction Potential" />
+<p class="caption">
+Biotin VDW interaction<br />
+surface colored by grid
+</p>
+</div>
+
+<i>Load the grid file.</i>
+<br />
+<p class="indent_novspace">
+<b><span class="nobr">Surface: External Grid File</span></b>
+</p>
+Press the <b>Load</b> button and enter <tt>save_grid.ccp4</tt> as the
+file name in the Select a Grid File panel.  Press <b>Create</b>.
+The grid should load and the surface appear.
+</li>
+</p>
+
+<p>
+<li>
+<i>Change the grid surface rendering.</i>
+<br />
+Changing the surface color to light blue and the
+drawing mode to Solid will make the surface more visible.
+Set the iso-level to -2.5 and press <b>Create</b>.
+Observe that the isosurface corresponds to that of N: (in red).
+</li>
+</p>
+
+</ol>
+
+<p>
+The external grid file can also be used to color a molecular surface:
+
+<ol>
+<li>
+<i>Draw the Interaction (VDW) surface.</i>
+<p class="indent_novspace">
+<b><span class="nobr">Surface: Interaction (VDW)</span></b>
+</p>
+</li>
+
+<li>
+<i>Color by grid file.</i>
+<br />
+<p class="indent_novspace">
+<b><span class="nobr">Color: Grid File</span></b>
+</p>
+Press <b>Load</b>.  In the Select a Grid File panel,
+enter <tt>save_grid.ccp4</tt> and press <b>OK</b>.  In the
+Surfaces and Maps panel,
+press <b>Apply</b> to generate the surface.  Here (using
+default settings), red indicates negative values.  It can
+be seen that, as expected, the surface shows red
+near the N: interaction potential isosurface.
+</ol>
+
+</div>
+
+<div class="example">
+
+<p>
+<a name="ExampleEDensity"></a>
+<h3>Example: Displaying Electron Density</h3>
+
+<ol>
+
+<p>
+<li>
+<i>Load the 1QUR system into MOE.</i>
+<br />
+First clear the system:
+<p class="indent_novspace">
+<b><span class="nobr">MOE | RHS | Close</span></b>
+</p>
+Open the file:
+<p class="indent_novspace">
+<b><span class="nobr">MOE | RHS | Open</span></b>
+</p>
+In the Open panel,
+select <tt>$MOE/sample/mol/1qur.pdb</tt> and press
+<b>OK</b>.  The Load PDB File panel will open, press <b>OK</b>
+to take the defaults.
+
+By default, the molecule is centered in the view and the backbone ribbons
+are displayed.
+
+</li>
+</p>
+
+<p>
+<li>
+<i>Draw the simulated Electron Density surface.</i>
+<br />
+Start the Surfaces and Maps application with
+<p class="indent_novspace">
+<b><span class="nobr">MOE | RHS | Surface | Surfaces and Maps</span></b>
+</p>
+Select
+<p class="indent_novspace">
+<b><span class="nobr">Surface: Electron Density</span></b>
+</p>
+Specify the atoms around which the surface will be drawn:
+<p class="indent_novspace">
+<b><span class="nobr">Atoms: All Atoms</span></b>
+</p>
+<p class="indent_novspace">
+<b><span class="nobr">Near: Ligand Atoms</span></b>
+</p>
+Press <b>Create</b>.
+The simulated electron density surface
+will be displayed after a few moments.
+
+<p>Press <b>Isolate</b> to render the system only near the
+ligand.</p>
+
+<p>Hide the simulated electron density surface by selecting it
+from the list in the Surfaces and Maps panel and then pressing
+<b>Hide</b>.
+</p>
+
+</li>
+</p>
+
+<p>
+<li>
+<div class="floatright">
+<img src="surfmap/ex_ed_fofc.png"
+alt="Fo-Fc Electron Density Surface" />
+<p class="caption">Fo-Fc difference map</p>
+</div>
+
+<i>Draw the experimental Electron Density surface.</i>
+<br />
+Press the <b>Load</b> button.  In the Select a Structure Factor
+File panel, enter <tt>$MOE/sample/mol/1qur_sigmaa.mtz</tt>.
+Press <b>OK</b> to load the MTZ file, and accept the changes
+to the unit cell parameters.
+
+<p>In the Surfaces and Maps panel, the <b>Res</b> field
+automatically changes to
+reflect the actual resolution of the input file.
+The <b>Fo</b>, <b>Phi</b> and <b>Fc</b> menus update to reflect
+the data columns that were read in.
+Press <b>Apply</b> to calculate the electron density surface based
+on the F data column.
+This may take a few seconds to complete.
+</p>
+
+<p>Hide the experimental electron density surface by selecting it
+from the list in the Surfaces and Maps panel and then pressing
+<b>Hide</b>.
+</p>
+
+</li>
+</p>
+
+<p>
+<li>
+<i>Draw the Fo-Fc difference map.</i>
+<br />
+
+In the <b>Name</b> field, change the name of the surface to
+<pre>
+    1QUR Electron Density Fo-Fc: '1qur_sigmaa.mtz'
+</pre>
+
+Select the form of the difference map and specify which
+column will be used in the difference calculation:
+<p class="indent_novspace">
+<span class="nobr"><b>Map: Fo-Fc</b></span>
+</p>
+<p class="indent_novspace">
+<span class="nobr"><b>Fo: F</b></span>
+</p>
+<p class="indent_novspace">
+<span class="nobr"><b>Fc: Simulated</b></span>
+</p>
+
+<p>When the <span class="nobr">Fo-Fc</span> map is selected, two
+color widgets appear, for selecting the positive and
+negative color mappings.
+Press <b>Create</b>.
+The electron density difference surface
+will be displayed after a few moments.
+</p>
+
+</li>
+</p>
+
+</ol>
+
+</div>
+
+<p>
+<h2>See Also</h2>
+<p>
+<a href="sitefind.htm">Site Finder</a><br>
+<a href="emin.htm">Energy Minimization</a><br>
+<a href="../moe/gui/gobjman.htm">Graphics Object Manager</a><br>
+<a href="../moe/pot.htm">Potential Energy Selection and Configuration</a><br>
+<a href="edsurf.htm">Electron Density Surface</a><br>
+<a href="../svl/fcnref/gridfile.htm">Binary Grid Files</a>
+
+<a name="Ref"></a>
+<h2>References</h2>
+
+<table cellpadding="5" width="100%">
+
+<tr>
+<td valign="top">[Boobbyer&nbsp;1989]
+<td valign="top">
+Boobbyer, D.N.A., Goodford, P.J., McWhinnie, P.M., Wade, R.C.;
+New Hydrogen-Bond Potentials for Use in Determining Energetically
+Favorable Binding Sites on Molecules of Known Structure;
+<i>J. Med. Chem. 32</i> (<b>1989</b>) 1083&ndash;1094.
+
+<tr>
+<td valign="top">[Connolly&nbsp;1983]
+<td valign="top">
+Connolly, M.L.;
+Solvent-Accessible Surfaces of Proteins and Nucleic Acids;
+<i>Science 221</i> (<b>1983</b>) 709&ndash;713.
+
+<tr>
+<td valign="top">[Connolly&nbsp;1996]
+<td valign="top">
+Connolly, M.L.;
+Molecular Surfaces: A Review;
+<i>Network Science - NetSci</i> (<b>1996</b>)
+<tt>http://www.netsci.org/Science/Compchem/feature14.html</tt>
+</td>
+
+<tr>
+<td valign="top">[Edelsbrunner]
+<td valign="top">
+Edelsbrunner, H.;
+<i>Weighted Alpha Shapes</i>;
+Department of Computer Science,
+University of Illinois at Urbana-Champaign, Urbana, Illinois 61810. 
+
+<tr>
+<td valign="top">[Gilson&nbsp;1987]
+<td valign="top">
+Gilson, M., Sharp, K.A., Honig, B.;
+Calculating the Electrostatic Potential of Molecules in Solution:
+Method and Error Assessment;
+<i>J. Comput. Chem. 9</i> (<b>1988</b>) 327&ndash;335.
+
+<tr>
+<td valign="top">[Goodford&nbsp;1985]
+<td valign="top">
+Goodford, P.J.;
+A Computational Procedure for Determining Energetically
+Favorable Binding Sites on Biologically Important Macromolecules;
+<i>J. Med. Chem. 28</i> (<b>1985</b>) 849&ndash;857.
+
+<tr>
+<td valign="top">[Grant&nbsp;2001]
+<td valign="top">
+Grant, J.A., Pickup, B.T., Nicholls, A.;
+A Smooth Permittivity Function for Poisson-Boltzmann Solvation Methods;
+<i>J. Comput. Chem. 22(6)</i> (<b>2001</b>) 608&ndash;640.
+
+<tr>
+<td valign="top">[Heiden&nbsp;1993]
+<td valign="top">
+Heiden, W., Moeckel, G., Brickmann, J.; 
+A New Approach to Analysis and Display of Local Lipophilicity/Hydrophilicity
+Mapped on Molecular Surfaces;
+<i>J. Comput. Aided Mol. Des. 7</i> (<b>1993</b>) 503&ndash;514.
+
+<tr>
+<td valign="top">[Labute&nbsp;2000]
+<td valign="top">
+Labute, P.; Atomic Contact Radii in the Protein Data Bank;
+<i>Not published</i> (<b>2000</b>).
+
+<tr>
+<td valign="top">[Laskowski&nbsp;1998]
+<td valign="top">
+Laskowski, R.A., Thornton, J.M., Humblet, C., Singh, J.;
+X-SITE: Use of Empirically Derived Atomic Packing Preferences to Identify
+Favorable Interaction Regions in the Binding Sites of Proteins;
+<i>J. Mol. Biol. 259</i> (<b>1998</b>) 175&ndash;201.
+
+<tr>
+<td valign="top">[Lee&nbsp;1971]
+<td valign="top">
+Lee, B., Richards, F.M.;
+The Interpretation of Protein Structures: Estimation of Static Accessibility;
+<i>J. Mol. Biol. 55</i> (<b>1971</b>) 379&ndash;400.
+
+<tr>
+<td valign="top">[Liang&nbsp;1998]
+<td valign="top">
+Liang, J., Edelsbrunner, H., Fu, P., Sudhakar, P., Subramanian, S.;
+Analytical Shape Computation of Macromolecules: I. Molecular Area and
+Volume Through Alpha Shape;
+<i>Proteins 33</i> (<b>1998</b>) 1&ndash;17.
+
+<tr>
+<td valign="top">[Nissink&nbsp;2000]
+<td valign="top">
+Nissink, J.W.M., Verdonk, M.L., Klebe, G.;
+Simple Knowledge-Based Descriptors to Predict Protein-Ligand Interactions.
+Methodology and Validation;
+<i>J. Comput. Aided Mol. Des. 14</i> (<b>2000</b>), 787&ndash;803.
+
+<tr>
+<td valign="top">[Jorgensen&nbsp;1996]
+<td valign="top">
+Jorgensen W.L., Maxwell, D.S., Tirado-Rives, J.;
+Development and Testing of the OPLS All-Atom Force Field on
+Conformational Energetics and Properties of Organic Liquids;
+<i>J. Am. Chem. Soc. 117</i> (<b>1996</b>) 11225&ndash;11236.
+
+<tr>
+<td valign="top">[Rantanen&nbsp;1996]
+<td valign="top">
+Rantanen V., Denessiouk, K.A., Gyllenberg, M., Koski, T., Johnson, M.S.;
+A Fragment Library Based on Gaussian Mixtures Predicting Favorable Molecular
+Interactions;
+<i>J. Mol. Biol. 313</i> (<b>2001</b>) 197&ndash;214.
+
+<tr>
+<td valign="top">[Richards&nbsp;1977]
+<td valign="top">
+Richards, F.M.;
+Areas, Volumes, Packing, and Protein Structures;
+<i>Ann. Rev. Biophys. Bioeng. 6</i> (<b>1977</b>) 151&ndash;176.
+
+<tr>
+<td valign="top">[Rocchia&nbsp;2002]
+<td valign="top">
+Rocchia, W., Sridharan, S., Nicholls, A., Alexov, E., Chiabrera, A., Honig, B.;
+Rapid Grid-Based Construction of the Molecular Surface and the Use of
+Induced Surface Charge to Calculate Reaction Field Energies: Applications
+to the Molecular Systems and Geometric Objects;
+<i>J. Comput. Chem. 23</i> (<b>2002</b>) 128&ndash;137.
+
+<tr>
+<td valign="top">[Sanner&nbsp;1996]
+<td valign="top">
+Sanner, M., Olson, A., Spehner, J.;
+Reduced Surface: An Efficient Way to Compute Molecular Surfaces;
+<i>Biopolymers 38</i> (<b>1996</b>) 305&ndash;320.
+
+<tr>
+<td valign="top">[Sethian&nbsp;1998]
+<td valign="top">
+Sethian, J.A.; Adaptive Fast Marching and Level Set Methods for
+Propagating Interfaces; <i>Acta Math. Univ. Comenianae LXVII</i>
+(<b>1998</b>) 3&ndash;15.
+</tr>
+
+<tr>
+<td valign="top">[Sharp&nbsp;1990]
+<td valign="top">
+Sharp K., Honig B.; Electrostatic Interactions in Macromolecules:
+Theory and Applications. <i>Ann. Rev. Biophys. Biophys. Chem. 19</i>
+(<b>1990</b>) 301&ndash;332.
+
+<tr>
+<td valign="top">[Wildman&nbsp;1999]
+<td valign="top">
+Wildman, S.A., Crippen, G.M.;
+Prediction of Physiochemical Parameters by Atomic Contributions;
+<i>J. Chem. Inf. Comput. Sci. 39</i> (<b>1999</b>) 868&ndash;873.
+
+</table>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+

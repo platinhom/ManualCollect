@@ -1,0 +1,495 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	solvate.htm
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Solvating Molecular Systems</title>
+<meta panel Solvate>
+
+<meta keywords solvate, solvation, molecular dynamics />
+<meta keywords crystal parameters, periodic boundary conditions />
+<meta keywords wall restraint, potential setup, tether />
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+<ul>
+<li><a href="#Methods">Methods</a></li>
+<li><a href="#Run">Running the Application</a></li>
+<li><a class="example" href="#Example">Example: Solvating Oxytocin</a></li>
+<li><a href="#SVL">SVL Commands</a></li>
+<li><a href="#See_Also">See Also</a></li>
+</ul>
+
+<p>
+The purpose of the Solvate application is to add solvent molecules to a
+molecular system, typically prior to a molecular dynamics simulation.
+The Solvate application provides for:
+
+<ol>
+<li>Centering and axis aligning the solute.
+<li>Selection of solvent: water, DMSO, methanol, carbon tetrachloride.
+<li>Addition of solvent molecules to a solute or to an empty system.
+<li>Support for periodic (cell) or aperiodic (droplet) systems.
+<li>Configuration of Crystal Parameters or Wall Restraint.
+</ol>
+
+<p>
+Solvate adds solvent by replicating precalculated periodic systems of
+molecules so as to envelop a solute.
+Solvent molecules that clash with the solute are eliminated.  Solvent molecules
+farther away from the solute
+are removed to produce a droplet or periodic cell of a specified size.
+An optional additional margin of solvent depth can be added.
+The resulting molecular system, which will not contain large strain energies,
+is briefly minimized to remove the remaining strain.
+For periodic systems, fine tuning of the cell volume is best conducted with
+<a href="md.htm">NPT molecular dynamics</a>
+with careful attention to the protocol.
+</p>
+
+<!-- METHODS -->
+
+<a name="Methods"></a>
+<h2>Methods</h2>
+
+<p>
+Solvent molecules are added to the current molecular system using
+the following steps:
+
+<ol>
+<li><b>Delete</b>.
+Optionally, distant (no atom less than 4.0&nbsp;&Aring; from the solute) or all
+of the existing solvent molecules currently in the system are deleted
+prior to solvation.
+Compounds selected via
+<b>MOE&nbsp;|&nbsp;Select&nbsp;|&nbsp;<a href="../moe/gui/mainwin.htm#Solvent">Solvent</a></b>
+are candidates to be removed in this step.
+<p>
+<li><b>Transform</b>.
+Optionally, the atoms in the current system are transformed
+by a rigid body rotation and translation so that the solute center of mass
+is at the origin and principal mass moments are aligned to the
+<i>x</i>-, <i>y</i>- and <i>z</i>-axes.  Note that <i>all</i>
+atoms in the system will be affected.
+<p>
+<li><b>Neutralize</b>.
+Optionally, salt counterions are added to neutralize the system.  The
+smallest number of counterions are added to achieve neutrality; they are
+placed sequentially at optimal locations.
+<p>
+<li><b>Read Solvent</b>.
+One of the precalculated periodic solvent files in <tt>$MOE/lib/solvent</tt>
+is read and replicated so as to surround all of the atoms in the system
+plus a specified margin.  The precalculated files were prepared by performing
+molecular dynamics simulations at experimental density.
+<p>
+<li><b>Remove Clashes</b>.
+Solvent molecules that clash with atoms in the system are deleted as are
+solvent molecules outside the droplet or solvent layer (if specified).
+If the system is periodic, certain solvent molecules are removed to
+reduce clashes due to periodicity (see below).
+<p>
+<li><b>Update Parameters</b>.
+Optionally, update the Crystal Parameters (for periodic systems) or
+the Wall Restraint (for droplets) to reflect the solvated geometry:
+sphere, ellipse, box, cube, etc.
+</ol>
+
+<p>
+Retaining pre-existing solvent molecules is useful when counterions have
+already been positioned or to retain crystallographic waters found in PDB
+files.  The 4.0&nbsp;&Aring; cutoff used for the &quot;nearby&quot; test
+is consistent with the first layer contact statistics &ndash; water molecules
+beyond the cutoff are unlikely to be bound waters.  The rigid body
+transformation in the Transform step aligns the eigenvalues of the
+mass-weighted covariance matrix of the solute atoms with the canonical axes.
+Typically, such a transformation is used to position a small molecule at
+the center of a droplet which is itself centered at the origin or to
+position a molecular system at the center of a periodic cell.
+<b>Note!</b> Atom tether parameters are transformed along with the atoms
+and fixed atoms are temporarily unfixed and re-fixed after the transformation.
+
+<p>
+Solvent files are pre-calculated periodic systems of solvent molecules.  The
+file format is a modified SD file.  The first line marks the file as a
+solvent file and is followed by
+an SD file record that ends with <tt>$$$$</tt>.  The record consists of a
+connection table, which defines a single solvent molecule using 2D depiction
+coordinates, followed by data fields of which four are specific to the
+solvent format.  These fields define the solvent name, SMARTS
+pattern and periodic cell parameters along with the total molecule count
+in the 3D coordinate data.
+The 3D Coordinate data, provided for all the solvent molecules
+in the periodic system, follow the
+<tt>$$$$</tt>.
+</p>
+
+<p>
+The optional SMARTS pattern is
+used to delete pre-existing copies of the solvent
+molecule.  The pattern does not need to include
+light atoms as
+the Solvate application will automatically delete any attached
+light atoms.
+</p>
+
+<p>
+The following is an example file:
+
+<blockquote><pre>
+#moe:solventbox
+HOH
+  MOE2009           2D
+
+  3  2  0  0  0  0  0  0  0  0  1 V2000
+    0.3750    0.6500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.1250    0.6500    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+    1.1250   -0.6500    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  1  3  1  0  0  0  0
+M  END
+&gt;  &lt;name&gt;
+Water
+
+&gt;  &lt;smarts&gt;
+[OX2H2Q0]
+
+&gt;  &lt;cell&gt;
+ 18.7 18.7 18.7 90.0 90.0 90.0
+
+&gt;  &lt;nmol&gt;
+216
+
+$$$$
+  12.416  17.427  12.572
+  11.946  16.669  12.951
+  13.080  17.025  11.993
+  ...
+</pre></blockquote>
+
+<p>
+The solvents available to the Solvate graphical user interface
+are those specified by solvent files
+in the <tt>$MOE/lib/solvent</tt> directory.  The
+<a class="svl" href="../moe/fcnref/solvfcn.htm">Solvate</a> function
+further allows specification of
+a solvent file located elsewhere than in <tt>$MOE/lib/solvent</tt>.
+
+<p>
+After replication of the solvent periodic system, some solvent molecules
+may clash with the solute.
+In periodic systems, additional clashes may arise if the pre-calculated
+periodic cell does not evenly divide the desired periodic cell, in which
+case some solvent molecules may clash with other solvent molecules
+due to the change in periodicity conditions.
+All such offending molecules are eliminated.  Likewise,
+candidate solvent molecules outside the droplet
+or solute layer dimensions are removed, as are
+any solvent molecules that violate droplet
+geometry (this applies to aperiodic systems only).
+</p>
+
+<p>Solvent molecules that clash with either solute or (in periodic
+systems) other solvent molecules
+are identified by applying an energetic clash test
+parameterized by a strain energy cutoff <i>C</i>, typically
+10&ndash;20&nbsp;kcal/mol.  The interaction energy
+between two molecules (whether solvent or solute) is the sum of the
+Coulomb and van der Waals energies.  In
+periodic systems, this interaction energy
+is calculated between each pair of candidate solvent molecules under
+the contemplated periodic boundary conditions rather than the pre-calculated
+periodic boundary conditions.
+Any candidate solvent molecule that
+has a total interaction energy with the rest of the system greater
+than <i>C</i> is removed.
+</p>
+
+<p>Formally,
+let <b>U</b>&nbsp;=&nbsp;[<i>U<sub>ij</sub></i>] denote the matrix
+of molecular interaction energies between solvent molecules
+<i>i</i> and <i>j</i>.
+Let <b>u</b>&nbsp;=&nbsp;(<i>u<sub>i</sub></i>) denote the vector of
+interaction energies between solvent molecules <i>i</i> and the solute.
+Let <b>x</b> be a binary vector with a 1 indicating that a particular
+solvent molecule is to be included and 0 indicating that the molecule is
+to be removed.  For a particular vector, <b>x</b>, we define the total
+system energy to be
+
+<p align=center>
+<i>E</i>(<b>x</b>) =
+      <b>x</b><sup>T</sup> <b>U</b> <b>x</b> / 2
+    + <b>u</b><sup>T</sup> <b>x</b>
+    + <i>C</i> <b>e</b><sup>T</sup> (<b>e</b> &ndash; <b>x</b>)
+</p>
+
+<p>
+where <b>e</b> denotes a vector of all 1 values.  This total energy function 
+is such that if a solvent molecule is removed
+(<i>x<sub>i</sub></i>&nbsp;=&nbsp;0) then an energy penalty of <i>C</i>
+is paid.  Thus, in order for a candidate solvent molecule to be removed,
+its interaction energy with the rest of the system will have to be greater
+than <i>C</i>.  Minimization of <i>E</i> over all binary vectors <b>x</b>
+will result in the optimal removal of solvent molecules that cause too
+much strain were they to be included.  This combinatorial optimization
+is conducted using an iterative Dead End Elimination algorithm.
+</p>
+
+<a name="Run"></a>
+<h2>Running the Application</h2>
+
+<p>
+To start Solvate, select <nobr><b>MOE | Edit | Solvate</b></nobr>;
+however, before running Solvate, ensure that the molecular system is
+topologically correct; i.e. it has proper ionization states, no missing atoms,
+etc.  Solvate will add missing hydrogens according to the topology of the
+system but ionization state will not be changed. It is recommended that
+<a href="protonate3d.htm">Protonate3D</a>
+be run prior to solvating the system to perform the protonation and
+ionization state assignment.
+</p>
+
+<p><center><img SRC="solvate/panel.png" alt="Solvate Panel"></center>
+
+<p><table cellspacing=5>
+<tr>
+<td valign="top"><b>Mode</b>
+<td valign="top">
+Specifies the fundamental geometry type of the solvated system.
+<b>Droplet</b> will
+create an aperiodic system with ellipsoidal or rectilinear boundary
+conditions.  <b>Layer</b> will create solvent in a layer
+that coats the solute.  <b>Periodic</b>
+will create a P1 rectilinear periodic system with 90&deg; cell angles.
+In all cases (except when using Crystal Parameters or Wall Restraint
+dimensions), the depth of the solvent surrounding the solute is
+specified by <b>Margin</b>.
+<tr>
+<td valign="top"><b>Shape</b>
+<td valign="top">
+Specifies the particular geometry of the solvated system,
+depending on the specified <b>Mode</b>.
+In Droplet Mode, the shapes
+can be <b>Sphere</b>, <b>Ellipse</b>, <b>Cube</b>, <b>Box</b>
+(bounding box) or <b>Wall</b>.  Wall uses the current dimensions of the
+Wall Restraints in the
+<a href="../moe/pot.htm#Wall">Potential Setup</a> panel.
+In Layer Mode, the shape options are disabled as
+the solvent follows the contours
+of the solute.  In Periodic Mode, the shape can be one of
+<b>Cube</b>, <b>Box</b> or <b>Crystal</b>.  Box uses the current
+settings of the
+<a href="crystal.htm">Crystal Parameters</a> unit cell.
+<tr>
+<td valign="top"><b>Solvent</b>
+<td valign="top">
+Specifies the solvent molecule.  The solvent systems are pre-calculated
+periodic systems of solvent specified in solvent files found
+in the <tt>$MOE/lib/solvent</tt> directory.  A 2D
+depiction of the selected solvent is displayed, along with the residue name of
+the solvent.
+<tr>
+<td valign="top"><b>Salt</b>
+<td valign="top">
+Specifies the salt used to neutralize charged systems.  Enter the chemical
+formula of the salt; e.g. NaCl, or KCl.  Only salts with monatomic ions
+are permitted.  The salt is ignored for neutral systems.
+<tr>
+<td valign="top"><b>Margin</b>
+<td valign="top">
+Solvent is added to the system to surround the specified solute atoms to
+a depth specified by <b>Margin</b>.  Except when Wall Restraints or
+Crystal Parameters are being used (in which case this value is
+ignored), this setting affects
+the ultimate size of the periodic box or droplet.
+For periodic systems, it is recommended that this value be set to
+half of the Potential <a href="../moe/pot.htm#Cutoff">non-bonded cutoff</a>
+plus one (i.e. the &quot;off&quot; cutoff value plus one).
+In the case of Cube or Sphere geometries, the largest solute dimension is
+used to set the Cube or Sphere size; in other cases, each axis will be given
+its own dimension according to the solute dimensions along each axis.  For
+example, if the largest dimension of the solute is 12&nbsp;&Aring; and the
+value of <b>Margin</b> is 5&nbsp;&Aring; then a droplet of radius
+12&nbsp;+&nbsp;5&nbsp;&Aring; or a periodic cube with
+edge length 12&nbsp;+&nbsp;10&nbsp;&Aring; will be created.
+<tr>
+<td valign="top"><b>Delete</b>
+<td valign="top">
+Specifies how to treat existing solvent in the system.  <b>Keep All</b> will
+delete nothing; <b>Delete All</b> will delete all existing solvent;
+<b>Delete Far</b> will delete all existing solvent with
+minimum interatomic solute distance greater
+than 4.0&nbsp;&Aring;.  <b>Note!</b> Candidates for deletion are atoms
+identified by <span class="menu">MOE | Select |
+<a href="../moe/gui/mainwin.htm#Solvent">Solvent</a></span>,
+which may include
+molecules other than that specified by the <b>Solvent</b> setting.
+<tr>
+<td valign="top"><b>Solute</b>
+<td valign="top">
+Specifies the solute atoms:  <b>All</b> means all atoms, <b>Selected</b>
+means selected atoms and <b>Ligand</b> means atoms identified by
+<span class="menu">MOE | Select |
+<a href="../moe/gui/mainwin.htm#Ligand">Ligand</a></span>.
+The solute atoms are
+used to determine centering and orientation (see below).  Droplet dimensions
+are determined from the solute atoms only;
+periodic systems, however,
+are always fully solvated: <i>all</i> atoms in the
+system are solvated whether or not they are specified as the solute.
+<tr>
+<td valign="top"><b>Center<br>Axis&nbsp;Align</b>
+<td valign="top">
+If on then the <i>entire system</i> is translated and/or rotated (including
+any atom tethers) so that the <b>Solute</b> center of mass is at the origin
+and the principal mass moments are aligned to the <i>x-</i>, <i>y-</i>,
+<i>z-</i>axes.  Atoms are temporarily unfixed and re-fixed, consequently,
+fixed atoms are transformed as well.  Typically, these options are used
+for periodic systems to center the solute at the cell origin and to reduce
+the volume of the periodic cell.
+<tr>
+<td valign="top"><b>Potential</b>
+<td valign="top">
+If on, then the Wall Restraint parameters (for Droplet solvations) or the
+Crystal Parameters (for Periodic solvations) will be updated to reflect
+the new system geometry.  This option has no effect when the Shape is
+Wall (Droplet Mode) or Crystal (Periodic Mode).
+</table>
+
+<p>
+Press <b>OK</b> to start the solvation calculation.  The calculation may
+take 10 seconds or so; larger systems may require more
+time.
+
+<a name="Example"></a>
+<div class="example">
+<h2>Solvating Oxytocin</h2>
+
+<p>
+To illustrate the use of the Solvate application,
+we will create a droplet of water
+around an oxytocin molecule.  Before proceeding, use
+<span class="menu">MOE | File | Close</span> to clear the current system.
+</p>
+
+<div class="floatright">
+<img src="solvate/oxytocin.jpg" alt="Oxytocin molecule" />
+</div>
+
+<ol>
+<p><li><i>Load the molecule into MOE.</i>
+<br />
+<blockquote>
+<span class="menu">MOE | File | Open |
+<tt>$MOE/sample/mol/oxytocin.moe</tt></span>
+</blockquote>
+</li></p><p>
+<li>
+<i>Start the Solvate application.</i>
+<br />
+<blockquote>
+<span class="menu">MOE | Edit | Solvate</span>
+</blockquote>
+</li></p><p>
+<li>
+<i>Set the solvation parameters:</i>
+<br />
+    <ul>
+    <li><span class="menu">Mode: Droplet</span></li>
+    <li><span class="menu">Shape: Sphere</span></li>
+    <li><span class="menu">Solvent: Water</span></li>
+    <li><span class="menu">Salt: None</span></li>
+    <li><span class="menu">Margin: 6.0</span>&nbsp;(&Aring;)</li>
+    <li><span class="menu">Delete: Delete Far</span></li>
+    <li><span class="menu">Solute: All</span> and check both</li>
+        <span class="menu">Center</span> (solute center of mass at origin)
+        and <span class="menu">Axis Align</span> (solute principal mass moments
+            should be axis aligned)</li>
+    </ul>
+</li></p><p>
+<li>
+<i>Initiate the solvation operation.</i>
+<br />
+    Press <b>OK</b>.
+</li></p>
+</ol>
+
+<p>
+To prepare the system for
+<a href="emin.htm">Energy Minimization</a> followed by
+<a href="md.htm">Molecular Dynamics</a>
+or explicit water conformational search with
+<a href="confsrch.htm">LowModeMD</a>,
+the oxytocin molecule should be anchored
+so that it will not be translated out of the droplet
+due to diffusion.
+</p>
+
+<ol start="5">
+<p><li>
+<i>Select an atom near the origin.</i>
+<br />
+In the MOE Window, select an atom near the
+center of the oxytocin molecule.
+</li></p><p>
+<li>
+<i>Fix the selected atom.</i>
+<br />
+<blockquote>
+<span class="menu">MOE | Edit | Potential | Fix</span>
+</blockquote>
+Henceforth, that atom's coordinates will be prevented from changing,
+serving to hold the entire molecule at the center of the water droplet.
+</li></p>
+</ol>
+
+</div>
+
+<a name="SVL"></a>
+<h2>SVL Commands</h2>
+<p>
+<a class="svl" href="../moe/fcnref/solvfcn.htm">Solvate</a><br />
+
+<a name="See_Also">
+<h2>See Also</h2>
+<p>
+<a href="crystal.htm">Crystal Parameters</a><br>
+<a href="../moe/pot.htm">Potential Energy Selection and Configuration</a><br>
+<a href="md.htm">Protonate3D</a><br>
+<a href="emin.htm">Energy Minimization</a><br>
+<a href="md.htm">Molecular Dynamics</a><br>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

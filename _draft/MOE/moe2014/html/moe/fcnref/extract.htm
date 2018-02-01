@@ -1,0 +1,351 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	extract.htm	MOL Data Structure 
+-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions mol_Extract, MOL_NAME, MOL_ATOM_*, MOL_RES_*, MOL_CHAIN_*>
+<meta functions mol_ExtractFromCTAB>
+
+<title>MOL Data Structure</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    mol = <a class="fcnlink" href="#mol_Extract">mol_Extract</a> object_keys
+    [mol, [atno,bondO]] = <a class="fcnlink" href="#mol_ExtractFromCTAB">mol_ExtractFromCTAB</a> ctab
+</pre>
+
+<p><a name="mol_Extract"></a>
+
+<h2>Description</h2>
+
+<p><tt><span class="fcndef">mol_Extract</span></tt>
+takes a vector of molecular object keys (atoms,
+residues, etc.) describing a molecule or sub-molecule in the current
+molecular system, and returns an MDB format description of that
+molecule.  This description is a vector suitable for passing to
+<tt>db_Write</tt> as the data value for a <tt>'molecule'</tt> field type,
+or for passing to <tt>mol_Create</tt> as the <tt>mol</tt>
+argument.</p>
+
+<p>When an atom key is passed to <tt>mol_Extract</tt>, descriptors
+for the atom, its parent residue and its owning chain are generated and
+returned. When a residue key is passed, descriptors for the residue, its
+parent chain and all of its child atoms are returned. When a chain key is
+passed, descriptors for the chain and all of its child residues and their
+atoms are returned.</p>
+
+<p>If both the key of an atom and that of its parent residue or owning
+chain are passed to <tt>mol_Extract</tt>, only one descriptor for
+that atom will be generated, i.e. all duplicate descriptors are
+eliminated from the return vector.</p>
+
+<p>Note that a molecule description passed to <tt>mol_Create</tt>
+is not guaranteed to be identical to the whole molecule description
+returned by <tt>mol_Extract</tt> in terms of the order of the
+descriptors. However, for a given chain, the residues will always appear
+in sequence. The variable <tt>'mol'</tt> containing the final molecule has
+the following form:
+
+<pre>
+    [ mol_data, chain_data, res_data, atom_data ]
+</pre>
+
+<p>That is, <tt>mol(1)</tt> contains molecule-related data (e.g.
+name), <tt>mol(2)</tt> contains chain-related data (e.g. number of
+residues in the chain), <tt>mol(3)</tt> contains residue-related data
+(e.g. residue name) and <tt>mol(4)</tt> contains atom-related data
+(e.g. element and connectivity). Individual fields of
+<tt>mol_data</tt>, <tt>chain_data</tt>, <tt>res_data</tt>, and
+<tt>a</tt><tt>tom_data</tt> must be accessed with the symbolic constant
+indices described below. 
+
+<p>
+
+<center>
+<table class="titlebar" border="1" cellspacing="1" cellpadding="5">
+  <tr>
+    <th>Descriptor</th>
+    <th>Description (object i)</th>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>mol_data(MOL_NAME)</tt></td>
+    <td valign="baseline">molecule name token </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>chain_data(MOL_CHAIN_NAME)(i)</tt></td>
+    <td valign="baseline">chain name token</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>chain_data(MOL_CHAIN_TAG)(i)</tt></td>
+    <td valign="baseline">chain tag token</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>chain_data(MOL_CHAIN_HEADER)(i)</tt></td>
+    <td valign="baseline">chain header token</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>chain_data(MOL_CHAIN_NRES)(i)</tt></td>
+    <td valign="baseline"># residues in chain</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>res_data(MOL_RES_NAME)(i)</tt></td>
+    <td valign="baseline">residue name token</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>res_data(MOL_RES_UID)(i)</tt></td>
+    <td valign="baseline">residue id #</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>res_data(MOL_RES_INS)(i)</tt></td>
+    <td valign="baseline">insertion code (char)</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>res_data(MOL_RES_TYPE)(i)</tt></td>
+    <td valign="baseline">residue type token </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>res_data(MOL_RES_NATOMS)(i)</tt></td>
+    <td valign="baseline"># atoms in residue </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>atom_data(MOL_ATOM_EL)(i)</tt></td>
+    <td valign="baseline">atom element token </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>atom_data(MOL_ATOM_ION)(i)</tt></td>
+    <td valign="baseline">atom ionization state </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>atom_data(MOL_ATOM_GEOM)(i)</tt></td>
+    <td valign="baseline">atom hybridization token </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>atom_data(MOL_ATOM_CHIRALITY)(i)</tt></td>
+    <td valign="baseline">atom chiral constraint</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>atom_data(MOL_ATOM_HINTLP)(i)</tt></td>
+    <td valign="baseline">atom lone pair hint flag </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>atom_data(MOL_ATOM_BONDS)(i)</tt></td>
+    <td valign="baseline">bonds of atom i </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>atom_data(MOL_ATOM_CHARGE)(i)</tt></td>
+    <td valign="baseline">atom partial charge </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>atom_data(MOL_ATOM_NAME)(i)</tt></td>
+    <td valign="baseline">atom name token </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>atom_data(MOL_ATOM_BACKBONE)(i)</tt></td>
+    <td valign="baseline">atom backbone flag </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>atom_data(MOL_ATOM_X)(i)</tt></td>
+    <td valign="baseline">atom x coordinate </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>atom_data(MOL_ATOM_Y)(i)</tt></td>
+    <td valign="baseline">atom y coordinate </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>atom_data(MOL_ATOM_Z)(i)</tt></td>
+    <td valign="baseline">atom z coordinate </td>
+  </tr>
+</table>
+</center>
+
+<p>The molecule name <tt>MOL_NAME</tt> is the text that appears in a
+Database Viewer cell that has been reduced to its minimal size.</p>
+
+<p>The starting point for interpretation is <tt>chain_data</tt>, which
+contains the number of residues in each chain. The residues can then be
+interpreted sequentially. For example, if <tt>chain_data(MOL_CHAIN_NRES)
+</tt>has the value <tt>[2,3]</tt>, then each of the <tt>res_data</tt>
+vectors will have length 5 with their first two items in chain 1 and the
+last three items in chain 2. Similarly, if
+<tt>res_data(MOL_RES_NATOMS)</tt> is <tt>[10,20]</tt>, then each of the
+<tt>atom_data</tt> vectors will have 30 elements, the first 10 belonging
+to residue 1, and the rest belonging to residue 2.</p>
+
+<p>Atom connectivity is expressed as a vector of index vectors. Each index
+vector contains the indices of all atoms bonded to a given atom. The index
+of an atom is its position in any of the <tt>atom_data</tt> vectors.</p>
+
+<p><em>Example</em>.  The <tt>MOL_ATOM_EL</tt> vector for CH<sub>4</sub>
+would be:
+
+<pre>
+    ['C','H','H','H','H']
+</pre>
+
+<p>and that of <tt>MOL_ATOM_BONDS</tt> would be: 
+
+<pre>
+    [ [2,3,4,5], 1, 1, 1, 1]
+</pre>
+
+<p><em>Example</em>.  Suppose that MOE contains the di-peptide GLY-ALA.
+
+<pre>
+    svl&gt; cSetName [ Chains[], 'GLY-ALA' ] // set chain name to 'GLY-ALA'
+    svl&gt; mol = mol_Extract Chains[]
+</pre>
+
+<tt>mol</tt> now contains a description of the molecular system.</p>
+
+<p>Chain data is accessed with <tt>mol(2)</tt>.  The result is a vector of
+length 4 with the entries specifying chain names, chain tags, chain headers,
+and number of residues in each chain.  Since we have only a single chain in
+this example, each entry is a scalar value:
+
+<pre>
+    svl&gt; mol(2)
+    [ 'GLY-ALA', '', '', 2 ]
+</pre>
+
+<p>If there is more than one chain in the current system, each entry would be
+a vector:
+
+<pre>
+    svl&gt; newchain = pro_ResAppend [ 0, ['TRP','LYS'] ] // create TRP-LYS
+    svl&gt; cSetName [ newchain, 'TRP-LYS' ]              // set chain name
+    svl&gt; allchains = mol_Extract Chains[]
+    svl&gt; allchains(2)
+    [ ['GLY-ALA','TRP-LYS'], ['',''], ['',''], [2,2] ]
+</pre>
+
+<p>Returning to the GLY-ALA chain, its residue data is obtained with 
+<tt>mol(3)</tt>.  There are 9 atoms in GLY and 11 atoms in ALA.
+
+<pre>
+    svl&gt; mol(3)
+    [ ['GLY','ALA'], [0,0], &quot; &quot;, ['l-amino','l-amino'], [9,11] ]
+</pre>
+
+<p>When extracting information from a molecule description, always use the
+defined constants as outlined in the above table.  Thus, to retrieve the
+element tokens of the atoms:
+
+<pre>
+    svl&gt; mol(4)(MOL_ATOM_EL)
+    ['N','H','C','H','H','C','O','H','H','N',
+    'C','C','O','O','H','C','H','H','H','H']
+</pre>
+
+<p>To retrieve atom ionization data:
+
+<pre>
+    svl&gt; mol(4)(MOL_ATOM_ION)
+    [0,1,0,0,0,0,0,0,0,0,0,0,0,-1,0,0,0,0,0]
+</pre>
+
+<p>Connectivity information is obtained with:
+
+<pre>
+    svl&gt; mol(4)(MOL_ATOM_BONDS)(1)
+    [5,2,3,4]
+</pre>
+
+
+<p><a name="mol_ExtractFromCTAB"></a></p><p><hr noshade="noshade" />
+
+<pre>
+[mol, [atno,bondO]] = <span class="fcndef">mol_ExtractFromCTAB</span> ctab
+</pre>
+
+<p>
+The <tt>mol_ExtractFromCTAB</tt> function converts a CTAB data structure into
+a MOL data structure.
+
+<p>
+The returned <tt>mol</tt> will contain one chain and one residue and the atoms
+in order as appearing in the CTAB.
+
+The returned <tt>atno</tt> contains the atomic numbers of the atoms in the CTAB
+(which must contain only valid elements).
+
+The returned <tt>bondO</tt> contains the <tt>CTAB_B_TYPE</tt> data after charge
+separation and possible conversion of aromatic bonds to single-double
+representation.
+
+Note that not all fields of the CTAB have analogs in the MOL structure - these
+fields will be ignored.
+
+Atoms numbered with the <tt>CTAB_A_RGROUP</tt> will have atom names of the form
+<tt>A</tt><i>k</i> where is <i>k</i> is the R-group number; otherwise atom
+names will be identical to their element names.
+
+All supported forms of CTAB stereochemistry will be converted to MOL
+stereochemistry.
+
+
+<h2>See Also</h2>
+
+<table cellspacing="5" cellpadding="5">
+<tr><td colspan="3">
+    <a href="ctabfcn.htm">CTAB Connection Table Functions</a>
+
+<tr><td valign="top">
+    <a class="svl" href="mol.htm">mol_aPermute</a><br />
+    <a class="svl" href="mol.htm">mol_Cat</a><br />
+    <a class="svl" href="mol.htm">mol_Chirality</a><br />
+    <a class="svl" href="mol.htm">mol_Create</a>
+
+<td valign="top">
+    <a class="svl" href="mol.htm">mol_aCount</a><br />
+    <a class="svl" href="mol.htm">mol_rCount</a><br />
+    <a class="svl" href="mol.htm">mol_cCount</a><br />
+    <a class="svl" href="mol.htm">mol_aMask</a>
+
+<td valign="top">
+    <a class="svl" href="mol.htm">mol_rMask</a><br />
+    <a class="svl" href="mol.htm">mol_cMask</a><br />
+    <a class="svl" href="mol.htm">mol_Heavy</a>
+</table>
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

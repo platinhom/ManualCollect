@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:MadCap="http://www.madcapsoftware.com/Schemas/MadCap.xsd" lang="en-US" xml:lang="en-US" data-mc-search-type="Stem" data-mc-help-system-file-name="Documentation.xml" data-mc-path-to-help-system="../" data-mc-target-type="WebHelp2" data-mc-runtime-file-type="Topic" data-mc-preload-images="false" data-mc-in-preview-mode="false" data-mc-toc-path="Command References|Jaguar Command Reference|Running Jaguar Jobs|Running Jaguar Jobs over Multiple Processors">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link href="../Skins/Default/Stylesheets/Slideshow.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/TextEffects.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Topic.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Components/Styles.css" rel="stylesheet" type="text/css" data-mc-generated="True" /><title>Considerations for Running Parallel Jaguar Jobs</title>
+        <link href="../Resources/Stylesheets/docs.css" rel="stylesheet" />
+        <script src="../Resources/Scripts/custom.modernizr.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/jquery.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.config.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/foundation.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/plugins.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/MadCapAll.js" type="text/javascript">
+        </script>
+    </head>
+    <body><a name="aanchor7315"></a>
+        <MadCap:concept term="Command Reference" /><a name="aanchor7316"></a>
+        <MadCap:concept term="Jaguar" /><a name="jaguar_jobs_665538408_151253"></a>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="jaguar_jobs_multiproc_threads.htm" xrefformat="{paratext}">Running a Multithreaded Jaguar Job with OpenMP</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="jaguar_command_referenceTOC.htm" xrefformat="{paratext}">Jaguar Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight">
+                &#160;
+        </td>
+            </tr>
+        </table>
+        <h1 class="Title">Considerations for Running Parallel Jaguar Jobs</h1>
+        <p>Most Jaguar calculations can use OpenMP, but the following tasks are not parallelized with OpenMP:</p>
+        <ul class="ListCompact">
+            <li value="1">LMP2 calculations of any kind
+    </li>
+            <li value="2">PBF and SM6/SM8 solvation
+    </li>
+            <li value="3">HF/DFT ESP charge fitting
+    </li>
+        </ul>
+        <p>Properties that are quick to calculate and may not benefit from parallel execution include Mulliken analysis, Fukui indices, stockholder charges, thermochemical properties, multipole moments. Properties that are usually quick to calculate, but may benefit from parallel execution for large jobs, are NBO, and those properties that are evaluated on a grid for visualization: ESP, density, ALIE, NCI.</p>
+        <p>If you have many processor cores available and many large jobs to run through the same protocol, you can combine both forms of parallelism. The most important thing is to get as many subjobs launched as possible since this is 100% efficient. For this purpose, it is recommended that you use the <code>-PARALLEL</code> option where possible. However, if you want to manage the parallel execution yourself, you can do so. For example, if you have <i class="UserReplace">N</i> molecules (and at least <i class="UserReplace">N</i> Jaguar licenses) and at least 2*<i class="UserReplace">N</i> cores available, then you could use the following command: </p><pre>
+jaguar run <i class="UserReplace">input-files</i> -TPP 2 -HOST <i class="UserReplace">hostname</i>:<i class="UserReplace">N</i></pre>
+        <p>This command runs all <i class="UserReplace">N</i> subjobs at once, each using 2 threads. </p>
+        <p>If you don’t have enough processors to run all the subjobs at once but still want each subjob to run in parallel, you can limit the number of subjobs by setting <i class="UserReplace">N</i> to the maximum number of subjobs to run at a time. In general, you can run a set of jobs from Jaguar input files or Maestro files with the syntax</p><pre>
+jaguar run <i class="UserReplace">input-files</i> -TPP <i class="UserReplace">K</i> -HOST <i class="UserReplace">hostname</i>:<i class="UserReplace">N</i></pre>
+        <p>and the maximum number of processors used is <i class="UserReplace">K</i>×<i class="UserReplace">N</i>.</p>
+        <p>The workflow scripts (such as p<i>K</i><sub>a</sub>, fukui, VCD) all make use of parallel algorithms, and so benefit significantly from the use of multiple processors as long as you do not choose an unparallelized level of theory like ROLMP2. As PBF solvation is not parallelized, a p<i>K</i><sub>a</sub> job on a large molecule will lose some efficiency; however, the subjobs in this workflow can be distributed. Workflow scripts typically are used on more than one structure, so these scripts also benefit from subjob distribution. The exceptions are the <code>counterpoise.py</code> and <code>hydrogen_bond.py</code> scripts, which are still run sequentially.</p>
+        <p>Considering the above advantages and limitations of the available parallel methods, we recommend distributing as many subjobs simultaneously as you can. If you still have more processors available, run each subjob with 4 OpenMP threads. </p>
+        <p>You can set the <code>-TPP</code> options from Maestro as well as the maximum number of subjobs to run simultaneously. In the <span class="GUI">Job Settings</span> dialog box, select the <span class="GUI">Thread and subjobs</span> option. Two text boxes are displayed, for the number of threads and the maximum simultaneous subjobs. The total number of processors in use at any time is the product of the values in these text boxes. The job is launched with <code>-TPP </code><i class="UserReplace">T</i><code> -HOST </code><i class="UserReplace">hostname</i><code>:</code><i class="UserReplace">J</i>, where <i class="UserReplace">T</i> is the number of threads and <i class="UserReplace">J</i> is the number of subjobs. If instead you select <span class="GUI">CPUs</span> and enter a value into the <span class="GUI">CPUs</span> text box, this is interpreted as the number of processors to use. </p>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="jaguar_jobs_multiproc_threads.htm" xrefformat="{paratext}">Running a Multithreaded Jaguar Job with OpenMP</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="jaguar_command_referenceTOC.htm" xrefformat="{paratext}">Jaguar Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight">
+                &#160;
+        </td>
+            </tr>
+        </table>
+    </body>
+</html>

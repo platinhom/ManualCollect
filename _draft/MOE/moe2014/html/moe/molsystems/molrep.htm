@@ -1,0 +1,1237 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<!--
+!!	molrep.htm
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<title>Representation of Molecular Systems</title>
+
+<meta keywords group, named set />
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+   <li><a href="#Molecular_Hierarchy">Molecular Hierarchy:
+	Atoms, Residues and Chains</a></li>
+	<ul>
+       <li><a href="#Molecular_Properties">Molecular Properties</a></li>
+	</ul>
+   </li>
+   <li><a href="#Visualizing_the_Molecular_System">Visualizing
+	the Molecular System</a></li>
+   <li><a href="#Chemical_Representation">Chemical Representation in MOE</a>
+	<ul>
+	<li><a href="#Valence_Model">Valence Model</a></li>
+	<li><a href="#Stereochemistry">Stereochemistry</a></li>
+	<li><a href="#Aromaticity">Aromaticity</a></li>
+	<li><a href="#Periodic_Systems">Periodic Systems</a></li>
+	</ul>
+   </li>
+   <li><a href="#SVL">Programming in SVL</a>
+	<ul>
+	<li><a href="#Molecular_Objects_and_Keys">Molecular Objects and Keys</a>
+	</li><li><a href="#Private_Systems">Private Systems</a>
+	</li><li><a href="#MDB_CTAB_Formats">Molecular
+	    Database and CTAB Formats</a></li>
+	</ul>
+   </li>
+   <li><a href="#Molecular_Attributes">Molecular Object Attributes</a>
+	<ul>
+	<li><a href="#Atom_Attributes">Atom Attributes</a></li>
+	<li><a href="#Residue_Attributes">Residue Attributes</a></li>
+	<li><a href="#Chain_Attributes">Chain Attributes</a></li>
+	</ul>
+   </li>
+   <li><a href="#SVLCommands">SVL Commands</a></li>
+   <li><a href="#See_Also">See Also</a></li>
+</ul>
+
+
+<a name="Molecular_Hierarchy"></a>
+<h2>Molecular Hierarchy: Atoms, Residues and Chains</h2>
+
+<div class="floatright">
+<img src="molrep/biotin_hierarchy.png"
+alt="Molecular Hierarchy of the Streptavidin System" border="1" />
+</div>
+
+<p>In MOE, molecular data is organized in a hierarchy of
+atoms, residues and chains, which together constitute the
+<i>molecular system</i>.
+At the bottom-most level are the
+individual atoms.  These are visualized using the
+<a href="../gui/mainwin.htm">MOE Window</a>, which provides
+various rendering and atom editing tools.
+</p>
+
+<p>Atoms are grouped into units called <i>residues</i>,
+which correspond to such standard chemical entities as amino acids,
+DNA acids and bases, monosaccharides, polymer repeat units, etc.
+A small molecule such as a ligand generally constitutes its own
+residue, whereas a macromolecule such as a protein is composed
+of a sequence of residues.
+</p>
+
+<p>Residues in turn are sequenced into <i>chains</i>.  A single
+chain often comprises an entire molecule, but can also represent
+a logical macromolecular unit such as half of a dimer or the
+H and L arms of an antibody.
+The <a href="../gui/se.htm">Sequence Editor</a>
+(<span class="menu">MOE | Window | Sequence Editor</span> or
+<span class="menu">MOE | SEQ</span>) displays molecules
+in terms of chain and residue objects.
+Chains may be organized according to their chain tag and
+manipulated as a <i>tag group</i>.
+Chains of different tags may be organized into
+<i>groups</i>, and different objects may be collected
+into <i>named sets</i>.
+</p>
+
+<p>In general, small single-residue
+molecules such as ligands
+are most often managed solely from the MOE Window.
+In contrast,
+proteins, comprising a residue sequence with or without
+accompanying structural (3D coordinate) data, are
+typically manipulated using both the Sequence Editor, e.g. for
+studying sequence alignment, and the MOE Window, for visualization
+and examining protein-ligand interactions.
+</p>
+
+<p>The <a href="../gui/system.htm">System Manager</a>
+is used to manage all chains in the system, and can
+be used to control such properties
+as visibility, active state, and rendering modes.
+</p>
+
+<p>
+A final window,
+the <a href="../gui/atommgr.htm">Atom Manager</a>
+(<span class="menu">MOE | Window | Atom Manager</span>),
+displays detailed information about all objects in the system.
+<br clear="both" />
+</p>
+
+<a name="Molecular_Properties"></a><h3>Molecular Properties</h3>
+
+<div class="floatright">
+<img src="molrep/biotin_render.png"
+alt="Rendering of a Molecular System in MOE" />
+</div>
+
+<p>Each level of the molecular system has an associated
+set of properties or <i>attributes</i>.
+For example, an atom has atomic data such as element
+and charge as well as rendering options such as color and visibility
+associated with it.
+Similarly, a residue has associated residue data such as name and
+sequence position as well as rendering options such as residue color
+and ribbon drawing mode.  Chain attributes include color and number.
+</p>
+
+<p>Each residue and chain has an assigned ordinal
+number. Chain numbers are unique within the system;
+residue numbers are unique within a given chain. A residue is numbered
+according to its position in the sequence of residues making up its parent
+chain. Chain numbers can be modified by re-ordering the chains.
+Residue and chain numbers are shown in the Sequence Editor.
+</p>
+
+<p>
+<center>
+<img src="../gui/se/se.png" />
+</center>
+</p>
+
+<p>
+Chains also have several identifiers associated with them (tag and name
+are easily modified in
+the <a href="../../apps/ligx.htm#System">System</a> popup).
+</p>
+
+</p>
+<center>
+<table class="titlebar">
+<tr>
+<th>Identifier</th>
+<th>Description</th>
+</tr>
+<tr>
+<td><tt>header</tt></td>
+<td>Typically, the HEADER line from a PDB file.</td>
+</tr>
+<tr>
+<td><tt>name</tt></td>
+<td>For proteins, this may contain the 4-letter PDB code and
+chain letter (if any), separated by a period.</td>
+</tr>
+<tr>
+<td><tt>tag</tt></td>
+<td>Used to identify a group of chains.</td>
+</tr>
+</table>
+</center>
+
+<p>The overall &quot;compound name&quot; assigned to a given
+chain is a concatenation of the chain header, name, and tag.
+When saved in MOE <a href="#MDB_CTAB_Formats">MDB format</a>,
+a molecule, which can be a single chain or composed of
+multiple chains, can be assigned a separate molecule name.
+</p>
+
+<p><b>Chain Tag.</b>
+The chain tag is of particular interest in MOE because it
+is used to group chains into systems or <i>tag groups</i>,
+which are collectively displayed in the MOE Right Button Bar
+<a href="../gui/system.htm">System Manager</a>, shown here:
+
+<p>
+<center>
+<img src="../gui/system/sys_popup.png" />
+</center>
+</p>
+
+<p>The System Manager is a list of control lines, one per
+tag group and tag group component (receptor, solvent, ligand).
+Tag groups can be manipulated
+as a block using the buttons in the control lines.
+Operations include selection, activation, hiding and
+showing, and setting rendering styles.
+There is bubble help in the popup which summarizes the functionality
+of each button.
+</p>
+
+<p>In the Sequence Editor,
+chains are also visually grouped by their tags and
+can be managed by chain tag using the following commands:
+</p>
+
+<p>
+<ul>
+<li>Select chains with same tag: <span class="menu">SE | Tag/Chain Popups |
+    Extend | Tag</span>
+</li>
+<li>Color chains by tag: <span class="menu">SE | Tag/Chain Popups |
+    Color | T</span>
+</li>
+<li>Color residues by tag: <span class="menu">SE | Footer | Residues |
+    Color: Tag</span>
+</li>
+<li>Color ribbons by tag: <span class="menu">SE | Footer | Ribbon |
+    Color: Tag</span>
+</li>
+<li>Color atoms by tag: <span class="menu">SE | Footer | Atoms |
+    Color: Tag</span>
+</li>
+</li><li>Sort chains by tag: <span class="menu">SE | Edit | Order Chains |
+    By Tag</span>
+</li>
+<li>Set tags of selected chains:
+    <span class="menu">SE | Edit | Rename Tag/Chain</span>
+</li>
+</ul>
+</p>
+
+<p>
+For a detailed list of atom, residue, and chain object attributes,
+please see
+<a href="#Molecular_Attributes">below</a>.
+</p>
+
+<a name="Visualizing_the_Molecular_System"></a>
+<h2>Visualizing the Molecular System</h2>
+
+<h3>MOE Window</h3>
+
+<p>
+Molecular data and its attributes can be visualized in different ways in MOE.
+To visualize a molecular system in 3D, it must first be loaded into MOE.
+This can be done using the <a href="../gui/fileopen.htm">Open</a>
+panel which is opened with
+</p>
+
+<blockquote>
+<span class="menu">MOE | File | Open</span>
+</blockquote>
+</p>
+
+<p>Files in different formats can be read in, including
+the MOE native format,
+<a href="../../proteins/pdb_mdb.htm#OpeningPDBFiles">PDB</a>,
+MOL2, and Maestro, among others.
+</p>
+
+<div class="floatright">
+<img src="molrep/siteview.png" />
+</div>
+
+<p>Once a molecular system is loaded, it is automatically rendered
+in the MOE Window.
+The molecule rendering can be modified using the
+<a href="../gui/mainwin.htm#RenderingAtoms">Atoms</a> and
+<a href="../gui/mainwin.htm#RenderingBackbone">Ribbon</a>
+popup panels that can be raised, for example, from the
+MOE <a href="../gui/mainwin.htm#Footer">Footer</a>.
+</p>
+<p>
+<b>Atoms.</b> Atom attributes can be annotated in the MOE Window using labels or
+special coloring modes.
+For example, using the Atoms popup,
+atoms can be labeled by charge or by residue, or colored
+by temperature factor.
+Backbone ribbons can be rendered in various styles,
+and backbone atoms can be colored to highlight such
+properties as secondary structure or N and C terminii.
+</p>
+
+<p><b>Hydrogen Bonds.</b>
+Non-bonded interactions can be visualized in the MOE Window
+in different styles.  Both hydrogen bond and van der Waals
+steric interactions can be drawn, specified using the
+<span class="menu">MOE | Footer |
+<a href="../gui/mainwin.htm#Contacts">Contacts</a></span>
+popup, which provides a receptor/solvent/ligand interaction matrix 
+controlling which contacts are drawn as well as at what strength.
+</p>
+
+<p><b>Surfaces</b>. Molecular surfaces colored by various properties
+help visualize the spatial extent and regions of importance
+of molecular structures.  The <span class="menu">MOE | RHS | Surface</span>
+commands provide for quick drawing of receptor, ligand, as well as
+van der Waals protein-ligand interaction surfaces.  The
+<a href="../../apps/surfmap.htm">Surfaces and Maps</a> panel
+offers a wider variety of surface types and coloring modes.
+</p>
+
+<p><b>Isolate.</b>
+Various commands exist to help focus on areas of particular
+interest and to de-clutter the display.
+Hydrogen atom visibility is easily controlled using the
+<b>Hydrogens</b> button in the MOE Right Button Bar.
+Successive pushes cycle through display of
+(a) no hydrogens, (b) polar hydrogens only, c) all hydrogens.
+Solvent, dummy, and sidechain atoms of proteins can be hidden and shown
+using the <span class="menu">MOE | RHS | Hide</span> and <b>Show</b> menus.
+Whole systems or components thereof can be hidden and shown
+using the <a href="../gui/system.htm">System Manager</a>.
+Finally, 
+special visualization tools, such as the
+<a href="../../apps/ligx.htm#SiteView"><b>SiteView</b></a> button
+in the MOE Right Button Bar, or <b>Isolate</b> buttons
+in various applications (e.g.
+<a href="../../apps/prolig2d.htm">Ligand Interactions</a>
+or <a href="../../apps/shaman.htm">MedChem Transformations</a>),
+exist to restrict the display.
+</p>
+
+<p>Note: Small molecules can also be visualized in 2D using
+the <a href="../../apps/view2d.htm">2D Molecules</a> viewing
+tool (<span class="menu">MOE | Compute | 2D Molecules</span>).
+</p>
+
+<h3>Sequence Editor</h3>
+
+<div class="floatright">
+<img src="../gui/se/se.png" />
+</div>
+
+<p>In the Sequence Editor, macromolecules can be studied on a
+residue and chain level. Structural features can be displayed as
+<a href="../gui/se.htm#ModifyingTheDisplay">secondary
+structure depictions</a> using a toggle button
+in the <span class="menu">SE | Footer</span>.
+Residues can be
+<a href="../gui/se.htm#EditingMolecularObjects">manually aligned</a>
+using the mouse,
+and chains can be
+<a href="../gui/se.htm#JoiningAndSplitting">joined or split</a>,
+and <a href="../gui/se.htm#MovingChains">reordered</a>.
+The quality of the alignment can be visualized using several
+options, e.g. displaying consensus sequences or similarity plots.
+</p>
+
+<p>The connection between atoms in the MOE Window and residues in the
+Sequence Editor can be achieved by synchronizing atom selection with
+residue selection by turning on
+<span class="menu">MOE | Select | Synchronize</span>
+(or, equivalently, <span class="menu">SE | Select | Synchronize</span>).
+When this option is on, selecting
+an atom in the MOE Window causes the parent residue to be
+simultaneously selected in the Sequence Editor.  Similarly, when
+a residue is selected in the Sequence Editor, the child atoms will
+be selected in the MOE Window.
+</p>
+
+<h3>Changing the View</h3>
+
+<p>
+The view can be manipulated using both the mouse and the
+<a href="../gui/mainwin.htm#Footer">trackball</a> in the MOE footer.
+The mouse commands are summarized as follows:
+</p>
+
+<p>
+<ul>
+<li><b>Rotate.</b> Drag the middle mouse button.
+</li><li><b>Translate.</b> <tt>Shift</tt>-Drag the middle mouse button.
+</li><li><b>Zoom.</b> <tt>Ctrl</tt>-Drag the middle mouse button (or
+scroll the scroll button if it exists).
+<li><b>Change the Center of Rotation.</b> Middle click on an atom.
+To revert to the default (at the center of mass of the system),
+middle click on the background of the MOE Window (away from any atoms).
+</li>
+</ul>
+</p>
+
+<p>Note that the actual mouse buttons used may be system-dependent.
+Please refer to the chapter on
+<a href="../gui/mouse.htm">Using the Mouse</a> for more details.
+</p>
+
+<p>
+One of the most common view
+adjustments is centering the molecular system in the MOE Window.
+This can be done using <span class="menu">MOE | RHS | Center</span>.
+For more details about changing the view, please refer to
+<a href="../gui/mainwin.htm#Viewing">Rotating, Translating, and
+Zooming the View</a>.
+Note that changing the view does not change the atom coordinates.
+</p>
+
+<a name="Chemical_Representation"></a>
+<h2>Chemical Representation in MOE</h2>
+
+<a name="Valence_Model"></a>
+<h4>Valence Model</h4>
+
+<div class="floatright">
+<img src="molrep/so2.png" />
+</div>
+
+<p>MOE assumes atoms with full octet.  Hydrogen adjustment
+(e.g. <span class="menu">Add H</span> in the
+<a href="build.htm">Builder</a>, or
+<span class="nobr"><a href="../../apps/protonate3d.htm">Protonate 3D</a></span>)
+will add or remove hydrogens to complete valence.
+</p>
+
+<p>
+A charge-separated representation is used for 
+coordinate-covalent bonds; for example, SO<sub>2</sub>
+is drawn using S++, O- and O- rather than O=S=O.
+</p>
+
+<p>Lone pairs are usually not rendered, however their display may
+be enabled using
+<span class="menu">MOE | Edit | Build | Hydrogens | Add Hydrogens and LPs</span>
+and disabled using
+<span class="menu">MOE | Edit | Build | Hydrogens | Delete Lone Pairs</span>
+</p>
+
+<a name="Stereochemistry"></a>
+<h4>Stereochemistry</h4>
+
+<p>Stereochemistry in MOE is enforced using
+constraints, which can be set with commands in
+the <span class="menu">MOE | Edit | Build |
+<a href="../gui/mainwin.htm#Chirality">Chirality</a></span>
+menu or in the
+<a href="build.htm#Stereochemistry">Builder</a>.
+The constraints are topological, meaning they are invariant
+with respect to geometry as determined by atom 3D coordinates.
+If no constraint is in effect, the compound is considered
+racemic, and flipping between stereochemical states is unrestricted
+during forcefield simulations such as energy minimization.
+The Builder, in addition to setting constraints, also
+provides feedback (via button label colors)
+on whether a constraint exists,
+and if so, whether there is agreement between the
+current geometry and the constraint.
+</p>
+
+<p>To see which atoms are chiral or chirally constrained, the
+following selection commands can be used:
+</p>
+
+<p>
+<ul>
+<li>Chirally constrained atoms:
+<span class="menu">MOE | Select | Potential |
+Forced Stereo</span>
+</li><li>
+E/Z constrained atoms:
+<span class="menu">MOE | Select | Potential |
+Forced Stereo</span>
+</li><li>
+Atom coordinate geometry:
+<span class="menu">MOE | Select | Stereo</span>.
+</li>
+</ul>
+</p>
+
+<p>The
+<a href="../gui/select.htm#AtomSelectionButtons">Atom Selector</a></span>
+can also be used to select chiral centers.
+</p>
+
+<p>Note: When depicting in 2D
+<span class="nobr">(<b>MOE | Compute | 2D Molecules</b>)</span>,
+wedge bonds will be displayed only for atoms with chiral
+constraints set.
+</p>
+
+<a name="Aromaticity"></a>
+<h4>Aromaticity</h4>
+
+<p>Aromatic compounds in MOE are, generally speaking, identified using 
+H&uuml;ckel's <span class="nobr">(4<i>n</i> + 2)</span> rule.
+In the MOE Window, aromatic rings are drawn in
+Kekul&eacute; style, with alternating
+single-double bonds.  Aromatic atoms can be identified in MOE
+using the
+<span class="menu">MOE | Select |
+<a href="../gui/sel_ui.htm">Select...</a></span>.
+Type <b>&quot;a&quot;</b> in the Prompter (including the quotes) and press
+Enter.
+</p>
+
+<a name="Periodic_Systems"></a>
+<h4>Periodic Systems</h4>
+
+<p>Periodicity is enabled in MOE using the
+<a href="../../apps/crystal.htm">Crystal Parameters</a>
+panel, which can be opened from the MOE footer (the
+button is labeled PBC &ndash; <i>P</i>eriodic
+<i>B</i>oundary <i>C</i>onditions &ndash; by default, and will change
+to the space group when the periodic system is enabled).
+The space group and cell parameters can be set in this
+panel as well as the molecule display mode.  The panel
+can also be used to build a lattice of crystal cells.
+</p>
+
+
+<a name="SVL"></a><h2>Programming in SVL</h2>
+
+<p>When using SVL to manipulate molecular objects,
+<a href="../fcnref/molrw.htm">data input and output</a>
+function calls are needed
+to read data from molecular data files or databases
+and to save results.  After data is loaded into the
+system, it can be operated upon using the molecule
+object functions described below.  In addition,
+many MOE built-in applications can be invoked
+programmatically.  Once an SVL program is
+complete, it can be run in either graphical
+MOE or <a href="../../install/install.htm#RunBatch">MOE/batch</a>.
+</p>
+
+<p>
+<ul class="help">
+<li class="help">
+For more information on writing SVL programs,
+please see the
+<a href="../../tutorials/mpgtut.htm">MOE Programming Tutorial</a>.
+</li>
+</ul>
+</p>
+
+<a name="Molecular_Objects_and_Keys"></a>
+<h3>Molecular Objects and Keys</h3>
+
+<div class="floatright">
+<img src="molrep/hierarchy.gif" alt="Molecular Hierarchy" />
+</div>
+
+<p>A molecular system can be examined and manipulated using
+graphical interfaces such as the MOE Window or the
+Atom Manager.  Alternatively, inquiries and modifications
+to the system can be made at the
+<a href="../gui/svlcommands.htm">SVL Command Line</a>
+using SVL molecular object commands (function calls).
+</p>
+
+<p>Molecular objects (chains, residues, atoms)
+each have their own unique identifying
+<i>key</i> which lasts the duration of the object's lifetime
+(i.e. while it remains loaded in MOE).
+The actual value of the key has no significance
+and is not preserved between MOE sessions or even between
+different loadings of the same molecular data.
+</p>
+
+<p>Molecular object keys are used in SVL function calls to access the
+corresponding molecular objects.  The SVL molecular object commands
+have an object-oriented flavor &ndash; there are
+atom, residue, chain, and general molecular object functions.
+The function naming scheme is explained in the following table:
+</p>
+
+<blockquote>
+<table class="titlebar">
+<tr>
+<th>Type</th>
+<th>Prefix</th>
+<th>Example</th>
+</tr>
+<tr>
+<td>Atom</td>
+<td><tt>a</tt></td>
+<td><tt>aElement</tt>, <tt>aHCount</tt></td>
+</tr>
+<tr>
+<td>Residue</td>
+<td><tt>r</tt></td>
+<td><tt>rPos</tt>, <tt>rAtoms</tt></td>
+</tr>
+<tr>
+<td>Chain</td>
+<td><tt>c</tt></td>
+<td><tt>cNumber</tt>, <tt>cColor</tt></td>
+</tr>
+<tr>
+<td>Object</td>
+<td><tt>o</tt></td>
+<td><tt>oParent</tt>, <tt>oType</tt></td>
+</tr>
+</table>
+</blockquote>
+
+<p>SVL function calls exist both to make inquiries about
+molecular objects as well as to modify their attributes.
+The names of the SVL functions used to modify molecular
+attributes all contain the word <tt>Set</tt>, for example
+</p>
+
+<pre>
+    aSetTempFactor
+    rSetPos
+    cSetHeader
+</pre>
+
+<p>The molecular object hierarchy is represented using
+parent-child relationships:
+chains are parents of residues, and residues are parents of atoms.
+Note that this organization is strict &ndash;
+chains are never parents of atoms, for example.
+Similarly, atoms are the children of
+residues, and residues are the children of chains.  Chains and residues
+can be empty. Because chains,
+residues and atoms are distinct entities, selecting or manipulating an object
+(e.g. a chain) is not equivalent to selecting or manipulating
+its children (e.g. the residues of that chain).
+The converse is also true: manipulating the children of an
+object is not equivalent to manipulating their parent.
+</p>
+
+<p>Within the system, chains are
+ordered according to their chain number
+(as shown in the Sequence Editor and given by
+<a class="svl" href="../fcnref/chain.htm">cNumber</a>).
+Within each chain, residues are ordered according to their
+residue number (as shown in the Sequence Editor and
+given by <a class="svl" href="../fcnref/residue.htm">rNumber</a>).
+Within each residue, atoms are ordered according to
+atom index.  The ordering of atoms is generally arbitrary,
+often related to atom creation order.
+</p>
+
+<p>
+<ul class="help">
+<li class="help">
+For a comprehensive list and detailed description of
+the SVL molecular object functions, please refer to
+the following function reference pages:
+    <a href="../fcnref/obj.htm">Molecular Object Functions</a>,
+    <a href="../fcnref/atom.htm">Atom Functions</a>,
+    <a href="../fcnref/residue.htm">Residue Functions</a>,
+    <a href="../fcnref/chain.htm">Chain Functions</a>.
+</li>
+</ul>
+</p>
+
+<a name="Private_Systems"></a><h3>Private Systems</h3>
+
+<p>MOE maintains a global system which is always displayed
+in the MOE Window.
+When performing operations on molecular data, it is
+sometimes desirable to leave untouched this global system
+and to operate in a separate work area.  In MOE, this is possible
+using private systems.  A private system behaves exactly
+like the main MOE system, but is entirely divorced from
+it: any changes to a private system do not
+affect the main one.  Private systems cannot be displayed
+in the MOE Window, and more than one private system
+can exist at any given time.
+</p>
+
+<p>A private system is created as follows:
+</p>
+
+<pre>
+    local pdata = <a class="svl" href="../fcnref/obj.htm">SystemPush</a> [];
+
+	// ... application code ...
+
+    <a class="svl" href="../fcnref/obj.htm">SystemPop</a> pdata;
+</pre>
+
+<p>Each new system must be closed (in this case,
+with <tt>SystemPop</tt>).
+</p>
+
+<a name="MDB_CTAB_Formats"></a>
+<h3>Molecular Database and CTAB Formats</h3>
+
+<p>Molecular data can be stored as a molecule file or
+in a molecular database.  In MOE, both the
+native
+<a class="svl" href="../fcnref/moefmt.htm">.moe</a> file format
+as well as the
+<a href="../fcnref/extract.htm">molecular database (MDB) format</a>
+encode both molecular data and hierarchical information.
+</p>
+
+<p>Perhaps the simplest and most direct way to work
+with molecular systems is to load them into MOE, either
+from a file or from a database:
+</p>
+
+<blockquote>
+<span class="menu">MOE | File | Open</span><br />
+<span class="menu">DBV | Molecule Cell | Popup | Send to MOE</span>
+</blockquote>
+
+<p>
+and manipulate them
+either graphically using MOE windows and panels or
+programmatically using SVL molecular object calls.
+It is sometimes desirable, however,
+to work with molecules without having
+to first load them into MOE.  For example, it is faster to
+read a molecule from a MOE database and operate
+directly (using SVL) on the raw molecular data.
+</p>
+
+<p>Other representations of molecular data in MOE include
+<a href="smiles.htm">SMILES</a> strings and
+the <a href="../fcnref/ctabfcn.htm">Connection Table (CTAB)</a>
+format.  This latter format is intended for small molecules
+and is useful for its ability to explicitly encode, for example,
+attachment points.  It does not, however, encode chain or
+residue information.
+</p>
+
+<p>Molecular data can easily be converted between formats.
+The following table lists the SVL function calls used
+to convert between the MDB, CTAB, and SMILES representations,
+and to load them into and extract them from MOE.
+</p>
+
+<center>
+<table class="titlebar">
+
+<tr>
+<th>SVL Function</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td><a class="svl" href="../fcnref/mol.htm">mol_Create</a></td>
+<td>
+Create a molecule in MOE from an MDB format representation.
+</td>
+</tr>
+
+<tr>
+<td><a class="svl" href="../fcnref/sm_build.htm">sm_Build</a></td>
+<td>
+Create a molecule in MOE from a SMILES string.
+</td>
+</tr>
+
+<tr>
+<td><a class="svl" href="../fcnref/extract.htm">mol_Extract</a></td>
+<td>
+Extract an MDB format representation from the molecular
+system loaded in MOE.  The function reference given here
+describes the MDB format in detail.
+</td>
+</tr>
+
+<tr>
+<td>
+<a class="svl" href="../fcnref/sm_build.htm">sm_ExtractUnique</a>
+</td>
+<td>
+Extract a SMILES string from the molecular
+system loaded in MOE.  It is invariant
+to atom creation order.
+</td>
+</tr>
+
+<tr>
+<td><a class="svl" href="../fcnref/ctabfcn.htm">ctab_Extract</a></td>
+<td>
+Extract a CTAB format representation from the molecular
+system loaded in MOE.  The function reference given here
+describes the CTAB format in detail.
+</td>
+</tr>
+
+<tr>
+<td><a class="svl" href="../fcnref/extract.htm">mol_ExtractFromCTAB</a></td>
+<td>
+Convert from a CTAB into an MDB representation.
+</td>
+</tr>
+
+<tr>
+<td><a class="svl" href="../fcnref/ctabfcn.htm">ctab_ExtractFromSMI</a></td>
+<td>
+Convert from a SMILES string to a CTAB representation.
+</td>
+</tr>
+
+<tr>
+<td><a class="svl" href="../fcnref/sm_build.htm">sm_BuildMOL</a></td>
+<td>
+Convert from a SMILES string into an MDB representation.
+</td>
+</tr>
+
+</table>
+</center>
+
+<a name="Molecular_Attributes" /><h2>Molecular Object Attributes</h2>
+
+<p>Each molecular object has a number of associated attributes.
+Attributes of molecular objects can be
+changed with the Atom Manager, the Builder, or
+editing commands provided in menus.
+Attributes can also be changed using SVL function calls.
+This section lists the attributes of atom, residue, and
+chain objects.
+</p>
+
+<a name="Atom_Attributes" /><h3>Atom Attributes</h3>
+
+<p>Every atom object has the following modifiable attributes:</p>
+<div align="center"><center>
+
+<table class="titlebar">
+  <tr>
+  <th>Attribute</th>
+  <th>Description</th>
+  </tr>
+  <tr>
+    <td valign="top">backbone</td>
+    <td valign="top">Flag indicating the backbone status of the atom.
+    Any atom can be marked as being on the backbone. The primary use of
+    this indicator, however, is to flag backbone atoms in polymer and
+    biopolymer residues.</td>
+  </tr>
+  <tr>
+    <td valign="top">bond look</td>
+    <td valign="top">The rendering mode of the bonds on an atom.
+    Valid modes are given in the built-in constant
+    <a class="svl" href="../fcnref/moe_const.htm">A_BOND_LOOKS</a>:
+    'line', 'cylinder', 'none'. </td>
+
+  </tr>
+  <tr>
+    <td valign="top">charge</td>
+    <td valign="top">A numeric quantity used as the partial
+    charge on the atom center in electrostatic calculations and forcefield
+    evaluations.</td>
+
+  </tr>
+  <tr>
+    <td valign="top">color by</td>
+    <td valign="top">The atom coloring mode.  Legal values
+	are given in the entry on
+	<a class="svl" href="../fcnref/atom_d.htm">aColorBy</a>.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">element</td>
+    <td valign="top">The atomic symbol of the atom element.</td>
+
+  </tr>
+  <tr>
+    <td valign="top">fixed</td>
+    <td valign="top">Flag indicating whether the atom is prevented from
+    being displaced from its current location.  Fixed atoms have
+    their potential energy gradients set to 0. </td>
+
+  </tr>
+  <tr>
+    <td valign="top">geometry</td>
+    <td valign="top">Valence geometry or hybridization state of the
+    atom. Supported geometries are given in the built-in constant
+    <a class="svl" href="../fcnref/moe_const.htm">EL_GEOMETRIES</a>:
+    'sp', 'sp2', 'sp3', 'dsp3', 'd2sp3' and 'd3sp3'. </td>
+
+  </tr>
+  <tr>
+    <td valign="top">hidden</td>
+    <td valign="top">Flag controlling whether the atom is hidden
+    in the MOE Window. Hidden atoms take part in
+    all calculations but are not rendered graphically.</td>
+
+  </tr>
+  <tr>
+    <td valign="top">hintlp</td>
+    <td valign="top">Flag indicating whether the atom has a lone pair
+    that is not in a pi system.</td>
+
+  </tr>
+  <tr>
+    <td valign="top">inert</td>
+    <td valign="top">Flag indicating whether the atom is marked for
+    omission from potential energy calculations. </td>
+  </tr>
+  <tr>
+    <td valign="top">ionization</td>
+    <td valign="top">Ionization state of the atom. </td>
+  </tr>
+  <tr>
+    <td valign="top">label</td>
+    <td valign="top">Collection of attributes that control which
+    atom label component is enabled.  The possible label components
+    are the atom name, element, charge, molecular mechanics type,
+    owning chain, and owning residue.</td>
+  </tr>
+  <tr>
+    <td valign="top">mass</td>
+    <td valign="top">The atomic mass (AMU).  Non-positive values map to
+    0, in which case the default element mass is used. </td>
+  </tr>
+  <tr>
+    <td valign="top">name</td>
+    <td valign="top">Arbitrary string of up to four characters,
+    usually used to identify particular atoms.
+    For example, in proteins, the alpha-carbon
+    is conventionally given the name CA.
+    Although name uniqueness within a residue is not enforced, it is
+    strongly recommended. For proteins, the names of the backbone atoms N,
+    C, CA and O are assumed for many operations. </td>
+
+  </tr>
+  <tr>
+    <td valign="top">nucleus look</td>
+    <td valign="top">The rendering mode of the atom nucleus.
+    Valid modes are given in the built-in constant
+    <a class="svl" href="../fcnref/moe_const.htm">A_NUCLEUS_LOOKS</a>:
+    'point', 'small-sphere', 'sphere', 'none'. </td>
+
+  </tr>
+  <tr>
+    <td valign="top">position</td>
+    <td valign="top">Three numeric quantities representing the x, y and z
+    coordinates of the atomic center.</td>
+
+  </tr>
+  <tr>
+    <td valign="top">RGB</td>
+    <td valign="top">The &quot;internal&quot; color of the atom.  This is the
+	color used when the atom's color-by mode is <tt>rgb</tt>
+	or <tt>a:rgb</tt>.  The internal color is an integer representing
+	the RGB color in the format 0xRRGGBB encoding red, green, and blue.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">scalar</td>
+    <td valign="top">Numeric field that can hold an arbitrary value. 
+    It can be used for atom coloring, but in
+    general is not interpreted by the basic MOE tools.</td>
+
+  </tr>
+  <tr>
+    <td valign="top">selected</td>
+    <td valign="top">Flag indicating the selection state of the atom.</td>
+  </tr>
+  <tr>
+    <td valign="top">state</td>
+    <td valign="top">Integer value representing the state tag of
+    the atom.  State tags are used to scale (or disable) non-bonded
+    interactions.  The potential control and setup function can be
+    used to specify the scale factors.</td>
+  </tr>
+  <tr>
+    <td valign="top">temperature factor</td>
+    <td valign="top">A numeric quantity used as the temperature
+    factor of the atom.</td>
+  </tr>
+  <tr>
+    <td valign="top">anisotropic temperature factors</td>
+    <td valign="top">A set of six numbers comprising a symmetric tensor, used
+    as the anisotropic temperature factors of the atom.</td>
+  </tr>
+  <tr>
+    <td valign="top">occupancy</td>
+    <td valign="top">A numeric quantity used as the occupancy
+    of the atom, which ranges between zero and one.</td>
+  </tr>
+</table>
+</center></div>
+
+
+
+
+<a name="Residue_Attributes" /><h3>Residue Attributes</h3>
+
+<p>Every residue object has the following attributes:</p>
+<div align="center"><center>
+
+<table class="titlebar">
+  <tr>
+  <th>Attribute</th>
+  <th>Description</th>
+  </tr>
+  <tr>
+    <td valign="top">color by</td>
+    <td valign="top">The residue coloring mode.
+	Legal values are given in the entry on
+	<a class="svl" href="../fcnref/residue.htm">rColorBy</a>.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">INS</td>
+    <td valign="top">The PDB insertion character for the residue.</td>
+
+  </tr>
+  <tr>
+    <td valign="top">name</td>
+    <td valign="top">Singly-quoted character string with a maximum length
+    of three characters.  The residue name, in conjunction with the
+    residue type, is used to identify standard residues from the residue
+    database. Although changing the name of a residue has no immediate
+    effect on the atoms that belong to it, the name is used for
+    residue standardization, polymerization, sequence creation, and
+    mutation operations. Single-letter names are currently recognized for
+    standard amino acids only. </td>
+
+  </tr>
+  <tr>
+    <td valign="top">number</td>
+    <td valign="top">Ordinal position of a residue in a residue
+    sequence. Residues have unique numbers within a chain. This attribute
+    is not editable. </td>
+
+  </tr>
+  <tr>
+    <td valign="top">position</td>
+    <td valign="top">Field holding an integer quantity from which the
+    horizontal alignment position of the residue
+    is derived. If p<sub>i</sub> is the position of
+    residue i, i&gt;1, then the gap distance between residue i and
+    residue i-1 is max{1,
+    p<sub>i</sub>-p<sub>i-1</sub>}.  A gap value of 1 results in no gap.</td>
+
+  </tr>
+  <tr>
+    <td valign="top">RGB</td>
+    <td valign="top">The &quot;internal&quot; color of the residue.
+	This is the color used when the residue's color-by mode is <tt>rgb</tt>
+	or <tt>r:rgb</tt>.  The internal color is an integer representing
+	the RGB color in the format 0xRRGGBB encoding red, green, and blue.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">ribbon color by</td>
+    <td valign="top">The coloring mode for the residue's backbone ribbon
+	segment.  Legal values are given in the entry on
+	<a class="svl" href="../fcnref/residue.htm">rRibbonColorBy</a>.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">ribbon height<br />ribbon width</td>
+    <td valign="top">Numeric quantities giving the height and width
+	used for rendering the residue's backbone ribbon segment.
+	A value of zero means that the standard height or width is used.
+	Not all ribbon modes use height or width.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">ribbon mode</td>
+    <td valign="top">The rendering mode of the residue's backbone ribbon
+	segment.  Legal values are given in the entry on
+	<a class="svl" href="../fcnref/residue.htm">rRibbonMode</a>.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">ribbon RGB</td>
+    <td valign="top">The &quot;internal&quot; color of the residue's
+	backbone ribbon segment.
+	This is the color used when the residue's ribbon color-by
+	mode is <tt>rgb</tt>
+	or <tt>r:rgb</tt>.  The internal color is an integer representing
+	the RGB color in the format 0xRRGGBB encoding red, green, and blue.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">scalar</td>
+    <td valign="top">Three arbitrary numerical values that can be
+    associated with a residue and plotted under the residue in the
+    Sequence Editor.  The Sequence Editor scalar plots display
+    values in the range -1 to 1; values outside this range are clipped.</td>
+
+  </tr>
+  <tr>
+    <td valign="top">segment</td>
+    <td valign="top">Field used to label the residue with one of the
+    standard secondary structure labels.  The label, which can be
+    displayed below the residue boxes in the Sequence Editor, does not reflect
+    the actual secondary structure as determined by the atomic
+    coordinates; it is used primarily for secondary structure
+    prediction.
+    Legal values for the segment label are given in the entry on
+    <a class="svl" href="../fcnref/moe_const.htm">R_SEGMENT_TYPES</a>.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">selected</td>
+    <td valign="top">Flag indicating the selection state of the residue.
+    Selected residues are highlighted in the Sequence Editor. </td>
+
+  </tr>
+  <tr>
+    <td valign="top">type</td>
+    <td valign="top">The residue type. The type,
+    in conjunction with the residue name, is used to identify a residue in
+    the standard residue database.
+    Legal values for the type are given in the entry on
+    <a class="svl" href="../fcnref/moe_const.htm">R_TYPES</a>.
+    The supported amino acid types include
+    'l-amino', 'd-amino' and 'amino'. The supported nucleic acid types are
+    'rna' and 'dna'. The 'none' type is used for small molecules. </td>
+
+  </tr>
+  <tr>
+    <td valign="top">UID</td>
+    <td valign="top">The User ID number (an integer) of the residue.
+	This number is typically the residue identification number
+	found in PDB files.</td>
+
+  </tr>
+  <tr>
+    <td valign="top">domain</td>
+    <td valign="top">An integer indicating the structural domain in the system
+	to which the residue belongs.  All residues with a given domain number
+	are considered to be in the same domain.</td>
+  </tr>
+</table>
+</center></div>
+
+
+<a name="Chain_Attributes" /><h3>Chain Attributes</h3>
+
+<p>Every chain object has the following attributes:</p>
+<div align="center"><center>
+
+<table class="titlebar">
+  <tr>
+  <th>Attribute</th>
+  <th>Description</th>
+  </tr>
+  <tr>
+    <td valign="top">color by</td>
+    <td valign="top">The chain coloring mode.
+	Legal values are given in the entry on
+	<a class="svl" href="../fcnref/chain.htm">cColorBy</a>.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">header</td>
+    <td valign="top">A text field giving the chain header.
+    The chain header is typically the HEADER line from a PDB file.</td>
+
+  </tr>
+  <tr>
+    <td valign="top">name</td>
+    <td valign="top">A text field giving the chain name.
+    For proteins, this may contain
+    the 4-letter PDB code and chain letter, if any, separated
+    by a period.</td>
+
+  </tr>
+  <tr>
+    <td valign="top">number</td>
+    <td valign="top">Indicates the position of a chain according to
+    the order in which the chains are displayed in the Sequence Editor. </td>
+
+  </tr>
+  <tr>
+    <td valign="top">RGB</td>
+    <td valign="top">The &quot;internal&quot; color of the chain.
+	This is the color used when the chain's color-by mode is <tt>rgb</tt>
+	or <tt>c:rgb</tt>.  The internal color is an integer representing
+	the RGB color in the format 0xRRGGBB encoding red, green, and blue.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">selected</td>
+    <td valign="top">Flag indicating the selection state of the chain.
+    Selected chains are highlighted in the Sequence Editor.</td>
+
+  </tr>
+  <tr>
+    <td valign="top">tag</td>
+    <td valign="top">A text field giving the chain tag.  The chain tag
+	is used to identify a group of chains.</td>
+
+  </tr>
+</table>
+</center></div>
+
+<a name="SVLCommands"></a><h2>SVL Commands</h2>
+
+    <a href="../fcnref/obj.htm">Molecular Object Functions</a><br />
+    <a href="../fcnref/atom.htm">Atom Functions</a><br />
+    <a href="../fcnref/residue.htm">Residue Functions</a><br />
+    <a href="../fcnref/chain.htm">Chain Functions</a><br />
+    <a href="../fcnref/el_fcns.htm">Element Functions</a><br />
+
+<a name="See_Also"></a><h2>See Also</h2>
+
+<a href="../gui/mainwin.htm">MOE Window</a><br />
+<a href="../gui/atommgr.htm">Atom Manager</a><br />
+<a href="../gui/system.htm">System Manager</a><br />
+<a href="../gui/se.htm">Sequence Editor</a><br />
+<a href="build.htm">Builder</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

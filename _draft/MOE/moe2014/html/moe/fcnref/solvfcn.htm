@@ -1,0 +1,373 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	solvfcn.htm			solvate functions
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<title>Solvate Functions</title>
+<meta functions Solvate, SolventList, SolventOpen, SolventWrite>
+<meta fileformat .box>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    solvents = <a class="fcnlink" href="#SolventList">SolventList</a> []
+
+    reskeys = <a class="fcnlink" href="#Solvate">Solvate</a> [atoms, [
+        mode            : mode_tok,
+        shape           : shape_tok,
+        solvent         : solvent_tok,
+        salt            : salt_tok,
+        margin          : num,
+        delete          : del_tok,
+        center          : flag,
+        align           : flag,
+        updatePotential : flag,
+        clashCutoff     : num,
+        wallForce       : num,
+        add_H           : num,
+        verbose         : flag
+    ]];
+
+    <a class="fcnlink" href="#SolventWrite">SolventWrite</a> filename
+    <a class="fcnlink" href="#SolventOpen">SolventOpen</a>  filename
+</pre>
+
+<a name="solvent_file_format"></a>
+<h2>Description</h2>
+
+<p>
+The purpose of the Solvate application is to add solvent molecules to a
+molecular system, typically prior to a molecular dynamics simulation. 
+Solvation is performed by replicating pre-calculated periodic systems of
+solvent molecules.  The file format for these pre-calculated systems is a
+modified SD file format with file extension <tt>.box</tt>.
+The first line in the file must be:
+<pre>
+#moe:solventbox
+</pre>
+Following this is
+an SD file record that ends with <tt>$$$$</tt>.  
+The record consists of a connection table, which
+defines a single solvent molecule using 2D depiction
+coordinates, followed by data fields of which four are
+specific to the solvent format.
+The connection table molecule name is interpreted
+as the residue name.
+Two of the format-related data fields specify
+the solvent name and SMARTS pattern for a single solvent molecule.
+The other two
+fields give the periodic cell parameters
+and the total solvent molecule count for the periodic system.
+Other data fields may be present.
+3D coordinate data for the solvent molecules populating the
+periodic system follow the end of record marker (<tt>$$$$</tt>).
+</p>
+
+<p>
+The following is an example file.  The connection table name, and
+hence, residue name,
+is <tt>HOH</tt>.  The solvent name is <tt>Water</tt>, and
+SMARTS pattern, <tt>[OX2H2Q0]</tt>.  A total of 216 solvent
+molecules are found in the periodic system with cell parameters
+given in the <tt>cell</tt> data field.  The 3D coordinate data
+of the 216 water molecules are found at the end of the file.
+</p>
+
+<blockquote><pre>
+#moe:solventbox
+HOH
+  MOE2009           2D
+
+  3  2  0  0  0  0  0  0  0  0  1 V2000
+    0.3750    0.6500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.1250    0.6500    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+    1.1250   -0.6500    0.0000 H   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  1  3  1  0  0  0  0
+M  END
+&gt;  &lt;name&gt;
+Water
+
+&gt;  &lt;smarts&gt;
+[OX2H2Q0]
+
+&gt;  &lt;cell&gt;
+ 18.7 18.7 18.7 90.0 90.0 90.0
+
+&gt;  &lt;nmol&gt;
+216
+
+$$$$
+  12.416  17.427  12.572
+  11.946  16.669  12.951
+  13.080  17.025  11.993
+  ... nmol * natoms lines of 3D coordinates ...
+</pre></blockquote>
+
+<p>
+The <tt>$MOE/lib/solvent</tt> directory contains the prepared
+MOE solvent boxes used by the Solvate application.
+To use another solvent requires that an appropriate solvent
+file be created (e.g. with <tt>SolventWrite</tt>).
+</p>
+
+<p><a name="Solvate"></a></p>
+<p><a name="SolventList"></a></p>
+<p><hr noshade></p>
+<pre>
+tokens = <span class="fcndef">SolventList</span> []
+<span class="fcndef">Solvate</span> [atoms, opt]
+</pre>
+
+<p>
+The <tt>SolventList</tt> function returns a vector of tokens containing
+the names of the solvents in the <tt>$MOE/lib/solvent</tt> directory.
+The names are the molecule names and not the file names.
+These names are used for specifying the solvent (with the <tt>solvent</tt>
+option) when calling <tt>Solvate</tt>.
+
+<p>
+The <tt>Solvate</tt> command adds solvent molecules to the current system
+with the given <tt>atoms</tt> vector containing the atom keys of the solute.
+Although the entire system is considered in the calculation,
+the solute atoms are used to determine orientation and extents of
+solvation.
+The solvent molecule, geometry and other options are specified in the
+argument tagged vector <tt>opt</tt>.
+Solvent molecules are added to the current molecular system using the
+following steps.
+
+<ol>
+<li><b>Delete</b>.
+Optionally, distant (no atom less than 4.0&nbsp;&Aring; from the solute) or all
+of the existing solvent molecules in the system are deleted.  Candidate
+solvent molecules are those defined by the chosen solvent and those defined
+by the <b>MOE&nbsp;|&nbsp;Selection&nbsp;|&nbsp;Solvent</b> command.
+<p>
+<li><b>Transform</b>.
+Optionally, <i>all of the atoms</i> in the current system are transformed
+by a rigid body rotation and translation so that the solute center of mass
+is at the orgin and principal mass moments are aligned to the
+<i>x</i>-, <i>y</i>- and <i>z</i>-axes.
+<p>
+<li><b>Neutralize</b>.
+Optionally, salt counter-ions are added to neutralize the system.  The
+smallest number of counter-ions are added to achieve neutrality; they are
+placed sequentially at energetically optimal locations.
+<p>
+<li><b>Read Solvent</b>.
+One of the precalculated periodic solvent files in <tt>$MOE/lib/solvent</tt>
+or a supplied solvent file is read and replicated so as to cover all
+of the atoms in the system plus a specified margin.
+<p>
+<li><b>Remove Clashes</b>.
+Solvent molecules that clash with atoms in the system are deleted as are
+solvent molecules outside the droplet or solvent layer (if specified).
+If the system is periodic, certain solvent molecules are removed to
+reduce clashes due to periodicity (see below).
+<p>
+<li><b>Update Parameters</b>.
+Optionally, update the Crystal Parameters (for periodic systems) or
+the Wall Restraint (for droplets) to reflect the solvated geometry:
+sphere, ellipse, box, cube, etc.
+</ol>
+
+<p>
+The argument tagged vector <tt>opt</tt> may contain the following.
+
+<blockquote><dl>
+<dt><tt>mode :</tt> <i>token</i>
+<dd>
+Specifies the fundamental solvation geometry and can be one of
+<tt>'Droplet'</tt>, <tt>'Layer'</tt> or <tt>'Periodic'</tt>.
+Droplet creates a walled collection of solvent; Layer adds solvent that
+contours a solute; Periodic creates a periodic cell of solvent (e.g.
+for dynamics simulations).
+The default is <tt>'Droplet'</tt>.
+<p>
+<dt><tt>shape :</tt> <i>token</i>
+<dd>
+Specifies the particular shape of the solvent.  For <tt>Droplet</tt> mode, the
+legal values are <tt>'Sphere'</tt>, <tt>'Ellipse'</tt>, <tt>'Cube'</tt>,
+<tt>'Box'</tt> and <tt>'Wall'</tt>.  <tt>Wall</tt> fills the current
+Wall Restraint in the Potential Setup with solvent; the other shapes
+are derived from the solute.  For <tt>Layer</tt> mode, the <tt>shape</tt>
+value is ignored.  For <tt>Periodic</tt> mode, the legal values are
+<tt>'Cube'</tt>, <tt>'Box'</tt> and <tt>'Crystal'</tt>.  <tt>Crystal</tt>
+fills the current Crystal Parameters cell with solvent; the other
+shapes are derived from the solute.
+The default is <tt>'Sphere'</tt> (for default <tt>Droplet</tt> mode).
+<p>
+<dt><tt>margin :</tt> <i>num</i>
+<dd>
+The solute dimensions plus the <tt>margin</tt> are used to generate a
+volume into which solvent will be added.  Measuring from the solute center
+of mass, the largest radial distance is used for <tt>Cube</tt> and
+<tt>Sphere</tt> while the largest Cartesian coordinate magnitude is used
+along each axis for <tt>Box</tt> and <tt>Ellipse</tt>.  The value of
+<tt>margin</tt> is added to the measured dimensions to arrive at either
+a single radius or (half edge-length) for <tt>Sphere</tt> (<tt>Cube</tt>)
+or three similar per-axis values for <tt>Ellipse</tt> (<tt>Box</tt>).
+The value of margin should be at least half the non-bonded Potential cutoff
+for periodic simulations.
+The default is 6.0&nbsp;&Aring;.
+<p>
+<dt><tt>solvent :</tt> <i>token</i>
+<dd>
+The given <i>token</i> specifies the solvent to use.  Normally, this value
+is one of the solvent names (not filenames) in the <tt>$MOE/lib/solvent</tt>
+directory; i.e. one of the values returned by <tt>SolventList</tt>.
+If the given token is not one of the solvent names then it
+is taken to be the name of a modified SD solvent file as described
+<a href="#solvent_file_format">above</a>.
+The default is <tt>'Water'</tt>.
+<p>
+<dt><tt>salt :</tt> <i>token</i>
+<dd>
+Specifies the salt ions to use as counter-ions to neutralize the system.
+A value of <tt>''</tt> will disable system neutralization.  Otherwise, the
+token is taken to be the chemical formula of a salt with monatomic
+ions; e.g. NaCl, KCl, CaCl2, etc.  A minimum number of ions is added
+to achieve neutrality.
+The default is <tt>''</tt>.
+<p>
+<dt><tt>delete :</tt> <i>token</i>
+<dd>
+If the given value is <tt>'all'</tt> then all solvent molecules existing
+in the system are deleted; this includes molecules and counter-ions that
+may be different from the specified <tt>solvent</tt>.  If the given value
+is <tt>'far'</tt> then only those solvent molecules with no atom closer
+than 4.0&nbsp;&Aring; from the solute atoms are deleted.  Otherwise
+nothing is deleted.
+The default is <tt>''</tt>.
+<p>
+<dt><tt>center :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero then <i>all atoms</i> are translated so that the
+center of mass of <tt>atoms</tt> is at the origin.  Fixed atoms are
+temporarily unfixed and then re-fixed.  Atom tethers are translated.
+The default is 0.
+<p>
+<dt><tt>align :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero then <i>all atoms</i> are rotated so that the
+principal mass moments of <tt>atoms</tt> are aligned with the <i>x</i>,
+<i>y</i> and <i>z</i> axes.  Fixed atoms are temporarily unfixed and
+then re-fixed.  Atom tethers are rotated.
+The default is 0.
+<p>
+<dt><tt>updatePotential :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero then the Wall Parameters (for Droplets) or the
+Crystal Parameters (for Periodic) solvations are updated to reflect the
+new system volume.  In addition, the Wall flags for the atoms will be updated
+so that atoms in the new Wall have their wall flags set.
+The default is 1.
+<p>
+<dt><tt>clashCutoff :</tt> <i>num</i>
+<dd>
+The interaction energy (in kcal/mol) per solvent atom above which candidate
+solvent molecules will be removed.  This value is used to remove solvent
+that clashes with existing atoms or with other solvent in periodic conditions.
+The default is 10.0&nbsp;kcal/mol.
+<p>
+<dt><tt>wallForce :</tt> <i>num</i>
+<dd>
+The force constant to use for the Wall Restraint in droplet solvations.
+The default is 100.0&nbsp;kcal/mol.
+<p>
+<dt><tt>add_H :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero then hydrogens will be added to the system
+with <tt>Add_H</tt>.  The default is 1.
+<p>
+<dt><tt>verbose :</tt> <i>flag</i>
+<dd>
+If <i>flag</i> is non-zero then information will be written to the SVL
+Commands window during the calculation.  The default is 0.
+</dl></blockquote>
+
+<p>
+For example, to solvate a system prior to periodic molecular dynamics
+including the addition of counter-ions to neutralize the system:
+
+<blockquote><pre>
+Solvate [Atoms[], [
+    solvent ; 'Water',
+    salt    : 'NaCl',
+    margin  : 6.0,
+    center  : 1,
+    align   : 1,
+    verbose : 1
+]];
+</pre></blockquote>
+
+<p><a name="SolventWrite"></a></p>
+<p><a name="SolventOpen"></a></p>
+<p><hr noshade></p>
+<pre>
+<span class="fcndef">SolventOpen</span>  filename
+<span class="fcndef">SolventWrite</span> filename
+</pre>
+
+<p>
+The <tt>SolventOpen</tt> function reads a solvent file in the format
+described above and loads it into the current system.  The Cell Parameters
+are updated to those contained in the file.
+The <tt>SovlentWrite</tt> function writes the current system as a solvent
+file.  It is assumed that the system is a periodic solvent system and that
+the current Cell Parameters are valid.  The SMARTS pattern is detected
+from the contents of the system which is assumed to contain only one
+kind of molecule.  To create a new solvent file:
+<ol>
+<li>Create a periodic system containing a single kind of molecule.
+<li>Perform an NVT molecular dynamics simulation.
+<li>Set the chain name to the solvent name.
+<li>Use the Crystal Parameters to build the system in Molecule mode.
+<li>Use <tt>SolventWrite</tt> to save the file.
+<li>Edit the saved file with a text editor to verify the SMARTS pattern,
+residue name and other fields.
+</ol>
+
+<h2>See Also</h2>
+
+<a class="svl" href="cellfcn.htm">CellParameters</a><br /><br />
+<a href="potfcn.htm">Potential Setup</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+

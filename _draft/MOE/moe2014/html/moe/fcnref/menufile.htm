@@ -1,0 +1,553 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--	menufile.htm
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<title>Menu File Format</title>
+<meta functions ReadMenuFile>
+<meta functions EchoMenuCommands>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    <a class="fcnlink" href="#ReadMenuFile">ReadMenuFile</a> 'filename'
+
+    new_value = <a class="fcnlink" href="#EchoMenuCommands">EchoMenuCommands</a> old_value
+    curr_value = <a class="fcnlink" href="#EchoMenuCommands">EchoMenuCommands</a> []
+</pre>
+
+<p>
+<blockquote>
+<table border="0">
+<tr>
+<td><i>file</i>
+<td>:
+    <b>{</b> <i>menu</i> | <b><tt>include</tt></b> <i>string</i> <b>}*</b>
+
+<tr>
+<td><i>menu</i>
+<td>:
+    <b><tt>MENU</tt></b>
+    <b>{ <tt>PREPEND | APPEND } { PAGER</tt> }</b> <i>string</i>
+    <b>{</b> <i>menu-item</i> <b>}*</b>
+    <b><tt>ENDMENU</tt></b>
+
+<tr>
+<td valign=top><i>menu-item</i>
+<td valign=top>: <b><tt>SEPARATOR</tt></b><br />
+    : <i>string</i> <b><tt>submenu</tt></b> <i>string</i><br />
+    : <i>string</i> <b><tt>MENU</tt></b> <i>string</i>
+	<b>{</b> <i>menu-item</i> <b>}*</b> <b><tt>ENDMENU</tt></b><br />
+    : <i>string</i> <b>{</b> <i>command</i> <b>}*</b>
+
+<tr>
+<td valign=top><i>command</i>
+<td valign=top>: <b><tt>title</tt></b><br />
+    : <b><tt>exec</tt></b> <i>string</i>
+	<b>{</b> <b><tt>&amp;</tt></b> <i>string</i> <b>}*</b><br />
+    : <b><tt>accel</tt></b> <i>string</i><br />
+    : <b><tt>bgcolor</tt></b> <i>string</i><br />
+    : <b><tt>active</tt></b> <i>expression</i><br />
+    : <b><tt>inactive</tt></b> <i>expr</i><br />
+    : <b><tt>value</tt></b> <i>expr</i>
+
+<tr>
+<td valign=top><i>expr</i>
+<td valign=top>: <i>expr</i> <b><tt>&</tt></b> <i>expr</i><br />
+    : <i>expr</i> <b><tt>|</tt></b> <i>expr</i><br />
+    : <b><tt>!</tt></b> <i>expr</i><br />
+    : <b><tt>(</tt></b> <i>expr</i> <b><tt>)</tt></b><br />
+    : <b><tt>data | data_modified | ... | sel_atom ...</tt></b>
+<tr>
+<td><i>string</i>
+<td>: <tt>"character data" | 'character data'</tt>
+<tr>
+<td><i>comment</i>
+<td>: <b>#</b> comment to end of line
+
+</table>
+</blockquote>
+
+<h2>Description</h2>
+<p>
+Menus, popups and button bars in MOE are configured using menu files.
+On startup, MOE first reads the master menu configuration file located in
+<tt>$MOE/lib/moe-menus</tt> and then the user menu file
+<tt>$HOME/moe-menus</tt> (if it exists) followed by
+<tt>$HOME/.moe-menus</tt> (if it exists) on Unix systems.
+If Unix is the only operating system being used then <tt>.moe-menus</tt> is
+normally used as the filename.  However, if both Unix and Windows operating
+systems are used then <tt>moe-menus</tt> should be used.
+In this way, only one menu file need be maintained.
+<p>
+Each menu file consists of a sequence of menu specifications. Each menu
+is given a name so that other menus (and MOE) can reference it. If a new menu
+specification has the same name as a previous specification, the new menu
+will override the old one.
+Thus, user menu definitions override the master definitions on a
+menu-by-menu basis; i.e. to redefine a particular menu, only that
+menu need be specified in the user menu file.
+To customize menus and buttons in MOE, a menu file must be created.  If the
+menu file is not the master menu file or the standard user menu file then
+it must be loaded with the <tt>ReadMenuFile</tt> function.
+<p>
+A menu configuration file is an ASCII file with a specific syntax that can be
+created and edited with any ASCII text editor.  Comments are introduced with
+the <tt>#</tt> character and extend to the end of the line. Blank lines are
+ignored.
+Menus can be imported from one file to another using the <b>include</b>
+statement:
+<pre>
+    <tt>include</tt> "filename"
+</pre>
+where <tt>"filename"</tt> is the name of a menu file.
+<p>
+Each menu specification begins with the <tt>MENU</tt> keyword and
+follows the syntax:
+<blockquote>
+    <b><tt>MENU</tt></b>
+    <b>{ <tt>PREPEND | APPEND } { PAGER</tt> }</b> <i>string</i>
+    <b>{</b> <i>menu-item</i> <b>}*</b>
+    <b><tt>ENDMENU</tt></b>
+</blockquote>
+One of <tt>PREPEND</tt> or <tt>APPEND</tt> may optionally follow the
+<tt>MENU</tt> keyword.  If either is absent an empty menu with the name
+given by the quoted <i>string</i> is created (deleting any previous
+definition).  If
+<tt>PREPEND</tt> or <tt>APPEND</tt> follows <tt>MENU</tt> then any previous
+definition's contents are not deleted; the following menu items will be
+added to the beginning or end, respectively, of the previous definition.
+Menus can appear as menu bars, button bars or popup menus.
+The <tt>PAGER</tt> keyword denotes a button bar menu type in which each
+submenu is a separate page and an option menu is used to select between pages.
+<p>
+In general, any string can be used to name a menu.  Menu names are used
+to refer to the menus (e.g. in <tt>submenu</tt> constructs).  Certain menu
+names have special meaning in MOE:
+<p>
+<center>
+<table class="titlebar" border="1" cellpadding="3">
+<tr>
+<th>Name</th>
+<th>Meaning</th>
+<th>Standard Definition</th>
+<tr>
+<td><tt>dbvMenuBar</tt>
+<td>The Database Viewer menu bar.
+<td><tt>$MOE/lib/menu-dbv</tt>
+<tr>
+<td><tt>dbvCellPopupMenu</tt>
+<td>The Database Viewer non-molecule field popup menu.
+<td><tt>$MOE/lib/menu-dbv</tt>
+<tr>
+<td><tt>dbvEntryPopupMenu</tt>
+<td>The Database Viewer entry number popup menu.
+<td><tt>$MOE/lib/menu-dbv</tt>
+<tr>
+<td><tt>dbvFieldPopupMenu</tt>
+<td>The Database Viewer field title popup menu.
+<td><tt>$MOE/lib/menu-dbv</tt>
+<tr>
+<td><tt>dbvMolCellPopupMenu</tt>
+<td>The Database Viewer molecule field popup menu.
+<td><tt>$MOE/lib/menu-dbv</tt>
+<tr>
+<td><tt>dbvPlotPopupMenu</tt>
+<td>The Database Viewer plot area popup menu.
+<td><tt>$MOE/lib/menu-dbv</tt>
+<tr>
+<td><tt>dbvYAxisPopupMenu</tt>
+<td>The Database Viewer plot area y-axis popup menu.
+<td><tt>$MOE/lib/menu-dbv</tt>
+<tr>
+<td><tt>Main</tt>
+<td>The MOE main window menu bar.
+<td><tt>$MOE/lib/moe-menus</tt>
+<tr>
+<td><tt>MainPopup</tt>
+<td>The MOE main window popup menu.
+<td><tt>$MOE/lib/moe-menus</tt>
+<tr>
+<td><tt>SEChainPopupMenu</tt>
+<td>The Sequence Editor chain box popup menu.
+<td><tt>$MOE/lib/menu-se</tt>
+<tr>
+<td><tt>SEColumnPopupMenu</tt>
+<td>The Sequence Editor residue column popup menu.
+<td><tt>$MOE/lib/menu-se</tt>
+<tr>
+<td><tt>SEMenuBar</tt>
+<td>The Sequence Editor menu bar.
+<td><tt>$MOE/lib/menu-se</tt>
+<tr>
+<td><tt>SEPopupMenu</tt>
+<td>The Sequence Editor popup menu.
+<td><tt>$MOE/lib/menu-se</tt>
+<tr>
+<td><tt>SEResiduePopupMenu</tt>
+<td>The Sequence Editor residue box popup menu.
+<td><tt>$MOE/lib/menu-se</tt>
+<tr>
+<td><tt>SVLTextEditor</tt>
+<td>The Text Editor menu bar.
+<td><tt>$MOE/lib/menu-ted</tt>
+<tr>
+<td><tt>SVLTextEditorPopup</tt>
+<td>The Text Editor popup menu.
+<td><tt>$MOE/lib/menu-ted</tt>
+
+</table>
+</center>
+
+<p>
+Menu items appear in the menu specification prior to the <tt>ENDMENU</tt>.
+Each <i>menu-item</i> has the following syntax:
+<blockquote>
+<table>
+<tr>
+<td valign=top><i>menu-item</i>
+<td> : <b><tt>SEPARATOR</tt></b><br />
+    : <i>string</i> <b><tt>submenu</tt></b> <i>string</i><br />
+    : <i>string</i> <b><tt>MENU</tt></b> <i>string</i>
+	<b>{</b> <i>menu-item</i> <b>}*</b> <b><tt>ENDMENU</tt></b><br />
+    : <i>string</i> <b>{</b> <i>command</i> <b>}*</b>
+</table>
+</blockquote>
+<p>
+A <tt>SEPARATOR</tt> item appears as a bar (horizontal or vertical) that is
+used to separate sections of a menu (for readability). The <tt>submenu</tt>
+construct is used to create a pull-right or pull-down submenu entitled by the
+<i>string</i> prior to the <tt>submenu</tt> keyword; the contents of the
+submenu are those of the menu specified by the <i>string</i> following the
+<tt>submenu</tt> keyword.  Alternatively, a submenu can be specified by an
+explicit inline <tt>MENU</tt> ... <tt>ENDMENU</tt> construct.  For example, the
+MOE main menu is specified with
+
+<blockquote>
+<pre>
+MENU Main
+    File        submenu Main:File
+    Edit        submenu Main:Edit
+    Selection   submenu Main:Select
+    Render      submenu Main:Render
+    Compute     submenu Main:Compute
+    GizMOE
+        MENU GizMOE
+            ...
+        ENDMENU
+    Window
+        MENU Main:Window
+            ...
+        ENDMENU
+    Help        submenu Help
+ENDMENU
+</pre>
+</blockquote>
+
+<p>
+The last <i>menu-item</i> construct is used for command menu items that
+invoke SVL commands when selected.  Each has the syntax
+<i>string</i> <b>{</b> <i>command</i> <b>}*</b>.  The <i>string</i> is the
+text that will appear in the menu and each associated <i>command</i> 
+can be
+<blockquote>
+<dl>
+<dt><tt>active</tt> <i>expr</i>
+<dd>
+Specifies the sensitivity of the menu item; <tt>active</tt> indicates that
+the menu item is to be sensitive if the subsequent expression evaluates to
+true.  The <i>expr</i> is a boolean expression involving predifined
+<i>state tags</i> (see below).  The <tt>&amp;&</tt> operator is used for
+logical conjunction, <tt>|</tt> operator is used for logical disjunction
+and the <tt>!</tt> operator for logical negation.  The operator precedence
+from highest to lowest is <tt>! &amp; |</tt>; parentheses may be used
+to override the default precedence.
+<p>
+<dt><tt>accel</tt> <i>accel-string</i>
+<dd>
+Defines a keyboard accelerator for the menu item; accelerators have no
+effect in button bars or popup menus.  The <i>accel-string</i> has the
+form <tt>Ctrl{+Alt|+Shift}+</tt><i>letter</i> (the <tt>+Alt</tt> and
+<tt>+Shift</tt> are optional, the <tt>Ctrl+</tt> is not).
+<p>
+<dt><tt>bgcolor</tt> <i>color-string</i>
+<dd>
+Sets the background color of the menu item to the color specified by
+<i>color-string</i>.  The quoted <i>color-string</i> can be any one of the
+standard colors <tt>red, darkRed, green, darkGreen, blue, darkBlue,
+yellow, darkYellow, purple, darkPurple, orange, darkOrange, cyan, darkCyan,
+pink, darkPink, brown, darkBrown, white, gray, darkGray</tt> or <tt>black</tt>.
+Additionally, the <i>color-value</i> string can contain a hexadecimal number
+of the form <tt>0xRRGGBB</tt>, where RR is the red component, GG the green
+component and BB the blue component.  For example, <tt>0x000000</tt>
+denotes black, <tt>0xff0000</tt> denotes red.
+<p>
+<dt><tt>exec</tt> <i>svl-string</i> <b>{ <tt>&amp;</tt></b>
+<i>svl-string</i> <b>}*</b>
+<dd>
+Specifies the SVL expression to execute when the menu item is selected.
+All strings separated by <b>&amp;</b> symbols are concatenated.
+<p>
+<dt><tt>inactive</tt> <i>expr</i>
+<dd>
+Similar to <tt>active</tt> except that the menu item is inactive, or grayed
+if the <i>expr</i> evaluates to false.
+<p>
+<dt><tt>title</tt>
+<dd>
+Displays the item <i>string</i> in boldface at the top of a popup menu.
+<p>
+<dt><tt>value</tt> <i>expr</i>
+<dd>
+Displays the menu item as a checkbox which is on when the given <i>expr</i>
+evaluates to true.
+</dl>
+</blockquote>
+<p>
+For example, typical items in a File menu may specified with
+<pre>
+    MENU &quot;Main:File&quot;
+	&quot;Save&quot;  exec 'Save[]'
+                accel 'Ctrl+s'
+                active data_modified &amp; atoms
+	&quot;Close&quot; exec 'Close[]'
+	        active data
+    ENDMENU
+</pre>
+<p>
+The predefined state tags in MOE are
+<p>
+<blockquote>
+<table class="titlebar" border="1" cellpadding="3">
+<tr>
+    <th>Tag</th>
+    <th>Definition</th>
+</tr>
+  <tr>
+    <td><tt>data</tt></td>
+    <td>There is molecular data (atoms, residues or
+    chains) </td>
+  </tr>
+  <tr>
+    <td><tt>data_modified</tt></td>
+    <td>Molecular data is modified, but not
+    saved </td>
+  </tr>
+  <tr>
+    <td><tt>data_filename</tt></td>
+    <td>A save filename exists </td>
+  </tr>
+  <tr>
+    <td><tt>atoms</tt></td>
+    <td>Atom objects exist </td>
+  </tr>
+  <tr>
+    <td><tt>residues</tt></td>
+    <td>Residue objects exist </td>
+  </tr>
+  <tr>
+    <td><tt>chains</tt></td>
+    <td>Chain objects exist </td>
+  </tr>
+  <tr>
+    <td><tt>sel_atom</tt></td>
+    <td>At least one atom is selected </td>
+  </tr>
+  <tr>
+    <td><tt>sel_residue</tt></td>
+    <td>At least one residue is selected </td>
+  </tr>
+  <tr>
+    <td><tt>sel_chain</tt></td>
+    <td>At least one chain is selected </td>
+  </tr>
+  <tr>
+    <td><tt>sel_atom_1</tt></td>
+    <td>Exactly one atom is selected </td>
+  </tr>
+  <tr>
+    <td><tt>sel_atom_2</tt></td>
+    <td>Exactly two atoms have been selected </td>
+  </tr>
+  <tr>
+    <td><tt>sel_atom_3 </tt></td>
+    <td>Exactly three atoms have been selected </td>
+  </tr>
+  <tr>
+    <td><tt>sel_residue_1</tt></td>
+    <td>Exactly one residue is selected </td>
+  </tr>
+  <tr>
+    <td><tt>sel_residue_2</tt></td>
+    <td>Exactly two residues have been selected </td>
+  </tr>
+  <tr>
+    <td><tt>sel_residue_3</tt></td>
+    <td>Exactly three residues have been selected </td>
+  </tr>
+  <tr>
+    <td><tt>mol_ribbon</tt></td>
+    <td>Ribbon is displayed </td>
+  </tr>
+  <tr>
+    <td><tt>mol_trace</tt></td>
+    <td>Alpha trace is displayed </td>
+  </tr>
+  <tr>
+    <td><tt>mol_axes</tt></td>
+    <td>Axes are displayed </td>
+  </tr>
+  <tr>
+    <td><tt>mol_box</tt></td>
+    <td>Periodic box is displayed </td>
+  </tr>
+  <tr>
+    <td><tt>mol_constraints</tt></td>
+    <td>Constraint meters are displayed </td>
+  </tr>
+  <tr>
+    <td><tt>mol_meters</tt></td>
+    <td>Meters are displayed </td>
+  </tr>
+  <tr>
+    <td><tt>mol_hbonds</tt></td>
+    <td>Hydrogen bonds are displayed </td>
+  </tr>
+  <tr>
+    <td><tt>mol_bondorder</tt></td>
+    <td>Multiple bonds are displayed </td>
+  </tr>
+  <tr>
+    <td><tt>mol_stereo</tt></td>
+    <td>Stereo mode is on </td>
+  </tr>
+  <tr>
+    <td><tt>mol_antialias</tt></td>
+    <td>Anti-aliasing is on </td>
+  </tr>
+  <tr>
+    <td><tt>mol_polyatoms</tt></td>
+    <td>Polyhedral atom rendering is on </td>
+  </tr>
+  <tr>
+    <td><tt>mol_polybonds</tt></td>
+    <td>Polyhedral bond rendering is on</td>
+  </tr>
+  <tr>
+    <td><tt>db_fields</tt></td>
+    <td>Database contains at least one field </td>
+  </tr>
+  <tr>
+    <td><tt>db_entries</tt></td>
+    <td>Database contains at least one entry </td>
+  </tr>
+  <tr>
+    <td><tt>db_sel_fields</tt></td>
+    <td>Database has at least one field selected </td>
+  </tr>
+  <tr>
+    <td><tt>db_sel_entries</tt></td>
+    <td>Database has at least one entry selected </td>
+  </tr>
+  <tr>
+    <td><tt>dbv_exists</tt></td>
+    <td>A database viewer is up </td>
+  </tr>
+  <tr>
+    <td><tt>dbv_read_only</tt></td>
+    <td>Database viewer is read-only </td>
+  </tr>
+  <tr>
+    <td><tt>dbv_mol_present</tt></td>
+    <td>Database has a molecule data field</td>
+  </tr>
+  <tr>
+    <td><tt>ted_exists</tt></td>
+    <td>At least one SVL text editor is up </td>
+  </tr>
+  <tr>
+    <td><tt>ted_highlight</tt></td>
+    <td>Editor has highlighted text </td>
+  </tr>
+  <tr>
+    <td><tt>ted_filename</tt></td>
+    <td>Editor has a filename defined </td>
+  </tr>
+  <tr>
+    <td><tt>ted_canundo</tt></td>
+    <td>Editor can undo the command </td>
+  </tr>
+  <tr>
+    <td><tt>ted_canredo</tt></td>
+    <td>Editor can redo the command</td>
+  </tr>
+</table>
+</blockquote>
+
+<p><a name="ReadMenuFile"></a></p><p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ReadMenuFile</span> 'filename'
+</pre>
+
+<p><tt>ReadMenuFile</tt> reads a sequence of menu specifications from
+the given menu file and extends or replaces the existing MOE menus.
+The default MOE menus can be loaded by reading appropriate menu files
+in the <tt>$MOE/lib</tt> directory.  The default MOE menu files are
+
+<tt>$MOE/lib/moe-menus</tt> and <tt>$MOE/lib/menu-*</tt>.
+
+<p><a name="EchoMenuCommands"></a></p><p><hr noshade="noshade" />
+
+<pre>
+new_value = <span class="fcndef">EchoMenuCommands</span> old_value
+curr_value = <span class="fcndef">EchoMenuCommands</span> []
+</pre>
+
+<p>By default, SVL commands issued from the CLI (Command Line Interface)
+text field(s) are echoed (printed) in the "SVL Commands" window, while SVL
+commands associated with menu items and invoked by menu events are not
+echoed.  This behaviour is controlled by a binary flag that can be examined
+and set by function <tt>EchoMenuCommands</tt>.  If given a null argument,
+the function returns the current value of the flag.  If given a numeric
+argument, the function sets the flag to that value and returns the previous
+value of the flag.  A non-zero value of the flag indicates that (all)
+menu commands will be echoed in the "SVL Commands" window.
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

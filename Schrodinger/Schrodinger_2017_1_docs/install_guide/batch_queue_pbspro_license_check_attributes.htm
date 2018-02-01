@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:MadCap="http://www.madcapsoftware.com/Schemas/MadCap.xsd" lang="en-US" xml:lang="en-US" data-mc-search-type="Stem" data-mc-help-system-file-name="Documentation.xml" data-mc-path-to-help-system="../" data-mc-target-type="WebHelp2" data-mc-runtime-file-type="Topic" data-mc-preload-images="false" data-mc-in-preview-mode="false" data-mc-toc-path="Installation and Jobs|Installation Guide|Preparing for Batch Queue Submission|Setup for PBS Pro Queueing Systems|License Checking for PBS Pro">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link href="../Skins/Default/Stylesheets/Slideshow.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/TextEffects.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Topic.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Components/Styles.css" rel="stylesheet" type="text/css" data-mc-generated="True" /><title>Adding License Attributes for PBS Pro</title>
+        <link href="../Resources/Stylesheets/docs.css" rel="stylesheet" />
+        <script src="../Resources/Scripts/custom.modernizr.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/jquery.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.config.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/foundation.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/plugins.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/MadCapAll.js" type="text/javascript">
+        </script>
+    </head>
+    <body><a name="aanchor5986"></a>
+        <MadCap:concept term="Installation/Jobs" /><a name="aanchor5987"></a>
+        <MadCap:concept term="Installation and Jobs" /><a name="batch_queue_1876641381_785467"></a>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="batch_queue_pbspro_license_check.htm" xrefformat="{paratext}">License Checking for PBS Pro</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="install_guideTOC.htm" xrefformat="{paratext}">Installation Guide</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="batch_queue_pbspro_license_check_configure.htm" xrefformat="{paratext}">Configuring the Load Script for PBS Pro</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+        <h1 class="Title">Adding License Attributes for PBS Pro</h1>
+        <p>A resource attribute representing each license must be defined in the queueing system configuration. The utility <code>licutil</code> can be used to parse your license file or query the license server and generate the configuration text that needs to be added to the queueing system configuration files. The syntax is</p><pre>
+$SCHRODINGER/utilities/licutil -pbsconf [-f <i class="UserReplace">license-file</i>]
+</pre>
+        <p>The <code>-f</code> <i class="UserReplace">license-file</i> option is not required if your license file is in the default location, <code>$SCHRODINGER/license</code>, or if it is already specified by one of the environment variables <code>SCHROD_LICENSE_FILE</code> or <code>LM_LICENSE_FILE</code>. If you want to query the server directly, you must <i>not</i> use the <code>-f</code> option, and the environment variable you use must be set to the server location.</p>
+        <p class="Note" data-mc-autonum="&lt;b&gt;Note:&lt;/b&gt; "><span class="autonumber"><span><b>Note:</b> <![CDATA[ ]]></span></span>If you specify multiple servers, only the first is queried. Licenses on other servers will therefore not be used.</p>
+        <p>The output from <code>licutil</code> should consist of lines like the following:</p><pre>
+Copy the text between the dashed lines below into your
+&lt;PBS_HOME&gt;/server_priv/resourcedef file.
+----------------------------------------------------------------------
+IMPACT_MAIN  type=long
+MMLIBS  type=long
+----------------------------------------------------------------------
+&#160;
+Add the text between the dashed lines below to the value of
+the ’resources’ parameter in your &lt;PBS_HOME&gt;/sched_priv/sched_config file.
+E.g., if the ’resources’ line in the file was
+resources: "ncpus, mem, arch"
+and the text between the lines was
+feature1, feature3, feature5
+then the new ’resources’ line should be
+resources: "ncpus, mem, arch, feature1, feature3, feature5"
+----------------------------------------------------------------------
+IMPACT_MAIN, MMLIBS
+----------------------------------------------------------------------
+&#160;
+Copy the text between the dashed lines below into your
+&lt;PBS_HOME&gt;/sched_priv/sched_config file.
+----------------------------------------------------------------------
+server_dyn_res: "IMPACT_MAIN !/usr/bin/schro09/utilities/pbs_lic_sensor.pl IMPACT_MAIN"
+server_dyn_res: "MMLIBS !/usr/bin/schro09/utilities/pbs_lic_sensor.pl MMLIBS"
+----------------------------------------------------------------------
+</pre>
+        <p>In the first and third parts of this output, there should be one line for each license in your license file; in the second part, one word for each license. To add the new license attributes, follow the instructions in the output. The files that you need to modify are <code>$PBS_HOME/server_priv/resourcedef</code> and <code>$PBS_HOME/sched_priv/sched_config</code>, where <code>$PBS_HOME</code> is the PBS home directory, often something like <code>/var/spool/PBS</code> on the head node of your cluster. </p>
+        <p>For the changes to take effect, you must restart PBS. The command for doing this is typically the following:</p><pre>
+/etc/init.d/pbs restart
+</pre>
+        <p>Refer to your <i>PBS Administrator Guide</i> for more information about restarting PBS.</p>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="batch_queue_pbspro_license_check.htm" xrefformat="{paratext}">License Checking for PBS Pro</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="install_guideTOC.htm" xrefformat="{paratext}">Installation Guide</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="batch_queue_pbspro_license_check_configure.htm" xrefformat="{paratext}">Configuring the Load Script for PBS Pro</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

@@ -1,0 +1,475 @@
+<html><head><title>G09 Keyword: External</title></head><body>
+
+<h1>External</h1>
+<h3><font size="-1" color="#222222">DESCRIPTION</font></h3>
+<p>Requests a calculation using an external program. This mechanism is primarily intended to facilitate the use of external programs to provide the low-level calculations in <a href="k_oniom.htm"><b><font color="#0000FF">ONIOM</font></b></a> calculations, but can also be used to conduct geometry optimizations using Gaussian&rsquo;s optimizer with external programs providing the function values and derivatives.</p>
+<p>Gaussian uses a standardized interface to run an external program to produce an energy (and optionally a dipole moment or forces) at each geometry. A text file is produced with the current structure, and a script named <font color="#009933">Gau_External</font> is run by default (see below for information on specifying an alternate script). This script, which is provided by the user, is expected to:</p>
+<ul>
+<li>
+Convert the text file&mdash;referred to as the &ldquo;input file&rdquo;&mdash;into input for another program.
+</li>
+<li>
+Run that program.
+</li>
+<li>
+Convert the results into a standard text form for recovery by Gaussian. The converted file for use by Gaussian is referred to as the &ldquo;output file.&rdquo;
+</li></ul>
+<p>You may specify a different script by including its name as the option to the <a href="k_external.htm"><b><font color="#0000FF">External</font></b></a> keyword: e.g., <a href="k_external.htm"><b><font color="#0000FF">External=MyScript</font></b></a>.</p>
+<h3><font size="-1" color="#222222">SCRIPT INVOCATION</font></h3>
+<p>By default, the <font color="#009933">Gau_External</font> script is passed six parameters:</p>
+<pre>
+$ <b>Gau_External</b> <font face="Times New Roman, Times, serif" size="3"><i>layer</i></font> <font face="Times New Roman, Times, serif" size="3"><i>InputFile</i></font> <font face="Times New Roman, Times, serif" size="3"><i>OutputFile</i></font> <font face="Times New Roman, Times, serif" size="3"><i>MsgFile</i></font> <font face="Times New Roman, Times, serif" size="3"><i>FChkFile</i></font> <font face="Times New Roman, Times, serif" size="3"><i>MatElFile</i></font></pre>
+<p>The parameters are defined as follows:</p>
+<table border="0" cellpadding="2">
+<tr valign="top"><td><p><font face="Times New Roman, Times, serif" size="3"><i>layer</i></font></p></td><td>&nbsp;&nbsp;</td>
+<td><p>A key letter indicating whether the computation is being performed on the real system (<b><font color="#0000FF">R</font></b>), the model system of a 2-layer ONIOM or the middle layer of a 3-layer ONIOM (<b><font color="#0000FF">M</font></b>), or the model system of a 3-layer ONIOM (<b><font color="#0000FF">S</font></b>).</p></td></tr>
+<tr valign="top"><td><p><font face="Times New Roman, Times, serif" size="3"><i>InputFile</i></font></p></td><td>&nbsp;&nbsp;</td>
+<td><p>The name of the file Gaussian has prepared as input for the external program.</p></td></tr>
+<tr valign="top"><td><p><font face="Times New Roman, Times, serif" size="3"><i>OutputFile</i></font></p></td><td>&nbsp;&nbsp;</td>
+<td><p>The name of the file which should be read in after the external program completes.</p></td></tr>
+<tr valign="top"><td><p><font face="Times New Roman, Times, serif" size="3"><i>MsgFile</i></font></p></td><td>&nbsp;&nbsp;</td>
+<td><p>The name of a file for messages; if the script creates this file, then its contents are copied to the Gaussian output file.</p></td></tr>
+<tr valign="top"><td><p><font face="Times New Roman, Times, serif" size="3"><i>FChkFile</i></font></p></td><td>&nbsp;&nbsp;</td>
+<td><p>A formatted checkpoint file. If the appropriate options are set to link 402, then this file is created from the read-write file before starting the external script, and may be read to import results after the script finishes instead of Gaussian input being provided via <em>OutputFile</em>. The output formatted checkpoint file can contain an initial two blank lines plus the data to be updated in the usual format; it does not need to contain any information which is to remain unchanged.</p></td></tr>
+<tr valign="top"><td><p><font face="Times New Roman, Times, serif" size="3"><i>MatElFile</i></font></p></td><td>&nbsp;&nbsp;</td>
+<td><p>Matrix element file. This is a simple Fortran unformated file designed to export data such as the overlap and Core Hamiltonian matrix and two-electron integrals in an extensible format. The structured is documented in a separate section following the examples.</p></td></tr>
+</table>
+<p>All of these files are deleted by Gaussian once the results have been recovered.</p>
+<p>Additional arguments to the script may also be included:</p>
+<p><a href="k_external.htm"><b><font color="#0000FF">External="RunTink Amber"</font></b></a></p>
+<p>In this example, the actual command would be:</p>
+<pre>
+$ <b>RunTink Amber</b> <font face="Times New Roman, Times, serif" size="3"><i>layer</i></font> <font face="Times New Roman, Times, serif" size="3"><i>InputFile</i></font> <font face="Times New Roman, Times, serif" size="3"><i>OutputFile</i></font> <font face="Times New Roman, Times, serif" size="3"><i>MsgFile</i></font> <font face="Times New Roman, Times, serif" size="3"><i>FChkFile</i></font> <font face="Times New Roman, Times, serif" size="3"><i>MatElFile</i></font></pre>
+<p>The specified script is always passed the parameters mentioned above as its final six arguments.</p>
+<h3><font size="-1" color="#222222">INPUT FILE FORMAT</font></h3>
+<p>The input file has the following format:</p>
+<pre>
+<font face="Times New Roman, Times, serif" size="3"><i>#atoms  derivatives-requested  charge  spin</i></font>
+<font face="Times New Roman, Times, serif" size="3"><i>atomic#  x  y  z  MM-charge MM-atom_type</i></font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Repeated for each atom.</i></font></font>
+</pre>
+<p>The first line specifies the number of atoms in the molecule, what derivatives are to be computed (<b><font color="#0000FF">0</font></b>=energy only, <b><font color="#0000FF">1</font></b>=first derivatives, <b><font color="#0000FF">2</font></b>=second derivatives), and the molecule&rsquo;s charge and spin multiplicity. The remaining lines specify the atomic number, coordinates and molecular mechanics charge for each atom.</p>
+<h3><font size="-1" color="#222222">OUTPUT FILE FORMAT</font></h3>
+<p>The output file is in fixed format, and has the following data (all in atomic units):</p>
+<table border="0">
+<tr valign="top"><td align="left"><b>Items</b></td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></font></td><td align="left"><b><b>Pseudo Code</b></b></td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></font></td><td align="left"><b><b>Line Format</b></b></td></tr>
+<tr valign="top"><td align="left"><font face="Times New Roman, Times, serif" size="3"><i>energy, dipole-moment (xyz)</i></font></td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></font></td><td align="left">E, Dip(I), I=1,3</td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></font></td><td align="left">4D20.12</td></tr>
+<tr valign="top"><td align="left"><font face="Times New Roman, Times, serif" size="3"><i>gradient on atom (xyz)</i></font></td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></font></td><td align="left">FX(J,I), J=1,3; I=1,NAtoms</td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></font></td><td align="left">3D20.12</td></tr>
+<tr valign="top"><td align="left"><font face="Times New Roman, Times, serif" size="3"><i>polarizability</i></font></td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></font></td><td align="left">Polar(I), I=1,6</td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></font></td><td align="left">3D20.12</td></tr>
+<tr valign="top"><td align="left"><font face="Times New Roman, Times, serif" size="3"><i>dipole derivatives</i></font></td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></font></td><td align="left">DDip(I), I=1,9*NAtoms</td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></font></td><td align="left">3D20.12</td></tr>
+<tr valign="top"><td align="left"><font face="Times New Roman, Times, serif" size="3"><i>force constants</i></font></td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></font></td><td align="left">FFX(I), I=1,(3*NAtoms*(3*NAtoms+1))/2</td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></font></td><td align="left">3D20.12</td></tr>
+</table>
+<p>The second section is present only if first derivatives or frequencies were requested, and the final section is present only if frequencies were requested. In the latter case, the Hessian is given in lower triangular form: &alpha;<sub><font face="Times New Roman, Times, serif" size="3"><i>ij</i></font></sub>, <font face="Times New Roman, Times, serif" size="3"><i>i</i></font>=1 to <font face="Times New Roman, Times, serif" size="3"><i>N</i></font>, <font face="Times New Roman, Times, serif" size="3"><i>j</i></font>=1 to <font face="Times New Roman, Times, serif" size="3"><i>i</i></font>. The dipole moment, polarizability and dipole derivatives can be zero if none are available.</p>
+<h3><font size="-1" color="#222222">OPTIONS</font></h3>
+<p>It is also possible to provide one-electron or one- and two-electron integrals and other matrix elements to an external program and to recover results such as MOs or densities from the other program. Full details and examples are in the <font color="#009933">g09/doc</font> subdirectory (<font color="#009933">doc</font> folder on Windows). Options must follow the name of the script.</p>
+<p><b><font color="#0000FF">InUnf</font></b><br />
+A Fortran unformatted file will be provided to the external program containing coordinates and one-electron matrix elements (overlap, core Hamiltonian, etc.). Refer to <font color="#009933">g09/doc/unfdat.txt</font> for details on the contents of the file and to <font color="#009933">g09/doc/rdmat.F</font> for a sample program which reads the file and prints its contents. <b><font color="#0000FF">1Elintegrals</font></b> is a synonym for this option.</p>
+<p><b><font color="#0000FF">2ElIntegtrals</font></b><br />
+The Fortran unformatted file should also contain two electron integrals. This option implies <b><font color="#0000FF">SCF=Conventional</font></b>.</p>
+<p><b><font color="#0000FF">InputFchk</font></b><br />
+A formatted checkpoint file should be generated and provided to the external program.</p>
+<p><b><font color="#0000FF">OutputUnf</font></b><br />
+A Fortran unformatted file will be provided to the external program and an updated or replaced file with the same structure will be read by G09 for the results, in lieu of the default text output file expected from the external program/script.</p>
+<p><b><font color="#0000FF">IOFchk</font></b><br />
+A formatted checkpoint file will be generated and provided to the external program, and an new <font color="#009933">.fchk</font> file will be read to import results afterwards.</p>
+<p><b><font color="#0000FF">ReadInputSection</font></b><br />
+This option can be used to alter the content of the external text input file that Gaussian 09 automatically generates for the external script. When the data transfer between Gaussian 09 and the external script is handled using one of the options above (e.g. <b><font color="#0000FF">IOFchk</font></b>), the default external text input file is not needed. With this option, a section (delimited by the usual blank lines) will be read from the Gaussian 09 input file. The text in this section will be placed in the external text input file instead of the usual content of such file. This provides additional flexibility to provide extra instructions to the external script.</p>
+<p>Test job 769 serves as an example of these options.</p>
+<h3><font size="-1" color="#222222">RELATED KEYWORDS</font></h3>
+<p>External scripts may also be specified as one of the models for the <a href="k_oniom.htm"><b><font color="#0000FF">ONIOM</font></b></a> keyword (see examples below).</p>
+<p>The Gaussian stand-alone <b><font color="#0000FF">MM</font></b> program can be run with the <b><font color="#0000FF">-external</font></b> switch, which causes it to read and write data in the formats used by the <a href="k_external.htm"><b><font color="#0000FF">External</font></b></a> interface.</p>
+<h3><font size="-1" color="#222222">EXAMPLES</font></h3>
+<p>The following route section specifies an external script for the low layer of a 3 layer ONIOM calculation:</p>
+<pre># ONIOM(B3LYP/6-31G(d):AM1:External="RunTink Amber") Opt</pre>
+<p>The following route section specifies an external script for the high accuracy layer of a 2 layer ONIOM job:</p>
+<pre># ONIOM(External="RunCC SDT":B3LYP/6-31G(d)) Opt</pre>
+<h3><font size="-1" color="#222222">MATRIX ELEMENT FILE</font></h3>
+<p>The structure of the optional unformatted matrix element is as follows. The initial section contains records relating to the molecular structure and other general job characteristics:
+<table width="812" border="0"  cellpadding="2">
+<tr valign="top">
+  <td width="77" align="left"><b>Record</b></td><td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+<td width="705"><strong>Format and Description</strong></td>
+<tr valign="top">
+  <td align="left">1</td><td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td><td><font face="Courier New, Courier, monospace"size="-1">Character*64 LabFil, Integer IVers, Integer NLab, Character*64 GVers</font><br />
+    A label for the file type, version number for the file format, number on general data records which follow and preceed the matrix elements, and the version of Gaussian which wrote the file.</td>
+    <tr valign="top">
+  <td align="left">2</td>
+  <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td><td><font face="Courier New, Courier, monospace"size="-1">Character*64 Title, Integer NAtoms, Integer NBasis, NBsUse,ICharg, Multip,<br />
+    NE, Len12L, Len4L, IOpCl</font><br />
+    The first 64 characters of the title section from the run which created the file and the number of atoms and basis functions. <em>NBsUse</em> is the number of linearly independent <em>basis</em> functions. <em>ICharg</em> is the molecular charge, Multip the spin multiplicity (1=singlet, etc.) and <em>NE</em> the number of electrons. <em>Len12L</em> is the number of bytes used for the integer labels for sparse 1D and 2D matrices, and <em>Len4L</em> is the number of bytes used for 4D matrices (2e integrals). <em>IOpCl</em> is the closed/open-shell flag if the file is written after an initial guess or  SCF has been done; otherwise it is -1, meaning unspecified.</td>
+  <tr valign="top">
+  <td align="left">3</td>
+  <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td><td><font face="Courier New, Courier, monospace"size="-1">Integer IAn(NAtoms)</font><br />
+    Atomic numbers</td>
+  <tr valign="top">
+  <td align="left">4</td>
+  <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td><td><font face="Courier New, Courier, monospace"size="-1">Integer IAtTyp(NAtoms)</font><br />
+    Atom type information. The main aspect of interest to other programs is that negative values indicate inactive atoms during an ONIOM model system calculation. By default, the file is written with inactive atoms omitted from all arrays and <em>NAtoms</em> set to the number of active atoms, but all atoms can optionally be included.</td>
+    <tr valign="top">
+  <td align="left">5</td>
+  <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td><td><font face="Courier New, Courier, monospace"size="-1">Real*8 AtmChg(NAtoms)</font><br />
+    Nuclear charges, may be different from atomic numbers if ECPs were used.</td>
+  <tr valign="top">
+  <td align="left">6</td>
+  <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td><td><font face="Courier New, Courier, monospace"size="-1">Real*8 C(3,NAtoms)</font><br />
+    Cartesian nuclear coordinates in Bohr.</td>
+<tr valign="top">
+  <td align="left">7</td>
+  <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td><td><font face="Courier New, Courier, monospace"size="-1">Integer IBfAtm(NBasis), IBfTyp(NBasis)</font><br />
+    <em>IBfAtm</em> is the map from basis functions to atoms. <em>IBfTyp</em> is a type flag for each basis function. Each is of the form <em>LLLMMM</em>, where <em>LLL</em> is the angular momentum and <em>MMM</em> is the component number. Negative values are for pure functions and positive for Cartesian. So cartesian Ds are numbered 2001 through 2006 and pure Ds are -2001 through -2005.</td>
+<tr valign="top">
+  <td align="left">8 to <em>NLab</em></td>
+  <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td><td>Other scalar data about the calculation.<br />
+    Currently <em>NLab</em> is 7 and so there are no such records, but programs should skip records 8 to <em>NLab</em> to ensure that they ignore data which is added here later.</td>
+  </tr></table>
+<p>These <em>NLab</em> records are followed by zero or more matrix sections, each of which has an initial record<br />
+  containing a label, the number of integers and number of reals for each element, the total number of<br />
+  elements and number of elements per record. <em>NI</em> can be zero for dense matrices (stored with zeros<br />
+  included):</p>
+<pre>Character*64 Label, Integer NI, NR, NTot, NPerRec, N1, N2, N3, N4, N5</pre>
+ <p><em>N1</em> through <em>N5</em> are dimensions for the object as a matrix, with 0 for unused dimensions and negative
+  values for ones which are lower triangular, e.g. if <em>NBasis</em>=50 and <em>NBsUse</em>=49 then <em>N1</em> ... <em>N5</em> would
+  be <strong>&ndash;50 50 0 0 0</strong> for the overlap matrix and <strong>50 49 0 0 0</strong> for the transformation to an orthogonal basis.</p>
+ <p>This is followed by (NTot+NPerRec-1)/NPerRec records each of the form:</p>
+ <pre>Integer ID(NI,NPerRec), Real*8 DX(NR,NPerRec)</pre>
+ <p>or just</p>
+ <pre>Real*8 DX(NR,NPerRec)</pre>
+ <p>if <em>NI</em>=0, with the labels if any in <em>ID</em> and values in <em>DX</em>. All matrix elements are over pure or Cartesian
+   basis functions in accord with that specified in the Gaussian route or defaulted for the particular basis
+   set.</p>
+ <p>Currently, the following sections are always written with the following labels:</p>
+ <p>OVERLAP<br />
+   CORE HAMILTONIAN ALPHA<br />
+   CORE HAMILTONIAN BETA<br />
+   KINETIC ENERGY<br />
+   Each is a lower triangular matrix stored dense (all <em>N</em>*(<em>N</em>+1)/2 elements with no labels). The two core Hamiltonians are identical unless a Fermi contact perturbation has been applied.</p>
+ <p>ORTHOGONAL BASIS<br />
+   If present, this is a (<em>NBasis,NBsUse</em>) matrix giving the transformation from AOs to a linearly independent orthonormal set.</p>
+ <p>DIPOLE INTEGRALS<br />
+   If present, this is 3 lower-triangular matrices holding the X, Y, and Z dipole matrix elements.</p>
+ <p>GIAO D2H/DBDM<br />
+   If present, this is 9 &times; <em>NAtoms</em> lower triangular matrices holding the GIAO core Hamiltonian 2nd derivatives with respect to external field and nuclear magnetic moments (the matrix elements required for the diamagnetic shielding term).</p>
+ <p>GIAO L/R3<br />
+   If present, this is 3 &times; <em>NAtoms</em> lower triangular matrices holding the GIAO magnetic perturbations (the matrices required for the paramagnetic shielding term).</p>
+ <p>ALPHA ORBITAL ENERGIES<br />
+ If present, this an <em>NBsUse</em> vector of initial guess or converged orbital energies.</p>
+ <p>ALPHA MO COEFFICIENTS<br />
+   If present, this an <em>NBasis</em> &times; <em>NBsUse</em> matrix of initial guess or converged orbitals.</p>
+ <p>BETA ORBITAL ENERGIES<br />
+   If present, this an <em>NBsUse</em> vector of initial guess or converged orbital energies.</p>
+  <p>BETA MO COEFFICIENTS<br />
+   If present, this an <em>NBasis</em> &times; <em>NBsUse</em> matrix of initial guess or converged orbitals.</p>
+  <p>ALPHA DENSITY MATRIX<br />
+    If present, this is a lower-triangular matrix containing the alpha spin part of the density matrix selected by the options for population analysis, etc. If read back into Gaussian, it is stored in place of the SCF density.</p>
+  <p>BETA DENSITY MATRIX<br />
+    If present, this is a lower-triangular matrix containing the beta spin part of the density matrix selected by the options for population analysis, etc. If read back into Gaussian, it is stored in place of the SCF density.</p>
+  <p>ALPHA SCF DENSITY MATRIX<br />
+    If present, this is a lower-triangular matrix containing an initial guess or converged SCF density.</p>
+<p>BETA SCF DENSITY MATRIX<br />
+    If present, this is a lower-triangular matrix containing an initial guess or converged SCF density.</p>
+ <p>[ALPHA,BETA] [MP2,MP3,MP4,CI,QCI/CC] DENSITY MATRIX<br />
+   If present, these are the alpha and beta densities including the indicated type of correlation.</p>
+<p>GAUSSIAN SCALARS<br />
+   This a vector of labelled reals. Labels between 1 and 1000 refer to elements of the Gaussian /Gen/ file<br />
+   (for a table, see below). Labels higher than 1000 are reserved for specific scalar to or from the external<br />
+   program.</p>
+ <p>If 2e integrals are available (i.e., if <b><font color="#0000FF">SCF=Conventional</font></b> was specified on the route) then there will be one<br />
+   of the following sections:</p>
+ <p>ALPHA DENSITY DERIVATIVES<br />
+   BETA DENSITY DERIVATIVES<br />
+   If present, these have lower triangular AO density derivatives with respect to whatever perturbations were applied during CPHF. The number of matrices is the number of perturbations, and varies.</p>
+<p> ALPHA MO DERIVATIVES<br />
+   BETA MO DERIVATIVES<br />
+   If present, these are the (<em>NBasis,NAE,3</em>) and <em>(NBasis,NBE,3</em>) MO coefficient derivatives with respect to a magnetic field.</p>
+ <p>REGULAR 2E INTEGRALS<br />
+   <em>or</em><br />
+   RAFFENETTI 2E INTEGRALS<br />
+   Only non-zero integrals are stored with 4 indices <em>I</em>&ge;<em>J</em>, <em>I</em>&ge;<em>K</em>, <em>K</em>&ge;<em>L</em>, <em>J</em>&ge;<em>L</em> if <em>I</em>=<em>K</em>. <em>NR</em> is 1 for regular integrals and 1, 2, or 3 for Raffenetti integral combinations:</p>
+ <p>R1(I,J,K,L) = (IJ|KL) - 1/4[(IK|JL)+(IL|JK)]<br />
+   R2(I,J,K,L) = (IK|JL) + (IL|JK)<br />
+   R3(I,J,K,L) = (IK|JL) - (IL|JK)</p>
+ <p>The default is <em>R1</em> only for closed-shell systems, <em>R1</em> and <em>R2</em> for UHF. The <b><font color="#0000FF">NoRaff</font></b> keyword forces regular integrals, and <b><font color="#0000FF">IOp(3/11=</font></b><em>N</em>) can be used for force a particular set of Raffenetti integrals.</p>
+ <p>The sample program <font color="#009933">rdmat.F</font> in the <font color="#009933">doc</font> subdirectory of the main Gaussian installation directory is a simple Fortran program which reads this file an prints the contents. It does not require any routines from Gaussian and can be used as a template for processing the file. On x86-64/Linux machines, it can be compiled with any of <font color="#009933">g77</font>, <font color="#009933">gfortran</font>, <font color="#009933">pgf77</font>, <font color="#009933">pgf90</font>, or <font color="#009933">ifort</font> and will read the file generated by Gaussian (which uses <font color="#009933">pgf77</font>). On other systems it may be necessary to use the same compiler as was used for Gaussian. The program should be compiled with a default integer size of 8 bytes to read a file built by a 64-bit version of Gaussian.</p>
+ <p>The Gaussian scalars are:</p>
+ <table width="812" border="0">
+   <tr valign="top">
+     <td width="77" align="left">1</td>
+     <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td width="705">Virial ratio</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">2-4</td>
+     <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Components of applied electric field, if any</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">5</td>
+     <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>2e SCF energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">6</td>
+     <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>SCRF g-factor</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">7</td>
+     <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td> SCRF a0</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">8</td>
+     <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td> Thermal Energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">9</td>
+     <td width="16">&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>E(CI/CC/QCI/BD)</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">10<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>E(CCD+ST4(CCD)/QCISD(T)/BD(T)/CI+Davidson)</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">11<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>E(VAR1)</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">12<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Zero-point energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">13<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Multi-step (G1, G2, etc.) energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">14<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Number of imaginary frequencies</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">15<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>D(PUHF)</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">16<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>EPUHF</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">17<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>ECBS2</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">18<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>ECBSI</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">19<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>EPMP2-0</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">20<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>EPMP3-0</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">21<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Root-mean-squared force of optimized parameters</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">22<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>E(CIS-MP2)</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">23<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>RMS error in density matrix</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">24<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>S**2 after annihilation of first contaminant</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">25<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>CIS energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">26<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>UMP4D (=UMP4DQ - E4(R+Q))</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">27<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Reference energy for BD</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">28<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>MP5</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">29<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>S4SD (computed in ANNIL in L502, used by PSCF spin projection routines)</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">30<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Frozen-core part of total energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">31<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>'TAU' from SCFDM</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">32<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>SCF ENERGY</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">33<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>UMP2 energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">34<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>UMP3 energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">35<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>UMP4(SDTQ) energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">36<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>CBS OIii</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">37<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Total energy with RF from L116</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">38<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>MP4DQ energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">39<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>MP4SDQ energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">40<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td>Used by L116</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">41<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td>Nuclear repulsion energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">42<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>T (length of correction of reference determinant)</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">43<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td>Updated energy for optimizations</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">44<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td>&lt;S**2&gt; of  SCF wave function </td>
+   </tr>
+   <tr valign="top">
+     <td align="left">45<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td>&lt;S**2&gt; corrected to first order (after DOUBAR) </td>
+   </tr>
+   <tr valign="top">
+     <td align="left">47<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>A0</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">48<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Used to accumulate energy during <b><font color="#0000FF">Opt=Simult</font></b></td>
+   </tr>
+   <tr valign="top">
+     <td align="left">49<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td>Temperature for thermochemistry</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">50<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Pressure for thermochemistry</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">51<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Scale factor for frequencies in thermochemistry</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">52<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td>Nuclear repulsion contribution from inactive atom pairs</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">53<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td>Singles contribution to E2 in ROMP2</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">54<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+    <td>E(2) with current orbitals for extrapolation</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">55<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Nuclear term in the reaction field energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">56<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Electronic term in the reaction field energy</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">57<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Curvature from projected frequency jobs</td>
+   </tr>
+   <tr valign="top">
+     <td align="left">58<em></em></td>
+     <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+     <td>Reaction coordinate for single-points along IRCs</td>
+   </tr>
+ </table>
+ <p>&nbsp;</p>
+ <p>&nbsp;</p>
+<hr />
+<p class="upd">Last update: 22 May 2014</p> 
+
+</body></html>

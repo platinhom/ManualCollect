@@ -1,0 +1,474 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<meta index entry="fingerprints" subentry="introduction">
+<meta index entry="tanimoto similarity">
+<meta index entry="cosine similarity">
+<meta index entry="similarity" subentry="tanimoto">
+<meta index entry="similarity" subentry="cosine">
+<meta panel Fingerprint Chooser>
+
+<title>Overview of Molecular Fingerprints</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Basics">Fingerprint Basics</a>
+<li><a href="#System">MOE Fingerprint System</a>
+<li><a href="#SVL">SVL Commands</a>
+</ul>
+
+<a name="Basics"></a><h2>Fingerprint Basics</h2>
+
+<p>
+Elements known as <i>structural keys</i>, <i>signatures</i>, or
+<i>molecular fingerprints</i> (or, more simply, <i>fingerprints</i>)
+represent a set of features derived from the structure of a molecule.  The
+particular features calculated from the structure can be quite arbitrary
+and depend on the topology of the chemical graph or even a 3D
+conformation.  Different fingerprint schemes emphasize different molecular
+attributes according to the design philosophy of the fingerprint system.
+The fundamental idea is to encapsulate certain properties directly or
+indirectly in the fingerprint and then use the fingerprint as a surrogate
+for the chemical structure.  Comparisons between molecules are then
+reduced to comparing sets of features and measuring the degree to which
+sets overlap.</p>
+
+<p>MOE Fingerprints can be used for </p>
+<ol>
+<li><a href="ph4clust.htm">Fingerprint Clustering</a> to group molecules
+based on the similarity of their fingerprint.
+<li><a href="fpmodel.htm">Fingerprint Models</a> to study Quantitative 
+Structure Activity Relationships using fingerprint descriptions of the
+molecules.
+<li><a href="ph4sim.htm">Similarity Searching</a> to find molecules with
+similar fingerprints.
+</ol>
+
+<p>
+As a simple example, consider a universe of features consisting of:</p>
+
+<p><center>
+    <i>U</i> = { is-aromatic, has-ring, has-C, has-N,
+		  has-O, has-S, has-P, has-halogen
+		}
+</center></p>
+
+<p>
+Based on this definition of features, <i>all</i> molecules are described by
+subsets of <i>U</i>.  Note that, in this small universe of 8 features, there
+are only 2<sup>8</sup> (256) possible fingerprints, which means that all
+chemical structures will be mapped to one of 256 possible subsets. In other
+words, there are only 256 possible "molecules."  Examples might be:</p>
+
+<p><center>
+<table border=1 cellpadding=5 width=80%>
+<tr>
+<td>1</td>
+<td align=center><img src="ph4intro/c6h6.png">
+<td align=center>{ is-aromatic, has-ring, has-C }
+<tr>
+<td>2</td>
+<td align=center><img src="ph4intro/c4h8.png">
+<td align=center>{ has-ring, has-C }
+<tr>
+<td>3</td>
+<td align=center><img src="ph4intro/c4no.png">
+<td align=center>{ has-C, has-N, has-O }
+<tr>
+<td>4</td>
+<td align=center><img src="ph4intro/c4nf.png">
+<td align=center>{ is-aromatic, has-ring, has-C, has-N, has-halogen }
+</table>
+</center></p>
+
+<p>
+<b>Metrics.</b>
+Once a fingerprint is derived from a chemical structure, a metric
+is needed to compare fingerprints (and thus compare molecules).  A common
+metric is the <i>Tanimoto coefficient</i>, suitable for use, for example,
+in ranking compounds in virtual screening assays.  The Tanimoto coefficient
+can take on values between 0 and 1 inclusive,
+where 0 means "maximally dissimilar" and 1 means "maximally similar."  The
+Tanimoto coefficient between fingerprints <i>X</i> and <i>Y</i> is
+defined to be:</p>
+
+<p><center> # features in intersect(A,B) / # features in union(A,B)</center></p>
+
+<p>
+which is, roughly speaking, the number of common features divided by the
+number of total features in both fingerprints.  For example, the Tanimoto
+coefficient between molecules 1 and 2 in the above table is:</p>
+
+<p><center>
+# { has-ring, has-C } / # { is-aromatic, has-ring, has-C} = 2/3 = 0.666
+</center></p>
+
+<p>
+The Tanimoto coefficient can be used as a threshold to define similarity; in this case, any value can act
+as the threshold. For example, two compounds having a Tanimoto coefficient greater than or equal to 0.6
+can be considered "similar."</p>
+
+<p>
+The primary concern in designing a fingerprint system is determining what
+features to use.  The example above reveals one of the problems with
+fingerprints.  The is-aromatic and has-ring features are not independent:
+whenever is-aromatic is present has-ring is also present.  This has the
+effect of overemphasizing ring structures in the similarity measures (since
+each feature is counted with equal weight in the Tanimoto coefficient).
+In practical fingerprint systems, the problem remains but becomes more difficult to pinpoint as there may be hundreds or thousands of features.</p>
+
+<p>
+<b>Similarity Matrices.</b>
+A <i>similarity matrix</i> can be defined for a collection of compounds by
+calculating the Tanimoto coefficient between each pair.  For example, the
+above collection of four compounds have the following similarity matrix:</p>
+
+<p>
+<center><table cellspacing=5 cellpadding=5>
+<tr>
+<td>1.00<td>0.66<td>0.20<td>0.60
+<tr>
+<td>0.66<td>1.00<td>0.25<td>0.40
+<tr>
+<td>0.20<td>0.25<td>1.00<td>0.33
+<tr>
+<td>0.60<td>0.40<td>0.33<td>1.00
+</table></center></p>
+
+<p>
+Each element (<i>i</i>,<i>j</i>) is the Tanimoto coefficient between molecules
+<i>i</i> and <i>j</i>.  The similarity matrix has a number of uses.  In
+particular, it can be used to cluster compounds by partitioning them into
+subsets such that each subset consists of molecules that are mutually similar.
+It can also be used to calculate Euclidean vectors whose inter-vector
+distances approximate the similarity matrix (this is called Euclidean
+Embedding).</p>
+
+<p>
+<b>Representations.</b>
+In computational procedures, fingerprints are not represented as collections
+of character strings.  The fundamental quantity to represent
+is the <i>set</i>, which can be done in a number of ways:</p>
+
+<ul>
+<li><i>Bit Vectors</i>.  In the bit vector set representation, each feature in
+the universe <i>U</i> is assigned a natural number {1,2,3,...,<i>n</i>} where
+<i>n</i> is the total number of features in the universe.  Any subset of
+<i>U</i> can then be represented by an <i>n</i>-vector, <i>x</i>, of ones and
+zeros where <i>x<sub>i</sub></i> = 1 if and only if feature <i>i</i> is in the
+set.  This representation is efficient since eight features can be encoded in
+one byte and similarity metrics consist of AND and OR operations on the bits.
+
+<li><i>Folded Bit Vectors</i>.  One of the drawbacks of the bit vector
+representation is memory consumption.  If the universe consists of 1,000,000
+features, then every set (no matter how small) requires 1,000,000/8 = 125,000
+bytes of storage.  One way around this is to <i>fold</i> the bit vectors,
+i.e. map them onto a lower dimensional bit-vector.  For example, if we
+allocate 1,000 bits per fingerprint, then each bit becomes a "bucket,"
+i.e. it represents many other bits in the full bit vector.  Thus, if a
+bit is 1, one is not sure of exactly which feature is contained in the feature
+set; however, in practice, such "collisions" can be neglected in certain
+applications.
+
+<li><i>Feature Lists</i>.  Another way of getting around the sparseness of the
+feature set for an individual compound (most molecules rarely contain a large
+proportion of the total feature universe) is to store each set as a list of
+feature numbers.  Assign a unique integer to each feature and store the
+resulting fingerprint as a variable length list of integers.  Thus, small
+molecules generally use up less memory than large molecules; however, each
+feature will require 1 word of computer memory to store.
+
+</ul>
+
+<p>
+Ultimately, the representation of a fingerprint will depend on the total number
+of features in the universe <i>U</i> and the average number of features present
+in an individual molecule.</p>
+
+
+<a name="System"></a><h2>MOE Fingerprint System</h2>
+
+<p>
+Several fingerprint systems are implemented in MOE.  Moreover,
+additional systems can be implemented in SVL, thereby extending the list of
+core fingerprint systems.  Applications that use fingerprints will
+generally offer the choice of all available fingerprint methods in MOE.
+This is done by assigning a unique code, or name, to each fingerprint
+system.  Each fingerprint system will support a number of similarity metrics
+and use different representations.  Typically, selection of fingerprints
+and metrics is performed in a Fingerprint Chooser panel:</p>
+
+<p><center>
+<img src="ph4intro/choose_sim.png" alt="Fingerprint Chooser (Cluster) Panel">
+</center></p>
+
+<p>
+The top list allows selection of the fingerprint system while the
+bottom list allows selection of a comparison metric (once a fingerprint
+has been chosen).  A MOE fingerprint system is defined by the following
+quantities:</p>
+
+<p>
+<table cellpadding=5>
+<tr>
+<td valign="baseline"><tt><b>fp_code</b></tt></td>
+<td valign="baseline">
+Unique name of the fingerprint system, for example, <tt>FP:MACCS</tt>
+for the 166 MACCS keys fingerprint system.  The purpose of the code name
+is to identify fingerprint systems and indicate which molecular database
+fields contain the fingerprints themselves.  In general, if a database
+has a field with the code name then it is assumed that the contents of the
+field are correct fingerprints.
+</td>
+</tr></p>
+
+<tr>
+<td valign="baseline"><tt><b>fp_desc</b></tt>
+</td>
+<td valign="baseline">
+One-line description of the fingerprint system.  This description
+will appear in option lists and list boxes where a choice of fingerprints
+is given by an application.
+</td>
+</tr>
+
+<tr>
+<td valign="baseline"><tt><b>fp_fcn</b></tt>
+</td>
+<td valign="baseline">
+Name of the SVL function that actually calculates the fingerprints
+from loaded molecules.  Generally speaking, this is mostly of interest to fingerprint
+developers.
+</td>
+</tr>
+
+<tr>
+<td valign="baseline"><tt><b>fp_sim</b></tt>
+</td>
+<td valign="baseline">
+List of similarity metrics that are supported
+by the fingerprint system.  Each metric has a name and a one-line description.
+Suppose that two fingerprints are given, A and B.  Let #A denote the number of
+features in fingerprint A, #B the number of features in fingerprint B, and #AB
+the number of common features in A and B.
+Metric names and their meanings are given below:
+
+<p>
+<center>
+<table border="0" cellpadding="3">
+
+<tr>
+<td><tt>tanimoto</tt>
+</td>
+<td>#AB / (#A + #B - #AB)
+</td>
+</tr>
+
+<tr>
+<td><tt>tanimoto-ss</tt>
+</td>
+<td>#AB / min(#A, #B)
+</td>
+</tr>
+
+<tr>
+<td><tt>cosine</tt>
+</td>
+<td>#AB / sqrt(#A * #B)
+</td>
+</tr>
+
+</table>
+</center>
+
+</td>
+</tr>
+
+</table></p>
+
+<p>
+The SVL function <tt>ph4_FingerprintList</tt> can be used to display or
+obtain the relevant information about all fingerprint systems currently
+loaded in MOE.  For example, the standard fingerprint systems are:</p>
+
+<p>
+<table class="titlebar" cellpadding=5 border=1 width=100%>
+
+<tr>
+<th>Code</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="top"><tt>FP:BIT_MACCS</tt></td>
+<td valign="top">
+MACCS Structural Keys (bit packed version).  Each feature
+indicates the presence of one of the 166 public MDL MACCS
+structural keys calculated from the molecular graph.  The
+fingerprint is a dense bit vector of feature bits 6 words long. 
+</td>
+</tr>
+<tr>
+<td valign="top"><tt>FP:ESshape3D</tt></td>
+<td valign="top">
+The ESshape3D is an eigenvalue spectrum shape fingerprint.
+Each fingerprint is a fixed length and allows for comparison
+of 3D shapes made from the heavy atoms of a molecule.
+</td>
+</tr>
+<tr>
+<td valign="top"><tt>FP:ESshape3D_HYD</tt></td>
+<td valign="top">
+The ESshape3D_HYD is an eigenvalue spectrum shape fingerprint.
+Each fingerprint is a fixed length and allows for comparison
+of 3D shapes made from the hydrophobic heavy atoms of a molecule.
+</td>
+</tr>
+<tr>
+<td valign="top"><tt>FP:GpiDAPH3</tt></td>
+<td valign="top">
+3-point pharmacophore based fingerprint calculated from the
+2D molecular graph.  Each atom is given one of 8 atom types computed
+from 3 atomic properties: "in pi system", "is donor", "is acceptor".
+Anions and cations are not represented.  Then, all triplets of atoms
+are coded as features using the three graph distances and three atom
+types of each triangle.  The resulting fingerprint is represented as
+a sparse feature list.
+</td>
+</tr>
+<tr>
+<td valign="top"><tt>FP:MACCS</tt></td>
+<td valign="top">
+MACCS Structural Keys (feature list version).  Each feature
+indicates the presence of one of the 166 public MDL MACCS
+structural keys computed from the molecular graph.  The fingerprint
+is represented as a sparse list of keys present in the molecule.
+</td>
+</tr>
+<tr>
+<td valign="top"><tt>FP:PLIF</tt></td>
+<td valign="top">
+<a href="../apps/plif.htm">Protein Ligand Interaction Fingerprint</a>.
+Each feature represents a protein-ligand interaction type, e.g. hydrogen
+bond or ionic interaction.
+</td>
+</tr>
+<tr>
+<td valign="top"><tt>FP:TAD</tt></td>
+<td valign="top">
+2-point pharmacophore based fingerprint calculated from a 3D
+conformation.  Each atom is given a type in the set {Donor,
+Acceptor, Polar, Anion, Cation, Hydrophobe}.  Then all pairs of atoms
+are coded as features using the inter-atomic distance and two atom
+types of each pair.  The resulting fingerprint is represented as
+a sparse feature list.
+</td>
+</tr>
+<tr>
+<td valign="top"><tt>FP:TAT</tt></td>
+<td valign="top">
+3-point pharmacophore based fingerprint calculated from a 3D
+conformation.  Each atom is given a type in the set {Donor,
+Acceptor, Polar, Anion, Cation, Hydrophobe}.  Then all triplets of atoms
+are coded as features using the three inter-atomic distances and three
+atom types of each triplet.  The resulting fingerprint is represented as
+a sparse feature list.
+</td>
+</tr>
+<tr>
+<td valign="top"><tt>FP:TGD</tt></td>
+<td valign="top">
+2-point pharmacophore based fingerprint calculated from a 2D
+molecular graph.  Each atom is given a type in the set {Donor,
+Acceptor, Polar, Anion, Cation, Hydrophobe}.  Then all pairs of atoms
+are coded as features using the graph distance and two atom
+types of each pair.  The resulting fingerprint is represented as
+a sparse feature list.
+</td>
+</tr>
+<tr>
+<td valign="top"><tt>FP:TGT</tt></td>
+<td valign="top">
+3-point pharmacophore based fingerprint calculated from a 2D
+molecular graph.  Each atom is given a type in the set {Donor,
+Acceptor, Polar, Anion, Cation, Hydrophobe}.  Then all triplets of atoms
+are coded as features using the three graph distances and three atom
+types of each triplet.  The resulting fingerprint is represented as
+a sparse feature list.
+</td>
+</tr>
+<tr>
+<td valign="top"><tt>FP:piDAPH3</tt></td>
+<td valign="top">
+3-point pharmacophore based fingerprint calculated from a 3D
+conformation.  Each atom is given one of 8 atom types computed
+from 3 atomic properties: "in pi system", "is donor", "is acceptor".
+Anions and cations are not represented.  Then, all triplets of atoms
+are coded as features using the three inter-atomic distances and three atom
+types of each triangle.  The resulting fingerprint is represented as
+a sparse feature list.
+</td>
+</tr>
+<tr>
+<td valign="top"><tt>FP:piDAPH4</tt></td>
+<td valign="top">
+4-point pharmacophore based fingerprint calculated from a 3D
+conformation.  Each atom is given one of 8 atom types computed
+from 3 atomic properties: "in pi system", "is donor", "is acceptor".
+Anions and cations are not represented.  Then, all quadruplets of atoms
+are coded as features using the six inter-atomic distances, four atom
+types and chirality of each quadruplet.  The resulting fingerprint is
+represented as a sparse feature list.
+</td>
+</tr>
+</table></p>
+
+<a name="SVL"></a><h2>SVL Commands</h2>
+
+<a class="svl" href="../moe/fcnref/ph4_flst.htm">ph4_FingerprintList</a>
+
+<h2>See Also</h2>
+
+<a href="ph4calc.htm">Calculating Fingerprints in a Database</a><br>
+<a href="fphowto.htm">Creating Fingerprints Using SVL</a><br>
+<a href="ph4clust.htm">Fingerprint Cluster</a><br>
+<a href="fpmodel.htm">Creating a Fingerprint Model</a><br>
+<a href="ph4sim.htm">Searching Databases for Similar Compounds</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

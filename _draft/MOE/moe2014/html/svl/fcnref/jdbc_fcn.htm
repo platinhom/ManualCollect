@@ -1,0 +1,987 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--
+!!	svljdbc.htm	SVLJava JDBC fcnref
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions jdbc_open, jdbc_execute, jdbc_seek, jdbc_scroll>
+<meta functions jdbc_next, jdbc_tell>
+<meta functions jdbc_name, jdbc_fields, jdbc_read, jdbc_nread>
+<meta functions jdbc_readfields, jdbc_write, jdbc_append, jdbc_delete>
+<meta functions jdbc_readlob, jdbc_close>
+<meta functions jdbc_lob_open, jdbc_lob_close, jdbc_lob_read, jdbc_lob_write>
+
+<title>Relational Database Functions</title>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    ckey	   = <a class="fcnlink" href="#jdbc_open">jdbc_open</a> [jdbc_url, jdbc_driver, db_login, db_passwd]
+    new_ckey	   = <a class="fcnlink" href="#jdbc_open">jdbc_open</a> ckey
+    ckeys 	   = <a class="fcnlink" href="#jdbc_open">jdbc_open</a> []
+
+    rkey 	   = <a class="fcnlink" href="#jdbc_execute">jdbc_execute</a> [ckey, sql_command, options]
+
+    old_row 	   = <a class="fcnlink" href="#jdbc_seek">jdbc_seek</a> [rkey, row_number]
+    old_row 	   = <a class="fcnlink" href="#jdbc_scroll">jdbc_scroll</a> [rkey, offset]
+    row_valid_flag = <a class="fcnlink" href="#jdbc_next">jdbc_next</a> rkey
+    position 	   = <a class="fcnlink" href="#jdbc_tell">jdbc_tell</a> rkey
+    names 	   = <a class="fcnlink" href="#jdbc_name">jdbc_name</a> keys
+
+    [names, types] = <a class="fcnlink" href="#jdbc_fields">jdbc_fields</a> rkey
+
+    values 	   = <a class="fcnlink" href="#jdbc_read">jdbc_read</a> rkey
+    values 	   = <a class="fcnlink" href="#jdbc_nread">jdbc_nread</a> [rkey, num_rows]
+    values 	   = <a class="fcnlink" href="#jdbc_readfields">jdbc_readfields</a> [rkey, field_names]
+
+    lob_key 	   = <a class="fcnlink" href="#jdbc_lob_open">jdbc_lob_open</a> [rkey, lob_field, mode]
+    lob_data 	   = <a class="fcnlink" href="#jdbc_lob_read">jdbc_lob_read</a> [rkey, lob_key, n]
+		     <a class="fcnlink" href="#jdbc_lob_write">jdbc_lob_write</a> [rkey, lob_key, lob_data]
+		     <a class="fcnlink" href="#jdbc_lob_close">jdbc_lob_close</a> [rkey, lob_key]
+
+    <a class="fcnlink" href="#jdbc_write">jdbc_write</a>  [rkey, entry_record]
+    <a class="fcnlink" href="#jdbc_append">jdbc_append</a> [rkey, entry_record]
+    <a class="fcnlink" href="#jdbc_delete">jdbc_delete</a> rkey
+
+    <a class="fcnlink" href="#jdbc_close">jdbc_close</a> keys
+</pre>
+
+<h3 class="obsolete">Obsolete</h3>
+
+<pre>
+    lob_data 	   = <a class="fcnlink" href="#jdbc_readlob">jdbc_readlob</a> [rkey, lob_field, offset, length]
+</pre>
+
+<p>This function is obsolete.  <tt>jdbc_lob_open</tt>, <tt>jdbc_lob_read</tt>
+and <tt>jdbc_lob_close</tt> should now be used instead.
+</p>
+
+<h2>Description</h2>
+
+<p>The <tt>jdbc_</tt> functions are used to connect to and share data with
+third party database applications, such as IBM DB2, Oracle, Microsoft SQL
+Server, and MySQL. The vendor-independent standard, JDBC (Java Database
+Connectivity), is used to establish the database connections.  Assuming the
+appropriate JDBC driver has been installed on the client machine, connections
+may be established using <tt>jdbc_open</tt> to one or more database
+servers. Once a connection is established, a <i>connection key</i> is used to
+access the database.
+
+<p>SQL (Standard Query Language) is used to communicate with a database.
+Queries are passed to a database using <tt>jdbc_execute</tt>.  Some queries
+produce results in the form of a data table called a <i>result set</i>.
+A result set is accessed via a <i>result set key</i> and is used for data
+exchange with the database. The data in a result set is accessible row
+by row.  The <i>current row</i> indicates the row upon which any commands
+will be performed and its position can be set to any row in the result set.
+Result sets are dependent on the connection under which they were established
+and can only exist as long as the connection exists.
+
+<p>In the following, <tt>ckey</tt> denotes a connection key, <tt>rkey</tt>,
+a result set key.  <tt>key</tt> is used to denote either a <tt>ckey</tt>
+or an <tt>rkey</tt>.
+
+<p><a name="jdbc_open"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+ckey = <span class="fcndef">jdbc_open</span> [ jdbc_url, jdbc_driver, db_login, db_password ]
+new_ckey = <span class="fcndef">jdbc_open</span> ckey
+ckeys = <span class="fcndef">jdbc_open</span> []
+</pre>
+
+<p>Open a new database connection. Given <tt>jdbc_url</tt>,
+<tt>jdbc_driver</tt>, <tt>db_login</tt> and <tt>db_password</tt> arguments,
+this function will create a new connection to a database and return a
+connection key with which to access that connection. <tt>jdbc_url</tt> and
+<tt>jdbc_driver</tt> are both specific to the database that is being used.
+Documentation for the driver will provide details about the form of these
+arguments.  <tt>db_login</tt> and <tt>db_password</tt> are the login name and
+encoded password respectively for accessing an account on the database
+server. <tt>db_password</tt> is the encoded password generated by the
+<tt>mpu_password[]</tt> function and the actual database account password.
+
+<p>If the argument is an existing connection key <tt>ckey</tt>, then another
+connection will be established using the same parameters as the existing
+connection. The new connection will be independent of the existing connection
+and when created will have no result sets associated with it. Result sets in
+the existing connection are unaffected.
+
+<p>If no arguments are provided, a list of all open connection keys is
+returned.
+
+<p>Here are examples of the arguments for a variety of databases and JDBC drivers:
+
+<blockquote>
+<dl>
+<dt> IBM DB2
+<dd>
+<pre>
+jdbc_url    = 'jdbc:db2://beast.chemcomp.com:50000/ccg'
+jdbc_driver = 'com.ibm.db2.jcc.DB2Driver'
+db_login    = 'db2'
+db_password = 'kekjhfgjkdphpmcblpjgmcjgmklfggablklojffgjhmbeb'
+</pre>
+
+<dt> Oracle
+<dd>
+<pre>
+jdbc_url    = 'jdbc:oracle:thin:@&lt;oracle_server&gt;:&lt;port&gt;:&lt;sid&gt;'
+jdbc_driver = 'oracle.jdbc.driver.OracleDriver'
+db_login    = 'scott'
+db_password = 'edfoijmagpmklgaloggocfollmjkpehmjoofcckoooibcb'
+</pre>
+
+<dt> MySQL
+<dd>
+<pre>
+jdbc_url    = 'jdbc:mysql://&lt;mysql_server&gt;/&lt;table_name&gt;'
+jdbc_driver = 'com.mysql.jdbc.Driver'
+db_login    = 'root'
+db_password = 'bmahngjhcjpopkmdjmilmpgbldkdalaofcmbgbobeheaic'
+</pre>
+
+<dt> Microsoft SQL
+<dd>
+<pre>
+jdbc_url    = 'jdbc:microsoft:sqlserver://&lt;mysql_server&gt;:&lt;port&gt;'
+jdbc_driver = 'com.microsoft.jdbc.sqlserver.SQLServerDriver'
+db_login    = 'ccg'
+db_password = 'fkfainmeaohooaoljdjiepmdlkmielobmfjhihokhppile'
+</pre>
+</dl>
+</blockquote>
+
+<p>Details on how to generate appropriate <tt>jdbc_urls</tt> and how to specify
+the <tt>jdbc_drivers</tt> will be provided in the documentation for each JDBC
+driver.
+
+<p><a name="jdbc_execute"></a></p>
+<p><hr noshade="noshade" />
+
+<a name="jdbc_execute"></a>
+<pre>
+rkey = <span class="fcndef">jdbc_execute</span> [ ckey, sql_command, options ]
+
+options = [
+    type       : 'scroll_mode',
+    mode       : 'access_mode',
+    fetchsize  : cache_lines,
+    autocommit : flag,
+    insertid   : [&quot;column_name1&quot;,...]
+]
+</pre>
+
+<p>Execute an SQL command on the database specified by the connection key
+<tt>ckey</tt>.
+
+
+<p><tt>sql_command</tt> can be a string or a token containing an SQL statement
+to be processed by the database. Not all SQL queries will generate a result
+set. In the case of queries that do not generate result sets, a token stating
+the number of rows that were affected by the given <tt>sql_command</tt> is
+returned.  If an <tt>sql_command</tt> does generate a result set, then the
+result set key is returned.
+
+<p> The behavior of each option is dependent on the implementation of the
+driver. Refer to the driver's documentation for exact behavior details.
+If <tt>sql_command</tt> is syntactically incorrect according to the database
+server, an error will be generated.
+
+<p><tt>options</tt> is an optional list of parameters, supplied as a tagged
+vector:
+
+<dl>
+
+<dt><tt>type : 'scroll_mode'</tt>
+
+<dd>The desired method of moving through the result set, given as a token.  The
+legal token values are:
+
+<blockquote>
+<table>
+<tr valign="top">
+    <td><tt>'FORWARD_ONLY'</tt></td>
+
+    <td>The result set is not <i>scrollable</i>;
+    Forward only motion through the result set. <tt>jdbc_next</tt> is the
+    only way to move between rows.
+    </td>
+</tr>
+<tr valign="top">
+    <td><tt>'SCROLL_INSENSITIVE'</tt></td>
+
+    <td>The result set is <i>scrollable</i>;
+    <tt>jdbc_seek</tt> and <tt>jdbc_scroll</tt> can be used.
+    The result set will be <i>insensitive</i> to changes made in the database
+    after the creation of the result set.
+    </td>
+</tr>
+<tr valign="top">
+    <td><tt>'SCROLL_SENSITIVE'</tt></td>
+
+    <td>The result set is <i>scrollable</i>;
+    <tt>jdbc_seek</tt> and <tt>jdbc_scroll</tt> can be used.
+    The result set will be <i>sensitive</i> to changes made in the database
+    after the creation of the result set. Operating in this mode may negatively
+    affect performance and should not be used with <tt>jdbc_nread</tt>.
+    </td>
+</tr>
+</table>
+</blockquote>
+The default <tt>type</tt> is <tt>'SCROLL_INSENSITIVE'</tt>.
+
+<p><dt><tt>mode : 'access_mode'</tt>
+
+<dd>The desired access mode of the result set, given as a token. The
+legal token values are:
+<blockquote>
+<table>
+
+<tr valign="top">
+    <td><tt>'READ_ONLY'</tt></td>
+    <td>The result set may be used for reading only.
+    Updates and insertions to the database are not allowed.</td>
+</tr>
+
+<tr valign="top">
+    <td><tt>'UPDATABLE'</tt></td>
+    <td>The result set may be updated with new data. This includes the
+    ability to update, append, and delete rows. </td>
+</tr>
+
+</table>
+</blockquote>
+
+<p>
+The default <tt>mode</tt> is <tt>'READ_ONLY'</tt>. Not all JDBC drivers
+support <tt>'UPDATABLE'</tt> mode. The driver documentation will have
+details on the modes that it supports.
+
+<p><dt><tt>fetchsize : cache_lines</tt>
+
+<dd>Suggest to the JDBC driver that rows be fetched from the result set in
+groups of <tt>cache_lines</tt> rows from the server. This caching
+effect may improve read performance, especially when used in conjunction with
+<tt>jdbc_nread</tt>. The default value is 1.
+
+<p><dt><tt>autocommit : flag</tt>
+
+<dd>Set the result set &quot;autocommit&quot; mode to 1 or 0.  The default value
+is 1, in which case each operation on a row of the result set is executed
+immediately.  The default value should always be used except in a few rare
+instances where it may be necessary to turn autocommit off, for example,
+when writing BLOBs or CLOBs.
+
+<p><dt><tt>insertid : [&quot;column_name1&quot;,...]</tt>
+
+<dd>This applies to INSERT statements only.  If given, the values of the
+specified columns in the newly inserted row will be returned as the second
+element of rkey (in the same order as given).  This option will have no effect
+if the statement is not an INSERT.  It is normally used to fetch automatically
+assigned column values, such as AUTO_INCREMENT columns in MySQL or SEQUENCEs
+in Oracle.  The exact behaviour will depend on the JDBC driver.  For example,
+MySQL will ignore the actual column names and always return only the
+AUTO_INCREMENT columns.  For maximum portability, however,
+it is best to specify the
+column name(s).  Oracle, on the other hand, will return
+whichever column names are specified &ndash;
+however any which are non-integers will
+always return zero for their value, and if any column names specified do not
+exist, the entire option is ignored.
+</dd>
+
+</dl>
+
+
+<p><a name="jdbc_seek"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+old_row = <span class="fcndef">jdbc_seek</span> [ rkey, row_number ]
+</pre>
+
+<p>Set the current row position in the result set specified by <tt>rkey</tt>
+to <tt>row_number</tt>.  <tt>row_number</tt> is an absolute position in
+the result set. The old row number position (before the seek was performed)
+is returned.
+
+<p>If <tt>row_number</tt> is positive, rows are counted from the beginning of
+the result set, i.e. row 1 is the first row in the result set.  Otherwise,
+if <tt>row_number</tt> is negative, rows are counted from the end of the
+result set, i.e. row -1 is the last row in the result set.
+
+<p>The following code fragment reads and prints the data from the first and
+last rows of the given result set:
+
+<pre>
+    sql = 'SELECT formula,metal_charge FROM tmetals';
+    rset = jdbc_execute [tmetals, sql];
+
+    jdbc_seek [rset, 1];		// go to first row
+    print [Row:jdbc_tell rset, Data:jdbc_read rset];
+
+    jdbc_seek [rset, -1];		// go to last row
+    print [Row:jdbc_tell rset, Data:jdbc_read rset];
+</pre>
+
+The following output is produced:
+
+<pre>
+    [ Row:1, Data:[ FORMULA:"Sc(N(Si)2)3", METAL_CHARGE:3 ] ]
+    [ Row:135, Data:[ FORMULA:"[Hg(NH3)4]2-", METAL_CHARGE:2 ] ]
+</pre>
+
+<p>It is an error to use this function when the result set was opened with the
+<tt>type</tt> option set to <tt>FORWARD_ONLY</tt> (see <tt>jdbc_execute</tt>).
+
+<p><a name="jdbc_scroll"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+old_row = <span class="fcndef">jdbc_scroll</span> [ rkey, offset ]
+</pre>
+
+<p>Reposition the current row in the result set specified by <tt>rkey</tt>
+by <tt>offset</tt> rows. This causes a <i>relative</i> move through the
+result set with respect to the current row position.  If <tt>offset</tt>
+is positive, the current row moves forward, otherwise if <tt>offset</tt>
+is negative, the current row moves backward.  The return value is the
+position in the result set before the scroll was performed.
+
+<p>Attempting to move beyond the first or last row in the result set is a
+valid request and will position the current row to &quot;BEFORE FIRST&quot;
+or &quot;AFTER LAST&quot; respectively.  However, a subsequent call to
+<tt>jdbc_scroll</tt> will generate an error, i.e. when the current row
+is before the first or after the last row.
+
+<p>The following code fragment uses <tt>jdbc_scroll</tt> to read the first and
+fourth rows from the result set.
+
+<pre>
+    sql = 'SELECT formula,metal_charge FROM tmetals';
+    rset = jdbc_execute [tmetals, sql];
+
+    jdbc_seek [rset, 1];
+    print [Row:jdbc_tell rset, Data:jdbc_read rset];
+
+    jdbc_scroll [rset, 3];		// move 3 rows forward
+    print [Row:jdbc_tell rset, Data:jdbc_read rset];
+</pre>
+
+The code above prints the following:
+
+<pre>
+    [ Row:1, Data:[ FORMULA:"Sc(N(Si)2)3", METAL_CHARGE:3 ] ]
+    [ Row:4, Data:[ FORMULA:"[Ti(H2O)6]3+", METAL_CHARGE:3 ] ]
+</pre>
+
+<p>It is an error to use this function when the result set was opened
+with the <tt>type</tt> option set to <tt>FORWARD_ONLY</tt> (see
+<tt>jdbc_execute</tt>).
+
+<p><a name="jdbc_next"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+row_valid_flag = <span class="fcndef">jdbc_next</span> rkey
+</pre>
+
+<p>Move to the next row in the result set. Since a result set is
+initially positioned before the first row, the first call to the function
+<tt>jdbc_next</tt> makes the first row the current row, the second call
+makes the second row the current row, and so on. Moving beyond the last
+row is legal and will set the current row position to &quot;AFTER LAST&quot;.
+
+<p>The return value is '1', after the move is performed, if the current row
+is a valid row in the result set. The return value is '0' otherwise (e.g.
+beyond the last row).  The following function steps through an entire
+result set, reading and printing the contents.  When <tt>jdbc_next</tt>
+returns 0, all rows in the result set have been read.
+
+<pre>
+    local function <a name="PRSET">print_result_set</a> rkey
+	while jdbc_next rkey loop
+	    print jdbc_read rkey;
+	endloop
+    endfunction
+</pre>
+
+<p><a name="jdbc_tell"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+position = <span class="fcndef">jdbc_tell</span> rkey
+</pre>
+Return the row number of the current row in the result set specified by
+<tt>rkey</tt>.
+
+<p><a name="jdbc_name"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+names = <span class="fcndef">jdbc_name</span> keys
+</pre>
+For each <tt>rkey</tt> in <tt>keys</tt>, retrieve the name related to the
+resource key <tt>rkey</tt>. If <tt>rkey</tt> refers to a jdbc connection then
+the <tt>jdbc_url</tt> under which the connection was established will be
+returned. If the <tt>rkey</tt> refers to a result set then the
+<tt>sql_command</tt> that created that result set is returned.
+
+<p>It is an error to ask for the name of an invalid jdbc key.
+
+<p><a name="jdbc_fields"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[ names, types ] = <span class="fcndef">jdbc_fields</span> rkey
+</pre>
+
+<p>Return the <tt>names</tt> and <tt>types</tt> of the fields in the result
+set specified by <tt>rkey</tt>. The first element is a vector of tokens
+containing the names of the fields.  To avoid inconsistencies between various
+databases, these will always be converted to upper case. The second element
+gives the type of each field. Note that the names of the data types vary among
+database vendors.
+
+<p>The following example will find and print names and types for select
+fields in the <tt>tmetals</tt> database:
+
+<pre>
+    sql = 'SELECT mol,metal_name,coord_num FROM tmetals';
+    rset = jdbc_execute [tmetals, sql];
+
+    local [names, types] = jdbc_fields rset;
+
+    print [Fields : names];
+    print [Types : types];
+</pre>
+
+Running the above code produces the following output:
+
+<pre>
+    [ Fields:['MOL','METAL_NAME','COORD_NUM'] ]
+    [ Types:['BLOB','VARCHAR','LONG'] ]
+</pre>
+
+<p><a name="jdbc_read"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+values = <span class="fcndef">jdbc_read</span> rkey
+</pre>
+
+Read all data from the current row of the result set specified by
+<tt>rkey</tt>. The return value is a tagged vector in which the tags are
+field names and the values are the contents of each field from the
+current row in the result set.  To avoid inconsistencies between different
+JDBC drivers and versions, field names will always be converted to upper case.
+
+<p>It is an error to attempt to read from an invalid row.
+
+<p>
+The following example uses the <tt><a href="#PRSET">print_result_set</a></tt>
+function (from the <tt>jdbc_next</tt> example above) to print select
+information from the <tt>tmetals</tt> database:
+
+<pre>
+    sql = 'SELECT formula,ligand,total_charge,'
+	  'coord_num FROM tmetals where total_charge = 3'
+    rset = jdbc_execute [tmetals, sql];
+    print_result_set rset;
+</pre>
+
+The following is the output:
+
+<pre>
+    [ FORMULA:"[Ti(H2O)6]3+", LIGAND:"H2O", TOTAL_CHARGE:3, COORD_NUM:6 ]
+    [ FORMULA:"[Ti(en)3]3+",
+		LIGAND:"en=NH2CH2CH2NH2", TOTAL_CHARGE:3, COORD_NUM:6 ]
+    [ FORMULA:"[V(urea)6]3+",
+		LIGAND:"urea=CO(NH2)2", TOTAL_CHARGE:3, COORD_NUM:6 ]
+    [ FORMULA:"[Cr(H2O)6]3+",
+		LIGAND:"H2O,[Cl]1-", TOTAL_CHARGE:3, COORD_NUM:6 ]
+    [ FORMULA:"[Cr(NH3)3(H2O)3]3+",
+		LIGAND:"NH3, H2O", TOTAL_CHARGE:3, COORD_NUM:6 ]
+    [ FORMULA:"[Co(H2O)6]3+", LIGAND:"H2O", TOTAL_CHARGE:3, COORD_NUM:6 ]
+    [ FORMULA:"[Co(NH3)6]3+", LIGAND:"NH3", TOTAL_CHARGE:3, COORD_NUM:6 ]
+</pre>
+
+<p><a name="jdbc_nread"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+values = <span class="fcndef">jdbc_nread</span> [ rkey, num_rows ]
+</pre>
+
+<p>Attempt to read all data contained in the next <tt>num_rows</tt> rows from
+the result set in a single transaction. After this operation, the current row
+will be the last row read from the set (thus, a <tt>jdbc_next</tt> followed by
+<tt>jdbc_read</tt> will behave as desired). For maximal efficiency, this
+function should be applied to result sets opened with their <tt>fetchsize</tt>
+option set to <tt>num_rows</tt> (see <tt>jdbc_execute</tt>). The rows read from
+the result set are returned in a vector, one row per entry, with the values of
+each row given in the same format as that used by <tt>jdbc_read</tt>.
+
+<p>The following example uses the same result set as above in
+<tt>jdbc_read</tt>.  Three rows are read in a single call:
+
+<pre>
+    sql = 'SELECT formula,ligand,total_charge,'
+	  'coord_num FROM tmetals where total_charge = 3'
+    rset = jdbc_execute [tmetals, sql];
+    print jdbc_nread [rset, 3];
+</pre>
+
+The resulting output is as follows:
+
+<pre>
+    [ [ FORMULA:"[Ti(H2O)6]3+",
+		LIGAND:"H2O", TOTAL_CHARGE:3, COORD_NUM:6 ],
+      [ FORMULA:"[Ti(en)3]3+",
+		LIGAND:"en=NH2CH2C H2NH2", TOTAL_CHARGE:3, COORD_NUM:6 ],
+      [ FORMULA:"[V(urea)6]3+",
+		LIGAND:"urea=CO(NH2)2", TOTAL_CHARGE:3, COORD_NUM:6 ] ]
+</pre>
+
+<p><tt>jdbc_nread</tt> will attempt to read as many rows as possible up to
+<tt>num_rows</tt> or the end of the result set, whichever comes first.
+
+<p><a name="jdbc_readfields"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+values = <span class="fcndef">jdbc_readfields</span> [ rkey, field_names ]
+</pre>
+
+<p>Read the specified field data contained in the current row of the result set
+specified by <tt>rkey</tt>.  <tt>field_names</tt> is a vector of tokens
+containing the names of the desired fields.
+The field values are returned.
+
+<p>The following code fragment reads and prints data from selected fields:
+
+<pre>
+    sql = 'SELECT * FROM tmetals where total_charge = 3';
+    rset = jdbc_execute [tmetals, sql];
+
+    const FIELDS = ['ligand','coord_num','formula'];
+
+    while jdbc_next rset loop
+	print jdbc_readfields [rset, FIELDS];
+    endloop
+
+</pre>
+
+The resulting output is:
+
+<pre>
+
+    [ "H2O", 6, "[Ti(H2O)6]3+" ]
+    [ "en=NH2CH2CH2NH2", 6, "[Ti(en)3]3+" ]
+    [ "urea=CO(NH2)2", 6, "[V(urea)6]3+" ]
+    [ "H2O,[Cl]1-", 6, "[Cr(H2O)6]3+" ]
+    [ "NH3, H2O", 6, "[Cr(NH3)3(H2O)3]3+" ]
+    [ "H2O", 6, "[Co(H2O)6]3+" ]
+    [ "NH3", 6, "[Co(NH3)6]3+" ]
+</pre>
+
+<p><a name="jdbc_lob_open"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+lob_key = <span class="fcndef">jdbc_lob_open</span> [ rkey, lob_field, mode ]
+</pre>
+
+<p><dfn>LOB</dfn> is an acronym for <dfn>Large OBject</dfn> and refers to a
+category of data types that includes <dfn>BLOB</dfn> (<dfn>Binary Large
+OBject</dfn>) and <dfn>CLOB</dfn> (<dfn>Character Large OBject</dfn>).
+
+<p>LOBs are treated by JDBC much like files.  Thus they can be opened,
+read from or written to, and then closed when done with them.  Note that some
+databases, such as MySQL, can use the regular <tt>jdbc_read</tt> function
+to read LOB columns, while others cannot.  The <tt>jdbc_lob_*</tt> functions
+will work with all databases however.</p>
+
+<p><tt>jdbc_lob_open</tt> returns a key for the LOB of interest, which is
+then used by the other LOB functions to read from or write to the LOB.  This
+LOB key is tied to the result set containing the LOB, and is only valid
+(and should be closed) before the corresponding result set is closed.</p> 
+
+<p><tt>rkey</tt> is the key of the result set containing the LOB to be opened.
+The LOB at the current row of the result set is the one affected.</p>
+
+<p><tt>lob_field</tt> is either the field name token or the index of the LOB
+field in the result set, the first field being 1. The database field type
+must be either BLOB or CLOB and if a token is used, the name must match
+exactly the field name used in the SELECT SQL statement.</p>
+
+<p><tt>mode</tt> defines the mode of operation, as described in the
+following table:
+</p>
+
+<p>
+<center>
+<table class="titlebar" width="90%">
+<tr>
+<th>Mode</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td><tt>'read'</tt></td>
+<td>Open the LOB for reading.</td>
+
+</tr><tr>
+<td><tt>'read.Z'</tt></td>
+<td>Open the BLOB for reading, piping it through the 
+<b>inflate</b> algorithm.  This is useful for BLOBs that have
+been compressed using the unix <tt>compress</tt>
+command before being stored.  Not allowed for CLOBs.
+</td>
+</tr><tr>
+<td><tt>'read.gz'</tt></td>
+<td>Open the BLOB for reading, piping it through the 
+<b>gunzip</b> algorithm.  This is useful for BLOBs that have
+been compressed using the unix <tt>gzip</tt>
+command before being stored.  Not allowed for CLOBs.
+</td>
+</tr><tr>
+<td><tt>'write'</tt></td>
+<td>In order to open a LOB for writing on some databases,
+it is necessary to insert an <b>EMPTY_BLOB()</b> or <b>EMPTY_CLOB()</b>
+into the field first.  Trying to open a LOB containing a <b>NULL</b> will
+result in an error.  Additionally, on some databases the SELECT SQL statement
+which generates the result set <tt>rkey</tt> must end with <tt>FOR UPDATE</tt>,
+and must include a primary key somewhere in the SELECT as well.  Lastly,
+the <tt>jdbc_execute</tt> should be called with 
+<tt>[type:'FORWARD_ONLY', mode: 'UPDATABLE', autocommit: 0]</tt> when writing
+BLOBs or CLOBs.  An example follows below.
+</td>
+</tr><tr>
+<td><tt>'write.Z'</tt></td>
+<td>Open the BLOB for writing as above, but any
+data written will first be streamed through the <tt>compress</tt> algorithm
+(same as .Z file in unix).  Not allowed for CLOBs.
+</td>
+</tr><tr>
+<td><tt>'write.gz'</tt></td>
+<td>Open the BLOB for writing as above, but any
+data written will first be streamed through the <tt>gzip</tt> algorithm
+(same as .gz file in unix).  Not allowed for CLOBs.
+</td>
+</tr>
+</table>
+</center>
+</p>
+
+<p>The following is an example of inserting a new row containing a CLOB
+into an Oracle database (other databases will be very similar or identical):
+</p>
+
+<pre>
+    // [id, abstract_text] contain the data to be inserted in the new row
+    // jkey is the current database connection key
+
+    sql = cat [
+	"INSERT INTO pub (PUB_ID, PUB_ABSTRACT) VALUES (", id,
+	", EMPTY_CLOB())"
+    ];
+    jdbc_execute [jkey, sql];
+
+	// Note the primary key (PUB_ID) must be included in the SELECT, even
+	// though it is not explicitly used.
+
+    sql = cat ["SELECT PUB_ID, PUB_ABSTRACT FROM pub WHERE PUB_ID=", id]; 
+    sql = cat [sql, " FOR UPDATE"]; // required with Oracle, possibly others
+    result = jdbc_execute [
+	jkey, sql, [type: 'FORWARD_ONLY', mode: 'UPDATABLE', autocommit: 0]
+    ];
+    if jdbc_next result then
+	lkey = jdbc_lob_open [result, 'PUB_ABSTRACT', 'write'];
+	jdbc_lob_write [result, lkey, abstract_text];
+	jdbc_lob_close [result, lkey];
+    endif
+    jdbc_close result;
+    jdbc_execute [jkey, "COMMIT"];
+</pre>
+</p>
+
+<p><a name="jdbc_lob_read"></a></p>
+
+<p><hr noshade="noshade" />
+
+<pre>
+lob_data = <span class="fcndef">jdbc_lob_read</span> [ rkey, lob_key, n ]
+</pre>
+
+<p>Read <tt>n</tt> bytes of data from the current position in the given
+BLOB or CLOB.  The return value will be a string containing the requested
+bytes.  Like a file, the <tt>lob_key</tt> maintains a current position, so that
+subsequent calls to this function will continue where the previous read left
+off.  Note that the <tt>rkey</tt> provided to <tt>jdbc_lob_open</tt> must
+be provided again here with each call.  It is an error to attempt to read from
+a <tt>lob_key</tt> that was not opened in <tt>read</tt>, <tt>read.Z</tt>
+or <tt>read.gz</tt> mode.</p>
+
+<p>The following is an example of reading a row containing a CLOB from
+an Oracle database
+(other databases will be similar or identical):</p>
+
+<pre>
+    // id is the primary key of the row to be fetched
+    // jkey is the current database connection key
+
+    const BUFSIZE = 1048576;  // amount of RAM to use as read buffer
+
+    f = fopenw 'clob.txt';    // output CLOB contents to a file for example 
+    sql = cat ["SELECT PUB_ABSTRACT FROM pub WHERE PUB_ID=", id];
+    result = jdbc_execute [jkey, sql];
+    if jdbc_next result then
+	lkey = jdbc_lob_open [result, 'PUB_ABSTRACT', 'read'];
+	data = [];
+	loop
+	    data = jdbc_lob_read [result, lkey, BUFSIZE];
+	    if isnull data then break; endif // EOF
+	    fwriteb [f, 'char', data];
+	endloop
+	jdbc_lob_close [result, lkey];
+    endif
+    jdbc_close result;
+    fclose f;
+</pre>
+
+<p><a name="jdbc_lob_write"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">jdbc_lob_write</span> [ rkey, lob_key, lob_data ]
+</pre>
+
+<p>Writes CLOB or BLOB data stored in <tt>lob_data</tt> (as a flat string) to
+the LOB currently pointed to by <tt>lob_key</tt>.  As with the other LOB
+functions, the <tt>rkey</tt> used with <tt>jdbc_lob_open</tt> must be provided
+again to this function as well.  It is an error to attempt to write to a
+<tt>lob_key</tt> that was not opened in <tt>write</tt>, <tt>write.Z</tt>
+or <tt>write.gz</tt> mode.  The <tt>write.Z</tt> and <tt>write.gz</tt> modes may
+be used only with BLOBs and not CLOBs, since the output is always binary.</p>
+
+<p><a name="jdbc_lob_close"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">jdbc_lob_close</span> [ rkey, lob_key ]
+</pre>
+
+<p>Cleans up any resources associated with LOB reading or writing.
+The same <tt>rkey</tt> that was passed to <tt>jdbc_lob_open</tt> at the
+time the <tt>lob_key</tt> was created must also be passed to
+<tt>jdbc_lob_close</tt>.
+Consequently, the <tt>lob_key</tt> must be closed before the
+corresponding <tt>rkey</tt> is closed.
+</p>
+
+<p><a name="jdbc_write"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">jdbc_write</span> [ rkey, entry_record ]
+</pre>
+
+<p>Update data in the current row of the result set specified by
+<tt>rkey</tt>. The current row of the result set will be updated
+with the data given in the tagged vector <tt>entry_record</tt>. Only the
+fields specified in <tt>entry_record</tt> are updated (fields not specified
+retain their values).
+
+<p>The result set must have been opened in <tt>UPDATABLE</tt> mode (see
+<tt>jdbc_execute</tt>) in order for this to
+succeed. Support for row updates may vary according to the JDBC driver
+used. Refer to the documentation for the JDBC driver for more specific
+information on how updates are performed.
+
+<p>The following code fragment increments the value of 'Score' in each
+entry of a result set:
+
+<pre>
+    local opt = [mode:'UPDATABLE'];
+    local sql = 'SELECT Score FROM DrugTests WHERE CutOff>0.75';
+    local rkey, score, new_score;
+
+    rkey = jdbc_execute [ckey, sql ,opt];
+
+    while jdbc_next rkey loop
+	score = jdbc_readfield [rkey, 'Score']; // read the score
+	new_score = inc score;		        // increase score by 1
+	jdbc_write [rkey, [Score:new_score]];   // update the score
+    endloop
+</pre>
+
+<p><a name="jdbc_append"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">jdbc_append</span> [ rkey, entry_record ]
+</pre>
+
+<p>Append data to the result set specified by <tt>rkey</tt>. A new
+row will be created in the database. <tt>entry_record</tt> is a tagged
+vector of field names and values to be inserted in the new row created by
+<tt>jdbc_append</tt>. Any values not specified in the <tt>entry_record</tt>
+are assumed to be SQL null values.
+
+<p>For a result set to support <tt>jdbc_append</tt>, the following
+requirements must be satisfied:
+
+<ul>
+
+<li>The result set must have been opened in <tt>UPDATABLE</tt> mode (see
+<tt>jdbc_execute</tt>).
+
+<li>The result set must represent a single table in the database,
+i.e. it must not have been created from several tables using the
+SQL &quot;JOIN&quot; operator.
+
+<li><tt>entry_record</tt> must specify values for all <i>primary keys</i> of
+the result set.
+
+<li><tt>entry_record</tt> must specify a value for all fields of the result
+set that cannot be set to null.
+
+<li><tt>entry_record</tt> must specify values for all fields in the database
+that were created without default values.
+
+</ul>
+
+<p><tt>jdbc_append</tt> is not supported by all JDBC drivers.
+For drivers that support row insertion, using <tt>jdbc_execute</tt>
+with SQL &quot;INSERT&quot; statements will accomplish the same task as
+<tt>jdbc_append</tt>.
+
+<p><a name="jdbc_delete"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">jdbc_delete</span> rkey
+</pre>
+
+<p>Delete the current row from the result set specified by <tt>rkey</tt>. The
+current row will be positioned at (current_row - 1) after this operation. The
+result set must have been opened in <tt>UPDATABLE</tt> mode (see
+<tt>jdbc_execute</tt>).  Result sets created in
+<tt>READ_ONLY</tt> mode do not support <tt>jdbc_delete</tt>.
+
+<p><a name="jdbc_close"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">jdbc_close</span> keys
+</pre>
+
+<p>For each key in <tt>keys</tt>, close the key generated by
+<tt>jdbc_open</tt> (a connection key <tt>ckey</tt>) or <tt>jbdc_execute</tt>
+(a result set key <tt>rkey</tt>). Calling <tt>jdbc_close</tt> on an invalid
+key has no effect.
+
+<p>A key may have several dependent resources.  For instance, a database
+connection may have several active result sets that require the connection
+to be maintained. Calling <tt>jdbc_close</tt> with the connection key as
+the argument will schedule the connection for closure immediately, but
+the actual close operation will not take place until the last dependent
+result set is closed.
+
+<p>The following statement closes all open JDBC resources:
+
+<pre>
+    jdbc_close jdbc_open [];
+</pre>
+
+<p><a name="jdbc_readlob"></a></p>
+<p><hr noshade="noshade" />
+
+<h4 class="obsolete">Obsolete</h4>
+
+<pre>
+lob_data = <span class="obsfcndef">jdbc_readlob</span> [ rkey, lob_field, offset, length ]
+</pre>
+
+<p><dfn>LOB</dfn> is an acronym for <dfn>Large OBject</dfn> and refers to a
+category of data types that includes <dfn>BLOB</dfn> (<dfn>Binary Large
+OBject</dfn>) and <dfn>CLOB</dfn> (<dfn>Character Large OBject</dfn>).
+
+<p><tt>jdbc_readlob</tt> reads data from the specified field (which contains
+LOB data) of the current row of the result set specified by <tt>rkey</tt>
+and returns the read data.
+
+<p><tt>jdbc_readlob</tt> differs from the other read functions
+(<tt>jdbc_read</tt>, <tt>jdbc_nread</tt>, and <tt>jdbc_readfields</tt>)
+in two important respects:
+
+  <ul>
+  <li>It can be used to extract only partial data.
+
+  <li>It will be able to read LOB data from databases whose
+LOB data cannot be directly read using the other read functions (some
+databases return to the other read functions the tokens 'BLOB' or 'CLOB'
+instead of the actual LOB data).
+
+  </ul>
+
+<p><tt>lob_field</tt> is either the field name token or the index of the LOB
+field in the result set, the first field being 1. The database field type
+must be either BLOB or CLOB.
+
+<p><tt>offset</tt> is the byte at which to begin reading data from the LOB.
+Valid offsets begin at 1 and can be any value up to the number of bytes
+in the LOB.
+
+<p><tt>length</tt> is the maximum number of bytes to attempt to read. Reading
+stops at the end of the LOB. This argument must be non-negative.
+
+<p>
+<b>Note!</b> This function is obsolete.  Use the <tt>jdbc_lob_*</tt> function
+for dealing with LOBs instead.</p>
+ 
+<h2>See Also</h2>
+
+<a class="svl" href="svlmpu.htm">mpu_password</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

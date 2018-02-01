@@ -1,0 +1,824 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	procore.htm	Protein Consensus chapter
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<meta panel Protein Consensus>
+<title>Analysis of Structurally Conserved Core</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h6 class="h-two">Contents</h6>
+<div id="toc-list"><script>var gman_OrderedListTOC=false; </script></div>
+
+
+<a name="Introduction"></a>
+<h2>Introduction</h2>
+
+<p>MOE's Protein Consensus application is used to identify regions of
+conserved structure within a set of superposed 3D protein structures,
+for example, a portion of backbone sharing the same spatial configuration
+over all proteins, or a common water site.  Protein Consensus can also
+be used to identify outliers to this conserved structure, for example,
+a divergence among the protein backbones, or a water site which exists in
+only one of the proteins.
+
+<p> The Protein Consensus application calculates a <i>consensus set</i> for
+a set of proteins, then analyzes this consensus set for relationships
+between the proteins.  The consensus set is constructed using such indices as the
+root mean square distance (RMSD) between atoms in aligned residues.  In MOE,
+a consensus set is calculated on a given alignment and 3D atom superposition.
+
+<p> The consensus set can be visualized within both the MOE Window and the
+Sequence Editor.  It can be used to improve the superposition of the input
+chains -- the superposition can be recalculated using only the conserved core.
+The improved superposition can, in turn, be used to improve the sequence
+alignment of the input proteins.  The consensus set can further be used
+to build a <i>consensus model</i>.
+
+<p>The Protein Consensus application is useful for performing a variety
+of tasks, including:
+
+<ul>
+<p><li>
+Improving alignments of distantly related homologues which
+are difficult to align automatically.
+
+<p><li>
+Examining multiple models of the same structure
+to establish which areas are reliable.
+For example, NMR data or
+homology models which generate multiple independent models of the
+target protein may require such analysis.
+
+<p><li> Examining alignments and building model templates of target
+families for drug development.  The kinases and matrix-metalloproteinases
+are examples of such families.
+
+</ul>
+
+<p>The Protein Consensus panel can be opened from either the MOE window
+or the Sequence Editor by choosing: 
+<ul>
+<li><span class="menu">MOE | Protein | Consensus</span> or
+<li><span class="menu">SE | Alignment | Consensus</span>
+</ul>
+
+<a name="Definitions"></a>
+<h2>Consensus Set</h2>
+
+<p>The consensus set is calculated on a molecular system comprising a
+set of aligned, superposed proteins and a collection of waters for each
+protein.  One of the protein chains is designated the <i>master chain</i>.
+This will be the chain used as a template when creating consensus models.
+The master chain can also be taken into account when the consensus set is
+calculated, to bias the consensus set toward conserving the properties of
+the residues of the master chain.
+
+<p>The consensus set specifies conserved protein regions and conserved
+water sites.  The consensus set can thus be treated as a composition of
+two consensus sets: the <i>protein consensus set</i>, and the <i>water
+consensus set</i>.
+
+
+<a name="ProteinConsensus"></a>
+<h3>Protein Consensus Set</h3>
+
+<p> Given a system of aligned and superposed chains, the <i>protein
+consensus set</i> comprises the alignment columns of residues that meet
+specified criteria based on both the residues in a column and the spatial
+positions of their atoms.  In MOE's Protein Consensus, these criteria are
+expressed in the following tests:
+
+<ul>
+<a name="ResTest"></a>
+
+<p><li> <i>Residue Identity Test.</i>
+
+The percentage of residues identical to the most frequent residue in
+the column (i.e. of the same amino acid name) must exceed (or must not
+exceed) a specified threshold.  This test can be modified to require that
+at least (or at most) a specified percent of the residues be identical to
+the residue in the master chain.
+
+<p><li> <i>Gap Test.</i>
+
+The number of gaps in the column must be at most a specified maximum value.
+This test can have the additional requirement that there be no gap in the
+master chain.
+
+<a name="MainTest"></a>
+<p><li> <i>Mainchain RMSD Test.</i>
+
+The root mean squared distance (RMSD) of the backbone atoms (CA, C, N,
+O) in the residues of the column, calculated  with respect to the average
+position of the atoms, must be within specified bounds.
+
+<a name="SideTest"></a>
+<p><li> <i>Sidechain RMSD Test.</i>
+
+The root mean squared distance (RMSD) of the sidechain atoms in the residues
+of the column, calculated with respect to the average position of the atoms,
+must be within specified bounds.  This test is only meaningful if all
+the residues in the column are identical (i.e. have the same sidechain
+atoms).
+
+</ul>
+
+<p>
+Any of the above tests can be applied or excluded.  A residue column
+is included in the consensus set if it passes all the required tests.
+For example, we can define the protein consensus set to be all columns where
+
+<ul>
+<li> at least 50% of the residues present in the column are identical,
+<li> at most 90% of the residues present in the column are identical, and
+<li> there are no more than two gaps.
+</ul>
+
+Then, for a system of 11 proteins, a column containing
+seven ARG residues, two GLY, one SER, and one gap would
+be included in the protein consensus set.
+
+<p> The RMSD tests are performed on the atoms of the residues in an
+alignment column.  Since one test applies to mainchain atoms and the other
+to sidechain atoms, when both RMSD tests are used, a column can fail in one
+test and still be included in the consensus set if it passes the other --
+the only requirement for inclusion is that the residues contain at least
+some atoms satisfying the specified criteria.
+
+<p>
+In the RMSD tests, the computed distances can be modified by atom
+temperature factor.  The temperature factor describes the average
+displacement by which an atom is likely to be removed from its reported
+position.  This mean displacement can be added to the position of each atom
+when calculating the RMSD.  The temperature factor <i>B</i> is related to
+the mean displacement <i>u</i> of an atom by the Debye-Waller equation,
+
+<p align=center><img src="procore/temperature.gif"></p>
+
+<a name="WaterConsensus"></a>
+<h3>Water Consensus Set</h3>
+
+<p>The <i>water consensus set</i> comprises all waters that appear in
+the same region of space across a certain percentage of the input chains.
+To identify which waters are to be included in the consensus set, the waters
+in the system are first grouped by spatial proximity into <i>clusters</i>.
+The spatial size of each cluster is dictated by a specified cluster radius.
+Each cluster is then checked for the number of chains contributing waters
+to the cluster.
+
+<ul>
+
+<p><li><i>Cluster Radius</i>:  Specifies the maximum distance between
+any two waters in the same cluster.  The smaller the cluster radius, the
+tighter the cluster.  The atom temperature factor can be included in the
+calculations, in which case the position of each water molecule is modified
+by the mean displacement of that water molecule.
+
+<p><li><i>Water Site Contribution Test</i>:  For inclusion in the consensus
+set, a cluster must have at least (or at most) the specified number of
+chains contributing waters to it.  This test is always applied.
+
+</ul>
+
+<a name="Running"></a>
+<h2>Running Protein Consensus</h2>
+
+<p>To run a consensus calculation, perform the following steps:
+
+<ol>
+  <li>Load the protein chains into MOE.
+
+  <p><li>Perform alignment and superposition using
+<nobr><b>SE | Alignment | Align</b></nobr> in the Sequence Editor
+<nobr>(or <b>MOE | Protein | Align</b>)</nobr>.
+
+  <p><li>Open the Protein Consensus panel using
+<b><nobr>SE | Alignment | Consensus</nobr></b> (or <nobr><b>MOE |
+Protein | Consensus</b>)</nobr>.  This command is unavailable
+if no molecular system is loaded in MOE.
+
+<p>
+<center>
+<img src="procore/procon_panel.png" alt="Protein Consensus Panel">
+</center>
+
+<p><li>To build a consensus of only a subset of the chains in the system,
+select them in the Sequence Editor and turn on <b>Calculate on Selected
+Chains Only</b>.  If this option is off, the calculation will include all
+protein chains in the system.
+
+<p><li>Press <b>Calculate</b>.  At least two valid chains are required
+for the calculation.  Chains containing no atoms or missing backbone atoms
+are considered to be sequence-only; they will be omitted from the RMSD
+calculations and dendrograms but included in all other calculations.
+(A message will appear identifying the sequence-only chains if there are
+any.)
+Chains not entirely composed of amino acids are excluded.
+Water chains associated (through a common tag)
+with the valid protein chains are included in the calculations.
+
+<p><LI>If desired, set the <b>Master Chain</b> (at the top of the panel).
+
+<p><li>Set the criteria for the water and protein consensus sets to their
+desired values.  The consensus sets are updated dynamically to reflect
+the new thresholds.
+
+</ol>
+
+<p>
+<center>
+<img src="procore/procon_panel_serine.png" alt="Protein Consensus Panel">
+</center>
+
+<a name="Specifying"></a>
+<h3>Specifying the Consensus Criteria</h3>
+
+<p>The consensus criteria are defined in the Water Consensus Definition and
+Protein Consensus Definition sections of the panel.
+
+<table width="100%" cellspacing="5">
+
+<tr><td valign="top"><b>Water Site Contribution</b>
+<td valign="top">These sliders specify the minimum and maximum number of
+chains which must contribute waters to an individual water cluster for the
+cluster to be included in the consensus set.
+
+<tr><td valign="top"><b>Cluster Radius</b>
+<td valign="top">Specifies the maximum distance between any two waters in the
+same cluster.  Waters farther apart than this distance are considered to
+be in different clusters.  Press the <b>Apply</b> button to put a new value
+of the cluster radius into effect (reclustering is not done automatically).
+
+<tr><td valign="top"><b>Add B-Factor</b>
+<td valign="top">If this option is on, the mean displacement of each water
+is added when computing the distance between two waters for the purpose
+of clustering.  This results in waters with low temperature factor (more
+accurate position data) being preferentially conserved (waters with
+high temperature factor will be excluded from clusters).
+
+<tr><td valign="top"><b>Allow Gaps</b>
+
+<td valign="top">If this option is on, columns containing gaps will be
+considered for inclusion in the consensus set.  The slider sets the maximum
+number of gaps permitted in a column.  If this option is off, all columns
+with gaps are excluded from the consensus set.
+
+<p>If <b>Allow Gaps in Master</b> is on, columns where the master chain
+has a gap are considered for inclusion in the consensus set.  Otherwise,
+all such columns will be excluded.  This choice is available only when
+<b>Allow Gaps</b> is on.
+
+<tr><td valign="top"><b>Mainchain RMSD</b>
+<td valign="top">If this option is on, the 
+<a href="#MainTest">Mainchain RMSD Test</a> will be applied when building the consensus set.  Minimum and
+maximum RMSD values are set with the sliders.
+
+<tr><td valign="top"><b>Sidechain RMSD</b>
+<td valign="top">If this option is on, the 
+<a href="#SideTest">Sidechain RMSD Test</a> 
+will be applied when building the consensus set.  Minimum and
+maximum RMSD values are set with the sliders.  Sidechain atoms in a column
+may enter the consensus set only if all residues contain the same sidechain
+atoms (i.e. if the column has 100% residue identity and all sidechain
+atoms are present).
+
+<tr><td valign="top"><b>Residue&nbsp;Identity</b>
+
+<td valign="top">If this option is on, the 
+<a href="#ResTest">Residue Identity Test</a> 
+will be applied when building the consensus set.
+
+<p>When <b>Residue Identity to Master</b> is on, residue identity is
+calculated as the percent of residues in the column which are identical to
+the residue of the master chain in this position.  Otherwise, identity is
+calculated as the percent of residues in the column which are identical to
+the most frequent residue in the column.  The sliders specify the minimum
+and maximum permitted values.
+
+<p> If a column contains a gap, the calculation is performed over all
+residues present, i.e. gaps are ignored.  If the master chain has a gap in
+this column (and the column is admissible by <b>Allow Gaps in Master</b>),
+the calculation is always with respect to the most frequent residue.
+
+<tr><td valign="top"><b>Add B-Factor to RMSD</b>
+<td valign="top"> If this option is on, the mean displacement of each atom is
+added when computing distances in the mainchain and sidechain RMSD tests.
+This results in increased RMSD values in the presence of atoms with
+high temperature factor.
+
+</table>
+
+<a name="Recalculating"></a>
+<h3>Recalculating the Consensus Set</h3>
+
+<p>The consensus set must be recalculated whenever the system changes,
+e.g. after deleting or adding a chain or after moving atoms.
+A warning of <b>Recalculation REQUIRED</b> will appear in the lower right
+corner of the panel should any of these situations occur.
+
+<p align=center>
+<img src="procore/recalc.png" alt="Recalculation Suggested">
+</p>
+
+<p> The system should also be recalculated, of course, when a different
+set of chains is to be used for calculating the conserved core.
+Press <b>Calculate</b> to recalculate the consensus set.
+
+
+<a name="Analysis"></a>
+<h2>Analyzing the Results</h2>
+
+<p> Once a consensus set has been calculated, it can be visualized in
+both the MOE and Sequence Editor windows.  A report can also be obtained.
+The consensus set is analyzed by the Protein Consensus application
+for relationships between the input proteins.  The results of this
+analysis are displayed as dendrograms in the Protein Consensus panel.
+
+<a name="Visualizing"></a>
+<h3>Visualizing the Consensus Set</h3>
+
+MOE's Protein Consensus offers a variety of visualization options for
+the consensus set:
+
+<ul>
+<li> The backbones of the residues in (or not in) the consensus set
+can be displayed in the MOE Window.
+
+<li> The atoms in (or not in) the consensus set can be displayed
+in the MOE Window.
+
+<li> The residues in (or not in) the consensus set can be selected
+in the Sequence Editor.
+
+<li> The waters in the water consensus set can be displayed in the
+MOE Window.
+
+</ul>
+
+<p> For example, the left image below shows a system of five protein chains
+and their waters from the file <tt>$MOE/sample/mol/hiv_water.moe</tt>.
+The right image shows the consensus set visualized as the conserved backbones
+and waters of all chains, and the conserved atoms of the master chain.
+The water cluster radius was set at 2.4, and the only criterion used for
+building the protein consensus set was the Mainchain RMSD test, with a
+maximum permitted RMSD of 0.7 angstroms.
+
+<p align=center>
+<img src="procore/hivall.gif">
+<img src="procore/hivcon.gif">
+</p>
+
+<p>Pressing the <b>Visualize...</b> button at the bottom of the Protein
+Consensus panel opens the Protein Consensus Visualization panel which
+contains controls for visualizing the conserved core in the MOE Window
+and the Sequence Editor.
+
+<p align=center>
+<img src="procore/vispanel.png" alt="Protein Consensus Visualization">
+</p>
+
+<p>The <b>Visualize Protein Elements</b> option menu specifies whether it
+is objects in the consensus set or not in the consensus set that are to
+be visualized.  This option applies only to the protein consensus set as
+waters not in the water consensus set cannot be visualized.
+
+<p>The table of option menus is used to control the visualization of
+backbones, residues, atoms, and waters in (or not in) the consensus set,
+as follows.
+
+<table cellspacing="10">
+<tr><td valign="top"><b>Chains</b>
+<td valign="top">Specifies which chains to visualize.
+<ul>
+<li><b>All</b>: All chains in the consensus calculation
+<li><b>Master</b>: Only the master chain
+<li><b>Selected</b>: Only the selected chains in the consensus calculation
+<li><b>None</b>: No chains (hides the set of chains for which consensus
+was calculated)
+</ul>
+
+<tr><td valign="top"><b>Render</b>
+<td valign="top">Specifies how the objects determined by <b>Chains</b>
+are to be rendered.
+
+<ul>
+
+<li>For <b>Backbone</b>: The rendering mode in the MOE Window
+of the backbone ribbon for columns in
+(or not in) the consensus set.
+
+<li>For <b>Residue</b>: Whether to select residues in (not in) the consensus
+set.  The selection is performed in the Sequence Editor.
+
+<li>For <b>Atoms</b>: The rendering mode of atoms in (not in) the consensus set.
+
+<li>For <b>Waters</b>: The rendering mode of waters in the water consensus set.
+
+</ul>
+
+<tr><td valign="top"><b>Color</b>
+<td valign="top">Specifies how the objects determined by <b>Chains</b>
+are to be colored.
+
+<ul>
+
+<li><b>Do Not Change</b>: Protein Consensus will not change the
+color of the object.
+
+<li><b>Chain Color</b> (for Backbones only): 
+Color the backbone by the chain color.
+
+<li><b>Sequence Variability</b> (for Backbones and Residues only):
+Color by the variability of the residues
+in the alignment column.  The variability is determined according
+to Armon <i>et al.</i> [Armon 2001].  In this scheme, similar residues
+contribute little to variability, and dissimilar residues contribute greatly.
+For example, a glycine-tryptophan pair has about six
+times more variability than
+a glycine-serine pair.
+
+<li><b>RMSD</b>: Color backbones and residues by the RMSD of all the
+atoms belonging to the column.  Color atoms by the RMSD of
+all corresponding atoms in the column.  Color waters by the RMSD
+of the waters in the same cluster.
+
+</ul>
+
+<p> In the cases of Sequence Variability and RMSD, blue is low
+variability/RMSD (cold) and red is high variability/RMSD (hot).  Note that
+residue color cannot be seen in the Sequence Editor if the residues are
+selected.
+
+<tr><td valign="top"><B>Update</b>
+<td valign="top"> Update the visualization of the objects in question.
+When <b>Auto</b> is not on, the <b>Update</b> button must be pressed 
+to visualize a new consensus set or if the visualization options are
+changed.  <b>Update</b> will also restore the visualization if the rendering
+has been changed outside of Protein Consensus.
+For example, if one were to choose <b>MOE | Render | Backbone | None</b>,
+the backbone would disappear.
+Pressing the <b>Update</b> button of the Backbone row will restore
+the visualization of the conserved backbone.
+
+<tr><td valign="top"><b>Refresh</b>
+<td valign="top">Equivalent to pressing all <b>Update</b> buttons for which
+<b>Auto</b> is on.
+
+<tr><td valign="top"><b>Update&nbsp;All</b>
+<td valign="top">Equivalent to pressing all <b>Update</b> buttons.
+</table>
+
+<a name="Dendrograms"></a>
+<h3>Dendrograms</h3>
+
+<p> Once the consensus set is calculated, MOE's Protein Consensus will
+analyze the relationships between the input proteins according to the
+following metrics:
+
+<ul>
+<li> the pairwise RMSD of mainchain atoms of all gapless columns
+<li> the pairwise RMSD of mainchain atoms of all gapless columns
+in the consensus set
+<li> the pairwise sequential distance of all protein chains
+<li> the pairwise sequential distance of all protein chains, considering
+only subsequences in the consensus set
+</ul>
+
+<p> If there are three or more chains in the consensus set, the results
+from using each metric can be displayed as a dendrogram.  The dendrograms are
+computed using the Neighbor Joining method of Saitou and Nei [Saitou 1987].
+In this method, the two nearest neighbors are joined in a cluster, where the
+height of the horizontal 
+connection is equal to the distance between them.  From this
+point on, the cluster is treated as a single element.  The distance between
+two clusters X and Y (or cluster X and a node Y) is the minimum of 
+all distances
+between nodes in X and nodes in Y.  In this manner, the dendrogram groups
+together similar proteins, where the more distant the relationship, the higher
+the connection.
+
+
+<p>The dendrogram to be displayed is determined by the <b>Dendrogram</b>
+option menu.
+
+<p align=center>
+<img src="procore/analysis.png" alt="Dendrogram">
+</p>
+
+<p><table cellspacing="10">
+
+<tr><td valign="top"><b>RMSD of All Gapless Columns</b>
+<td valign="top">Group chains by the pairwise RMSD of mainchain atoms for
+all residues which appear in gapless columns.
+
+<tr><td valign="top"><b>RMSD of Gapless Consensus Set</b>
+<td valign="top">Group chains by the pairwise RMSD of mainchain atoms for
+all residues which appear in gapless columns of the consensus set.
+
+<tr>
+<td valign="top"><b>Sequential Distance of All Columns</b>
+<td valign="top">Group chains by pairwise sequential distance.
+
+<tr>
+<td valign="top"><b>Sequential Distance of Consensus Set</b>
+<td valign="top">Group chains by pairwise sequential distance of the
+subsequences in the consensus set.
+
+</table>
+
+<p>The order of the nodes in the dendrogram will not necessarily coincide
+with the order of the chains in the system.  To determine which node
+corresponds to a particular chain, select the chain in the Sequence Editor.
+Likewise, to determine which chains correspond to particular nodes, click
+on or drag a selection box over the nodes.
+
+<p>The <b>Reorder Chains</b> button will reorder the chains in the system to
+match the order of the nodes in the dendrogram.  The master chain will be
+automatically updated to reflect the new chain positions, and the dendrogram
+will be updated as shown below.
+
+<p align=center>
+<img src="procore/reorder.png" alt="Dendrogram">
+</p>
+
+<p>
+Displayed dendrograms are automatically updated when consensus set parameters
+are changed in the Protein Consensus panel.
+
+<a name="ConsensusReport"></a>
+<h3>Consensus Report</h3>
+
+<p>Pressing the <b>Report</b> button at the bottom of the panel
+will open a text editor containing a full report of the consensus set.
+The report contains:
+
+<ul>
+<p><li>
+The time at which the report was created
+
+<li>
+A listing of the chains used in the consensus calculation
+
+<li>
+The criteria used for building the consensus set
+
+<li>
+The residue columns in the protein consensus set
+
+<li>
+The water residues in the water consensus set
+
+<li>
+Tables which list the following pairwise relationships:
+<ul>
+<li> Pairwise sequence identity over all columns
+<li> Pairwise sequence identity over columns in the consensus set
+<li> Pairwise mainchain RMSD over all gapless columns
+<li> Pairwise mainchain RMSD over gapless columns in the consensus set
+</ul>
+
+<li>
+Textual representations of the four dendrograms
+
+</ul>
+
+
+<a name="Super"></a>
+<h2>Superposing and Realigning</h2>
+
+<p>The consensus set can be used to re-superpose and re-align the input
+protein chains, and to create a representation of the conserved core called
+a <i>consensus model</i>.  A consensus model contains the sequence of the
+master chain along with the atoms of the consensus set.
+
+<p>Press the <b>Action</b> buttons to perform superposition, realignment, and
+consensus model construction.
+
+<p align=center><img src="procore/actions.png" alt="Actions"></p>
+
+<table cellspacing="10">
+<tr><td valign="top"><b>Superpose</b>
+<td valign="top">Perform a multi-body superposition of all chains.
+The superposition uses only the atoms from the consensus set to calculate
+optimal solid body rotations and translations.  The consensus set is
+automatically recalculated.
+
+<tr><td valign="top"><b>Realign</b>
+<td valign="top">Realign the chains.  This action is intended to be used
+after a superposition.  The consensus set is automatically recalculated.
+
+<tr><td valign="top"><b>Create Model</b>
+<td valign="top"> Build a consensus model from the conserved structural core.
+A new chain is created, having exactly the same residue sequence as the
+master chain.  The new chain will contain only those atoms found in the
+consensus set, i.e. mainchain atoms of residues that passed the mainchain
+RMSD test (or all mainchain atoms if no test is used) and sidechain atoms
+of residues that passed the sidechain RMSD test (or all sidechain atoms
+if no test is used).  The atom positions in the consensus model will be
+an average of the atomic coordinates in the consensus set.  </table>
+
+<!-- ======= Start of example for Superposition using Protein Consensus ========    -->
+<h2>Building a Consensus Model</h2>
+<div class="example">
+<a name="Example_superposition_using_procore"></a>
+<h3>Example: Superposition using Protein Consensus</h3>
+
+<ol>
+    <p><li>
+    <i>Clear the molecular data in MOE.</i>
+
+    <blockquote>
+	<span class="menu">MOE | RHS | Close</span>
+    </blockquote>
+
+    </li></p><p><li>
+
+    <i>Load the proteins 1M17 and 1XKK.</i>
+
+    <blockquote>
+	<span class="menu">MOE | File | Open</span>
+    </blockquote>
+
+    In the Open panel,
+    select <tt>$MOE/sample/mol/1m17.pdb</tt> and 
+    <tt>$MOE/sample/mol/1xkk.pdb</tt>, and press <b>OK</b>.
+
+    </li></p><p><li>
+
+    <i>Render the system for better visualization.</i>
+    <div class="floatright">
+    <img src="procore/ribbon_render_panel.png"></br>
+    <img src="procore/atom_render_panel.png">
+    </div>
+
+    <p>
+    <ol>
+
+    <li>Isolate the ligand atoms in the Main MOE window
+    <blockquote>
+    <nobr><b>MOE | RHS | Hide | All Atoms</b></nobr></br>
+    <nobr><b>MOE | RHS | Show | Ligand</b></nobr>
+    </blockquote>
+    <li>
+    Render the ribbons as tubes and color by tag with
+    <nobr><b>MOE | Footer | Ribbon</b></nobr>
+    <li>Color the atoms by tag and render in space-filling
+    with <nobr><b>MOE | Footer | Atoms</b></nobr>
+    </li>
+    </ol>
+    </p>
+
+    </li></p><p><li>
+
+    <i>Perform an initial alignment.</i>
+
+    <blockquote>
+	<span class="menu">MOE | Protein |
+	    Superpose</span>
+    </blockquote>
+
+    <p>
+    Keep the default settings and press
+    <b>Superpose</b>. When prompted to align the sequences, choose <b>Yes</b>.
+    </p>
+
+    <p>
+    <center>
+    <img src="procore/superpose.png" alt="superposition of 1m17 and 1xkk" />
+    </center>
+    </p>
+
+    <p>Notice how the helices do not quite overlap.</p>
+
+    </li></p><p><li>
+    <i>Calculate the protein core by consensus.</i>
+
+    <blockquote>
+	<span class="menu">MOE | Protein |
+	    Consensus</span>
+    </blockquote>
+
+    <p>This will open the Protein Consensus application.  Press
+    <b>Calculate</b>.
+    </p>
+
+    </li></p><p><li>
+    <i>Superpose on the consensus region.</i>
+
+    <p>
+    Turn on <b>Mainchain RMSD</b> and move the <b>Max</b> slider to 3.
+    Press <b>Calculate</b>, then press <b>Action: Superpose</b>.
+    </p>
+
+    <p>
+    <center>
+    <img src="procore/consensus.png" alt="superposition of 1m17 and 1xkk using
+    protein consensus" />
+    </center>
+    </p>
+
+    </li></p><p><li>
+    <i>Visualize the consensus region.</i>
+
+    <p>In the Protein Consensus panel,
+    select <b>Visualize</b>.  In the Protein Consensus Visualization panel,
+    choose <b>Space Filling</b> for the <b>Waters</b> and 
+    press <b>Update All</b>.</p>
+    
+    <center>
+    <img src="procore/visualizeconsensus.png" alt="In Consensus" />
+    </center>
+    <br>
+    
+    </li></p><p><li>
+
+    <i>Visualize the area outside the consensus region.</i>
+
+    <p>In the Protein Consensus Visualization panel,
+    select <b>Visualize Protein Elements | Not in Consensus</b>.
+    Press <b>Update All</b>.
+    The ligand and the conserved waters
+    are now shown.
+    </p>
+
+    <p>
+    <center>
+    <img src="procore/notinconsensus.png" alt="Not in Consensus" />
+    </center>
+    </p>
+
+    </li></p>
+
+</ol>
+
+</div>
+
+<a name="References"></a>
+<h2>References</h2>
+<table width="100%" cellpadding="2">
+<tr>
+<td valign="top">
+[Armon&nbsp;2001]
+<td>
+Armon, A., Graur, D., and Ben-Tal, N.; ConSurf: An
+algorithmic tool for the identification of functional regions in proteins by
+surface mapping of phylogenetic information; <i>J. Mol. Biol. 307</i>
+(<b>2001</b>) 447&ndash;463.
+<tr>
+<td valign="top">
+[Saitou&nbsp;1987]
+<td>
+Saitou, N. and Nei, M.;  The neighbor-joining method:
+a new method for reconstructing phylogenetic trees;
+<i>Mol. Biol. Evol. 4</i> (<b>1987</b>) 406&ndash;425.
+</table>
+
+<a name="SVLCommands"></a>
+<h2>SVL Commands</h2>
+
+<a href="fcnref/intropro.htm">Protein Functions</a>
+
+
+<h2>See Also</h2>
+
+<a href="align.htm">Sequence and Structure Alignment</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

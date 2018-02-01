@@ -1,0 +1,520 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	cif.htm		CIF file I/O
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+
+
+<meta keywords>
+<meta functions cif_LoadDictionary>
+<meta functions cif_fread>
+<meta functions cif_ExtractInfo>
+<meta functions cif_CreateSystem>
+<meta functions xml_LoadPDBSchema>
+<meta functions xml_LoadExtraXSD>
+<meta functions fwrite_PDBxml>
+<meta functions fread_PDBxml>
+
+<title>CIF/PDBXML Molecular Data Functions</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+<pre>
+    dict               = <a class="fcnlink" href="#cif_LoadDictionary">cif_LoadDictionary</a> 'filename'
+    [blockdata, state] = <a class="fcnlink" href="#cif_fread">cif_fread</a> [filenum, state, dict]
+    mol_data           = <a class="fcnlink" href="#cif_ExtractInfo">cif_ExtractInfo</a> [blockdata, opt_ex]
+    chain_keys         = <a class="fcnlink" href="#cif_CreateSystem">cif_CreateSystem</a> [mol_data, opt_cr]
+
+    opt_ex = [
+        type        : 'filetype',
+        multi_model : max_num_models,
+        symmetries  : 'symmetry_type',
+        fixmiss     : flag
+    ]
+    opt_cr = [ symmetries: 'symmetry_type' ]
+
+    schema             = <a class="fcnlink" href="#xml_LoadPDBSchema">xml_LoadPDBSchema</a> 'filename'
+    schema             = <a class="fcnlink" href="#xml_LoadExtraXSD">xml_LoadExtraXSD</a> ['filename', schema]
+    blockdata          = <a class="fcnlink" href="#fread_PDBxml">fread_PDBxml</a> [filenum, ['pat1', 'pat2',...], schema]
+                         <a class="fcnlink" href="#fwrite_PDBxml">fwrite_PDBxml</a> [filenum, blockdata, schema]
+</pre>
+
+<h2>Description</h2>
+
+<h3>CIF files</h3>
+
+<p>These functions provide a low-level interface for reading Crystallographic
+Information Files (CIF) or macro-molecular CIF files (mmCIF).  To read and
+parse an entire file at once, use <tt>ReadCIF</tt> instead.  An optional
+dictionary pointer can be provided, used simply to assign types to the data
+read in: integer, floating point or string.  Otherwise a default dictionary
+will be used.
+
+<p><a name="cif_LoadDictionary"></a></p><hr noshade="noshade" />
+
+<pre>dict = <span class="fcndef">cif_LoadDictionary</span> 'filename'</pre>
+
+<p>
+Read in a CIF dictionary file to be passed to <tt>ReadCIF</tt> or
+<tt>cif_fread</tt>.
+
+The parsed dictionary is returned if the file is read successfully,
+otherwise <tt>[]</tt> is returned.
+
+<p>Some examples of possible dictionary files are <i>cif_core.dic</i>
+from the IUCr, and <i>mmcif_pdbx.dic</i> from RCSB.
+
+<p><a name="cif_fread"></a></p><hr noshade="noshade" />
+
+<pre>[blockdata, state] = <span class="fcndef">cif_fread</span> [filenum, state, dict]</pre>
+
+<p>
+Return a single data record from a CIF data file.  Data is read from the CIF or
+mmCIF file referred to by <tt>filenum</tt>, an internal <tt>state</tt> vector
+must be maintained for reading consecutive records and the optional argument
+<tt>dict</tt> may be used to provide alternate parsed CIF dictionaries.
+
+<p>
+CIF records are data blocks delimited by lines beginning with 'data_'. Parsed
+records are returned as <tt>blockdata</tt> tagged vectors with attributes
+matching the CIF field names and data values with type determined by the loaded
+dictionary.
+
+A special additional field of <tt>blockdata</tt>, <tt>blockname</tt>, denotes
+the name, as a string, assigned to each unique data block within the file.
+
+<p>
+The first time <tt>cif_fread</tt> is called, <tt>state</tt> must be
+<tt>[]</tt>.
+Subsequent calls to <tt>cif_fread</tt> must use the value of <tt>state</tt>
+returned from the previous call to properly read the next record.
+When the last record is read <tt>state</tt> will be set to <tt>[]</tt>,
+serving as an end-of-file marker.
+
+<p><b>Example:</b>
+<blockquote>
+<pre>
+local filenum = fopenr '$MOE/sample/mol/1omd.cif';
+local state = [], dict = [];
+
+loop
+    [blockdata, state] = cif_fread [filenum, state, dict];
+    // ... process blockdata ...
+until isnull state
+endloop
+fclose filenum;
+</pre>
+</blockquote>
+
+<p><a name="cif_ExtractInfo"></a></p><hr noshade="noshade" />
+
+<pre>
+mol_data = <span class="fcndef">cif_ExtractInfo</span> [blockdata, opt_ex]
+
+mol_data = [
+    occupancy    : [atom_occupancies],
+    B_factor     : [atom_temp_factors],
+    anisou       : [aniso_temp_factors],
+    TLS          : TLS_data,
+    alt_loc      : ["alternate_location_ids"],
+    active       : [active_flag],
+    cell         : ['spacegroup', size, shape],
+    Rfactor      : crys_rF,
+    reference    : &quot;citation_string&quot;,
+    models       : [moe_mdl1, moe_mdl2, ...],
+    type         : 'file_type_token',
+    fasta        : [&quot;chn1_fasta&quot;, &quot;chn2_fasta&quot;, ...],
+    PDBremarks   : [&quot;pdb_rem1&quot;, &quot;pdb_rem2&quot;, ...],
+    exptl_method : &quot;exp_method&quot;,
+    assembly     : [chain_assembly_identifiers],
+    chain_id     : ['pdb_chain_letters'],
+    modelnums    : ['chain_model_numbers']
+]
+
+opt_ex = [
+    type        : 'filetype',
+    multi_model : max_num_models,
+    symmetries  : 'symmetry_type',
+    fixmiss     : flag,
+    biomt       : token
+]
+</pre>
+
+<p>
+Converts a CIF data block into a MOE molecular object.  Returns a
+<tt>mol_data</tt> object that can be instantiated in the MOE main window with a
+call to <tt>cif_CreateSystem</tt>.
+
+<p>
+<tt>blockdata</tt> is a tagged vector returned from a call to
+<tt>cif_fread</tt>.  <tt>mol_data</tt> consists of one or more of
+the following fields:</p>
+
+<dl>
+
+<dt><tt>occupancy : [atom_occupancies]</tt>
+<dd>A vector of the atom occupancies.
+Applies to CIF and mmCIF files only.
+
+<p><dt><tt>B_factor : [atom_temp_factors]</tt>
+<dd>A vector of the atom temperature factors.
+Applies to CIF and mmCIF files only.
+
+<p><dt><tt>anisou : [aniso_temp_factors]</tt>
+<dd>Anisotropic temperature factors for each atom, in the order
+[u11, u22, u33, u12, u13, u23], which
+matches that found in PDB ANISOU records.
+Applies to CIF and mmCIF files only.
+
+<p><dt><tt>TLS : TLS_data</tt>
+<dd>TLS_data is a tagged vector comprising the following tags:
+	<ul><li><tt>likely_residual</tt> : Flag indicating the nature of
+	<tt>B_factor</tt>.
+	If non-zero, <tt>B_factor</tt> contains only the residual component of the
+	isotropic temperature factor.  If zero, it contains the full temperature
+	factor, comprising the residual and TLS components.  In older files, this
+	is only a guess as the true nature is not known.</li>
+
+	<li><tt>program</tt> : a vector of tokens naming the software used
+	in the refinement.
+	Some older versions of REFMAC are known to put only the residual component
+	of the temperature factor in <tt>B_factor</tt> while in most other cases
+	the full temperature factor is given.</li>
+
+	<li><tt>anisou</tt> : the anisotropic temperature factors
+	computed using TLS refinement.   The
+	residual isotropic temperature factor must be added to the diagonal of the
+	tensor in order to get the <i>full</i> anisotropic temperature factors.
+	They are in the order [u11, u12, u13, u22, u23, u33].  Note that this is
+	different from the ordering of <tt>anisou</tt> above.</li>
+</ul>
+Applies to mmCIF files only.
+
+<p><dt><tt>alt_loc : ["alternate_location_ids"]</tt>
+<dd>A vector of the alternate location identifiers
+for the atoms (default is space).  Applies mmCIF files only.
+
+<p><dt><tt>active : [active_flag]</tt>
+<dd>A mask to obtain all 'active' atoms: when alternate
+conformers exist, only one conformer is marked active for
+each atom.  This option applies to mmCIF files only.
+
+<p><dt><tt>cell : ['spacegroup', size, shape]</tt>
+<dd>Unit cell parameters.
+This applies to CIF and mmCIF files only.
+
+<p><dt><tt>Rfactor : crys_rF</tt>
+<dd>crystallographic R-Factor/R-Free.
+This applies to CIF and mmCIF files only.
+
+<p><dt><tt>reference : &quot;citation_string&quot;</tt>
+<dd>primary journal citation pertaining to the molecule.
+This applies to CIF and mmCIF files only.
+
+<p><dt><tt>models : [moe_mdl1, moe_mdl2, ...]</tt>
+<dd>A vector of MOE mol objects, one per model.
+
+<p><dt><tt>type : 'file_type_token'</tt>
+<dd>'cif', 'mmcif' or 'monlibcif'
+
+<p><dt><tt>fasta : [&quot;chn1_fasta&quot;, &quot;chn2_fasta&quot;, ...]</tt>
+<dd>A vector of FASTA-like strings containing the sequences of the polymer
+chains.
+This applies to mmCIF files only.
+
+<p><dt><tt>PDBremarks : [&quot;pdb_rem1&quot;, &quot;pdb_rem2&quot;, ...]</tt>
+<dd>The REMARK fields from the original PDB file.
+This applies to mmCIF files only.
+
+<p><dt><tt>exptl_method : &quot;exp_method&quot;</tt>
+<dd>The experimental method use to determine the structure.
+This applies to mmCIF files only.
+
+<p><dt><tt>assembly : [chain_assembly_identifiers]</tt>
+<dd>For each chain, the number of the biological assembly to which it
+belongs, if applicable.
+This applies to mmCIF files only.
+
+<p><dt><tt>chain_id : ['pdb_chain_letters']</tt>
+<dd>For each chain, the original chain letter in the PDB file.
+This applies to mmCIF files only.
+
+<p><dt><tt>modelnums : ['chain_model_numbers']</tt>
+<dd>For each chain, the model number it belongs to.
+This applies to mmCIF files only.
+
+</dl>
+
+<p><tt>opt_ex</tt> is a tagged vector:</p>
+
+<dl>
+<dt><tt>type : 'filetype'</tt>
+<dd>Specifies the CIF file format.  Normally this is
+auto-detected so this option should only be used if auto-detection has failed.
+Legal token values are:
+
+<blockquote>
+<table>
+<tr valign="top">
+    <td valign="baseline"><tt>'auto'</tt></td>
+    <td valign="baseline">The file type will be auto-detected. [default]</td>
+</tr>
+<tr valign="top">
+    <td valign="baseline"><tt>'cif'</tt></td>
+    <td valign="baseline">The file is in the basic CIF format.</td>
+</tr>
+<tr valign="top">
+    <td valign="baseline"><tt>'mmcif'</tt></td>
+    <td valign="baseline">The file is in mmCIF format.</td>
+</tr>
+<tr valign="top">
+    <td valign="baseline"><tt>'monlibcif'</tt></td>
+    <td valign="baseline">The file is in CCP4 MONLIB format.  This will also
+work with 'mmCIF dictionary' format.</td>
+</tr>
+</table>
+</blockquote>
+
+<p><dt><tt>multi_model : max_num_models</tt>
+
+<dd>Specifies maximum number of models to load, in a multi-model structure
+file.  Models are loaded in the order in which they appear, and not necessarily
+numerical order.  This applies only to mmCIF files.  The default value is 1.
+If there are fewer models in the file than specified, all models will be read.
+Additionally, if zero is specified for this argument, all models will be read.
+
+<p><dt><tt>symmetries : 'symmetry_type'</tt>
+<dd>Specifies whether to generate
+Non-Crystallographic Symmetry (NCS) images.
+The NCS images are given in the <tt>_struct_ncs_oper</tt> fields in the file.
+This option applies to mmCIF files only.
+
+<p>Possible values:
+<blockquote>
+<table cellpadding="3">
+<tr valign="top">
+    <td valign="baseline"><tt>'None'</tt></td>
+    <td valign="baseline">Do not generate NCS images. [default]</td>
+</tr>
+<tr valign="top">
+    <td valign="baseline"><tt>'All'</tt></td>
+    <td valign="baseline">Generate all NCS images (if any).</td>
+</tr>
+</table>
+</blockquote>
+The default value is <tt>'All'</tt>.
+
+<p><dt><tt>fixmiss : flag</tt>
+<dd>
+Specifies whether to to resolve missing coordinates when reading mmCIF files.
+<tt>flag</tt> is either 1 (default) or 0.  When set to 1,
+an attempt will be made to reconcile any differences between
+atoms with coordinates given in the atomic records section and
+sequences given in
+the polymer residue sequence section.  This can occur when a stretch of residues
+is missing coordinates because they could not be resolved,
+when a chemical tag is
+present at one end of the molecule, or when there is a mislabeling or
+misnumbering in the file.
+
+<p><dt><tt>biomt : token</tt>
+<dd>Specifies a Biological Assembly to generate.
+<tt>token</tt> should be
+one of the <tt>_pdbx_struct_assembly.id</tt> items present in the file.
+Setting <tt>token</tt> to <tt>'All'</tt> specifies that <i>all</i>
+assemblies provided in the
+<tt>_pdbx_struct_assembly</tt> table are to be generated.
+The <tt>biomt</tt> option applies to mmCIF files only.  
+Note that the <tt>symmetries</tt> option is ignored when this option is set.
+</dl>
+
+<p><a name="cif_CreateSystem"></a></p><hr noshade="noshade" />
+
+<pre>
+chain_keys = <span class="fcndef">cif_CreateSystem</span> [mol_data, opt_cr]
+
+opt_cr = [
+    symmetries : 'symmetry_type'
+]
+</pre>
+
+<p>
+Creates a MOE molecular system from a CIF <tt>mol_data</tt> object which is
+displayed in the MOE Window. The chain keys of the new molecular data are
+returned.  Atoms which are masked out as non-active by <tt>mol_data.active</tt>
+will be created as inert atoms.  Additionally, when alternate locations exist
+(as given by <tt>mol_data.alt_loc</tt>), a set of atom collections will also
+be created, named <b>PDB_ALTLOC_X</b>, where <b>X</b> is the alternate location
+identifier.
+
+<p><tt>opt_cr</tt> is a tagged vector:</p>
+
+<dl>
+<dt><tt>symmetries : 'symmetry_type'</tt>
+<dd>Controls how crystallographic symmetry is handled.  Permitted token values
+are:
+
+<blockquote>
+<table>
+<tr valign="top" cellpadding="3">
+    <td valign="baseline"><tt>'None'</tt></td>
+    <td valign="baseline">The cell parameters will be ignored and left as
+    they currently are. For
+    non-crystallographic structure files, this is option is automatically
+    chosen. [default]</td>
+</tr>
+<tr valign="top">
+    <td valign="baseline"><tt>'All'</tt></td>
+    <td valign="baseline">Unit cell will be computed and all images
+    of the molecule due to
+    crystallographic symmetry will be generated.  For non-mmCIF files, the unit
+    cell will also be displayed.</td>
+</tr>
+</table>
+</blockquote>
+
+</dl>
+
+<p>A warning is issued before overwriting any existing crystal cell parameters.
+Atomic occupancy will be set in the molecular Scalar value and Temperature
+Factors will be set, when appropriate.
+
+<h3>PDBXML files</h3>
+
+<p>These functions provide a low-level interface for reading and writing
+files in RCSB's PDBXML format, which has a direct correspondence to the
+mmCIF format.  Thus after reading an XML file, the result can be passed
+directly to <a href="#cif_ExtractInfo" class="svl">cif_ExtractInfo</a> just as if it had
+come from an mmCIF file.  Reading XML files also requires an
+<a href="xsdextfmt.htm">XSD <i>schema</i>
+file</a>, which is essentially a dictionary describing the data types, their
+allowed values, and so on.  A number of functions are provided to work with
+schemas.</p>
+
+<p><a name="xml_LoadPDBSchema"></a></p><hr noshade="noshade" />
+
+<pre>schema = <span class="fcndef">xml_LoadPDBSchema</span> 'filename'</pre>
+
+<p>Reads and parses the PDB XML schema file (usually called <tt>pdbx.xsd</tt>)
+and returns a parsed data structure which can then be passed to other
+PDBXML-related functions.  The data structure itself should never be modified
+manually.  If changes are required to the base schema, use
+<a href="#xml_LoadExtraXSD" class="svl">xml_LoadExtraXSD</a>.</p>
+
+<p><a name="xml_LoadExtraXSD"></a></p><hr noshade="noshade" />
+
+<pre>schema = <span class="fcndef">xml_LoadExtraXSD</span> ['filename', schema]</pre>
+
+<p>Used to make modifications to a previously loaded PDBXML schema file.
+The filename of the file with the modifications, as well as the
+the schema to modify, are provided as arguments,
+and the modified schema is
+returned.  The format of the modifications file is <b>not</b> xsd format, but
+rather a simple text format, described in <a href="xsdextfmt.htm">XSD
+Extension File Format</a>.
+
+<p><a name="fread_PDBxml"></a></p><hr noshade="noshade" />
+
+<pre>blockdata = <span class="fcndef">fread_PDBxml</span> [filenum, ['pat1', 'pat2',...], schema]</pre>
+
+<p>Reads and parses a PDBXML file specified by <tt>filenum</tt>,
+and returns its contents in the form of
+a tagged vector that can be passed directly to
+<a href="#cif_ExtractInfo" class="svl">cif_ExtractInfo</a>.  Either
+a filename token or an open file handle can be used to specify the file.</p>
+
+<p>The second argument is an optional list of filter tokens, which will be
+matched using <tt>findmatch</tt> against each category (i.e. table) within the
+XML file.  Only categories matching one of the patterns will be read in.  This
+can be used to selectively read the file.  For example,
+using the pattern <tt>'pdbx_refine_tls*'</tt>
+would result in only the TLS-related information tables being returned.</p>
+
+<p><tt>schema</tt> can be either a data structure returned by
+<a href="#xml_LoadPDBSchema" class="svl">xml_LoadPDBSchema</a> or
+<a href="#xml_LoadExtraXSD" class="svl">xml_LoadExtraXSD</a>, or a list of filenames.
+In the latter case, the first file should be the main XSD file; the
+remaining files are assumed to be modifications of the type that would be
+passed to <a href="#xml_LoadExtraXSD" class="svl">xml_LoadExtraXSD</a>.
+If <tt>schema</tt>
+is not passed in or is null, the default <tt>$MOE/lib/pdbx.xsd</tt> will be
+used.  This default can be overridden in the <tt>.moe-rc</tt> file.</p>
+
+<p><a name="fwrite_PDBxml"></a></p><hr noshade="noshade" />
+
+<pre><span class="fcndef">fwrite_PDBxml</span> [filenum, blockdata, schema]</pre>
+
+<p>Writes a parsed mmCIF/PDBXML tagged vector, such as that returned by
+<a href="#fread_PDBxml" class="svl">fread_PDBxml</a>,
+in PDBXML format to the file specified by
+<tt>filenum</tt>.  Either a filename token or an open file handle can be
+used to specify the file.
+</p>
+
+<p><tt>blockdata</tt> should be the actual
+tagged vector containing the data to be written, and <tt>schema</tt> is the
+XML schema to apply when writing the file.  The <tt>schema</tt>
+argument is as
+described above for <a href="#fread_PDBxml" class="svl">fread_PDBxml</a>.
+</p>
+
+<p>
+<h2>See Also</h2>
+
+<a class="svl" href="molrw.htm">ReadCIF</a><br />
+<a class="svl" href="extract.htm">mol_Extract</a><br />
+<a class="svl" href="mol.htm">mol_Create</a><br />
+<a class="svl" href="../../svl/fcnref/findetc.htm">findmatch</a><br /><br />
+<a href="xsdextfmt.htm">XSD Extension File Format</a>
+
+<p>
+<h2>Reference</h2>
+
+    <a href="http://www.iucr.org/" target="_blank">International Union of
+    Crystallography (IUCr)</a>
+
+<br /><a href="http://mmcif.pdb.org/" target="_blank">RCSB Dictionary Resources
+    for mmCIF</a> <br />
+
+<a href="http://pdbml.pdb.org/" target="_blank">PDBML Resources
+    for PDBXML</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

@@ -1,0 +1,1179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--	ph4.htm		Pharmacophore Editor and Search
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Pharmacophore Annotation Schemes</title>
+
+<meta main_keywords atomm, centroid, projected, link />
+
+<meta keywords query, bioisostere, metal ligator, donor, acceptor />
+<meta keywords aromatic rings, ionic group, EHT />
+<meta keywords H-bond interaction energy />
+<meta keywords Extended Hueckel Theory />
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Intro">Introduction</a></li>
+<li><a href="#Annotations">Annotation Type Definitions</a></li>
+    <ul>
+    <li><a href="#AnnotHB">H-Bond Donors/Acceptors and Metal Ligators</a></li>
+    <li><a href="#AnnotIon">Ionic Groups</a></li>
+    <li><a href="#AnnotAro">Aromatic and &pi;-Rings</a></li>
+    <li><a href="#AnnotHyd">Hydrophobes</a></li>
+    <li><a href="#AnnotLink">Link (Scaffold Replacement)</a></li>
+    </ul>
+<li><a href="#Exposure">Solvent Exposure Filters</a></li>
+<li><a href="#EHT">The EHT Scheme</a></li>
+<li><a href="#Custom">Custom Annotation Schemes</a></li>
+<li><a href="#SeeAlso">See Also</a></li>
+<li><a href="#Ref">References</a></li>
+</ul>
+
+<h2><a name="Intro"></a>Introduction</h2>
+<p>
+<img src="ph4_annot/annot.png" align="right" alt="Annotation Points" />
+A <i>pharmacophore annotation scheme</i>, or more simply a <i>scheme</i>,
+is an automatic procedure to assign pharmacophore <i>annotation points</i>
+(such as H-bond donor, H-bond acceptor, hydrophobe, etc.) to a 3D
+conformation of a molecule.
+The pharmacophore annotation points
+are not part of the molecule proper, even though some of the annotation points 
+may be located directly on top of a particular atom of the molecule.
+The annotation points are what are examined by the MOE pharmacophore search;
+in other words, the annotation points are what the pharmacophore search
+&quot;sees&quot; when considering a particular molecular conformation.
+In contrast, a <i>pharmacophore query</i> is a collection of
+<i>query features</i> forming a (possibly complex) pattern that may or
+may not match a particular set of annotation points of a conformation.
+
+MOE has a variety of built-in schemes which provide different types of
+annotations and use different policies to locate the annotations about a
+particular conformation.  Custom schemes can also be implemented in SVL.
+</p>
+
+<p>
+Annotation points divide into three broad categories:
+</p>
+
+<ol>
+<li><i>Atom annotations</i> are located directly on an atom of a molecule,
+such as &quot;H-bond donor&quot; or &quot;cation&quot; and typically indicate
+a function related to protein-ligand binding.
+</li>
+
+<li><i>Centroid Annotations</i> are located at the geometric center of
+a subset of the atoms of a molecule.  For example, an aromatic ring
+annotation will typically be located at the centroid of the atoms of
+the ring.  Centroid annotations can also be used to indicate hydrophobic
+regions.
+</li>
+
+<li><i>Projected Annotations</i> are (typically) located along implicit
+lone pair directions or implicit hydrogen directions and are used to
+annotate the location of possible hydrogen bond partners,
+metal ligation partners, or possible R-group atom locations.
+</li>
+</ol>
+
+<p>
+In the remainder of this document, the particulars of the MOE pharmacophore
+schemes will be described along with the methods used to determine the
+locations of the annotations supported by each scheme.
+</p>
+<h2><a name="Annotations"></a>Annotation Type Definitions</h2>
+<p>
+The pharmacophore annotation schemes have
+many annotation points in common; however, there are some differences related
+to geometry calculations and the precise algorithmic and/or chemical
+typing details.  Setting these details aside, the following table
+shows the collection of annotation point types and their support in each
+of the standard schemes in MOE (scheme names are shown in the headings
+of columns 2,3,4,...).
+</p>
+
+<blockquote>
+<table class="titlebar">
+
+<tr>
+<th width="20%">Annotation Type</th>
+<th width="9%"><tt>Unified</tt></th>
+<th width="9%"><tt>PCHD</tt></th>
+<th width="9%"><tt>CHD</tt></th>
+<th width="9%"><tt>PCH</tt></th>
+<th width="9%"><tt>PCH_All</tt></th>
+<th width="9%"><tt>PPCH</tt></th>
+<th width="9%"><tt>PPCH_All</tt></th>
+<th width="9%"><tt>EHT</tt></th>
+</tr><tr>
+<td>H-bond Donor</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+</tr><tr>
+<td>H-bond Donor Projection</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+</tr><tr>
+<td>H-bond Acceptor</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+</tr><tr>
+<td>H-bond Acceptor Projection</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+</tr><tr>
+<td>&pi; <i>vs.</i> non-&pi; H-bond Donor/Acceptor</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+</tr><tr>
+<td>General &pi; <i>vs.</i> non-&pi; Distinctions</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+</tr><tr>
+<td>Metal Ligator</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+</tr><tr>
+<td>Metal Ligator Projection</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+</tr><tr>
+<td>Cation</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+</tr><tr>
+<td>Anion</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+</tr><tr>
+<td>NCN+ Bioisostere</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+</tr><tr>
+<td>COO- Bioisostere</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+</tr><tr>
+<td>Aromatic Centroid</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+</tr><tr>
+<td>Aromatic Centroid Normal</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+</tr><tr>
+<td>&pi;-Ring Centroid</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+</tr><tr>
+<td>&pi;-Ring Centroid Normal</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+</tr><tr>
+<td>Hydrophobe</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+</tr><tr>
+<td>Hydrophobic Centroid</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+</tr><tr>
+<td>R-Group Link</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+</tr><tr>
+<td>R-Group Link Projection</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;</td>
+<td style="text-align: center; vertical-align: middle">&nbsp;Y</td>
+</tr>
+</table>
+</blockquote>
+
+<p>
+The <tt>Unified</tt> is the most comprehensive and includes all of the
+annotation types of the other schemes.  The other schemes are provided
+largely for compatibility with MOE versions prior to 2007 which, for
+reasons of efficiency, provided schemes with subsets of the total
+annotation collection.  In the 2007 version of MOE, the pharmacophore
+system achieves the required efficiency with the <tt>Unified</tt> scheme
+despite its large collection of annotation types.
+</p>
+
+<p>
+<b>Note!</b> While the <tt>Unified</tt> scheme contains the annotation
+types of all of the other schemes, its typing rules and geometry assignments
+differ from the other schemes which largely share the same rules.
+Some feature types, such as <tt>AccP</tt>, have been replaced by other
+feature types in the <tt>Unified</tt> scheme, but are still available
+in other schemes.  We mark these feature types as <i>obsolete</i>.
+</p>
+
+<p>
+<b>Warning!</b> The annotation schemes assume that the input conformations
+represent exact (washed) structures; in other words, carboxylate is considered
+different from carboxylic acid and no implicit tautomer transformations
+are performed.  <i>Molecules are annotated as-presented</i>.
+</p>
+
+<a name="AnnotHB"></a>
+<h3>H-Bond Donors/Acceptors and Metal Ligators</h3>
+
+<p>
+The hydrogen bonding and metal ligation annotations consist of the following:
+</p>
+
+<ol>
+<li><b>Don</b> annotates an H-bond donor heavy atom.</li>
+<li><b>Don2</b> annotates projected locations of potential H-bond acceptors.</li>
+<li><b>Acc</b> annotates an H-bond acceptor heavy atom.</li>
+<li><b>Acc2</b> annotates projected locations of potential H-bond donors.</li>
+<li><b>ML</b> annotates a metal ligator heavy atom.</li>
+<li><b>ML2</b> annotates projected locations of potential ligated metals.</li>
+<li><b>DonP</b> annotates an <i>sp</i> or <i>sp</i><sup>2</sup> H-bond donor
+heavy atom (obsolete).</li>
+<li><b>DonS</b> annotates an <i>sp</i><sup>3</sup> H-bond donor heavy atom
+(obsolete).</li>
+<li><b>AccP</b> annotates an <i>sp</i> or <i>sp</i><sup>2</sup> H-bond
+acceptor heavy atom (obsolete).</li>
+<li><b>AccS</b> annotates an <i>sp</i><sup>3</sup> H-bond acceptor heavy atom
+(obsolete).</li>
+</ol>
+
+<p>
+A <b>Don</b> annotation is added to all oxygen and nitrogen atoms with at
+least one (possibly implicit) hydrogen attached.  Projected <b>Don2</b>
+annotations are added according to the hybridization and the heavy atom
+coordination of the donor.  In the following table the <b>d</b> denotes
+a <b>Don2</b> feature.
+</p>
+
+<blockquote>
+<table cellpadding="3" border="0" align="center">
+<tr>
+<td align="center" valign="middle"><img src="ph4_annot/don_g1.jpg" alt="Donor2 1" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/don_g2.jpg" alt="Donor2 2" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/don_g3.jpg" alt="Donor2 3" /></td>
+</tr><tr>
+<td align="center">
+Q = 1&deg; <i>sp</i><sup>3</sup>,
+X &gt;1-coord,
+Y &ne; H
+</td>
+<td align="center">
+Q = 2&deg; <i>sp</i><sup>3</sup>
+</td>
+<td align="center">
+Q = 3&deg; <i>sp</i><sup>3</sup>
+</td>
+</tr>
+<tr>
+<td align="center" valign="middle"><img src="ph4_annot/don_g4.jpg" alt="Donor2 4" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/don_g5.jpg" alt="Donor2 5" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/don_g6.jpg" alt="Donor2 6" /></td>
+</tr><tr>
+<td align="center">
+Q = 1&deg; <i>sp</i><sup>2</sup>
+</td>
+<td align="center">
+Q = 1&deg; <i>sp</i><sup>2</sup>, X &ne; H
+</td>
+<td align="center">
+Q = 2&deg; <i>sp</i><sup>2</sup>
+</td>
+</tr>
+<tr>
+<td align="center" valign="middle"><img src="ph4_annot/don_g7.jpg" alt="Donor2 7" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/don_g8.jpg" alt="Donor2 8" /></td>
+<td align="center" valign="middle">&nbsp;</td>
+</tr><tr>
+<td align="center">&nbsp;
+Q : 2&deg; <i>sp</i><sup>2</sup></td>
+<td align="center"> Q = 1&deg; <i>sp</i></td>
+<td align="center">&nbsp;</td>
+</tr>
+</table>
+</blockquote>
+
+<p>
+Hydrogen bond <b>Acc2</b> projected annotations are added to those
+heavy atoms that qualify as H-bond acceptors (see below) and are given
+<b>Acc</b> annotations.
+
+The <b>Acc2</b> projected annotations
+are added in the same locations as those for the <b>Don2</b> projected
+annotations and according to the same rules.  (That is, the donors
+and the acceptors are projected using the same angles and the same distances.)
+An atom that is both a <b>Don</b> and an <b>Acc</b> will be
+annotated with &quot;Don2&amp;Acc2&quot; projected annotations.
+</p>
+
+<p>
+Only {O,S,N} elements can be hydrogen bond acceptors provided that they
+conform to the following rules:
+</p>
+
+<ol>
+<li>
+Sulfur atoms are not acceptors except that sulfur in S=C groups and anionic
+sulfurs are acceptors and are given <b>Acc</b> annotations.
+</li>
+
+<li>
+Nitrogen atoms are acceptors and given <b>Acc</b> annotations provided that
+they are not buried.  A buried nitrogen is one of
+{=N=, &minus;N#, &gt;N=, &gt;N<}
+or a non-3-ring conjugated nitrogen of the form
+{&gt;N&minus;&pi;, &gt;N&minus;[C+], &gt;N&minus;B, &gt;N&minus;S=O,
+&gt;N&minus;P=O}.
+</li>
+
+<li>
+Oxygen atoms are acceptors and are given <b>Acc</b> annotations provided that
+they are not buried and provided that they are not in certain exception groups. 
+A buried oxygen is one of {=O=, &minus;O#; &gt;O=, &gt;O&lt;} or a
+non-3-ring conjugated oxygen of the form {&gt;O&minus;&pi;, &gt;O&minus;B,
+&gt;O&minus;[C+]}.
+Non-buried oxygen atoms are acceptors unless they are part of the
+following exception groups:
+</li>
+
+</ol>
+<table cellpadding="3" border="1" align="center">
+<tr>
+<td align="center" valign="middle">
+<img src="ph4_annot/acc_g1.jpg" alt="Acceptor2 1" />
+<img src="ph4_annot/acc_g2.jpg" alt="Acceptor2 2" />
+<br />not Acc; X<sub><i>i</i></sub> = any
+</td>
+<td align="center" valign="middle">
+<img src="ph4_annot/acc_g3.jpg" alt="Acceptor2 3" />
+<img src="ph4_annot/acc_g4.jpg" alt="Acceptor2 4" />
+<br />not Acc if any X<sub><i>i</i></sub> = het; Y &ne; H
+</td>
+</tr><tr>
+<td align="center" valign="middle">
+<img src="ph4_annot/acc_g5.jpg" alt="Acceptor2 5" />
+<img src="ph4_annot/acc_g6.jpg" alt="Acceptor2 6" />
+<br />not Acc if Y &ne; H, E = {C#N, N#C, &gt;[N,S,P]=O, Q+, CF<sub>3</sub>}
+</td>
+<td align="center" valign="middle">
+<img src="ph4_annot/acc_g7.jpg" alt="Acceptor2 7" />
+<img src="ph4_annot/acc_g8.jpg" alt="Acceptor2 8" />
+<br />not Acc if both {Q1,Q2} are &pi;
+<br />not Acc if both {X1,X2} = het
+</td>
+</tr>
+</table>
+
+<p>The metal ligand annotation <b>ML</b> is
+added to the heavy atom of all deemed metal ligands.
+Anionic atoms and H-bond acceptor atoms are always given <b>ML</b> annotations
+as well as certain specific groups such as phosphines and mercaptans.
+Projected annotations <b>ML2</b> are added in the same positions
+and according to the same rules as the <b>Don2</b> projected annotations.
+</p>
+<p>
+The <b>DonP</b> and <b>DonS</b> annotations are unique to the <tt>PPCH</tt> and
+<tt>PPCH_All</tt> schemes and further distinguish &pi; from non-&pi;
+donors (respectively).
+The <b>AccP</b> and <b>AccS</b> annotations are unique to the <tt>PPCH</tt> and
+<tt>PPCH_All</tt> schemes and further distinguish &pi; from non-&pi;
+acceptors (respectively).
+The <b>DonP</b>, <b>DonS</b>, <b>AccP</b> and <b>AccS</b> are retained
+for compatibility.  The <tt>Unified</tt> scheme achieves these distinctions
+with use of the <b>pi</b> annotation.  This annotation is used to indicate
+that any of <b>Acc</b>, <b>Acc2</b>, <b>Don</b>, <b>Don2</b>, <b>ML</b>
+or <b>ML2</b> belong to an atom in a
+&pi; system.  Thus <b>DonP</b> is equivalent to &quot;Don&amp;pi&quot; and
+<b>DonS</b> can be specified in a query with the expression
+&quot;Don&amp;!pi&quot;.
+</p>
+
+<a name="AnnotIon"></a>
+<h3>Ionic Groups</h3>
+
+<p>
+The following annotations are used for ionic atoms and groups:
+</p>
+<ol>
+<li><b>Ani</b> annotations are used on anionic heavy atoms.</li>
+<li><b>Cat</b> annotations are used on cationic heavy atoms.</li>
+<li><b>O2</b> annotations are used for bioisosteres of &minus;CO<sub>2</sub>.</li>
+<li><b>CN2</b> annotations are used for bioisosteres of &minus;CN<sub>2</sub>.</li>
+</ol>
+
+<p>
+The <b>Ani</b> annotation is assigned to heavy atoms with an excess of negative
+charge, including excess charge due to resonances (of certain groups).
+An atom with a formal negative charge not adjacent to an atom with a formal
+positive charge will be assigned an <b>Ani</b> annotation.
+Both oxygen atoms of [O&minus;]&minus;C=C&minus;C=O are also marked with
+<b>Ani</b>.
+
+Up to three anionic resonances between
+[N&minus;,S&minus;,O&minus;] and [=N,=S,=O] are taken
+into account in anionic carboxylates, (acyl) sulfonamides, muscimol,
+anionic imidazole, tetrazole etc, and
+
+up to four anionic {O,S} resonances in hydroxamic and
+nitrosohydroxylamine anions.
+</p>
+
+<p>
+The <b>Cat</b> annotation is assigned to heavy atoms with an excess of positive
+charge, including excess charge due to resonances (of certain groups).
+Generally, speaking an atom with a formal positive charge not adjacent to
+an atom with a formal negative charge will be assigned a <b>Cat</b> annotation.
+Care is taken to sum the charges in charge-separated ylides.
+NCN+ resonances are taken into account with both nitrogen atoms marked
+with a <b>Cat</b> annotation; for example, amidinium, imidazolium,
+4-amino pyridine and all 3 nitrogens in guanidinium.
+</p>
+
+<p>
+The <b>O2</b> annotation centroid is placed between certain pairs of
+1&minus;3 <b>Ani</b>
+{S,O,N} atoms and is intended to denote an anionic &minus;CO2 bioisostere.
+An <b>O2</b> centroid is placed between each pair of <b>Ani</b> oxygens, sulfurs
+and anionic divalent nitrogens (in any combination).  Thus, carboxylate
+is given one <b>O2</b> centroid while &minus;PO<sub>3</sub> is given three
+<b>O2</b> centroids (one between each pair of terminal Ani annotations).
+An exception is the tetrazole anion in which a single <b>O2</b> annotation is
+placed at the centroid of the four nitrogen atoms in the aromatic ring.
+</p>
+
+<p>
+The <b>CN2</b> annotation centroid is placed on the carbon atom of NCN+
+resonance structures and is intended to denote a cationic
+&minus;CN<sub>2</sub> bioisostere.  The carbon between the nitrogens in
+amidinium, guanidinium, 2-amino pyridinium, etc. are marked with
+<b>CN2</b> annotations.
+</p>
+
+<p>
+The <b>pi</b> annotation applies to the <b>Ani</b> and <b>Cat</b> annotations;
+that is, if the annotated chemical group is a &pi; group then the
+pi annotation will be added to the <b>Ani</b> or <b>Cat</b> annotations.
+For example, amidinium nitrogens are annotated with &quot;Cat&amp;pi&quot;.
+</p>
+
+<a name="AnnotAro"></a>
+<h3>Aromatic and &pi;-Rings</h3>
+
+<p>
+The following annotations are used for aromatic and &pi;-system rings:
+</p>
+<ol>
+<li><b>Aro</b> annotation centroids are used for aromatic and pseudo
+aromatic rings;</li>
+<li><b>PiR</b> annotation centroids are used for other &pi;-system rings;</li>
+<li><b>PiN</b> annotation centroid projections are used along the
+&pi;-system plane normal;</li>
+<li><b>Aro2</b> annotation centroid normals are used do annotate the
+direction of the normal to the &pi; system of Aro rings; (obsolete)</li>
+<li><b>HydP</b> annotation centroids are used for planar hydrophobic
+rings. (obsolete)</li>
+</ol>
+
+<p>
+The <b>Aro</b> annotation centroid is placed at the centroid of each
+aromatic ring (e.g. two centroids in naphthalene).  The definition of
+aromaticity depends on the particular scheme:
+</p>
+
+<ul>
+<li><tt>Unified</tt>
+The definition of aromaticity is generous (a Daylight-style definition) in
+which each ring is treated in isolation and a Hueckel 4n+2 rule is applied.
+C=O carbons count 0 electrons, otherwise C=R count as 1; N=X nitrogens count
+1 and &gt;N&minus; nitrogens and &minus;O&minus; oxygens count
+2 electrons.  Thus, the following are treated as (pseudo) aromatic and are
+given an <b>Aro</b> annotation centroid in the center of the ring:
+<p align="center">
+<img src="ph4_annot/aro_g1.jpg" alt="Aro 1" />
+<img src="ph4_annot/aro_g2.jpg" alt="Aro 2" />
+<img src="ph4_annot/aro_g3.jpg" alt="Aro 3" />
+<img src="ph4_annot/aro_g4.jpg" alt="Aro 4" />
+</p>
+</li>
+<li><tt>PCH</tt>, <tt>PCHD</tt>, <tt>PCH_All</tt>, <tt>CHD</tt>.
+The definition of aromaticity is strict - exocyclic double bonds destroy
+aromatic properties of the ring.  A Hueckel 4n+2 rule is applied and each
+&pi; system is treated in a fully consistent manner (no isolated tests).
+In the above examples, only the left-most two rings are considered aromatic
+and given an <b>Aro</b> centroid annotation at center of the ring.
+</li>
+<li><tt>PPCH</tt>, <tt>PCHD_All</tt>.
+There is no definition of aromaticity in these schemes.  The <b>HydP</b>
+centroid is used instead indicating a planar hydrophobic ring.
+</li>
+</ul>
+
+<p>
+The <b>PiR</b> annotation centroid is placed at the center of each
+non-aromatic (non-<b>Aro</b>) &pi;-system ring; that is, each ring in which
+all atoms are <i>sp</i>2 hybridized.  Thus, the following ring systems are
+given <b>PiR</b> annotations:
+</p>
+
+<p align="center">
+<img src="ph4_annot/pir_g1.jpg" alt="PiR 1" />
+<img src="ph4_annot/pir_g2.jpg" alt="PiR 2" />
+<img src="ph4_annot/pir_g3.jpg" alt="PiR 3" />
+</p>
+
+<p>
+General planar rings can be matched with a query expression of the
+form <tt>Aro&nbsp;|&nbsp;PiR</tt> (in the <tt>Unified</tt> scheme).
+In the <tt>PPCH</tt> and <tt>PPCHD_All</tt> schemes, a <b>HydP</b> annotation
+centroid will be used instead of the <b>PiR</b> centroid.
+In the other schemes, a <b>HydP</b> annotation (planar hydrophobic) centroid
+will be placed at the center of a &pi; ring if the majority of the ring atoms
+are considered hydrophobic.
+</p>
+
+<p>
+The <b>PiN</b> annotation projection is used (in the <tt>Unified</tt> scheme)
+to annotate the direction of each &pi;-system and aromatic ring.  Each such
+ring will generate two projected features along the normal to the
+&pi;-system ring, above and below the ring plane.  For example,
+</p>
+
+<p align="center">
+<img src="ph4_annot/pin_g1.png" alt="PiN 1" />
+</p>
+<p>
+is an <b>Aro</b> aromatic ring annotation with the two <b>PiN</b> features.
+In the <tt>PCHD</tt> scheme the <b>Aro2</b> centroid normal feature is
+used instead of the <b>PiN</b> annotation, but only for rings marked
+with <b>Aro</b>.
+</p>
+
+<a name="AnnotHyd"></a>
+<h3>Hydrophobes</h3>
+
+<p>
+The hydrophobic annotations of the various schemes differ markedly.  Names and
+concepts are used on a per-scheme basis.  Consequently, we will describe
+the hydrophobic treatments separately:
+</p>
+
+<ol>
+<li><tt>Unified</tt> annotates hydrophobic atoms with <b>HydA</b>
+and hydrophobic centroids with <b>Hyd</b>.
+</li>
+<li><tt>PPCH</tt> only uses <b>HydP</b> for planar hydrophobic
+centroids and <b>HydS</b> for non-planar hydrophobic centroids (no atoms).
+</li>
+<li><tt>PPCH_All</tt> uses <b>HydP</b> for planar hydrophobic
+atoms and <b>HydS</b> for non-planar hydrophobic atoms (no centroids).
+</li>
+<li><tt>PCH</tt>, <tt>PCHD</tt> and <tt>CHD</tt> use <b>HydA</b> for
+all hydrophobic centroids (no atoms).
+</li>
+<li><tt>PCH_all</tt> uses <b>HydA</b> for all hydrophobic atoms (no centroids).
+</li>
+</ol>
+
+<p>
+All of the schemes decide on hydrophobic annotations using the molecular
+graph topology alone - no 3D coordinates are used in the designation.  Thus,
+hydrophobic groups are determined by graph theoretic algorithms.
+</p>
+
+<p>
+The fundamental rules for deciding whether an atom is hydrophobic are encoded
+in the SVL function <tt>ph4_aHydrophobe</tt>.  A summary of these rules is:
+</p>
+
+<ol>
+<li>
+Nitro nitrogen atoms (not in nitrate anions) are hydrophobic.
+</li>
+<li>
+Divalent sulfur atoms with two heavy neighbors bonded only
+to carbon or sulfur are hydrophobic.
+</li>
+<li>Halogens are hydrophobic.
+</li>
+<li>
+Carbon atoms are hydrophobic except
+a)&nbsp;aliphatic carbons &pi; bonded to non-carbon atoms; or
+b)&nbsp;&pi; carbon atoms adjacent to univalent oxygen; or
+c)&nbsp;aromatic carbon adjacent to aromatic oxygen in 5-rings; or
+d)&nbsp;carbon atoms adjacent to two or more {N,O} atoms; or
+e)&nbsp;anionic carbons in <tt>c1cccc1</tt>;
+</li>
+</ol>
+
+<p>
+The assignment of hydrophobic annotations proceeds by first applying the
+preceding hydrophobic atom typing rules but leaving out fluorine atoms
+on the grounds that they are small and should not affect annotation
+placement.
+</p>
+
+<p>
+The <tt>Unified</tt> scheme provides an atom-centered hydrophobic
+annotation, <b>HydA</b> and a centroid hydrophobic feature <b>Hyd</b>.
+The <b>HydA</b> annotation is used for hydrophobic atoms that are deemed
+to have sufficiently high (potential) exposure to a potential receptor.  This
+means that, for example, <i>sp</i>3 carbons with 4 heavy neighbors are not
+marked (since they are buried) and aromatic carbons with two heavy neighbors
+and two <i>ortho</i> substituents are not annotated.
+The <b>Hyd</b> annotations are assigned by a procedure that groups connected
+hydrophobic atoms and assigns centroids weighted by an estimate of the
+likely exposed surface area of each hydrophobic atom; that is, the
+<b>Hyd</b> centroid will be placed closer to more exposed hydrophobic
+atoms in a hydrophobic group.
+</p>
+
+The following grouping algorithm is used:
+<ol>
+<li><b>Strip Fluorines</b>.
+Remove all fluorines that are not bonded to {H,F} from further consideration.
+Note that estimates of exposed surface area use a fluorine suppressed molecule.
+</li> 
+
+<li><b>Rings</b>.
+Find all 5-, 6-, 7-, and 8-member rings that are not composed of smaller rings.
+For each such ring, extract each contiguous
+
+stretch of hydrophobic atoms with at least three atoms that have a
+sufficiently high total exposed surface area,
+
+and generate a surface area weighted centroid annotation.
+Remove all annotated ring atoms from further consideration.
+</li>
+
+<li><b>Components</b>.
+Find all connected components (single-linkage clusters) among the remaining
+hydrophobes and remove from consideration those clusters with an
+exposed surface area sum small deemed too small (less than a -CH2- group).
+</li>
+
+<li><b>Small Components</b>.
+For the remaining hydrophobic components with three or fewer atoms, generate
+an exposed surface area weighted centroid annotation.
+</li>
+
+<li><b>Large Components</b>.
+Identify the center of the component graph and generate a weighted
+centroid at the center including its neighbors.  Remove the annotated
+atoms, splitting the component and apply the Small Components step and/or
+the Large Components step (recursively) to group the hydrophobes.
+</li>
+</ol>
+
+<p>
+For the <tt>PCH_All</tt> scheme, all hydrophobic atoms are given a <b>Hyd</b>
+annotation.
+For the <tt>PPCH_All</tt> scheme, all hydrophobic atoms are given a
+<b>HydP</b> annotation if they are planar or in a &pi; system and <b>HydS</b>
+otherwise. In either of the preceding two schemes, no centroids are used.
+
+The <tt>PCH</tt>, <tt>PCHD</tt>, <tt>CHD</tt> and <tt>PPCH</tt> schemes use
+only hydrophobic centroids to annotate hydrophobic regions.  Some of the
+centroids may involve a single atom (e.g. a terminal methyl group); however,
+such cases result from the output of partitioning/clustering algorithm used to
+determine the hydrophobic centroids, all of which are marked with <b>Hyd</b>
+annotations (<b>HydS</b> or <b>HydP</b> in the case of <tt>PPCH</tt>).
+</p>
+
+The following grouping algorithm is used:
+
+<ol>
+<li><b>Strip Fluorines</b>.
+Remove all fluorines that are not bonded to {H,F} from further consideration.
+</li>
+
+<li><b>Rings</b>.
+Find all 3-, 4-, 5-, 6-, 7-, and 8-member rings
+that are not composed of smaller rings and contain at least 60% hydrophobes.
+Generate an annotation point at the center of each such ring and remove
+the annotated ring atoms from further consideration. 
+</li>
+
+<li><b>Terminals</b>.
+Mark all remaining input atoms bonded to at least two other remaining input
+atoms. Generate an annotation point for each terminal input atom that is
+bonded to a marked atom and remove the terminal atom from further
+consideration. 
+</li>
+
+<li><b>Components</b>.
+Find all connected components (single-linkage clusters) among the remaining
+input atoms and generate an annotation point at the centroid of each component. 
+</li>
+</ol>
+
+<p>
+The <tt>PPCH</tt> uses a modified version of the above partition method
+which will assign <b>HydP</b> for planar groups and <b>HydS</b> for
+non-planar groups.
+</p>
+
+<h3><a name="AnnotLink"></a>Link (Scaffold Replacement)</h3>
+
+<p>
+<img src="ph4_annot/link_Ri.png" align="right" alt="Link R1" />
+Special Link pharmacophore query features are used for scaffold replacement.
+</p>
+<p>
+It is possible to use the Link and projected Link features manually via the 
+Pharmacophore Query Editor to design a scaffold replacement query, however a 
+new <a href="scaffold.htm">Scaffold Replacement</a>
+application was integrated in the 2009 version of MOE that was  designed to 
+simplify the process of defining the scaffold and R-groups and 
+generating the new optimised molecules. The Link scheme is used internally 
+by the new Scaffold Replacement application. 
+</p>
+<p>
+Link annotations denote points of substitution on a candidate scaffold molecule 
+as well as the locations of potential R-group substituents.
+</p>
+<p>
+There are three types of link annotation:
+</p>
+<ol>
+<li><b>Link</b>
+annotates a heavy atom substitution point with at least one (implicit) hydrogen.
+</li>
+
+<li><b>Link2</b>
+annotates projected locations of potential <i>sp</i><sup>2</sup> R-groups.
+</li>
+
+<li><b>Link3</b>
+annotates projected locations of potential <i>sp</i><sup>3</sup> R-groups.
+</li>
+</ol>
+
+<p>
+Both the heavy atom substitution point and the possible R-group location(s)
+are given annotation points. The idea is to provide functionality similar
+to Bartlett's CAVEAT methodology [Lauri&nbsp;1994].
+A typical scaffold annotation appears as depicted here.
+The yellow annotation spheres on the heavy atoms represent substitution
+points and the annotations projected from the heavy atoms denote the locations
+of potential R-group heavy atoms.
+</p>
+
+<p>
+A typical query will consist of (<b>Link</b>,<b>Link2</b>)
+or (<b>Link</b>,<b>Link3</b>) pairs located at positions intended to
+represent scaffold / R-group bonds, as illustrated in the example below.
+The <b>Link2</b> or <b>Link3</b> feature is placed on an existing
+R-group heavy atom and the <b>Link</b> feature is intended to match
+a heavy atom of a new scaffold to be found in a database of scaffold or
+linker molecules.  A matching scaffold is more likely to present the
+existing R-group in the proper direction.
+</p>
+
+<p><b>Note:</b> The middle image below is for purposes of
+illustration only.  It is not necessary to delete the original
+scaffold when using link annotations.
+</p>
+
+<p align="center">
+<img src="ph4_annot/link_query.png" alt="Link Query" />
+</p>
+
+<p>
+<b>Link3</b> query features are used when the R-group atom is
+<i>sp</i><sup>3</sup>.  <b>Link2</b> query features are used when the
+R-group atom is <i>sp</i><sup>2</sup>.  For example, when attempting to
+match a piperazine scaffold with an aromatic R-group, a <b>Link2</b> query
+feature should be used so that the piperazine nitrogen conjugated planar
+geometry is used (and not the nitrogen tetrahedral geometry).
+</p>
+
+<p>
+We now describe the annotations used to annotate scaffolds.
+Only {C,N,O,S,P} atoms with 1, 2 or 3 heavy neighbors and at least one
+(possibly implicit) hydrogen are candidates for <b>Link</b> features;
+other atoms are not considered as candidates.
+The following rules assume that the foregoing conditions are satisfied.
+Not all such atoms will be given <b>Link</b> annotations: substituents on
+freely rotatable single bonds will be avoided
+(e.g. <i>sp</i><sup>2</sup>-<i>sp</i><sup>3</sup> rotors).
+</p>
+
+<blockquote>
+<table cellpadding="3" border="0" align="center">
+<tr>
+<td align="center" valign="middle"><img src="ph4_annot/link_g1.jpg" alt="Link 1" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/link_g2.jpg" alt="Link 2" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/link_g3.jpg" alt="Link 3" /></td>
+</tr><tr>
+<td align="center">Q = any 1&deg;, X<sub><i>i</i></sub> = any</td>
+<td align="center">Q = 1&deg; {C,N+}, Y = 2&deg; {O,S,N-}</td>
+<td align="center">
+N = 2&deg; or 3&deg;, Q<sub>1</sub> = 4-coord, Q<sub>2</sub> = any
+</td>
+</tr>
+<tr>
+<td align="center" valign="middle"><img src="ph4_annot/link_g4.jpg" alt="Link 4" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/link_g16.jpg" alt="Link 5" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/link_g6.jpg" alt="Link 6" /></td>
+</tr><tr>
+<td align="center">Y &ne; 1&deg; Q = {OH, SH, NH<sub>2</sub>, PH<sub>2</sub>}</td>
+<td align="center">&nbsp;</td>
+<td align="center">
+Q = {C,N,P,S}, Q = 3&deg; <i>sp</i><sup>3</sup>,
+R<sub><i>i</i></sub> &ne; H
+</td>
+</tr>
+
+<tr>
+<td align="center" valign="middle"><img src="ph4_annot/link_g7.jpg" alt="Link 7" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/link_g8.jpg" alt="Link 8" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/link_g9.jpg" alt="Link 9" /></td>
+</tr><tr>
+<td align="center">Q = 2&deg; aromatic</td>
+<td align="center">Q = 2&deg; <i>sp</i><sup>2</sup></td>
+<td align="center">Q = 1&deg; <i>sp</i><sup>2</sup></td>
+</tr>
+<tr>
+<td align="center" valign="middle"><img src="ph4_annot/link_g10.jpg" alt="Link 10" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/link_g11.jpg" alt="Link 11" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/link_g12.jpg" alt="Link 12" /></td>
+</tr><tr>
+<td align="center">N = 2&deg; amide not in 3,4-ring</td>
+<td align="center">N = 1&deg; amide not in 3,4-ring</td>
+<td align="center">N = 2&deg; in NCN+ not in 3,4-ring</td>
+</tr>
+<tr>
+<td align="center" valign="middle"><img src="ph4_annot/link_g13.jpg" alt="Link 13" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/link_g14.jpg" alt="Link 14" /></td>
+<td align="center" valign="middle"><img src="ph4_annot/link_g15.jpg" alt="Link 15" /></td>
+</tr>
+<tr>
+<td align="center">N = 1&deg; in NCN+ not in 3,4-ring</td>
+<td align="center">O = 1&deg;</td>
+<td align="center">OH on Caro, X<sub><i>i</i></sub> = 2&deg;</td>
+</tr>
+<tr>
+<td align="center" valign="middle">&nbsp;</td>
+<td align="center" valign="middle"><img src="ph4_annot/link_g5.jpg" alt="Link 5" /></td>
+<td align="center" valign="middle">&nbsp;</td>
+</tr><tr>
+<td align="center">&nbsp;</td>
+<td align="center">
+Q = 2&deg; {C,N} <i>sp</i><sup>3</sup>, X<sub><i>i</i></sub> &ne; H
+</td>
+<td align="center">&nbsp;</td>
+</tr>
+</table>
+</blockquote>
+
+<p>
+Note that in most cases, <b>Link2</b> and <b>Link3</b> annotations are
+used for the projected annotations.  For 2&deg; nitrogen and carbon atoms,
+there is a distinction between <b>Link2</b> and <b>Link3</b> - <b>Link2</b>
+projections are in the potential &pi; system plane and <b>Link3</b>
+projections are in tetrahedral formation.
+Also, note that <i>cis</i> peptide formation is avoided.
+</p>
+
+<h2><a name="Exposure"></a>Solvent Exposure Filters</h2>
+
+<p> Projected annotations such as <b>Don2</b>, <b>Acc2</b>, <b>ML2</b>,
+<b>Link2</b> and <b>Link3</b> are located at potential heavy atom
+positions.  For example, <b>Don2</b> indicates a potential hydrogen bond
+partner heavy atoms.  Realistically, this partner atom cannot have too
+much overlap with any of the atoms of the molecule generating the
+projected annotation.  This condition depends on the particular
+conformation of a molecule and cannot be reliably predicted by
+topological means.  Consequently, a <i>solvent exposure test</i> must be
+applied to validate any hits resulting from the Pharmacophore Search.
+</p>
+
+<p>
+If a conformation hits a query, the Pharmacophore Search will apply
+a scheme-dependent test to verify that applicable projected features
+are not covered by other parts of the conformation (that would prevent
+the putative projection atom from occupying the intended position).
+The nature of the test depends on the particular scheme, but in general,
+it will ensure that no projected feature lies inside the hit conformation.
+For example, the <tt>PCH</tt> does not use projected features, so no
+test is applied whereas the <tt>PCHD</tt> does use projected features, but
+the exposure rules are different for Aro2 and Don2 projections.
+</p>
+
+<p> <b>Note:</b> The Pharmacophore Query Editor displays all projected
+annotation points, regardless their solvent exposure.  However, it does
+indicate the solvent exposure status of the displayed annotation points
+by their rendering mode: the annotation features that pass the solvent
+exposure test (and that will be considered by the Pharmacophore Search)
+are rendered as <i>small-sphere</i>.  The annotation features that do
+not pass the test (and that will be ignored by the Pharmacophore Search)
+are rendered as <i>point</i>.
+</p>
+
+<h2><a name="EHT"></a>The EHT Scheme</h2>
+
+The <tt>EHT</tt> scheme provides a more nuanced means of investigating
+non-bonded interactions than the <tt>Unified</tt> or other traditional
+alternatives.  These older methods use a SMARTS-pattern based atom/environment
+mapping approach similar to that used by classical force fields.  The
+<tt>EHT</tt> scheme replaces this with annotation points derived from 
+2D EHT calculations which provides both the location and interaction
+type along with
+a direct measure of the <i>H-bond interaction
+energies</i> (strengths) for each interacting atom pair.  This approach
+provides a better representation of the specific chemical environment
+of each ligand and can represent non-standard interactions not
+amenable to rule-based methods.
+
+The following steps are performed on the fly when using the <tt>EHT</tt>
+scheme:
+
+<ol>
+<li>Perform a 2D EHT calculation for the ligand molecule.
+<li>From <b>q<sub>&sigma;</sub></b>,
+<b>q<sub>&pi;</sub></b> and <b>b<sub>n</sub></b> calculate
+<b>&epsilon;<sub>don</sub></b> and
+<b>&epsilon;<sub>acc</sub></b> for each atom.
+<li>Use these atom-based energies to determine <b>E<sub>hb</sub></b> for
+each interaction.  These H-bond interaction energies can be compared
+to user-specified (or default) values when determining whether each
+interaction is considered a match.
+</ol>
+
+<h2><a name="Custom"></a>Custom Annotation Schemes</h2>
+
+<p>
+Each of pharmacophore annotation schemes is an SVL function that accepts
+a collection of atoms and generates a collection of annotation points.
+The Pharmacophore Applications do not contain any hard-coded assumptions
+about the nature of the annotation points; consequently, SVL programmers
+can freely create custom annotation schemes.
+
+There are several ways to customize or modify the annotation schemes:
+</p>
+
+<ol>
+<li><b>Modify the Atom Typing Functions</b>.
+All of the schemes rely, in one way or another, on specific SVL functions
+that detect hydrogen bond donors/acceptors, cation/anions, hydrophobes, etc.
+These functions are described in
+<a href="../moe/fcnref/ph4_tlst.htm">Pharmacophore Typing Functions</a>
+and their source code is in <tt>$MOE/lib/svl/ph4.svl/ph4type.svl</tt>.
+By modifying these functions all of the schemes can be globally customized
+(say, to allow nitro oxygen as a hydrogen bond acceptor).
+<b>Warning!</b> A change to the pharmacophore type functions will affect
+all of the schemes and some molecular descriptors.
+<b>Note!</b> Some schemes use private collections of rules for atom
+typing.
+</li>
+
+<li><b>Modify an Existing Scheme</b>.
+Some schemes have annotations that do not rely on the pharmacophore atom
+typing functions.  For example, <b>Link</b> annotations are encoded directly
+in the source code for the <tt>Unified</tt> scheme.  In these cases,
+the scheme source code must be modified in order to customize the scheme.
+The source code for the standard schemes is located in
+<tt>$MOE/lib/svl/ph4.svl</tt> in files that start with <tt>ph4s_</tt>.
+By modifying the scheme files directly, hydrophobe assignment or annotations
+unique to the scheme can be customized.
+<b>Warning!</b> A change to the standard schemes may result in non-standard
+or unintended behavior.
+</li>
+
+<li><b>Develop a New Scheme</b>.
+This is the most involved of the options.  A correctly implemented scheme
+must provide a number of functions that will be used by the Pharmacophore
+Applications.  These functions must conform to the conventions used by
+the other Pharmacophore Applications.  It is good practice to start with
+the source code for an existing scheme, such as <tt>Unified</tt> in
+<tt>$MOE/lib/svl/ph4.svl/ph4s_unified.svl</tt>, change its name and then
+change its code.  In this way, the standard behaviors can be preserved.
+</li>
+
+</ol>
+
+<h2><a name="SeeAlso"></a>See Also</h2>
+
+<a href="ph4_guide.htm">Introduction to Pharmacophores in MOE</a><br />
+<a href="../moe/fcnref/ph4_tlst.htm">Pharmacophore Typing Functions</a><br />
+<a href="../mdb/wash.htm">Washing Molecules</a>, 
+<a class="svl" href="../moe/fcnref/sdwash.htm#sdwash">sdwash</a><br />
+<a href="ph4_query.htm">Pharmacophore Query Editor</a><br />
+<a href="ph4_elu.htm">Pharmacophore Query Elucidator</a><br />
+<a href="ph4_search.htm">Pharmacophore Search</a><br />
+<a href="scaffold.htm">Scaffold Replacement</a><br />
+
+<h2><a name="Ref"></a>References</h2>
+
+<blockquote>
+<table cellpadding="5" border="0">
+<tr>
+<td valign="top">[Lauri&nbsp;1994]</td>
+<td valign="top">
+Lauri, G., Bartlett, P.A.;
+CAVEAT: A Program to Facilitate the Design of Organic Molecules;
+<i>J. Comp. Aided Mol. Des. 8</i> (<b>1994</b>) 51&ndash;66.
+</td>
+</tr>
+</table>
+</blockquote>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

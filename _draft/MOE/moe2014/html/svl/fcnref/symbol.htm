@@ -1,0 +1,522 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	symbol.htm
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions consts, dumpmodules, functions, globals, modules>
+<meta functions modenv, mod_find, mod_key, mod_file, mod_class, mod_title>
+<meta functions mod_autoimports, mod_exports, mod_imports, mod_svl>
+<meta functions mod_unresimports, mod_globals>
+<meta functions sym_autoimport, sym_value, sym_size, sym_type>
+<meta functions sym_file, sym_line, sym_modules>
+<meta functions sym_find, sym_find_c, sym_find_f, sym_find_g, sym_find_s>
+
+<meta SVL:syntax #set>
+
+<title>Symbol Table Functions</title>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    <a class="fcnlink" href="#set">#set</a> name value_tok
+
+    [x, val]              = <a class="fcnlink" href="#consts">consts</a>           pat_list
+    info                  = <a class="fcnlink" href="#dumpmodules">dumpmodules</a>      pat_list
+    [x, auto, line, file] = <a class="fcnlink" href="#functions">functions</a>        pat_list
+    [x, size, val]        = <a class="fcnlink" href="#globals">globals</a>          pat_list
+    symbol_toks           = <a class="fcnlink" href="#mod_autoimports">mod_autoimports</a>  mod_list
+    class_tok             = <a class="fcnlink" href="#mod_class">mod_class</a>        mod_list
+    symbol_toks           = <a class="fcnlink" href="#mod_exports">mod_exports</a>      mod_list
+    filename_tok          = <a class="fcnlink" href="#mod_file">mod_file</a>         mod_list
+    filename_tok          = <a class="fcnlink" href="#mod_find">mod_find</a>         pat_list
+    symbol_toks           = <a class="fcnlink" href="#mod_globals">mod_globals</a>      mod_list
+    symbol_toks           = <a class="fcnlink" href="#mod_imports">mod_imports</a>      mod_list
+    key                   = <a class="fcnlink" href="#mod_key">mod_key</a>          mod_list
+    symbol_toks           = <a class="fcnlink" href="#mod_svl">mod_svl</a>          mod_list
+    title_tok             = <a class="fcnlink" href="#mod_title">mod_title</a>        mod_list
+    symbol_toks           = <a class="fcnlink" href="#mod_unresimports">mod_unresimports</a> mod_list
+    env                   = <a class="fcnlink" href="#modenv">modenv</a>           title_tok
+    [x, file, title]      = <a class="fcnlink" href="#modules">modules</a>          pat_list
+    flag                  = <a class="fcnlink" href="#sym_autoimport">sym_autoimport</a>   sym_toks
+    filename_tok          = <a class="fcnlink" href="#sym_file">sym_file</a>         sym_toks
+    symbol_toks           = <a class="fcnlink" href="#sym_find">sym_find</a>         pat_list
+    symbol_toks           = <a class="fcnlink" href="#sym_find_c">sym_find_c</a>       pat_list
+    symbol_toks           = <a class="fcnlink" href="#sym_find_f">sym_find_f</a>       pat_list
+    symbol_toks           = <a class="fcnlink" href="#sym_find_g">sym_find_g</a>       pat_list
+    symbol_toks           = <a class="fcnlink" href="#sym_find_s">sym_find_s</a>       pat_list
+    linenumber            = <a class="fcnlink" href="#sym_line">sym_line</a>         sym_toks
+    module_files          = <a class="fcnlink" href="#sym_modules">sym_modules</a>      sym_toks
+    size                  = <a class="fcnlink" href="#sym_size">sym_size</a>         sym_toks
+    type_tok              = <a class="fcnlink" href="#sym_type">sym_type</a>         sym_toks
+    values                = <a class="fcnlink" href="#sym_value">sym_value</a>        sym_toks
+</pre>
+
+<h2>Description</h2>
+
+<P>
+SVL provides a number of <i>symbol table</i> functions that are used
+to inquire about constants, global, functions and their use in modules.
+SVL maintains two global tables: the symbol table and the module table.
+The symbol table contains the identifiers of all global constants,
+global variables and global functions.  The module table contains
+the names and titles of all loaded modules.
+
+<p><a name="set"></a></p>
+<p><hr noshade="noshade" /></p>
+
+<pre>
+<span class="fcndef">#set</span> name value_tok
+</pre>
+The <tt>#set</tt> line in an SVL source file is used to assign values
+to names in the module environment.  Values are supplied as tokens.
+The standard module environment variables are: 
+<dl>
+<dt><tt>title</tt>
+<dd>The title of the module.
+<dt><tt>version</tt>
+<dd>The version of the module.
+<dt><tt>class</tt>
+<dd>The class (or grouping name) of the module.
+<dt><tt>main</tt>
+<dd>The name of the "main" function in the module.  The "main" function
+is the function invoked with <tt>run</tt>.
+<dt><tt>filename</tt>
+<dd>The file name token of the SVL source file.
+</dl>
+
+
+<p><a name="consts"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[x, val] = <span class="fcndef">consts</span> pat_list
+</pre>
+The <tt>consts</tt> function is used to search the symbol table for
+global constants matching one of given set of patterns.
+The argument <tt>pat_list</tt> is a vector of tokens each of which
+specifies a pattern suitable for <tt>findmatch</tt>.
+For each global constant matching one of the patterns the constants
+name and value are returned: <tt>x</tt> is the vector matching
+constant names and <tt>val</tt> is the vector of values.
+If <tt>pat_list</tt> is null then all constants are returned.
+If the return value is not used then the information is printed on the CLI.
+<pre>
+    svl&gt; first consts ['PI','EPS_M']
+    ['PI','EPS_M']
+
+    svl&gt; second consts ['PI','EPS_M']
+    [3.14159,2.22045e-16]
+</pre>
+
+<p><a name="dumpmodules"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+info = <span class="fcndef">dumpmodules</span> pat_list
+</pre>
+The <tt>dumpmodules</tt> function is used to return information about
+loaded SVL modules.
+The argument <tt>pat_list</tt> is a vector of tokens or numbers
+each of which specifies a pattern suitable for <tt>findmatch</tt> or a
+module key.
+If <tt>pat_list</tt> is null then all modules are returned.
+If the return value is not used then the information is printed on the CLI.
+Information on each loaded module matching one of the patterns is
+returned in laminated form:
+<dl>
+<dt><tt>info(1)(i)</tt>
+<dd>The key number of the i'th returned module.
+<dt><tt>info(2)(i)</tt>
+<dd>The filename token of the module.
+<dt><tt>info(3)(i)</tt>
+<dd>The title token of the module (set in the file using <tt>#set title</tt>).
+<dt><tt>info(4)(i)</tt>
+<dd>The class token of the module (set in the file using <tt>#set class</tt>).
+<dt><tt>info(5)(i)</tt>
+<dd>The name tokens of all exported (defined) global functions.
+<dt><tt>info(6)(i)</tt>
+<dd>The name tokens of all explicitly imported global functions that are
+not built-in functions.
+<dt><tt>info(7)(i)</tt>
+<dd>The name tokens of all automatically imported global functions that are
+not built-in functions.
+<dt><tt>info(8)(i)</tt>
+<dd>The name tokens of all imported functions that are not defined in any
+loaded module.
+<dt><tt>info(9)(i)</tt>
+<dd>The name tokens of all imported global variables used in the module.
+</dl>
+
+<p><a name="functions"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[x, auto, line, file] = <span class="fcndef">functions</span> pat_list
+</pre>
+The <tt>functions</tt> function is used to search the symbol table for
+global functions matching one of given set of patterns.
+The argument <tt>pat_list</tt> is a vector of tokens each of which
+specifies a pattern suitable for <tt>findmatch</tt>.
+If <tt>pat_list</tt> is null then all global functions are returned.
+If the return value is not used then the information is printed on the CLI.
+Information on each global function matching one of the patterns is
+returned in laminated form:
+
+<dl>
+<dt><tt>x(i)</tt>
+<dd>The name token of the i'th returned global function.
+<dt><tt>auto(i)</tt>
+<dd>The autoimport flag; this is 1 if the function is automatically
+imported in every module and 0 otherwise.
+<dt><tt>line(i)</tt>
+<dd>The line number in the SVL source file on which the function is defined.
+This value is zero for built-in functions.
+<dt><tt>file(i)</tt>
+<dd>The name token of the SVL source file in which the function is defined.
+</dl>
+
+
+<p><a name="globals"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[x, size, val] = <span class="fcndef">globals</span> pat_list
+</pre>
+The <tt>globals</tt> function is used to search the symbol table for
+global variables matching one of given set of patterns.
+The argument <tt>pat_list</tt> is a vector of tokens each of which
+specifies a pattern suitable for <tt>findmatch</tt>.
+If <tt>pat_list</tt> is null then all global variables are returned.
+If the return value is not used then the information is printed on the CLI.
+Information on each global variables matching one of the patterns is
+returned in laminated form:
+
+<dl>
+<dt><tt>x(i)</tt>
+<dd>The name token of the i'th returned global variable.
+<dt><tt>size(i)</tt>
+<dd>The number of bytes required to store the variable's contents.
+<dt><tt>val(i)</tt>
+<dd>The value (contents) of the global variable.
+</dl>
+
+<p><a name="mod_autoimports"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+symbol_toks = <span class="fcndef">mod_autoimports</span> mod_list
+</pre>
+For each module specified in <tt>mod_list</tt> by key, filename token or
+title token, <tt>mod_autoimports</tt> returns a vector of tokens containing
+all of the automatically imported global functions used by the module.
+
+
+<p><a name="mod_class"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+class_tok = <span class="fcndef">mod_class</span> mod_list
+</pre>
+For each module specified in <tt>mod_list</tt> by key, filename token or
+title token, <tt>mod_class</tt> returns the class token of the module as
+set by the <tt>#set class</tt> directive in the SVL source file.
+
+
+<p><a name="mod_exports"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+symbol_toks = <span class="fcndef">mod_exports</span> mod_list
+</pre>
+For each module specified in <tt>mod_list</tt> by key, filename token or
+title token, <tt>mod_exports</tt> returns a vector of tokens containing
+all of the defined global functions in the module.
+
+
+<p><a name="mod_file"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+filename_tok = <span class="fcndef">mod_file</span> mod_list
+</pre>
+For each module specified in <tt>mod_list</tt> by key, filename token or
+title token, <tt>mod_file</tt> returns the filename token of the module.
+
+
+<p><a name="mod_find"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+filename_tok = <span class="fcndef">mod_find</span> pat_list
+</pre>
+The <tt>mod_find</tt> function returns a vector
+of module filename tokens that match
+a specified module pattern list.  The function returns an alphabetically
+sorted list of filenames of loaded module names whose keys are specified in
+<tt>pat_list</tt>, or whose filenames or titles match any of the patterns
+in <tt>pat_list</tt>. Each element of <tt>pat_list</tt> must be either an
+integer that will be compared with the module key or a token will be matched
+with the module filename or title. Unmatched keys or patterns will not
+generate errors.
+An empty <tt>pat_list</tt>, [], is equivalent to the "match-all" pattern '*',
+in which case the filenames of all loaded modules are returned. 
+
+
+<p><a name="mod_globals"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+symbol_toks = <span class="fcndef">mod_globals</span> mod_list
+</pre>
+For each module specified in <tt>mod_list</tt> by key, filename token or
+title token, <tt>mod_globals</tt> returns a vector of tokens containing
+all of the explicitly imported global variables used by the module.
+
+
+<p><a name="mod_imports"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+symbol_toks = <span class="fcndef">mod_imports</span> mod_list
+</pre>
+For each module specified in <tt>mod_list</tt> by key, filename token or
+title token, <tt>mod_imports</tt> returns a vector of tokens containing
+all of the explicitly imported non-built-in functions used by the module.
+
+
+<p><a name="mod_key"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+key = <span class="fcndef">mod_key</span> mod_list
+</pre>
+For each module specified in <tt>mod_list</tt> by key, filename token or
+title token, <tt>mod_key</tt> returns the key number of the module.
+
+
+<p><a name="mod_svl"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+symbol_toks = <span class="fcndef">mod_svl</span> mod_list
+</pre>
+For each module specified in <tt>mod_list</tt> by key, filename token or
+title token, <tt>mod_svl</tt> returns a vector of tokens containing
+all of the automatically imported built-in SVL functions used by the module.
+
+
+<p><a name="mod_title"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+title_tok = <span class="fcndef">mod_title</span> mod_list
+</pre>
+For each module specified in <tt>mod_list</tt> by key, filename token or
+title token, <tt>mod_title</tt> returns the title token of the module as
+set by the <tt>#set title</tt> directive in the SVL source file.
+
+
+<p><a name="mod_unresimports"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+symbol_toks = <span class="fcndef">mod_unresimports</span> mod_list
+</pre>
+For each module specified in <tt>mod_list</tt> by key, filename token or
+title token, <tt>mod_unresimports</tt> returns a vector of tokens containing
+all of the imported functions used by the module that are neither defined in
+any loaded module nor built-in.
+
+
+<p><a name="modenv"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+env = <span class="fcndef">modenv</span> []
+env = <span class="fcndef">modenv</span> title_tok
+</pre>
+
+The <tt>modenv</tt> function returns a tagged vector containing the
+module environment of the SVL module specified by <tt>title_tok</tt>.
+If <tt>title_tok</tt> is null then the module environment of the currently
+executing module is returned.  Otherwise <tt>title_tok</tt> must be the
+title of a module.
+
+
+<p><a name="modules"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[x, file, title] = <span class="fcndef">modules</span> pat_list
+</pre>
+The <tt>modules</tt> function is used to search the module table for
+module filenames or titles matching one of given set of patterns.
+The argument <tt>pat_list</tt> is a vector of tokens each of which
+specifies a pattern suitable for <tt>findmatch</tt>.
+If <tt>pat_list</tt> is null then all modules are returned.
+If the return value is not used then the information is printed on the CLI.
+Information on each module matching one of the patterns is
+returned in laminated form:
+
+<dl>
+<dt><tt>x(i)</tt>
+<dd>The key identifying the i'th returned module.
+<dt><tt>file(i)</tt>
+<dd>The filename token of the module.
+<dt><tt>title(i)</tt>
+<dd>The title token of the module.
+</dl>
+
+<p><a name="sym_autoimport"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+flag = <span class="fcndef">sym_autoimport</span> sym_toks
+</pre>
+For each symbol token in <tt>sym_toks</tt>, <tt>sym_autoimport</tt> returns
+1 if the symbol is to be automatically imported in all SVL modules and
+0 otherwise.
+
+
+<p><a name="sym_file"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+filename_tok = <span class="fcndef">sym_file</span> sym_toks
+</pre>
+For each symbol token in <tt>sym_toks</tt> that is the name of a global
+function, <tt>sym_file</tt> returns a token with the filename in which
+the function is defined.  The empty token is returned for SVL built-in
+functions, constants and global variables.
+
+<p><a name="sym_find_s"></a></p>
+<p><a name="sym_find_f"></a></p>
+<p><a name="sym_find_g"></a></p>
+<p><a name="sym_find_c"></a></p>
+<p><a name="sym_find"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+symbol_toks = <span class="fcndef">sym_find</span>   pat_list
+symbol_toks = <span class="fcndef">sym_find_c</span> pat_list
+symbol_toks = <span class="fcndef">sym_find_g</span> pat_list
+symbol_toks = <span class="fcndef">sym_find_f</span> pat_list
+symbol_toks = <span class="fcndef">sym_find_s</span> pat_list
+</pre>
+<tt>sym_find</tt> is used to search the SVL symbol table for symbols
+matching a given pattern in <tt>pat_list</tt>.  Each element of
+<tt>pat_list</tt> must be a pattern suitable for <tt>findmatch</tt>.
+The name token of each symbol matching a pattern in <tt>pat_list</tt>
+is returned.  If <tt>pat_list</tt> is null then all symbols are returned.
+The functions <tt>sym_find_c</tt>, <tt>sym_find_f</tt>, <tt>sym_find_g</tt>
+and <tt>sym_find_s</tt> are similar to <tt>sym_find</tt> except that the
+search is restricted to global constants, global functions,
+global variables and SVL built-in functions, respectively.
+
+
+<p><a name="sym_line"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+linenumber = <span class="fcndef">sym_line</span> sym_toks
+</pre>
+For each symbol token in <tt>sym_toks</tt> that is the name of a global
+function, <tt>sym_line</tt> returns the line number in the SVL source
+file in which the function is defined.  Zero is returned for SVL built-in
+functions, constants and global variables.
+
+
+<p><a name="sym_modules"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+module_files = <span class="fcndef">sym_modules</span> sym_toks
+</pre>
+For each symbol token in <tt>sym_toks</tt>, <tt>sym_modules</tt> returns
+a vector of module filenames of those modules that use the symbol.
+
+
+<p><a name="sym_size"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+flags = <span class="fcndef">sym_size</span> sym_toks
+</pre>
+For each symbol token in <tt>sym_toks</tt> that is the name of a global
+constant or global variable, <tt>sym_size</tt> returns the number of bytes
+used to store the associated value of the symbol and 0 otherwise.
+
+
+<p><a name="sym_type"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+flags = <span class="fcndef">sym_type</span> sym_toks
+</pre>
+For each symbol token in <tt>sym_toks</tt>, <tt>sym_type</tt> returns a
+token describing the type of symbol.  The returned token is
+<tt>'const'</tt> for constants, 
+<tt>'global'</tt> for global variables, 
+<tt>'function'</tt> for global functions, 
+<tt>'svlbif'</tt> for built-in functions.
+
+
+<p><a name="sym_value"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+flags = <span class="fcndef">sym_value</span> sym_toks
+</pre>
+For each symbol token in <tt>sym_toks</tt> that is the name of a global
+constant or global variable, <tt>sym_value</tt> returns the associated
+value of the symbol and null otherwise.
+
+
+
+<h2>See Also</h2>
+
+<p>
+<a class="svl" href="findetc.htm">findmatch</a>
+</p>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+
+

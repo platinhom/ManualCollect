@@ -1,0 +1,217 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+
+
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<title>Advanced SVL Topics</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<p>[<a href="gridman.htm">Previous Chapter</a>]
+[<a href="index.htm">Table of Contents</a>]</p>
+
+<ul>
+  <li><a href="#Functions with Fewer than Specified Number of Arguments">Functions with Fewer
+    than Specified Number of Arguments</a><ul>
+      <li><a href="#Binary Operators with Null or Unit Arguments">Binary Operators with Null or
+        Unit Arguments</a></li>
+    </ul>
+  </li>
+  <li><a href="#Tasks">Tasks</a></li>
+  <li><a href="#Performance Issues">Performance Issues</a><ul>
+      <li><a href="#Integer Arithmetic">Integer Arithmetic</a></li>
+      <li><a href="#Cost of Function Calls">Cost of Function Calls</a></li>
+      <li><a href="#Memory Allocation and Performance">Memory Allocation and Performance</a></li>
+      <li><a href="#Code Speed-Ups">Code Speed-Ups</a></li>
+    </ul>
+  </li>
+</ul>
+
+<h2><a name="Functions with Fewer than Specified Number of Arguments">Functions with Fewer
+than Specified Number of Arguments</a></h2>
+
+<p>When functions are called with fewer than the number of expected
+arguments, the shortfall is made up with nulls. In some cases, null
+arguments make perfect sense; in other cases, such as with <tt>div</tt> or
+<tt>get</tt>, they generate errors. Many functions merely return null when
+presented with a null argument.</p>
+
+<h3><a name="Binary Operators with Null or Unit Arguments">
+	    Binary Operators with Null or Unit Arguments</a></h3>
+
+Reduction is not well defined for unit or null
+arguments. Some binary operators cannot be called with fewer than two
+arguments. Others may behave quite sensibly. Consider, for instance, the
+arithmetic operations <tt>add</tt> and <tt>mul</tt>.  By definition,
+<tt>add v</tt> computes: 
+
+<p align="center">
+<img SRC="adv/Image86.gif" WIDTH="52" HEIGHT="46">
+</center></p>
+
+<p>When <tt>v</tt> is <tt>null</tt>, the sum sums to the additive
+identity, 0. Similarly, we have for <tt>mul</tt>, 
+
+<p><center>
+<img SRC="adv/Image87.gif" WIDTH="69" HEIGHT="30"> 
+</p></center>
+
+<p><tt>andE</tt> is another example of well-defined behavior. The following is
+necessarily true: </p>
+
+<pre>
+    (andE cat [a,b]) === (andE a and andE b)
+</pre>
+
+<p>If <tt>b</tt> is null, then <tt>andE b</tt> must evaluate to
+<tt>1</tt>, which determines the behavior of <tt>andE</tt> with a null
+argument. Similar reasoning may be applied to <tt>orE</tt>.</p>
+
+<h2><a name="Tasks">Tasks</a></h2>
+
+<p>SVL tasks can be created for executing individual functions and
+scripts, or for evaluating expressions. Tasks can also be created using
+forking routines. Task forking is needed, for example, when implementing
+monitoring routines or when running a task that must not fail but is
+required to perform operations that might.</p>
+
+<p>Tasks have associated environment variables which may be queried and set.</p>
+
+<h2><a name="Performance Issues">Performance Issues</a></h2>
+
+<h4><a name="Integer Arithmetic">Integer Arithmetic</a></h4>
+
+<p>Integer arithmetic (<tt>iadd</tt>, <tt>isub</tt>, <tt>imul</tt>) should
+only be used when space and memory are at a premium, and when the data are
+known to be integer (for instance, when the data are vector indices).
+Floating point arguments will be rounded before calculations are done.
+There is no integer divide.</p>
+
+<p>For more on numbers, see <a href="svlfund.htm">Numeric Data</a>.
+
+<h4><a name="Cost of Function Calls">Cost of Function Calls</a></h4>
+
+<p>Each function call has a significant overhead associated with it, in
+addition to its computing time. Thus, when the vectors to be manipulated
+are relatively short in length, it is the calling overhead which dominates
+the running time, whereas when the vectors are long, it is the actual
+computing time which dominates. So, if your vectors are short, it is
+particularly important to minimize the number of function calls so as to
+minimize the overhead. However, keeping the number of calls to a minimum
+is generally a good rule of thumb no matter what the length of the
+vector.</p>
+
+<h4><a name="Memory Allocation and Performance">Memory Allocation and Performance</a></h4>
+
+<p>Memory considerations become significant when handling large amounts of
+data. However, the limitations of memory capacity can be felt even when
+not manipulating long vectors. In general, memory requirements scale
+proportionally with the amount of parallelization achieved. This is
+because parallel processing distributes work over memory so that the
+product of the parallel running time and the amount of memory consumed are
+equal to the work complexity (sequential runtime). There is thus a
+tradeoff between speed and memory.  This suggests that unless you have a
+very large amount of memory indeed, you should not try to turn an
+<tt>0(n<sup>3</sup>)</tt>algorithm into one that is <tt>0(LOG n)</tt>.</p>
+
+<p>When vectors are so large that computational memory requirements exceed
+the capacity of the machine on which the computations are being run,
+one-line computations must be divided up over several lines of code. For
+example, in matrix multiplication, a loop could be used to step through
+each column or row of one of the matrices. Although in this manual we have
+frequently admonished against using loops for stepping through data in
+precisely this manner, this is an example of a case in which the use of a
+loop is justified. </p>
+
+<pre>
+    for i = 1, length m1 loop 
+	m(i) = add ( m1(i) * m2 );
+    endloop
+</pre>
+
+<p>This computation requires a chunk of memory whose size is the dimension of <tt>m1(i)</tt>
+times the dimensions of <tt>m2</tt>.</p>
+
+<p>In SVL, for purposes of thrift, memory allocation is delayed until absolutely necessary
+(this optimization has not yet been fully implemented); for example, copying a vector does
+not perform any allocation. Thus, </p>
+
+<pre>
+    a = igen 20;
+    b = a; 
+</pre>
+
+<p>results in both <tt>a</tt> and <tt>b</tt> pointing to the same
+location. As soon as any modification is done on a vector that is pointed
+to by more than one variable, new memory is allocated. (Although for now,
+some allocations are still performed even when memory is uniquely
+associated with one variable.)</p>
+
+<b>
+
+<p>Note:</b> This only applies to local vectors. Global vectors are always copied before
+modification.</p>
+
+<h4><a name="Code Speed-Ups">Code Speed-Ups</a></h4>
+
+<p>Here are some rules of thumb to use when coding in SVL for speed: 
+
+<ul>
+  <li>Use <tt>loop</tt> constructs when the complexity of calculation or
+  of memory use warrants it. Otherwise use <tt>app</tt> or <tt>apt</tt>.</li>
+
+  <tt><li>app</tt> and <tt>apt</tt> are faster than <tt>loop</tt>, but still
+  costly; keep use of these to a minimum.</li>
+
+  <tt><li>tr</tt> is a costly operation. In general, one use of <tt>tr</tt>
+  leads to another. If too many <tt>tr</tt> calls abound, you may be using
+  an inefficient vector structure in your calculations. Note that
+  <tt>tr</tt> is part of the <tt>apt</tt> operation.</li>
+
+  <li>It is faster to operate on flat vectors. In other words, avoid
+  deeply nested vectors.</li>
+
+  <li>It is faster to operate on long vectors. However, extremely long
+  vectors may be more efficient if processed in a loop in chunks.</li> 
+</ul>
+
+
+<p><a href="../../fcnindex.htm">Function Index</a></p>
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

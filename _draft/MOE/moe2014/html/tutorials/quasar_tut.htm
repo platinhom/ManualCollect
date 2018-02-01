@@ -1,0 +1,714 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	quasar_tut.htm		QSAR tutorial
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+
+<title>QSAR Tutorial</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<p>This tutorial has been broken down into the following steps:</p>
+<ol type="I">
+<li><a href="#I">Calculating Molecular Descriptors</a></li>
+<li><a href="#II">Fitting the Experimental Data</a></li>
+<li><a href="#III">Cross-Validating the Model</a></li>
+<li><a href="#IV">Performing Graphical Analysis</a></li>
+<li><a href="#V">Estimating the Predicted Activities for the Test Set</a></li>
+<li><a href="#VI">Pruning the Descriptors</a></li>
+<li><a href="#References">References</a></li>
+</ol>
+
+<p>The Quantitative Structure-Activity Relationship (QSAR) suite of
+applications in MOE is used to analyze experimental data and build
+numerical models of the data for prediction and interpretation purposes.
+Given a set of molecules whose activity in a particular experiment is
+known (referred to as a training set or learning set), a QSAR model
+correlates these activities with properties inherent to each molecule in
+the set. These properties are evaluated using molecular descriptors
+available in MOE.</p>
+
+<p>The particular example chosen for this exercise is the Selectivity
+Differences of Inhibitors Binding to Trypsin [Bohm, 1999; St&uuml;rzebecher,
+1991, 1993, 1995]. The entire training data set consists of 72 molecules
+derived from 3-amidinophenylalanine and the test set has 16 molecules
+similarly derived.  The molecules in the training set are aromatic
+and polar, and properties such as molar refractivity and the logarithm
+of the (octanol/water) partition coefficients (logP) are important in describing
+such systems.</p>
+
+
+<p>Molecular descriptors are calculated using
+<a href="../quasar/descr.htm">QuaSAR-Descriptor</a>.</p>
+ 
+<p>In this tutorial you will learn how to: </p>
+
+<ol>
+<li>Choose appropriate molecular descriptors, evaluate them for each
+molecule in the training set and store them in a database.</li>
+<li>Fit the experimental activity to these descriptors using a linear
+model.</li>
+<li>Cross-validate the fit and perform graphical analysis.</li>
+<li>Estimate the activities of a set of related molecules known as the
+test set.</li>
+<li>Prune a set of descriptors to obtain a more relevant descriptor set using
+QuaSAR-Contingency.</li>
+</ol>
+
+
+
+<h3>Conventions Used in This Tutorial</h3>
+
+<table>
+<tr>
+<td valign="top" bgcolor="#cccccc">MOE</td>
+<td valign="top">MOE Window</td>
+</tr>
+<tr>
+<td valign="top" bgcolor="#cccccc">SE</td>
+<td valign="top">Sequence Editor</td>
+</tr>
+<tr>
+<td valign="top" bgcolor="#cccccc">DBV</td>
+<td valign="top">Database Viewer</td>
+</tr>
+</table>
+
+
+
+<p>This tutorial assumes that you are using a three-button mouse.  For
+information on using a two-button mouse see
+<a href="../moe/gui/mouse.htm">Using the Mouse</a>.</p>
+
+<h3><a name="I">I. Calculating Molecular Descriptors</a></h3>
+
+<ol>
+<p><li>Open the database that contains the training data set with
+experimental activities:</p>
+
+<p>
+<span class="menu">MOE | File | Open | <tt>$MOE/sample/mol/trpstrain.mdb</tt></span></li></p>
+
+<p><li>Because this database is read-only, you must save it in your own
+working directory in order to run calculations on the data:</p>
+
+<p><span class="menu">DBV | File | Save As | <tt>your local
+directory/mytrpstrain.mdb</tt></span></p>
+
+
+<p>The training set consists of 71 molecules derived from
+3-amidinophenylalanine. It contains the structure and activity
+(pK<i><sub>i</sub></i>) of each molecule.  The <b>index</b> field is the
+molecule number given in the original paper.</p>
+
+<p>To get a better view of the molecules in the
+database, position the cursor over any one of the cells in the first
+column (called <b>molecule</b>), press the left mouse button and drag down
+(and slightly to the right) until you clearly see all the molecular
+drawings. You can rotate each drawing by dragging the middle mouse button
+over it.</p>
+<p style="text-align:center"><img src="quasar_tut/mytrpstrain.png" alt="trpstrain database" /></li></p>
+<p><li>The next step in a QSAR analysis is to choose suitable molecular
+descriptors:</p>
+
+<p><span class="menu">DBV | Compute | Descriptors | Calculate</span></p>
+
+<p>The Calculate Descriptor panel includes the list of all the descriptors
+available in MOE:</p>
+
+<p align="center">
+<img src="quasar_tut/descr.png" alt="Calculate Descriptor Panel" />
+</p>
+
+<p>The following 18 descriptors will be used: </p>
+
+<table cellspacing="0" border="0" cellpadding="10">
+	<tr>
+		<td valign="top" width="15%">
+			<tt>SlogP_VSA0<br />
+			SlogP_VSA1<br />
+			SlogP_VSA2<br />
+			SlogP_VSA3<br />
+			SlogP_VSA4<br />
+			SlogP_VSA5<br />
+			SlogP_VSA6<br />
+			SlogP_VSA7<br />
+			SlogP_VSA8<br />
+			SlogP_VSA9<br /></tt>
+		</td>
+		<td valign="top" width="15%">
+			<tt>SMR_VSA0<br />
+			SMR_VSA1<br />
+			SMR_VSA2<br />
+			SMR_VSA3<br />
+			SMR_VSA4<br />
+			SMR_VSA5<br />
+			SMR_VSA6<br />
+			SMR_VSA7<br /></tt>
+		</td>
+	</tr>
+</table>
+
+<p>An easy way to select the descriptors
+is to use the <b>Filter</b> at the bottom of the panel:</p>
+
+<ol type="a">
+<li>To select the first column of descriptors, enter <tt>sl</tt> in the
+Filter text field. Only descriptors with the characters
+<tt>sl</tt> are listed. Click on <tt>SlogP_VSA0</tt>, press <tt>Shift</tt>
+and click on <tt>SlogP_VSA9</tt>. Notice that the <b>Descriptors Selected</b>
+count now indicates that 10 descriptors are selected.
+
+<p align="center">
+<img src="quasar_tut/seldescr.png" alt="Selecting Descriptors" />
+</li></p>
+<li>Now enter <tt>sm</tt> in the Filter text field. Only descriptors with
+these characters appear. Select the series of <tt>SMR_VSA</tt> descriptors
+using <tt>Shift</tt> (the descriptors selected previously remain selected
+even though they are not currently visible in the panel).
+The panel should report that 18 descriptors have been selected. </li>
+</ol>
+
+
+<p>A brief description appears beside each descriptor. For more
+information, see <a href="../quasar/descr.htm">QuaSAR-Descriptors</a>.</p>
+
+</li>
+
+<p><li>Press <b>OK</b> once the set has been selected. 
+MOE will evaluate each descriptor for every molecule and store the values in 
+<tt>mytrpstrain.mdb</tt>. New fields are named based on the descriptor codes.
+</li></p>
+
+<p><li>Now suppose you need to add a new molecule (e.g. trypsin72
+which has a pK<i><sub>i</sub></i> of 3.0) to the database and would like
+to calculate its descriptors as well.  Fortunately, it is not necessary
+to re-select and re-evaluate all the descriptors in the Calculate Descriptors
+panel as was done previously. Instead, you can tell MOE to evaluate the
+descriptors for the new database entry only.</p>
+
+<ol type="a">
+<li>Open the molecule into MOE:
+
+<p><span class="menu">MOE | File | Open | <tt>$MOE/sample/mol/trypsin72.moe</tt>
+</span></li></p>
+
+<li>Add the new molecule to <tt>mytrypstrain.mdb</tt>:
+
+<p><span class="menu">DBV | Edit | New | Entry</span></p>
+
+<p>The Add Database Entry panel lists all the fields in the database.
+Next to the molecule field are buttons specifying which atoms to
+copy from MOE.  All other database fields have text fields where you
+can enter values.  To add the molecule to the database:</p>
+
+<ul>
+<li>Enter its <b>index</b> number: <tt>72</tt>.</li>
+<li>Enter its <b>pki-trypsin</b> value: <tt>3.0</tt>.</li>
+<li>Press <b>OK</b>. The molecule is appended to the database,
+becoming entry number 72. </li>
+<li>Remove the molecule from the MOE system using 
+<span class="menu">MOE | RHS | Close</span>.</li>
+</ul>
+</li>
+<li>Before calculating the descriptors for this molecule, you must
+first select the new entry in the database.  To do so, simply click on the
+entry number, i.e. number 72 in the left-most column.</li>
+
+
+<li>Reopen the Calculate Descriptor panel:
+
+<p><span class="menu">DBV | Compute | Descriptors | Calculate</span></p>
+
+<p>In the Calculate Descriptor panel:</p>
+<ul>
+<li>Turn on the <b>Selected Entries Only</b> option.
+<!--Make sure that entry 72 is still selected in the database.--></li>
+
+<li>Click on <b>Auto Select: Database Fields</b>. This
+automatically reselects (in the Calculate Descriptor panel) all
+of the descriptors that were previously calculated in the
+database. Notice that the line above the list
+states:  <b>Descriptors Selected: 18</b>.
+
+<p align="center">
+<img src="quasar_tut/reseldescr.png" alt="Reselecting Descriptors" />
+</p>
+
+</li>
+<li>Ensure that entry 72 is the only selected entry in the
+database and click <b>OK</b> to calculate the values for the
+descriptors of the new molecule.
+Then deselect entry 72:
+<p><span class="menu">DBV | Edit | Clear | Entry Selection</span></p>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+</ol>
+
+<h3><a name="II">II. Fitting the Experimental Data</a></h3>
+
+<p>The next step is to fit the dependent variable, <tt>pki-trypsin</tt>, to
+the independent variables, namely the molecular descriptors, in the database.
+</p>
+
+<ol>
+
+<li>Open the QuaSAR-Model panel:
+
+<p><span class="menu">DBV | Compute | Model | QSAR</span></p></li>
+
+<li>In the panel:
+
+<p align="center">
+<img src="quasar_tut/model.png" alt="Quasar-Model Panel" />
+</p>
+
+<ol type="a">
+<li>As <b>Activity Field</b>, select: <tt>pki-trypsin</tt>.
+</li>
+
+<li>Choose all the descriptors except for <tt>pki-trypsin</tt>
+and <tt>index</tt>.
+
+<p><span class="tip"><b>Tip</b></span> To select a range of
+descriptors in the list, click on the first item,
+<tt>SlogP_VSA0</tt>, scroll to the end of the list and press
+<tt>Shift</tt> as you click on the last item,
+<tt>SMR_VSA7</tt>.  This selects the entire range of
+descriptors.</p>
+</li>
+
+<li>Press <b>Fit</b> to perform the regression analysis.  The
+root mean square error (RMSE) and <i>r</i><sup>2</sup> (R2)
+values of the fit appear at the top of the QuaSAR-Model panel,
+in the Status field.</li>
+
+<li>Press <b>Report</b> to view a report on the calculations in
+the SVL Text Editor window.  You can save or discard the text
+file before closing the SVL Text Editor.</li>
+
+
+<li>Press <b>Save</b> in the QuaSAR-Model panel, and save the
+model as <tt>trypsinpred.fit</tt>.  This model will be used to
+predict the activities
+of the candidates in the test data set.
+
+<p>Do not close the QuaSAR-Model panel yet.</p>
+</li>
+</ol>
+</li>
+</ol>
+
+
+<h3><a name="III">III. Cross-Validating the Model</a></h3>
+
+<p>Having performed the QSAR fit, it is now useful to validate the model.
+The validation procedure evaluates the predicted activities and the residuals
+for the molecules in the training set.  In cross-validation, the model is
+tested using a LOO (<b>L</b>eave <b>O</b>ne <b>O</b>ut) method.</p>
+
+<ol>
+	<li>Click on <b>Validate</b> in the QuaSAR-Model panel. The QuaSAR Fit
+	Validation panel appears:
+	
+	<p align="center">
+	<img src="quasar_tut/fitvalid.png" alt="QuaSAR Fit Validation Panel" />
+	</p>
+	</li>
+	
+	<li>Select all the Model Validation and Cross Validation properties
+	and press <b>OK</b>. (You can now close the QuaSAR-Model panel.)</li>
+</ol>
+
+<p><b>$PRED</b>, <b>$RES</b> and <b>$Z-SCORE</b> fields are created in
+<tt>mytrpstrain.mdb</tt>.  They contain the predicted, residual and
+Z-score values respectively. The corresponding cross-validation
+properties, <b>$XPRED</b>, <b>$XRES</b> and <b>$XZ-SCORE</b>, are also
+calculated.  (More information is available in 
+<a href="../quasar/model.htm">QuaSAR-Model</a>.)</p>
+
+
+<h3><a name="IV">IV. Performing Graphical Analysis</a></h3>
+
+<p>A $Z-SCORE value of 2.5 and above can be considered to indicate molecules
+which are outliers to the fit.  These might require new descriptors. You
+can graphically display which molecules are outliers in the database using
+MOE's plotting facilities.</p>
+
+<ol>
+
+<li>To display the plot area in the bottom half of the Database Viewer: 
+
+<p>Toggle on
+<span class="menu">DBV | $Z-SCORE Field Popup | Plot</span> or
+the <b>Plot</b> icon in the database viewer footer.
+</p></li>
+
+<li>You can plot the $Z-SCORE values using the Plot Fields drop-down menu: 
+
+<p><span class="menu">Plot Fields | $Z-SCORE</span></p>
+</li>
+
+<li>Click the <b>Fit</b> button in the database viewer footer.
+This adjusts the display so that all data points are visible in the plot area.
+Each dot represents an entry (in other words, a molecule in the database).
+
+<p>As you can see, two dots exceed the 2.5 mark.  (Since there are only
+two outliers in this example, the choice of descriptors can be considered
+adequate.)  Position the cursor over a dot without moving for a second or so.
+The number of the entry will appear in yellow bubble help. Select the
+dots by clicking left in the vertical ruler at 2.5, and dragging upward.
+This causes a selection box to appear.  Releasing the mouse causes all
+points in the selection box to become selected.  (You can also drag a
+selection box in the plot area itself.)</p></li>
+
+
+<li> Another type of plot used to evaluate the data results is the XY plot.
+By plotting the actual activities (X-axis) versus the predicted activities
+(Y-axis), the predictive ability of the model can be assessed.
+To show the linear relationship between actual and predicted activities,
+open the correlation plot panel:
+<p><span class="menu">DBV | Compute | Analysis | Correlation Plot</span></p>
+
+<p>and select:</p>
+
+<ol type="a">
+<li>Select a field to plot in the X-axis:  choose pKi-trypsin</li>
+<li>Select a field to plot in the Y-axis:  choose $PRED</li>
+</ol>
+
+<p>The correlation plot will be generated as shown below:</p>
+
+<p align="center">
+<img src="quasar_tut/cplot.png" alt="Correlation Plot" />
+</p>
+
+<p> As shown in the above correlation plot, a linear relationship exists
+between the actual and predicted activities.  The correlation coefficient is 
+displayed in the top of the plot.  To further establish the reliability of 
+the QSAR model, apply the model
+against an external test set to evaluate the predictive ability.</p>
+</li>
+</ol>
+
+<h3><a name="V">V. Estimating the Predicted Activities for the Test Set</a>
+</h3>
+
+<p>Using the predicted fit <tt>trypsinpred.fit</tt> obtained above,
+you can now evaluate the predicted pK<i><sub>i</sub></i> values of the
+test set of molecules.  The test set includes 16 molecules derived from
+3-amidinophenylalanine.</p>
+
+<ol>
+
+<li class="nobr">
+<b>DBV | File | Open | <tt>$MOE/sample/mol/trpstest.mdb</tt></b></li>
+
+<li>Because this database is read-only, you must save it in your own
+working directory in order to run calculations on the data:
+
+<p><span class="menu">DBV | File | Save As | <tt>your local
+directory/mytrpstest.mdb</tt></span></p>
+</li>
+
+<li class="nobr"><b>DBV | Compute | Model | Evaluate</b>
+
+<p align="center">
+<img src="quasar_tut/modeval.png" alt="Model-Evaluate Panel" />
+</p>
+
+<ol type="a">
+<li>Enter the name of the <b>Model File</b>: <tt>trypsinpred.fit</tt>.
+</li>
+<li>Change the name of the database <b>Field</b> to:
+<tt>trypsin-pred</tt>.
+Predicted values will be written to this field.</li>
+<li>Press <b>OK</b> to evaluate the predicted values.</li>
+</ol>
+</li>
+<li>The residuals between the experimental pK<i><sub>i</sub></i> values
+(<tt>pki-trypsin</tt>) for the entries in the test set and the predicted
+values (<tt>trypsin-pred</tt>) can be calculated using the Molecular Database
+Calculator:
+
+<p><span class="menu">DBV | Compute | Calculator</span></p>
+
+<ol type="a">
+
+	<li>In the Available Fields area, double-click on <b>pki-trypsin</b>.
+	The selected field appears in the equation area on the left of the
+	panel.</li>
+	
+	<li>Click on the minus sign button.</li>
+	
+	<li>Double-click on the <b>trypsin-pred</b> field to insert it in the
+	equation.</li>
+	
+	<li>As <b>Destination Field</b>, change the default name to:
+	<b>trypsin-res</b>.
+	
+	<p align="center">
+	<img src="quasar_tut/dbcalc.png" alt="Database Calculator Panel" />
+	</p>
+	</li>
+	<li>Press Evaluate. The results, i.e. the residuals for the
+	test entries, are written in a new field called <b>trypsin-res</b>
+	in the <tt>mytrpstest.mdb</tt> database.</li>
+	
+	<li>Close the Molecular Database Calculator.</li>
+</ol>
+</li>
+<li>Scroll right, to the end of the database, to see the
+<b>trypsin-res</b> column. For the purposes of this exercise, let us
+suppose that a deviation of 1 pK<i><sub>i</sub></i> unit or more from
+the experimental value is a measure of a poor fit.  Examination of the
+residuals for the test molecules indicates that, for the molecules with
+index 77 and 86, the fit is inadequate.</li>
+
+</ol>
+
+<h3><a name="VI">VI. Pruning the Descriptors</a></h3>
+
+<p>It is sometimes necessary to prune a set of descriptors in order to
+select the optimum set for the molecules under consideration.</p>
+
+<ol>
+
+<li>Return to the database which contains the descriptor values for the
+training set of molecules:
+
+<p><span class="menu">DBV | File | Open | <tt>mytrypstrain.mdb</tt></span></p>
+<p>Alternatively, you can use the <b>DBV</b> menu in the top right of the Database 
+Viewer menu.</p>
+</li>
+<li>We will now use QuaSAR-Contingency, a statistical
+application in MOE designed to assist you in the selection of
+descriptors.  It will suggest a set of descriptors that best
+describes the molecules in the training set.
+
+<p><span class="menu">DBV | Compute | Descriptors | Contingency</span></p>
+
+<p align="center">
+<img src="quasar_tut/contingency.png" alt="QuaSAR-Contingency Panel" />
+</p>
+
+<ol type="a">
+<li>As <b>Activity Field</b>, select <tt>pki-trypsin</tt>. </li>
+
+<li>Select all the descriptors, from <tt>SlogP_VSA0</tt> to
+<tt>SMR_VSA7</tt>.</li>
+
+<li>Press <b>OK</b> to execute the contingency analysis. The results appear
+in an SVL Text Editor.</li>
+</ol>
+
+<p>Take some time to peruse the information given in this report.
+Recommended ranges for the indices appear at the top.  These ranges
+help you to determine which descriptors are good and which are not.
+The results for each descriptor field are summarized on a separate line.
+The columns are the descriptor number, the contingency coefficient <i>C</i>,
+Cramer's <i>V</i>, the uncertainty coefficient <i>U</i> and the correlation
+coefficient <i>R</i><sup>2</sup>.</p>
+
+<p>Suggested descriptors for QSAR can be found at the bottom of the report.
+You may obtain a better model using QuaSAR-Model with these suggested
+descriptors.</p>
+</li>
+<li>After performing the QSAR fit, it is recommended to analyze the results
+using <a href="../mdb/dbpca.htm">Principal Components Analysis (PCA)</a>.  
+The purpose of PCA is to reduce the
+dimensionality of set of molecular descriptors by linearly transforming
+the data.  PCA is capable of calculating a new, often smaller, table of
+descriptors that are uncorrelated and normalized (mean 0 and variance 1).</li>
+
+<li>Returning to <tt>mytrpstrain.mdb</tt>, choose:
+
+<p><span class="menu">DBV | Compute | Descriptors | Principal Components</span></p>
+
+<p align="center">
+<img src="quasar_tut/pca.png" alt="Principal Components Analysis Panel" />
+</p>
+
+<ol type="a">
+	<li>Select the molecular descriptors <tt>SlogP_VSA0</tt> to
+	<tt>SMR_VSA7</tt>.</li>
+	
+	<li>Set the <b>Minimum Variance</b> to 98. This is the minimum 
+	percentage
+	of variance to retain in the final set of principal components.  In
+	other words, MOE will retain the number of principal components
+	required to account for 98% of the variance.
+	
+	<p>Leaving the Component Limit at its default value of zero
+	means that there will be no limit to the number of components to
+	retain.</p>
+	</li>
+	<li>Press <b>Report</b>. The report appears in an
+	SVL Text Editor. Save the report as <tt>pca.rep</tt> using
+	<span class="nobr"><b>File | Save As</b></span> in the Text Editor. 
+	
+	<p>
+	The columns in the table are:</p>
+
+	<table cellpadding="2">
+		<tr>
+			<td valign="top">#PC</td>
+			<td valign="top">Principal component number.</td> 
+		</tr>
+		<tr>
+			<td valign="top">Deviation </td>
+			<td valign="top">Square root of the eigenvalue of the
+			covariance matrix
+			corresponding to the principal component, i.e. the
+			standard deviation of
+			the data along the principal component vector.</td>
+		</tr>
+		<tr>
+			<td valign="top">Condition </td>
+			<td valign="top">Condition number of the covariance
+			matrix if the
+			principal component list were terminated at that row.
+		</td>
+		</tr>
+	
+		<tr>
+			<td valign="top">%Var</td>
+			<td valign="top">Percentage of the variance
+			retained if the component list were truncated at that
+			row.</td>
+		</tr>
+	</table>
+	
+	<p>From the report, 12 principal components (PCA) are required to
+	capture
+	98% of the variance in the data set.  The actual mathematical form of
+	each of the principal components is also given in the report.</p>
+	</li>
+	<li>Press <b>OK</b> to perform the principal components analysis.</li>
+</ol>
+</li>
+<li>You can obtain a graphical display of the experimental activity of the
+inhibitors (<tt>pki-trypsin</tt>) with the first three principal components:
+
+<p><span class="menu">DBV | Compute | Analysis | 3D Plot</span></p>
+
+<ol type="a">
+	
+<li>Set the <b>X Axis</b> to <tt>PCA1</tt>, <b>Y</b> to <tt>PCA2</tt>
+and
+<b>Z</b> to <tt>PCA3</tt>.</li>
+
+<li>Toggle off Decorrelate Axes</li>
+<li>Set the <b>Activity</b> to <tt>pki-trypsin</tt>.
+<p class="floatright">
+<img src="quasar_tut/atom_render_panel.png" alt="RenderBallAndLine" />
+</p>
+</li>
+<li>Press <b>Plot</b>.  The 3D scatter plot in the MOE Window is a
+visual representation of the molecules as described by the three
+selected Principal Components (PCA1, PCA2, PCA3).  Each point in the MOE Window
+corresponds to a molecule and is colored according to the molecule's
+pK<i><sub>i</sub></i> value.  Leave the 3D Plot window open.</li>
+
+<li>Render atoms in ball-and-line with
+<span class="menu">MOE | Render | Atoms</span>
+
+<p align="center">
+<img src="quasar_tut/3dplot.png" alt="Principal Components" />
+</p>
+</li>
+
+<li>As long as the 3D Plot window has been left open, selecting the points
+in the main MOE window will select the entry it represents in the Database
+Viewer.  Additionally, clicking Browse in the 3D Plot panel will launch the 
+Database Browser showing a 2D depiction of the currently selected molecule.
+Also notice that labelling the activity value is written into the plot atom's
+partial charge, which can be shown as a label from the 
+<span class="menu">MOE | Render | Atoms</span> panel.
+</li>
+
+</ol>
+</li>
+
+</ol>
+
+<h2><a name="References">VII. References</a></h2>
+
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="top">[Bohm&nbsp;1999]</td>
+<td valign="top">
+Bohm, M., St&uuml;rzebecher, J., Klebe, G.; Three-Dimensional Quantitative
+Structure-Activity Relationship Analyses Using Comparative Molecular Field
+Analysis and Comparative Molecular Similarity Indices Analysis to
+Elucidate Selectivity Differences of Inhibitors Binding to Trypsin,
+Thrombin and Factor-Xa; <i>J. Med. Chem.</i> <i>42</i> (<b>1999</b>)
+458&ndash;477.</td>
+</tr>
+<tr>
+<td valign="top">[St&uuml;rzebecher&nbsp;1995]</td>
+<td valign="top">
+St&uuml;rzebecher, J., Prasa, D., Wikst&ouml;m, P., Vieweg H;
+Structure-Activity Relationships of Inhibitors Derived from
+3-Amidinophenylalanine; <i>J. Enzyme Inhib.</i> <i>9</i> (<b>1995</b>)
+87&ndash;99.</td>
+</tr>
+<tr>
+<td valign="top">[St&uuml;rzebecher&nbsp;1993]</td>
+<td valign="top">
+St&uuml;rzebecher, J., Vieweg, H., Wikst&ouml;m, P. WO 94/18185 (1993).</td>
+</tr>
+<tr>
+<td valign="top">[St&uuml;rzebecher&nbsp;1991]</td>
+<td valign="top">
+St&uuml;rzebecher, J., Vieweg, H., Wikst&ouml;m, P. WO 92/08709 (1991).</td>
+</tr>
+</table>
+
+<h2>See Also</h2>
+
+<a href="../moe/gui/mainwin.htm">MOE Window</a><br />
+<a href="../mdb/db.htm">Database Viewer</a><br />
+<a href="../quasar/qsar.htm">QuaSAR Overview</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html xmlns:MadCap="http://www.madcapsoftware.com/Schemas/MadCap.xsd" lang="en-US" xml:lang="en-US" data-mc-search-type="Stem" data-mc-help-system-file-name="Documentation.xml" data-mc-path-to-help-system="../" data-mc-target-type="WebHelp2" data-mc-runtime-file-type="Topic" data-mc-preload-images="false" data-mc-in-preview-mode="false" data-mc-toc-path="Command References|MacroModel Command Reference|MacroModel Operation Codes|Molecular Dynamics and Monte Carlo Simulation Opcodes">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link href="../Skins/Default/Stylesheets/Slideshow.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/TextEffects.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Topic.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Components/Styles.css" rel="stylesheet" type="text/css" data-mc-generated="True" /><title>Molecular Dynamics and Monte Carlo Simulation Opcodes</title>
+        <link href="../Resources/TableStyles/NoRules.css" rel="stylesheet" data-mc-stylesheet-type="table" />
+        <link href="../Resources/Stylesheets/docs.css" rel="stylesheet" />
+        <script src="../Resources/Scripts/custom.modernizr.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/jquery.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.config.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/foundation.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/plugins.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/MadCapAll.js" type="text/javascript">
+        </script>
+    </head>
+    <body><a name="aanchor4583"></a>
+        <MadCap:concept term="Command Reference" /><a name="aanchor4584"></a>
+        <MadCap:concept term="MacroModel" /><a name="opcodes_509685220_740619"></a>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="opcodes_csearch.htm">Conformational Searching Opcodes</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="macromodel_command_referenceTOC.htm">MacroModel Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="opcodes_fep.htm">Free-Energy Perturbation Opcodes</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+        <h1 class="Title">Molecular Dynamics and Monte Carlo Simulation Opcodes</h1>
+        <p>The opcodes in this section are linked below:</p>
+        <p>
+        </p>
+        <h2 class="Opcode"><a name="opcodes_509685220_740621"></a><code class="Courier"><a name="opcodes_509685220_mdyn">MDYN</a></code>  — Molecular DYNamics</h2>
+        <p>Carry out molecular dynamics. Structures must be fully minimized before molecular dynamics is initiated and initial conditions (temperature, time step, and total time) must be selected. Temperature maintenance with a constant temperature bath is recommended. If too high a temperature or too large a time step is selected, the structure will eventually gain too much kinetic energy and blow up (program automatically aborts if the kinetic energy/atom exceeds 100 kJ/mol). The structure may also blow up if it is not sufficiently minimized and energy is added (e.g., <span class="OpcodeLink"><a href="#opcodes_509685220_mdit" class="selected">MDIT</a></span>). If this occurs, reduce the time step, turn on SHAKE (arg 2) and try again.</p>
+        <p>During the run, average temperatures (both over the most recent 0.5 ps and over the entire simulation so far), the instantaneous total energy (potential plus kinetic energy) and the average enthalpy over the entire simulation (taken as the average steric energy) are written to the log file. If you choose the full printing option (arg1=2), the information is written to the <code>.mmo</code> file as well. If you are using constant energy molecular dynamics (no temperature control), the energy may change over the course of the simulation: if the temperature listed after 0.5 ps or so is more than 5% too high, then it is likely that the starting geometry was not completely minimized or that a lower energy nearby minimum has been found. </p>
+        <p>If you are not using temperature control and wish to readjust the temperature, stop the batch job and set the desired temperature with arg 7. Start the run again and the temperature will adjust itself over the first several ps.</p>
+        <p>It is best to do the simulation in stages (e.g., to begin by equilibrating the system prior the actual run) having a <code>MDYN</code> command for each stage. If the <span class="OpcodeLink"><a href="#opcodes_509685220_mdre" class="selected">MDRE</a></span> (reset) command is not used, the run will continue from the previous end point. Equilibration runs are suggested for good thermodynamics especially if there is no reason to believe that the starting structure is the fully minimized global minimum. We suggest at least 5-50 ps of equilibration before data collection for all molecular dynamics operations other than conformation searching where equilibration is unnecessary. Experience shows that ca .2-.5 times the number of heavy atoms gives a reasonable equilibration time in picoseconds.</p>
+        <p>The time step (in femtoseconds (Default = 1.5 fs), arg5) is the time interval of each step of the molecular dynamics run. Energy stability is best at or below 1.0 fs but time steps up to 2.5 fs may be used to reduce the overall time required for the simulation. If too large a time step is used, the structure will gain energy each step and eventually blow up (simulation will abort). In general, higher temperatures (kinetic energy) require smaller timesteps. If mediocre energy stability is acceptable (e.g., for local conformation searching), then an initial temperature of 300-400 K with a timestep of 1.7-2.0 fs provides a good compromise of speed and stability if SHAKE (constrains H bond lengths) is used. If precise energies are important, a timestep of 1.0 fs with temperature control (see arg 7), or a timestep of 1.5 fs with SHAKE (arg 2) and temperature control (arg 7) is recommended. Molecules with explicit hydrogens (e.g., when using MM2) may require a smaller timestep and/or use of SHAKE (see arg 2) to constrain bonds to hydrogen.</p>
+        <p>At the end of each <code>MDYN</code> run, the final structure must be written to the output file using the <span class="OpcodeLink"><a href="opcodes_file.htm#opcodes_509685220_writ">WRIT</a></span> command, otherwise no structure will be saved in the output file (unless <span class="OpcodeLink"><a href="#opcodes_509685220_mdsa" class="selected">MDSA</a></span> is used). It is often useful to save final velocities using the <span class="OpcodeLink"><a href="#opcodes_509685220_mdve" class="selected">MDVE</a></span> command so that subsequent runs can start with equilibrated structure (read the final structure and the corresponding velocity file for the next run). Multiple <code>MDYN</code> commands within the same MacroModel run need not be accompanied with <span class="OpcodeLink"><a href="opcodes_file.htm#opcodes_509685220_writ">WRIT</a></span> or <span class="OpcodeLink"><a href="#opcodes_509685220_mdve" class="selected">MDVE</a></span> commands.</p>
+        <p><span class="OpcodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_debg">DEBG</a></span><code> 1</code> gives energy output to the log file ten times as often as it otherwise would. </p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Extent of listing</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">No listing to <code>.mmo</code> file. Summary of results in <code>.log</code> file (Default).</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Initial and final potential and kinetic energy, results of distance and angle monitoring, average enthalpy &lt;H&gt;.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">2</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Potential and kinetic energy results of distance and angle monitoring for each 10 timesteps.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg2</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">SHAKE protocol</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">SHAKE is taken from Ryckaert <a class="Reference_Number MCXref xref xrefReference_Number" href="mmod_references.htm#mmod_references_3670527510_741550">[<span style="color: #0e6895;" class="mcFormatColor">42</span>]</a>. We do not recommend using SHAKE in <span class="OpcodeLink"><a href="#opcodes_509685220_mcsd" class="selected">MCSD</a></span> runs, as it can result in less than optimal temperature control.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">SHAKE inoperative (default).</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Bonds to H constrained.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">2</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">All bond lengths constrained.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">SHAKE cannot be used with stretch-bend potentials, which will be turned off automatically whenever SHAKE is activated.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg3</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Molecular or stochastic dynamics selection</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Molecular dynamics (default).</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Stochastic dynamics. Temperature control is an integral part of stochastic dynamics and a nonzero temperature must supplied in arg7. With stochastic dynamics, a timestep of no more than 1.5 fs and SHAKE is recommended. Generates the canonical (constant-temperature) ensemble.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">
+                    </p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Total translational and rotational momentum is reset (zeroed out) by default when ordinary molecular dynamics is run, but not when stochastic dynamics is run. This behavior can be overridden using the <span class="OpcodeLink"><a href="#opcodes_509685220_mdmt" class="selected">MDMT</a></span> command.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg4</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Frequency of data collection </p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Used to determine the time interval for computation of average enthalpy.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Default: 25&#160;fs, but 5&#160;fs for runs of less than 10&#160;ps; increased for runs of more than 1000&#160;ps.</p>
+                </td>
+            </tr>
+        </table>
+        <p class="ArgValue"><i>n</i><i>n</i> fs</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Dynamics time step in femtoseconds (default 1.5 fs)</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg6</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Total time of dynamics run</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Default: 1.0 ps.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&gt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Interpreted as ps.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&lt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Run 100 times the number of ps entered.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg7</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Temperature (K)</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">For constant temperature dynamics. Temperature is maintained by a thermal bath <a class="Reference_Number MCXref xref xrefReference_Number" href="mmod_references.htm#mmod_references_3670527510_744759">[<span style="color: #0e6895;" class="mcFormatColor">43</span>]</a> with molecular dynamics. Temperature control is an integral part of stochastic dynamics <a class="Reference_Number MCXref xref xrefReference_Number" href="mmod_references.htm#mmod_references_3670527510_741564">[<span style="color: #0e6895;" class="mcFormatColor">45</span>]</a>. A temperature is optional in molecular dynamics but necessary in stochastic dynamics. If no temperature is specified in molecular dynamics, then the simulation will be at constant energy rather than constant temperature. Constant temperature dynamics is recommended for most dynamics simulations. This argument is also used for the starting temperature in techniques in which the temperature is not held constant.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg8</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Bath time constant</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">For molecular dynamics, the default is 0.2 ps and represents a thermal bath time constant. For stochastic dynamics, the frictional coefficient gamma is equal to 1/(2tau).</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740670"></a><code class="Courier"><a name="opcodes_509685220_mdsa">MDSA</a></code>  — Molecular Dynamics structure SAmpling</h2>
+        <p>Also used to specify structure sampling for Monte Carlo procedures.</p>
+        <p>Sampling of structures during molecular dynamics or Monte Carlo run by time. <code>MDSA</code> commands must come before the <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span>, <span class="OpcodeLink"><a href="#opcodes_509685220_mcsd" class="selected">MCSD</a></span> or <span class="OpcodeLink"><a href="opcodes_mc.htm#opcodes_509685220_mclo">MCLO</a></span> command from which the samples are to be taken.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Total number of structures to be sampled</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">This number of structures will be written to the output structure file over the course of the run. Default: sampling will be disabled, unless arg5 is specified.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg2</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Frequency of importance-sampling population and statistics reporting</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Number of times during the run importance-sampling populations and overall statistics will be printed to the log file. </p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">No reporting.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&lt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Print this information is printed each time a dynamics summary line is printed to the log file.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg3</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Frequency of importance-sampling transition reporting</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Number of times during the run importance-sampling transition statistics will be printed to the log file</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">No reporting.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&lt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Print this information is printed each time a dynamics summary line is printed to the log file.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg4</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Frequency of monitoring-statistics reporting</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Number of times during the run monitoring statistics (e.g., <span class="OpcodeLink"><a href="#opcodes_509685220_mhbd" class="selected">MHBD</a></span>) will be printed to the log file. For all-degrees-of-freedom Monte Carlo (<span class="OpcodeLink"><a href="#opcodes_509685220_zmat" class="selected">ZMAT</a></span>), also controls output of additional statistics, such as acceptance ratio.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">No reporting.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&lt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Print this information is printed each time a dynamics summary line is printed to the log file.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Time interval for writing of structure samples</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Ignore—use arg1, if nonzero.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&gt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Time interval in ps.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg6</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Time interval for writing summary lines to log file</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Program chooses a “reasonable” value.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&gt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Time interval in ps.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg7</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Control writing of output structure file at the start of each MDYN run</p>
+                </td>
+            </tr>
+        </table>
+        <p>Initially, MacroModel is set to not clear the output structure file at the start of each <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> run. If arg7 of <code>MDSA</code> is set to a value greater than zero, the default behavior is turned off and the output structure file is wiped clean at the start of each subsequent <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> run. Setting arg7 of <code>MDSA</code> to a value less than zero “switches off” the effect of having set arg7 to a value greater than zero in a previous <code>MDSA</code> line in the command file. </p>
+        <p>If arg7 is set to zero, then the currently set <code>MDSA</code> behavior will be used. For example, if arg7 had been set to a value greater than zero at an earlier point in the <code>.com</code> file, setting arg7 to zero in subsequent line would cause the previously set behavior (wipe the output structure file) to continue. On the other hand, if arg7 had been set to a value less than zero at an earlier point in the <code>.com</code> file, setting arg7 to zero in subsequent line would cause the previously set behavior (do not wipe the output structure file) to continue.</p>
+        <p>If the first <code>MDSA</code> line in the <code>.com</code> file is set to 0, then the previously set behavior (MacroModel’s default behavior) of not wiping the output structure file would be used.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&gt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Clean out the output structure file at the start of each <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> run after this line in the <code>.com</code> file.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&lt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Do not wipe the output structure file clean at the start of each <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> run after this line in the <code>.com</code> file.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Do not change the previously set <code>MDSA</code> arg7 behavior.</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740714"></a><code class="Courier"><a name="opcodes_509685220_mdmt">MDMT</a></code> — Molecular Dynamics MomenTum reset</h2>
+        <p>Used to control translational and rotational (angular) momentum which will be periodically (0.1 ps by default) reset to zero. <code>MDMT</code> is operational by default (i.e., <code>MDMT</code> is unnecessary unless it has previously been turned off), and its normal mode is constraint of the total molecular system to have zero translational momentum.</p>
+        <p class="Note" data-mc-autonum="&lt;b&gt;Note:&lt;/b&gt; "><span class="autonumber"><span><b>Note:</b> <![CDATA[ ]]></span></span>Structures viewed graphically will not appear to translate or rotate even if momentum is not zeroed because they are translated/rotated to the original position and overall orientation before writing to any output file.</p>
+        <p>The frequency of momentum zeroing is set by arg 5.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Choice of momentum elements to be reset</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">No momentum resetting. This is the default for stochastic dynamics.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Set total translational momentum to zero.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">2</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Set total translational and rotational momentum to zero. This is the default for molecular dynamics.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Frequency of momentum resetting </p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue"> <![CDATA[ ]]></p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Default: 0.1&#160;ps.</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740724"></a><code class="Courier"><a name="opcodes_509685220_mdar">MDAR</a></code> — Molecular Dynamics ARea monitoring</h2>
+        <p>Atomic area monitoring during the molecular dynamics run. Output consists of histogram-like compilations of individual atomic areas and the averages. The output will be written to the <code>mmo</code> output file. If no probe radius is specified, then the areas will reflect the van der Waals surface areas for the atoms specified. If all atoms are to have the same probe radius, use <code>MDAR</code> commands loaded with four atoms at a time using args1-4.</p>
+        <p>Data is accumulated every 10 time steps throughout the simulation and also when the structure is sampled. <span class="OpcodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_debg">DEBG</a></span> switch 1 lists each value to the <code>.log</code> file. A maximum of 250 atoms may be monitored simultaneously.</p>
+        <p>This command must precede the <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> command to be monitored.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1-4</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Atom numbers for area monitoring</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Probe radius (Default: 0)</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740733"></a><code class="Courier"><a name="opcodes_509685220_mdap">MDAP</a></code> — Molecular Dynamics Atom Position monitoring</h2>
+        <p>Atom Position monitoring during the molecular dynamics run. Output consists of average rms deviation (Å) from original position. The output is written to the log and <code>.mmo</code> output file. </p>
+        <p>Data is accumulated every 10 time steps throughout the simulation and also when the structure is sampled. <span class="OpcodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_debg">DEBG</a></span> switch 1 lists each value to the <code>.log</code> file. A maximum of 250 atoms may be monitored simultaneously.</p>
+        <p class="Note" data-mc-autonum="&lt;b&gt;Note:&lt;/b&gt; "><span class="autonumber"><span><b>Note:</b> <![CDATA[ ]]></span></span>This command must precede the <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> command to be monitored.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1-4</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Atom numbers for position monitoring</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740750"></a><code class="Courier"><a name="opcodes_509685220_mddi">MDDI</a></code> — Molecular Dynamics DIstance monitoring</h2>
+        <p>Distance monitoring during a molecular dynamics run. Output consists of histogram-like compilations of internuclear distances/frequencies and the average distance. Histograms have 100 bins covering the range of arg6 to arg6+arg5*100. The default range is 0–10&#160;Å in 0.1&#160;Å increments. The output is written to the <code>.mmo</code> output file.</p>
+        <p>Data is accumulated every 10 time steps throughout the simulation and also when the structure is sampled. <span class="OpcodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_debg">DEBG</a></span><code> 1</code> lists each value to the log file. A maximum of 100 distances may be monitored simultaneously.</p>
+        <p>This command must precede the <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> command for monitoring to take place.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">First atom of pair</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">No distances monitored.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&gt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">First atom of pair.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg2</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Second atom of pair</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Bin width for histograms</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Width of bins for distance monitoring in angstroms. The default value is 0.1&#160;Å, and the minimum value is 0.01&#160;Å.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Use the default value of 0.1&#160;Å.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&gt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Use this value.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg6</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Lower limit of histogram range</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Smallest distance value recorded in the histogram, in angstroms. Default: 0&#160;Å.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&gt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Use this value.</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740770"></a><code class="Courier"><a name="opcodes_509685220_mdba">MDBA</a></code> — Molecular Dynamics Bond Angle monitoring</h2>
+        <p>Bond Angle monitoring during the molecular dynamics run. Output consists of histogram-like compilations of angles/frequencies and the average angle. Default resolution for the histograms is 5 degrees (see arg5). The output will be written to the <code>.mmo</code> output file.</p>
+        <p>Data is accumulated every 10 time steps throughout the simulation and also when the structure is sampled. <span class="OpcodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_debg">DEBG</a></span><code> 1</code> lists each value to the <code>.log</code> file. A maximum of 100 angles may be monitored simultaneously.</p>
+        <p>This command must precede the <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> command for monitoring to take place.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1-3</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Atoms defining the bend</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Resolution for reporting</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Resolution in degrees for the histogram listing to the <code>.mmo</code> file (default = 5 degrees). The minimum resolution is 1° and the maximum resolution is 180°.</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740780"></a><code class="Courier"><a name="opcodes_509685220_mdda">MDDA</a></code> — Molecular Dynamics Dihedral Angle monitoring</h2>
+        <p>Dihedral Angle monitoring during the molecular dynamics run. Output consists of histogram-like compilations of angles/frequencies and the average angle. Default resolution for the histograms is 10 degrees (see arg5). The output will be written to the <code>.mmo</code> output file (averages and histogram, printing must be on —see <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> arg 1) and to the job log file (averages only). The average torsion angle cosine and the average cosine squared are also provided for use in Karplus-like coupling constant calculations.</p>
+        <p>Data is accumulated every 10 time steps throughout the simulation and also when the structure is sampled. <span class="OpcodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_debg">DEBG</a></span> switch 1 lists each value to the <code>.log</code> file. A maximum of 100 angles may be monitored simultaneously.</p>
+        <p>This command must precede the <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> command to be monitored.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1-4</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Atoms defining dihedral angle</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Resolution for reporting</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Resolution in degrees for the histogram listing to the <code>.mmo</code> file (default 10<span class="Symbol">°</span>). The minimum resolution is 1<span class="Symbol">°</span> and the maximum resolution is 360<span class="Symbol">°</span>.</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740791"></a><code class="Courier"><a name="opcodes_509685220_mhbd">MHBD</a></code> — Monitor the occurrence of a Hydrogen BonD</h2>
+        <p>This command allows monitoring of the number of times that distance and angle criteria are met during a molecular or stochastic dynamics simulation. The normal use of this command is to monitor the population of hydrogen bonds during a simulation. At each sampling point a distance and one or two angles are determined, and if these values meet criteria defined in the <code>MHBD</code> command line then a hydrogen bond is considered to exist. At the end of the simulation the occurrence of the specified hydrogen bond is reported to the log file as the percentage of structures in which the bond occurs.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Donor atom (D)</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg2</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Hydrogen atom (H)</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg3</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Acceptor atom (A)</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg4</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Atom bonded to acceptor (B)</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Default: not used.</p>
+                </td>
+            </tr>
+        </table>
+        <p>Example:</p>
+        <table class="TableStyle-NoRules" style="caption-side: top;mc-table-style: url('../Resources/TableStyles/NoRules.css');" cellspacing="0">
+            <tbody>
+                <tr class="TableStyle-NoRules-Body-Body1">
+                    <td class="TableStyle-NoRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">&#160;</p>
+                    </td>
+                    <td class="TableStyle-NoRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body"><code>N&#160;—</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-NoRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body"><code>H •••</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-NoRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body"><code>O =</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-NoRules-BodyG-Column1-Body1">
+                        <p class="Cell_Body"><code>C</code>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-NoRules-Body-Body1">
+                    <td class="TableStyle-NoRules-BodyE-Column1-Body1">
+                        <p class="Cell_Right"><code>arg:</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-NoRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body"><code>1</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-NoRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body"><code>2</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-NoRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body"><code>3</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-NoRules-BodyD-Column1-Body1">
+                        <p class="Cell_Body"><code>4</code>
+                        </p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-NoRules-Body-Body2">
+                    <td class="TableStyle-NoRules-BodyB-Column1-Body2">
+                        <p class="Cell_Right"><code>abbreviation:</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-NoRules-BodyB-Column1-Body2">
+                        <p class="Cell_Body"><code>D</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-NoRules-BodyB-Column1-Body2">
+                        <p class="Cell_Body"><code>H</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-NoRules-BodyB-Column1-Body2">
+                        <p class="Cell_Body"><code>A</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-NoRules-BodyA-Column1-Body2">
+                        <p class="Cell_Body"><code>B</code>
+                        </p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Maximum allowable H–A distance </p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">2.5 Å</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg6</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Minimum allowable D–H–A angle </p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">120°</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg7</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Minimum allowable H–A–B angle</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Used only if arg4 is nonzero.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">90°</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740839"></a><code class="Courier"><a name="opcodes_509685220_mdav">MDAV</a></code> — Molecular Dynamics coordinate AVeraging</h2>
+        <p>Averaging of atomic Cartesian coordinates during the molecular dynamics run. The average atomic coordinates will be used as the structure coordinates at the end of the dynamics run. The coordinates will be written to the output structure file. To save these coordinates in the output file, it is necessary to use a <span class="OpcodeLink"><a href="opcodes_file.htm#opcodes_509685220_writ">WRIT</a></span> command after the <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> command.</p>
+        <p>This command must precede the <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> run to be averaged.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Control</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Perform no averaging.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Perform averaging.</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740849"></a><code class="Courier"><a name="opcodes_509685220_mdit">MDIT</a></code> — Molecular Dynamics Initial Temperature</h2>
+        <p>Initial Temperature (K, Absolute) for the start of the run. This temperature is converted to the corresponding kinetic energy, and that energy is used to initialize the velocities of all atoms. A random Gaussian distribution of velocities is generated such that the total energy is distributed equally along the three Cartesian axes. 3RT is also supplied for translation/rotation for each molecule beyond the first. The total energy added is (3N-6M)*RT (M is the number of translation/rotation constraints, normally 1). Note that the <code>MDIT</code> command replaces any current velocities with random new ones and assumes that the structure is completely minimized (if it is not, the resulting temperature will be higher than that given in this command unless temperature control is used).</p>
+        <p>If no initial temperature is specified, the simulation keeps the kinetic energy from a previous run. If a structure is fully minimized and no initial temperature (or initial energy) is specified, the simulation will not run. If a structure is not fully minimized, the difference between the current strain energy and the minimum energy builds up in the kinetic energy term.</p>
+        <p>The standard dynamics protocol is to fully minimize a structure, then start the simulation either with the desired temperature, or slowly increase the kinetic energy (set an initial (<code>MDIT</code>) and warm the molecule over ca 5 ps (<span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> args 7 and 8)) prior to an equilibration run. If an equilibration period is used, the actual run will occur in a separate step without specification of new initial or final temperatures.</p>
+        <p>If a precise (harmonic) temperature is desired, use the <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> arg7 to set constant temperature dynamics. This will insure that the final temperature attained will be that desired regardless of the relative energy of the starting structure and any nearby (local) minima after equilibration. </p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Temperature (K)</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740859"></a><code class="Courier"><a name="opcodes_509685220_mdft">MDFT</a></code> — Molecular Dynamics Final Temperature</h2>
+        <p>Final Temperature (K, Absolute) to be achieved at end of run. The difference between the original bath temperature (<span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> arg7) and the final desired temperature (<code>MDFT</code> arg5) is slowly subtracted from the bath temperature over the course of the simulation. This temperature changing mechanism can be used to either heat or cool systems linearly during the simulation. The actual final temperature will be close but not equal to arg5. If a precise final temperature is desired, a subsequent <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> run with the desired temperature in <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> arg7 should be used. <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> arg7 and arg8 can also be used to heat or cool molecules over the course of a simulation. This alternative would be effected by having an initial temperature as desired and the final temp as <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> arg7 and weak coupling to the temperature bath via <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> arg8.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Temperature (K)</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara"><code>MDFT</code> inactive.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Values less than 0.0001 K are not allowed.</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740872"></a><code class="Courier"><a name="opcodes_509685220_mdmc">MDMC</a></code> — Molecular Dynamics / Monte Carlo mixed mode</h2>
+        <h2 class="Opcode"><a name="opcodes_509685220_740874"></a><code class="Courier"><a name="opcodes_509685220_mcsd">MCSD</a></code> — Monte Carlo / Stochastic Dynamics mixed mode</h2>
+        <p>These commands are synonyms; <code>MCSD</code> is the preferred form, since its name reminds the user that the mixed-mode procedure should always be carried out using stochastic dynamics. This is because stochastic dynamics and the Monte Carlo procedure both generate the canonical ensemble, whereas (constant-energy) molecular dynamics generates the microcanonical ensemble.</p>
+        <p>This procedure mixes stochastic dynamics and Monte Carlo (MC) internal coordinate movements. This makes it possible to explore conformational (phase, configurational) space more effectively than dynamics alone, while using the dynamics paradigm to obtain free energies. Internal coordinate Monte Carlo movements must be specified using <span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_mols">MOLS</a></span> and <span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_tors">TORS</a></span> commands as is done in <span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_mcmm">MCMM</a></span> conformational searching. <span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_tors">TORS</a></span> commands involving ring bonds and <span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_rca4">RCA4</a></span> commands are allowed with <code>MCSD</code>, but the acceptance ratio is very low. If this combination of commands is used, <span class="OpcodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_debg">DEBG</a></span><code> 104</code> should be given.</p>
+        <p>This command should only be used with stochastic dynamics (<span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> arg3=1 and arg7 !=0). </p>
+        <p>We do not recommend using SHAKE (controlled via arg2 of <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span>) during MC/SD simulations, as its use can result in less than optimal temperature control. Using <code>MCSD</code> without SHAKE sometimes requires a smaller simulation timestep than might otherwise be used. But since <code>MCSD</code> is very efficient at exploring conformational space relative to dynamics alone, this should not be an issue.</p>
+        <p>If the MC/SD simulation is unstable and fails, consider turning off long-range constant derivatives, by setting <span class="CodeLink"><a href="opcodes_ffld.htm#opcodes_509685220_exnb">EXNB</a></span> arg1 to 1, and increasing the non-bonded cutoffs to a large number, such as 100&#160;Å. </p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Monte Carlo frequency</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Number of molecular or stochastic dynamics steps for every Monte Carlo step in mixed mode <code>MDMC</code> simulations. The result of a block of arg2 Monte Carlo steps is one or more translations or rotations of coordinates and velocities. Any resulting structure passing the Metropolis test is used for subsequent molecular dynamics or stochastic dynamics simulation and accordingly modifies the trajectory.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Default value of arg1 is 1 for pure <code>MDMC</code> and 10 if importance sampling (<span class="OpcodeLink"><a href="#opcodes_509685220_imps" class="selected">IMPS</a></span>) is being done.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&lt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">No randomization of internal degrees of freedom. This option is available only for MC(JBW/SD) simulations where all the randomization can be effectively done via the SD part.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&gt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">This argument may be varied to achieve the desired 100:1 ratio of stochastic dynamics steps to conformational interconversions when <span class="OpcodeLink"><a href="#opcodes_509685220_imps" class="selected">IMPS</a></span> is used.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg2</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Number of internal coordinates varied at each MC step</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Each pair of atoms in a <span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_tors">TORS</a></span> command corresponds to one internal coordinate degree of freedom. Each molecule moved by a <span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_mols">MOLS</a></span> command generates one (if only translation or only rotation being done) or two (if both translation and rotation limits given) internal coordinate degrees of freedom.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">This argument is overridden by args 1 and 2 of the <span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_mcnv">MCNV</a></span> command. In addition, <code>MCSD</code> may dynamically override any user specification by using a built-in dynamic method of specifying limits on degrees of freedom varied. The adaptive mechanism may, however, be turned off by specifying <span class="OpcodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_debg">DEBG</a></span><code> 103</code>.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Default: 1.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&gt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Number of internal coordinates to be varied at each step.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&lt;0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">In JBW/MC (<span class="OpcodeLink"><a href="#opcodes_509685220_imps" class="selected">IMPS</a></span>) do not randomize JBW step.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">MC acceptance ratio</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Desired ratio of accepted to total Monte Carlo steps. The program, during execution, adjusts the limits given in <span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_tors">TORS</a></span> and <span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_mols">MOLS</a></span> commands to attempt to achieve this ratio. Default: use limits as given in <span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_tors">TORS</a></span>/<span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_mols">MOLS</a></span> commands without adjustment. We recommend using the default behavior, and making manual adjustments to <span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_tors">TORS</a></span> and <span class="OpcodeLink"><a href="opcodes_csearch.htm#opcodes_509685220_mols">MOLS</a></span> if acceptance is too high or low.</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740930"></a><code class="Courier"><a name="opcodes_509685220_mdve">MDVE</a></code> — Molecular Dynamics VElocity file</h2>
+        <p>This command directs MacroModel to write or read a velocity file to or from disk. The file has double precision x,y,z velocities for each atom. The filename is <i>out-filename</i><code>.vel</code> when writing a velocity file and <i>in-filename</i><code>.vel</code> when reading one. This option is useful for listing the velocities, for saving the velocities to continue a molecular dynamics run at some later time and as a mechanism by which externally generated velocities may be used as molecular dynamics starting points. Velocity files are stored as formatted disk files. Each line contains x,y,z velocities (meters/sec) for each substructure atom. The Fortran format for each line in the velocity data in the file is (<code>3D20.12</code>).</p>
+        <p>A velocity file read (arg1=1) must come after <span class="OpcodeLink"><a href="opcodes_file.htm#opcodes_509685220_read">READ</a></span> or <span class="OpcodeLink"><a href="opcodes_constrained_mini.htm#opcodes_509685220_subs">SUBS</a></span> commands and before any <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> command. A velocity file write (arg1=0) must come after the <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> command.</p>
+        <p><span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> does not write final structures to the output file unless the <span class="OpcodeLink"><a href="opcodes_file.htm#opcodes_509685220_writ">WRIT</a></span> command follows it. We generally save both final velocities and structures at the end of a molecular dynamics run.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg 1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Read/write a velocity file</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Write file.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Read file.</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740944"></a><code class="Courier"><a name="opcodes_509685220_mdfr">MDFR</a></code> — Molecular Dynamics update FRequency</h2>
+        <p>Sets the frequency in picoseconds for updates of the nonbonded array.</p>
+        <p>For molecules where large movements of groups are expected, the nonbonded array should be periodically updated (e.g., every 0.2-0.5 ps). A better alternative is to use very long cutoffs (using <span class="OpcodeLink"><a href="opcodes_ffld.htm#opcodes_509685220_exnb">EXNB</a></span> command) and a force field like OPLS, which does not have explicit hydrogen bonding potentials. The more frequently the nonbonded array is updated, the slower the dynamics will run.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Update interval (fs) (default: do no updates)</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740950"></a><code class="Courier"><a name="opcodes_509685220_mdre">MDRE</a></code> — Molecular Dynamics REset</h2>
+        <p>Reset or reinitialize all molecular dynamics variables, set initial velocities to zero.</p>
+        <h2 class="Opcode"><a name="opcodes_509685220_740953"></a><code class="Courier"><a name="opcodes_509685220_imps">IMPS</a></code> — perform IMPortance Sampling</h2>
+        <p class="Note" data-mc-autonum="&lt;b&gt;Note:&lt;/b&gt; "><span class="autonumber"><span><b>Note:</b> <![CDATA[ ]]></span></span><code>IMPS</code> affects the course of <span class="OpcodeLink"><a href="opcodes_mc.htm#opcodes_509685220_mclo">MCLO</a></span> and <span class="OpcodeLink"><a href="#opcodes_509685220_mcsd" class="selected">MCSD</a></span> simulations. For the full description of possible combinations and what they do, see the <i>MacroModel Technical Manual</i>. </p>
+        <p>This command activates the importance sampling option. Use of this command implies that the input file contains the output from a conformational search. When this command is encountered, all the structures in the input file are read and the values of the specified torsions and bond angles calculated for each conformation. These are used later in the importance sampling. The energy and number of times the structure was found in the conformational search are also read from the input file. These quantities may be used to weight the importance sampling (this last option is not recommended, see below).</p>
+        <p>Importance sampling also activates calculation of conformational populations which can be used to obtain relative free energies (see <span class="OpcodeLink"><a href="#opcodes_509685220_mdsa" class="selected">MDSA</a></span> command).</p>
+        <p>Importance sampling can be used either as a replacement or in conjunction with Metropolis Monte Carlo (MMC) in both Monte Carlo and mixed mode simulations. The method is described in detail in the technical manual and examples of command files are provided in <a class="TopicLink MCXref xref xrefTopicLink" href="../macromodel_user_manual/mm_dynamics.htm#mm_dynamics_1599997253_14023">MacroModel Dynamics Calculations</a>.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Frequency of performing IMPS steps</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Perform an <code>IMPS</code> step each time a MMC step is requested.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue"><i>n</i>
+                    </p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Perform <code>IMPS</code> step every <i>n</i> times a MMC step is requested and a Metropolis Monte Carlo step the rest of the time.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&lt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Do not perform any <code>IMPS</code> steps. This option can be used to tabulate statistics of visiting conformations in an input list during an ordinary <span class="OpcodeLink"><a href="#opcodes_509685220_mdyn" class="selected">MDYN</a></span> or <span class="OpcodeLink"><a href="#opcodes_509685220_mcsd" class="selected">MCSD</a></span> run. For example, using <code>IMPS</code> with a negative first argument results in a standard <span class="OpcodeLink"><a href="#opcodes_509685220_mcsd" class="selected">MCSD</a></span> run; if, in addition, the first argument of <span class="OpcodeLink"><a href="#opcodes_509685220_mcsd" class="selected">MCSD</a></span> is negative, ordinary stochastic dynamics is run.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg2</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Control of trial conformation</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">All trial conformations including the current one are equally probable; that is, a jump may be attempted to the current conformation.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">All trial conformations except the current one are equally probable; jumps are never attempted to the current conformation.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">2</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">The probability of choosing a conformation is weighted according to the number of times it was found in the conformational search. This option is not recommended.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg7</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Time_Limit (ps for dynamics, step for MC)</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">If the simulation spends more than this amount of time (or number of steps) consecutively away from known conformations, the program prints the last structure to the output file and stops.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Default: 50</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&gt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Number of ps or steps.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&lt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Multiply by 100000, then interpret as number of ps or steps.</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_740996"></a><code class="Courier"><a name="opcodes_509685220_impo">IMPO</a></code> — IMPortance sampling Options</h2>
+        <p>This command controls options available for the <span class="OpcodeLink"><a href="#opcodes_509685220_imps" class="selected">IMPS</a></span> procedure.</p>
+        <p>At the beginning of an <span class="OpcodeLink"><a href="#opcodes_509685220_imps" class="selected">IMPS</a></span> run, the program checks the internal coordinates by making all possible <i>n</i><sup>2</sup> conformational interconversions between the <i>n</i> input conformers. The program produces an <i>n</i> by <i>n</i> matrix whose (<i>i</i>,<i>j</i>) element gives the difference between the energy of conformer <i>j</i> obtained from conformer <i>i</i> and its actual energy as read from the input file. Ideally, these energetic differences should all be zero, but in practice they are nonzero, since the interconversion is accomplished by means of torsional and bond-angle transformations alone. Energetic differences larger than a predetermined threshold lead to the termination of the run, unless an override is specified. The <i>n</i><sup>2</sup> structures obtained by these interconversions may be written to the output file. Superimposing high energy structures (those for which the energy difference exceeds the threshold) on their original counterparts may help in identifying the cause of large energy differences. In particular, the deletion of a crucial torsion or bond angle leads to these symptoms, and the procedure just described allows such missing degrees of freedom to be identified.</p>
+        <p>Arguments 1, 2, 3, and 5 control the process described above. Argument 6 controls the criterion for declaring a conformation encountered during a simulation to be an instance of one of the <span class="OpcodeLink"><a href="#opcodes_509685220_imps" class="selected">IMPS</a></span> input conformations, and Argument 7 controls the action to be taken when an importance-sampling step is scheduled, but the starting conformation does not correspond to any <span class="OpcodeLink"><a href="#opcodes_509685220_imps" class="selected">IMPS</a></span> input conformation.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Control the printing of the energy difference matrix</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Print the energy differences matrix to the log file if any of its elements exceeds the energy threshold (arg5). Such elements are marked with an exclamation point. This is the default.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Always print the energy difference matrix to the log file.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg2</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Control action if energy differences exceed threshold</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Abort the simulation.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Continue to carry out the simulation. the run. This is recommended when (i) the energy differences do not significantly exceed the threshold, or (ii) the conformational pairs that exceed the threshold are high energy conformers which are not expected to be significantly populated during the simulation.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg3</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Control writing structures to output file</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&lt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Write no structures to the output file.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Write only high energy structures (i.e., those for which the aforementioned energy difference exceeds the threshold) to the output file. </p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&gt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Write all interconverted structures to the output file.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg4</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Frequency of <code class="Courier">.ino</code> output</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">This argument is most useful for debugging the <span class="OpcodeLink"><a href="#opcodes_509685220_imps" class="selected">IMPS</a></span> facility.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">No output</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&gt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Write into <i>outfile</i><code>.ino</code> the index of the input structure that most closely matches the current simulated structure every <i>n</i> MC steps or SD time steps. When the input structure index is followed by an asterisk (*) in the file, this means that the calculated RMS difference between the simulated structure and the indexed input structure exceeded the threshold defined in arg6. This can happen only for torsional RMS calculation.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Interconversion energy threshold</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Maximum allowed energy difference between a conformer’s energy as provided in its <i>filename</i><code>.mae</code> title line and its energy obtained by <span class="OpcodeLink"><a href="#opcodes_509685220_imps" class="selected">IMPS</a></span> interconversion from another structure. Any energetic difference larger than arg5 causes the energy-difference matrix to be written to the log file, or the offending structures to be written to the output structure file, or the run to be aborted, or any of these, depending on the values of arguments 1, 2, and 3.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">10 kJ.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg6</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Interconformational comparison control</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">At each <span class="OpcodeLink"><a href="#opcodes_509685220_imps" class="selected">IMPS</a></span> step, the program assigns the currently simulated structure to one of the conformers provided in the input file—the one it is most similar to—provided this similarity is strong enough. This argument defines the meaning of “similarity.”</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue"> &gt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Uses the torsions defined in <span class="OpcodeLink"><a href="#opcodes_509685220_tcmp" class="selected">TCMP</a></span> commands to calculate torsional RMS difference. The actual value of this argument is not significant, provided it is positive.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">&lt; 0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">The atoms listed in <span class="OpcodeLink"><a href="opcodes_conf_comparison.htm#opcodes_509685220_comp">COMP</a></span> commands are used to compute a Cartesian RMS difference. JBW steps are performed even if the RMS difference is larger than the value defined here. However, conformational populations do depend on this value and will not be updated if the computed RMS difference exceeds it.</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_741031"></a><code class="Courier"><a name="opcodes_509685220_itbs">ITBS</a></code> — Improper Torsion energy BiaSing</h2>
+        <p>This command is used to bias the energy of a conformational family with a proper or improper torsion (also with a proper torsion) in a specific range by a constant amount. If, for example, the steric binding energies of conformations of L-family ligands are much lower than those of the D-family ligands, then attempts to calculate the enantioselectivity by jumping between the L and D families is likely to fail, because most L → D jumps will be rejected. In such cases, it is possible to artificially stabilize the D family by subtracting from the steric energies of its members a constant amount. This number must then be added back to the free-energy difference at the end of the simulation. If, for example, an energy value of 1.5 kcal/mol is subtracted from the members of the D family during the run, leading to a D/L free-energy difference of 0.5 kcal/mol in favor of the latter, then the real free-energy difference is 0.5 + 1.5 = 2 kcal/mol. </p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1-4</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">The numbers of atoms defining the improper (or proper) torsion.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Minimum value for the improper torsion.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg6</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Maximum value for the improper torsion.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg7</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Value for energy bias in kJ/mol.</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_741038"></a><code class="Courier"><a name="opcodes_509685220_imcc">IMCC</a></code> — IMportance sampling Chirality Check</h2>
+        <p>This command is used to define chiral centers to be checked when assigning the simulated structure to one of the input structures. The current structure will not be assigned to an input structure if the chirality of one of its centers is different from that of the input structure. This command must come before the <span class="OpcodeLink"><a href="#opcodes_509685220_imps" class="selected">IMPS</a></span> command.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1-4</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Atom numbers of chiral centers</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_741043"></a><code class="Courier"><a name="opcodes_509685220_tcmp">TCMP</a></code> — Torsional CoMParison</h2>
+        <p>Used during importance sampling to define the torsions for torsional RMS calculation and for the torsional check during the assignment of the simulated structure to one of the input structures. Can be used either with torsional RMS calculations (both functions) or with Cartesian RMS calculations (second function only).</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1-4</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Atom numbers defining the torsional angle</p>
+                </td>
+            </tr>
+        </table>
+        <h2 class="Opcode"><a name="opcodes_509685220_741047"></a><code class="Courier"><a name="opcodes_509685220_zmat">ZMAT</a></code> — Z-MATrix</h2>
+        <p>Defines the internal degrees of freedom (Z-matrix variables) to be sampled during all degrees of freedom MMC or MC(JBW) runs (also used in <span class="OpcodeLink"><a href="#opcodes_509685220_mcsd" class="selected">MCSD</a></span> and MC(JBW)/SD). In a Z-matrix, each atom (except the first three specified) is defined with a bond length, bond angle, and torsional angle with respect to atoms previously defined. The first atom is defined with respect to itself, the second by a bond length to the first, and the third by a bond length to the second and a bond angle to the first.</p>
+        <p>Also defined in this command are the ranges of change/randomization for each degree of freedom. Typical ranges are 0-0.1 Å for bond lengths and 5° for bond angles. In course of an MMC simulation, backbone torsions should be changed by large ranges to allow for a complete sampling of the entire potential energy surface. With the above definition of Z&#8209;matrix, torsions to branched atoms should be changed by a small amount (0-5°) to avoid distorted bond angles. For MC(JBW) and MC(JBW)/SD simulations, typical randomization ranges are 0-0.1A for bond angles and 0-5 for bond and torsion angles. Large randomizations reduce the acceptance rate and the number of conformational interconversions, and have the effect of reducing the JBW procedure to an MMC one.</p>
+        <table class="ArgTable">
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg1-4</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Atom numbers</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Specify two for bond lengths, three for bond angles, four for torsions.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg5</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Minimum change/randomization range</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">No default values are supplied; zero means zero.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg6</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Maximum change/randomization range</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">No default values are supplied; zero means zero.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgDef">arg8</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgDef">Atom-connectivity sanity check</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">&#160;</td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Check to make sure the atoms specified in arg1-4 are connected.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">0</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Default: Perform this test.</p>
+                </td>
+            </tr>
+            <tr class="ArgTable">
+                <td class="ArgTable">
+                    <p class="ArgValue">1</p>
+                </td>
+                <td class="ArgTable">
+                    <p class="ArgPara">Do not perform this test (required for improper torsions).</p>
+                </td>
+            </tr>
+        </table>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="opcodes_csearch.htm">Conformational Searching Opcodes</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="macromodel_command_referenceTOC.htm">MacroModel Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="opcodes_fep.htm">Free-Energy Perturbation Opcodes</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

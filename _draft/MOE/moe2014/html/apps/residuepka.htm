@@ -1,0 +1,782 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--
+!!    	residuepka.htm		Residue pKa
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+
+<meta panel Residue pKa />
+<meta panel Protonation State />
+<style type="text/css">
+.fright { float: right; margin: 0 0 1em 1em; }
+/*h1,h2,h3,h4,h5,h6 { clear: both; }*/
+</style>
+
+
+<title>Residue pKa and Protonation State Prediction</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Method">Methodology</a></li>
+<li><a href="#Run">Running the Application</a>
+    <ul>
+    <li><a href="#RunReport">Prediction Report</a></li>
+    <li><a href="#RunProtonate">Protonate Panel</a></li>
+    </ul></li>
+<li><a href="#Example" class="example">Worked Example</a>
+    <ul>
+    <li><a href="#ExamplePredict" class="example">Predicting pK<sub>a</sub> values in the Active
+Site</a></li>
+    <li><a href="#ExampleProtonate" class="example">Protonating the Structure</a></li>
+    </ul></li>
+<li><a href="#Ref">References</a></li>
+</ul>
+
+<p>
+The Residue pK<sub>a</sub> application is used to assign correct protonation
+states to a protein or set of proteins so that they can
+then be correctly protonated. This
+is accomplished by identifying titratable groups within the structure
+and then predicting their pK<sub>a</sub> values, using a method based on PROPKA
+[Li&nbsp;2005].</p>
+
+<p><b>Note:</b> This application was formerly named Protonation State.
+</p>
+
+<p>
+In addition to setting the protonation state, predicted pK<sub>a</sub> values
+can also be labeled, as shown in the following figure:
+<p style="text-align:center"><img src="residuepka/x_pka.png" />
+</p>
+<p class="caption">A protein with predicted pK<sub>a</sub> values labeled on titratable groups,
+in cyan.</p>
+
+<p>
+The remainder of this document explains the methodology used to determine the
+ protonation state, how to use the application, and some example calculations.</p>
+
+<!-- ============================== PKA ============================== -->
+
+
+<a name="Method"></a>
+<h2>Methodology</h2>
+
+<p> Ionizable groups in proteins often play key roles in the catalytic activity
+of an enzyme, protein solubility, or protein folding.  The pH dependence of
+protonation state can thus play a critical role in elucidating enzyme function or
+understanding the folding pathway.  This in turn is dependent on knowing the
+pK<sub>a</sub> values of the ionizable groups in the structure.  In fact, many
+unusually high or low pK<sub>a</sub> values occur within the active sites of
+proteins [Ondrechen&nbsp;2001], often depending on this unusual environment to
+carry out the enzymatic activity.</p>
+
+<p>
+A pK<sub>a</sub> value is defined as <i>-log<sub>10</sub> K<sub>a</sub></i>
+where K<sub>a</sub> is the acid dissociation constant.  It can be thought of as
+a combination of a particular group's <i>intrinsic</i> pK<sub>a</sub> and an
+environmental modifier.  The intrinsic pK<sub>a</sub> is the value measured for
+the group in isolation, in solution, as:</p>
+
+<p style="text-align:center">
+<i>pK<sub>a</sub> = -log<sub>10</sub> ( [H<sup>+</sup>][A<sup>-</sup>] / [HA]
+)</i>
+</p>
+<p>
+where <i>[H<sup>+</sup>]</i> is the concentration of hydrogen ions (protons),
+<i>[A<sup>-</sup>]</i> is the concentration of conjugate base and <i>[HA]</i>
+the concentration of the acidic compound.  The environmental component depends
+on the number of hydrogen bonds, electrostatic interactions, and solvent
+contacts made by the group.</p>
+
+<p>
+Most commonly, pK<sub>a</sub> values are predicted by numerically solving the
+Linearized Poisson-Boltzmann equation
+[Antosiewicz&nbsp;1996][Bashford&nbsp;1990].  A pK<sub>a</sub>
+shift is computed from the electrostatic energy change between its charged and
+neutral form and adding it to the intrinsic pK<sub>a</sub>. A recent work
+[Ohno&nbsp;2006] uses linear-scaling molecular orbital calculations to achieve
+the same goal. These models are often capable of predicting pK<sub>a</sub> values
+to within a root mean square deviation (RMSD) of 1 or better. Unfortunately, these
+approaches are computationally expensive.</p>
+<p>
+The PROPKA method is based upon empirical shifts in pK<sub>a</sub> values
+associated with the different types of interactions that each group may make, and
+so can be computed very rapidly as a simple pairwise scoring function.
+Specifically:</p>
+
+<!-- LATEX residuepka/pKa_function \[
+pK_{a} = pK_{intrinsic} + \Delta pK_{Des} + \Delta pK_{HB} + \Delta pK_{chgchg}
+\] ENDLATEX -->
+
+<!-- LATEX residuepka/pK_intrinsic \[
+pK_{intrinsic}
+\] ENDLATEX -->
+
+<!-- LATEX residuepka/pK_Des \[
+\Delta pK_{Des}
+\] ENDLATEX -->
+
+<!-- LATEX residuepka/pK_HB \[
+\Delta pK_{HB}
+\] ENDLATEX -->
+
+<!-- LATEX residuepka/pK_chgchg \[
+\Delta pK_{chgchg}
+\] ENDLATEX -->
+
+<table width="100%">
+<tr>
+<td align="center" width="95%">
+
+<img src="residuepka/pKa_function.png" />
+
+<!--
+<i>pK<sub>a</sub> = pK<sub>instrinsic</sub> + &Delta;pK<sub>Des</sub>
++ &Delta;pK<sub>HB</sub> + &Delta;pK<sub>chgchg</sub></i>
+-->
+
+</td>
+<td>
+(1)
+</td>
+</tr>
+</table>
+
+<p>
+where:
+</p>
+
+<p>
+
+<table width="90%" cellpadding="5" border="1" style="margin:0 auto">
+
+<tr>
+<td>
+<img src="residuepka/pK_intrinsic.png" />
+
+<!-- <i>pK<sub>intrinsic</sub></i> -->
+</td>
+
+<td valign="top">pK<sub>a</sub> of the group free in aqueous solution.
+</td>
+
+</tr>
+
+<tr>
+<td>
+<img src="residuepka/pK_Des.png" />
+
+<!-- <i>&Delta;pK<sub>Des</sub></i> -->
+</td>
+
+<td valign="top">
+The desolvation component, which consists of two parts: global desolvation,
+and local desolvation.  Both are measured as a function of burial.
+</td>
+
+</tr>
+
+<tr>
+<td>
+<img src="residuepka/pK_HB.png" />
+
+<!-- <i>&Delta;pK<sub>HB</sub></i> -->
+</td>
+
+<td valign="top">Hydrogen bonding contribution.  This is a sum over all hydrogen bonds or
+potential hydrogen bonds made by the group, and is the major contributor to
+pK<sub>a</sub> shifts.
+</td>
+
+</tr>
+
+<tr>
+<td>
+<img src="residuepka/pK_chgchg.png" />
+
+<!-- <i>&Delta;pK<sub>chgchg</sub></i> -->
+</td>
+
+<td valign="top">Buried charge-charge interaction component.  This applies <b>only</b> to
+the relatively few pairs of buried charges and not ones on the surface.
+</td>
+</tr>
+
+</table>
+
+<p>For more details, please refer to the following sections and the original
+publication.
+</p>
+
+
+<h3>Titratable Groups and Group Types</h3>
+
+<p>Before any computations can be carried out, all titratable groups in the
+structure must be identified.  This is done by considering the hybridization
+and bonding patterns of N, O and S atoms and is quite thorough.  Note that a
+group marked as titratable could end up being so acidic or so basic that in
+practice it is always protonated/deprotonated as appropriate.  However at
+this stage we are just concerned with identifying a reasonable set of groups
+with which to carry out the calculations.  Metal ions and halogens, while not
+considered titratable here, are included as they partake in charge-charge
+interactions with other titratable groups (see below).</p>
+
+<p>Some of the parameters in PROPKA, including the intrinsic pK<sub>a</sub>, and
+the distance cutoffs for local desolvation, depend on a more precise
+specification of the titratable groups.  Hence after identifying the groups,
+they are matched up to more specific group types, such as <i>imidazole,
+guanidinium, phenol, carboxyls of varying lengths</i> and so on.  Any groups
+which cannot be identified at this point have a default set of parameters
+assigned.</p>
+
+<h3>Desolvation</h3>
+
+<p>Carboxyl groups in the protein interior often have higher
+pK<sub>a</sub> values than normal, while buried positive charges tend to
+have lower pK<sub>a</sub> values, in each case increasing the tendency for the
+group to stay neutral rather than become charged.  This is at least in
+part due to the high energetic cost of burying a charge.  In the present
+method, a buried group is defined as <i>N<sub>15.5 &Aring;</sub> &gt; 400</i>,
+where <i>N<sub>15.5 &Aring;</sub></i> is the number of heavy atoms within a
+15.5 &Aring; radius of the centroid of the titratable group.  Atoms from the
+group in question are excluded from the count.  The desolvation
+shift to the pK<sub>a</sub> is composed of a global term, which is a function
+of <i>N<sub>15.5 &Aring;</sub></i> and non-zero only for buried groups, and a
+local term, which counts the number of atoms within a smaller radius, where the
+radius varies depending on group type.</p>
+
+
+
+<h3>Hydrogen Bonds</h3>
+
+<p>Hydrogen bonds are usually the largest of the three shift terms, and are
+identified purely on a spatial distance basis.  For hydrogen bonds to the
+protein backbone, the bond angle is taken into account as well.  Certain buried
+hydrogen bonds are particularly strong and receive an extra high shift, such as
+His-carboxyl or carboxyl-carboxyl.  At present, no attempt is made to identify
+which O in a carboxyl, or N in a His, is making the hydrogen bond - both are
+tested and the most favorable one is always chosen.  A particularly strong
+interaction may occur in the case of the guanidinium group, which can
+simultaneously make two hydrogen bonds to the two oxygens of a carboxyl.
+For certain hydrogen bonds, both the acceptor and donor affect each other, and
+in other cases only one is shifted.</p>
+
+<h3>Buried Charge-Charge</h3>
+
+<p>This type of interaction is quite rare, as it only occurs between two buried
+groups (as defined above) within 7 &Aring; of each other.  It is treated
+effectively in the same way as for hydrogen bonds, increasing the pK<sub>a</sub>
+of one group and/or decreasing that of the other.</p>
+
+
+<h3>Iteration</h3>
+
+<p>The prediction algorithm works by computing and summing up all the terms in
+Eqn.(1) to arrive at an initial set of pK<sub>a</sub> values.  Then the iterative
+phase begins.  In this phase, the charge-charge interactions and the hydrogen
+bond terms between groups with similar pK<sub>a</sub> values are recomputed, and
+generally the group with the higher pK<sub>a</sub> will lower that of the
+interacting partner, while its own pK<sub>a</sub> will increase by a
+corresponding amount.  Once this is done for all relevant pairwise
+interactions, the process is repeated until it converges, i.e. no more
+changes occur and self-consistency has been reached.  Normally this happens
+after two or three iterations, since there are usually very few groups involved
+in the process.  The resulting converged solution is then returned to the user.</p>
+
+
+<h3>Differences from PROPKA</h3>
+
+<p>As mentioned above, the method is based heavily on PROPKA.  However some
+modifications have been made to improve or extend the method, and these will be
+discussed here briefly.</p>
+
+<ul>
+<li>Titratable groups have been somewhat generalized, so that, for example,
+any carboxyl group can receive a prediction, and not just those that belong to
+standard amino acid sidechains.</li>
+<li>Metal ions and halogens can contribute to the charge-charge component for
+nearby ionizable groups.</li>
+<li>Unrecognized groups that appear to be ionizable will receive a prediction
+but with a star (*) next to it to indicate that it is unreliable.</li>
+</ul>
+
+
+
+<!-- ============================ RUNNING ================================ !-->
+
+
+<a name="Run"></a>
+<h2>Running the Application</h2>
+
+
+<p>Before making use of the application, please be aware that the PROPKA
+method is parameterized and largely intended to be used on proteins only. 
+While it will produce predictions for some types of small molecules, nucleic 
+acids, and post-translationally modified amino acids, the results are expected
+to be less reliable in these cases.  To open the Residue pKa panel, select
+<span class="menu">MOE | Compute | Prepare | Residue pKa</span>.</p>
+
+<p style="text-align:center"><img src="residuepka/residuepka_panel.png" /></p>
+
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="top"><b>Atoms</b></td>
+<td valign="top">
+The atoms that you wish to perform pK<sub>a</sub> prediction on; other atoms
+in the system will be ignored.  By default, All Atoms are included.  Press the
+<b>?</b> to the right to briefly select (in the MOE window) the specified
+atoms. The atom collection can be manually specified by selecting the
+appropriate atoms in the MOE window and choosing Selected Atoms from the list.
+If <b>Visible Only</b> is on, then hidden atoms will be excluded from the
+calculations.  In all cases, dummy atoms and atoms flagged as inert will be
+ignored.</td>
+
+<tr>
+<td valign="top"><span class="menu">Titratable groups</span>
+<td valign="top">
+The main portion of the panel displays a list of all the titratable groups in
+the currently selected atom set.  If there are none, a message to this effect
+will appear, otherwise, several pieces of information will be shown, with one
+row per titratable group.
+
+<ul>
+<li>
+<b>Residue:</b> The residue containing the group, indicated by the chain
+number, followed by a colon and the residue name and UID.</li>
+
+<li>
+<b>Atom:</b> The name of the atom attached to the ionizable hydrogen, within
+the residue.  In the case of a carboxyl or other symmetric group, one atom is
+chosen as the <i>representative</i> however it remains ambiguous as to which
+atom actually gets protonated/deprotonated.</li>
+
+<li>
+<b>El:</b> Element symbol for the stated atom.</li>
+
+<li>
+<b>Bur:</b> A <tt>b</tt> here indicates the residue is buried.</li>
+
+<li>
+<b>Forced:</b> If a forced pK<sub>a</sub> has been supplied (see next section)
+it will be displayed here.  A ? indicates that no forced value has been
+specified (default).</li>
+
+<li>
+<b>pKa:</b> The predicted pK<sub>a</sub> value.  A value of '-' means <i>not
+yet predicted</i> and is the initial value for all atoms.  Other possible
+values include <i>cation</i> and <i>anion</i>.  Although these are normally
+used to refer to positively and negatively charged ions, respectively, in this
+case the meaning is slightly different.  A cation is simply a group which
+lowers the pK<sub>a</sub> of nearby groups that it interacts with, while not
+being titratable itself, while an anion is any group which increases the
+pK<sub>a</sub> of interacting groups while not being titratable itself.  These
+could also be thought of as having pK<sub>a</sub> values of +&infin; and
+-&infin; respectively.</li>
+
+<li>
+<b>Unk:</b> a star (*) will appear in this column if a given pK<sub>a</sub>
+prediction is unreliable due to the group type (e.g. carboxyl, imidazole) not
+being recognized. This is blank until a prediction is made.</li>
+</ul>
+
+<p>
+If the <b>Synchronize</b> box is on, then selecting atoms in the listbox will
+also select them in the MOE window, and selecting ionizable atoms in the MOE
+window will select corresponding items in the listbox.  If the <b>Label</b> box
+is on, the atoms which are selected in the listbox will have their
+pK<sub>a</sub> displayed as a label in the MOE window.</p>
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Forced pK<sub>a</sub></b>
+<td valign="top">
+When one or more titratable groups are selected in the listbox, this becomes
+active.  Entering a number and clicking <b>Apply</b> will set the <b>Forced</b>
+column for all selected atoms to the entered value.  Similarly, clicking
+<b>+</b> will set them to <i>cation</i> and clicking <b>-</b> will set them to
+<i>anion</i>.  Clicking <b>?</b> will return the selected atoms to the default
+state (no forced value).  When a pK<sub>a</sub> value is forced, then once the
+iterative stage of the algorithm is reached, the pK<sub>a</sub> is fixed to the
+forced value.  This not only results in the final predicted pK<sub>a</sub>
+being the same as the forced one, but in addition affects its interacting
+neighbors during the iterative stage.  Typically this should only be used when
+one has prior knowledge about some of the pK<sub>a</sub> values in the system.
+</td></tr>
+</table>
+
+<p>
+Press the <b>Predict</b> button to carry out the prediction with the
+currently displayed set of titratable groups.  The <b>pKa</b> column should
+fill almost instantly (very large structures may take several seconds
+however).</p>
+<p>
+Pressing the <b>Protonate...</b> button brings up the Protonate panel,
+discussed below.  The <b>Report...</b> button brings up a
+text file containing a summary of the prediction results.  <b>Close</b>
+terminates the Residue pKa application.</p>
+
+
+<a name="RunReport"></a>
+<h2>Prediction Report</h2>
+
+<p>The report generated by the <b>Report...</b> button always refers to the
+most recent prediction run.  It is essentially an expanded version of what
+appears in the listbox for each titratable group.  The columns and their
+meanings are as follows:</p>
+
+
+<table>
+<tr valign="top">
+<td><b>Type</b></td>
+<td>A short code to indicate what type of ionizable group the atom was flagged
+as being part of, and affects the parameters and constants used for the
+remainder of the calculation. A value of <i>unk</i> indicates the group was
+unrecognized and default parameters were used.</td></tr>
+<tr valign="top">
+<td><b>Residue</b></td>
+<td>This is identical to the <b>Residue</b> column in the listbox.</td></tr>
+<tr valign="top">
+<td><b>Atom</b></td>
+<td>This is identical to the <b>Atom</b> column in the listbox.</td></tr>
+<tr valign="top">
+<td><b>El</b></td>
+<td>This is identical to the <b>El</b> column in the listbox.</td></tr>
+<tr valign="top">
+<td><b>pKModel</b></td>
+<td>This is the so-called intrinsic pK<sub>a</sub> of the group - the
+component which is independent of environment.</td></tr>
+<tr valign="top">
+<td><b>GDes</b></td>
+<td>This is the component of the pK<sub>a</sub> due to global desolvation of the
+group and is purely a function of NGlob.</td></tr>
+<tr valign="top">
+<td><b>NGlob</b></td>
+<td>The number of atoms within a 15.5 &Aring; radius, also referred to above as
+N<sub>15.5 &Aring;</sub>.  It is a measure of bulk burial - atoms with NGlob
+&gt; 400 are considered to be buried.</td></tr>
+<tr valign="top">
+<td><b>LDes</b></td>
+<td>This is the component of the pK<sub>a</sub> due to local desolvation of the
+group and is purely a function of NLoc.</td></tr>
+<tr valign="top">
+<td><b>NLoc</b></td>
+<td>The number of atoms within a local radius, varying from
+3.5 &Aring; - 6.0 &Aring; depending on group type and whether the group is buried or
+not. NLoc is used to estimate the solvent accessible surface of the group. 
+Atoms from the group in question are excluded from the count.</td></tr>
+<tr valign="top">
+<td><b>HB</b></td>
+<td>This is the component of the pK<sub>a</sub> due to hydrogen bonds,
+including strong hydrogen bonds between buried groups.</td></tr>
+<tr valign="top">
+<td><b>Chg</b></td>
+<td>This is the component of the pK<sub>a</sub> due to buried charge-charge
+interactions.</td></tr>
+<tr valign="top">
+<td><b>Forced</b></td>
+<td>This is identical to the <b>Forced</b> column of the listbox, and when not
+blank indicates that the pK<sub>a</sub> was held at this value during the
+iterative stage of the algorithm.</td></tr>
+<tr valign="top">
+<td><b>pKa</b></td>
+<td>This is the predicted pK<sub>a</sub> value of the group, and is equal to the
+sum of the <b>pKModel</b>, <b>GDes</b>, <b>LDes</b>, <b>HB</b> and
+<b>Chg</b> columns.  This is identical to the <b>pKa</b> column in the
+listbox unless a forced value was used.  A star (*) appears beside the
+value in the <b>pKa</b> column if the group was an unrecognized type
+and default parameters were used.  In this case the predicted value is
+not reliable and should not be trusted.</td></tr>
+</table>
+<p>Since <tt>His</tt> residues have two pK<sub>a</sub> values predicted
+for them, these both show up in the report.  The second pK<sub>a</sub>
+will be found at the end of the report, with type <tt>hisn</tt>, for
+'His neutral', and will usually be very high.</p>
+
+
+<a name="RunProtonate"></a>
+<h2>Protonate Panel</h2>
+<p style="text-align:center"><img src="residuepka/protonate_panel.png" /></p>
+
+<p>The Protonate Panel is used to actually modify the structure in the MOE
+window once pK<sub>a</sub> values have been predicted for it.  Given a pH, it will
+modify the ionization of all titratable groups, under the assumption that any
+groups with pK<sub>a</sub> &lt; pH are deprotonated and those with
+pK<sub>a</sub> &gt; pH are protonated.</p>
+
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="top"><b>pH</b></td>
+<td valign="top">
+Set here the pH for the protonation state you wish to have set.  If <b>Label
+Atoms</b> is on, then all titratable atoms will be labeled with their element
+name and charge after you click <b>OK</b>.  If <b>Add Hydrogens</b> is on,
+explicit hydrogens will be added according to the new protonation state, once
+you click <b>OK</b>.  Otherwise hydrogens will remain unchanged.  Note that
+when this option is off, <i>only</i> the ionization of the titratable atoms is
+modified, so you could end up in the situation of a deprotonated atom with its
+hydrogen still attached!  In this case, manually adding hydrogens again from the
+main menu will yield the correct result (choose <span class="menu">MOE | Edit |
+Hydrogens | Add Hydrogens</span>).
+</td></tr></table>
+<p>
+Click <b>OK</b> to proceed with the operation.  You will be asked to confirm
+that you really want to modify the structure.  The pK<sub>a</sub> values
+from the most recent prediction will always be used.  If any atoms lack a
+prediction then they will be skipped.  If no predictions have been made
+yet, a message to this effect will be shown - click <b>Predict</b> in the main
+panel and try again. Clicking <b>Cancel</b> will close the Protonate Panel
+without making any changes.</p>
+
+
+<a name="Example"></a>
+<h2>Worked Example</h2>
+
+<p>
+In this section we will present an example calculation with the
+Residue pKa application.  PDE4B2B complexed with Rolipram (PDB 1RO6) will
+be used in the example:</p>
+
+<div class="example">
+<ol>
+<li>Clear the molecular data in MOE with
+<span class="menu">MOE | File | Close</span> and ensure that there are no
+running tasks (use the <b>Cancel</b> menu in the MOE window).
+
+
+<li>Load Rolipram with <span class="menu">MOE | File | Open</span> and
+select <tt>$MOE/sample/mol/1ro6.pdb</tt>.
+
+
+<li>Identify the active site with the Site Finder application:
+select <span class="menu">MOE | Compute | Site Finder</span> and press <b>Apply</b>.
+In the list of sites, select only the first site and select
+<b>Isolate: Atoms and Backbone</b> to view the active site.  Then
+press <b>Close</b> to close the Site Finder application.
+
+</ol>
+</div>
+
+<div class="example">
+<a name="ExamplePredict"></a>
+<h3>Example: Predicting pK<sub>a</sub> values in the Active Site</h3>
+
+<p>
+With the Rolipram system set up as described above, start the Residue pKa
+application by selecting
+<span class="menu">MOE | Compute | Prepare | Residue pKa</span>.
+<p>
+In the listbox you should see a list of all the titratable atoms in the
+structures.
+
+<ol>
+<li>Check the <b>Synchronize</b> box.  This will help you
+find atoms you select in the listbox more quickly in the MOE window.
+<p><li>Check the <b>Label</b> box.  This will cause atoms selected in the
+listbox to have their predicted pK<sub>a</sub> values displayed in the MOE
+window once a prediction is made.
+<p><li>
+Click <b>Predict</b>.  The <b>pKa</b> column will fill with the predicted values.
+<p><li>
+To view the predictions for only the atoms which are currently visible, select
+<b>Visible Only</b> at the top of the panel.  Note if you
+had selected this <i>before</i> making the prediction, the prediction would
+have been made <i>only</i> on this set of atoms, ignoring the presence of all
+other atoms.  This would result in greatly different, and of course incorrect,
+predictions.  It is important that when you click <b>Predict</b>, the
+entire set of atoms you wish to consider is selected at the top of the panel,
+and displayed in the listbox.
+</ol>
+
+<p style="text-align:center">
+<img src="residuepka/ex_rolipram_panel.png" width="300px"
+alt="Residue pKa panel"/>
+</p>
+<p class="caption">HIS 234, HIS 238, HIS 274 and HIS 278 all have unusually low
+pK<sub>a</sub> values.
+</p>
+
+<p>
+Note that HIS 234, HIS 238, HIS 274 and HIS 278 all have unusually low
+pK<sub>a</sub> values.  This is the pK<sub>a</sub> for pulling the first
+hydrogen off, changing them from positively charged to neutral.  Histidine has
+a second pK<sub>a</sub> value as well, for pulling off the second hydrogen and
+making it negatively charged.  Normally this is quite high, but because the
+pK<sub>a</sub> values are lowered so drastically in this environment, some of the HIS
+residues may in fact be negatively charged in this case (as we shall see). 
+Let's try to see why they are so strongly acidic.</p>
+
+
+<div class="fright">
+<img src="residuepka/rolipram2.png" width="450px"
+alt="Active site prior to protonation" /> <br/>
+<p class="caption">Active site prior to protonation</p>
+</div>
+
+<ol>
+<li>Select the four HIS residues mentioned above in the listbox.  To select
+more than one, you will have to hold down the <tt>Ctrl</tt> key (or the
+equivalent on your keyboard) while clicking on them one at a time.</li>
+
+<li> There are some metals near by.  To get a better view of them, choose
+<span class="menu">MOE | RHS | System | Metal 1RO6.B</span> and then
+<span class="menu">MOE | Render | Atoms | Label | Element</span>.
+<p style="text-align:center">
+<img src="residuepka/pKa_SysMan.png" width="250px"
+alt="Select metal in System Manager"/>
+</p>
+<p>You should now clearly see a zinc 
+ion, with charge +2, and the nearby histidine residues with
+their pK<sub>a</sub> values labeled.  Clearly the interaction with the metal
+ion has the effect of lowering the pK<sub>a</sub> dramatically.</p></li>
+
+<li> Let's look in a bit more detail.  Click the <b>Report...</b> button and
+examine the rows for these HIS residues to see where the greatest contribution
+comes from (see above for a description of the report format).  HIS 234 gets a
+total of -5.30 from burial and -8.22 from charge-charge interaction (presumably
+with the metal), and HIS 238 gets -6.42 from burial and -2.00 from
+charge-charge. The other two HIS residues have similar contributions from burial
+and charge-charge contributions.  Thus we can conclude
+that the low pK<sub>a</sub> is a result of the combination of being deeply
+buried and close to the positively charged metal atom.  Close the report by
+selecting <span class="menu">File | Quit</span> from its menu.</li>
+
+</ol>
+<div style="clear:both"></div>
+</div>
+
+<div class="example">
+<a name="ExampleProtonate"></a>
+<h3>Example: Protonating the Structure</h3>
+
+<p>
+<div class="fright">
+<img src="residuepka/rolipram3.png" width="450px" 
+alt="Active site after protonation"> <br/>
+<p class="caption">Active site after protonation</p>
+</div>
+
+<p>
+With the Rolipram system set up as described above (and the pK<sub>a</sub> values
+predicted as described in the previous example), click the
+<b>Protonate...</b> button.  We will now set the protonation state of the
+structure based on the predictions.</p>
+
+<ol>
+<li>
+Leave the pH in the small window that pops up at 7.4.  We will set the
+protonation state of the structure to match the most dominant species at
+this pH.</li>
+
+<li>
+Select <b>Label Atoms</b> which will make it easier to find titratable
+atoms after we click <b>OK</b>.</li>
+
+<li>
+Select <b>Add Hydrogens</b> so we can see the effect of the change in
+protonation state.</li>
+
+<li>
+Click <b>OK</b>.  Confirm that you really want to do this by clicking
+<b>Yes</b> in the dialog that appears.  Note the whole protein is affected, not
+just the visible portion, since we performed the prediction step on <b>All
+Atoms</b>.</li>
+</ol>
+
+
+<p>
+You may now click <b>Close</b> on the Residue pK<sub>a</sub> panel if you wish. 
+Examine the active site now, in the area around the metal ions.  You should see
+two deprotonated (negatively charged) carboxyl groups pointing directly towards
+the metal. In addition, observe the four HIS residues.  HIS 234, HIS 278,
+HIS 238 and HIS 274
+each have a single protonated nitrogen and thus are neutral.  In total, then,
+there are two negative charges to exactly neutralize the charge of +2 from the
+metal, making the active site neutral at pH 7.4.  Note that although MOE
+only displays the first pK<sub>a</sub> for the histidine residues, it does
+compute the second one as well, for the purposes of determining the proper
+protonation state.</p>
+<div style="clear:both"></div>
+
+</div>
+
+<h2><a name="SeeAlso">See Also</a></h2>
+<a href="protonate3d.htm">Protonate3D</a>
+
+<h2><a name="Ref">References</a></h2>
+
+<table cellpadding=5 width=100%>
+<tr>
+<td valign="top">[Antosiewicz&nbsp;1996]
+<td valign="top">
+Antosiewicz, J., McCammon, J.A., Gilson, M.K.; The Determinants of
+pK(<sub>a</sub>)s in Proteins; <i>Biochemistry 35</i> (<b>1996</b>) 7819-7833.
+
+<tr>
+<td valign="top">[Bashford&nbsp;1990]
+<td valign="top">
+Bashford, D., Karplus, M.; pK<sub>a</sub>s of Ionizable Groups in Proteins --
+Atomic Detail from a Continuum Electrostatic Model; <i>Biochemistry 29</i>
+(<b>1990</b>) 10219-10225.
+
+<tr>
+<td valign="top">[Li&nbsp;2005]
+<td valign="top">
+Li, H., Robertson, A.D., Jensen, J.H.; Very Fast Empirical Prediction
+and Rationalization of Protein pK<sub>a</sub> Values; <i>Proteins 61</i>
+(<b>2005</b>) 704-721.
+
+<tr>
+<td valign="top">[Ohno&nbsp;2006]
+<td valign="top">
+Ohno, K., Sakurai, M.; Linear-Scaling Molecular Orbital Calculations for the
+pK<sub>a</sub> Values of Ionizable Residues in Proteins; <i>J. Comp. Chem.
+27</i> (<b>2006</b>) 906-916.
+
+<tr>
+<td valign="top">[Ondrechen&nbsp;2001]
+<td valign="top">
+Ondrechen, M.J., Clifton, J.G., Ringe, D.; THEMATICS: a Simple Computational
+Predictor of Enzyme Function from Structure; <i>Proc. Natl. Acad. Sci. USA
+98</i> (<b>2001</b>) 12473-12478.
+
+</table>
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

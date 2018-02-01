@@ -1,0 +1,51 @@
+# -*- coding: utf-8 -*-
+# ==========================================================================
+# Sample program to call a MOE/Web SOAP service.
+# Tested with Python 2.6.6 on Linux.
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY.
+# ==========================================================================
+
+import httplib
+import socket
+
+moeweburl = 'localhost:8888'	# MOE/Web home URL
+soapfunction = 'SMILESToMol'	# SOAP service that will be called
+
+# Prepare the XML SOAP request that will be send to server.
+
+XML = ('<?xml version="1.0"?>'
+    '<SOAP-ENV:Envelope xmlns:SOAP-ENV='
+    '"http://schemas.xmlsoap.org/soap/envelope/">'
+    '<SOAP-ENV:Body>'
+    '<' + soapfunction + 'InputType>'
+    '<smiles>c(c)c</smiles>'
+    '<v3000>false</v3000>'
+    '</' + soapfunction + 'InputType>'
+    '</SOAP-ENV:Body>'
+    '</SOAP-ENV:Envelope>'
+    )
+
+# Set HTTP request header.
+
+headers = {"Content-type": "text/xml", "Content-Length": "%d" % len(XML)}
+
+# Connect to server, send request and print out response.
+
+try:
+    conn = httplib.HTTPConnection(moeweburl)
+    conn.request('POST', '/soap/'+soapfunction, "", headers)
+    conn.send(XML)
+    data = conn.getresponse()
+    conn.close()
+
+    # The output, if successful, is the SOAP response in raw XML.
+
+    print "Result: \n", data.read(), "\n"
+
+# Report exception.
+
+except (httplib.HTTPException, socket.error) as ex:
+   print "Error: %s" % ex
+
+

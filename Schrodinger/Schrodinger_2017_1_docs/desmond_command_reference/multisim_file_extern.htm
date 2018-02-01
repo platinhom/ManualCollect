@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:MadCap="http://www.madcapsoftware.com/Schemas/MadCap.xsd" lang="en-US" xml:lang="en-US" data-mc-search-type="Stem" data-mc-help-system-file-name="Documentation.xml" data-mc-path-to-help-system="../" data-mc-target-type="WebHelp2" data-mc-runtime-file-type="Topic" data-mc-preload-images="false" data-mc-in-preview-mode="false" data-mc-toc-path="Command References|Desmond Command Reference|The multisim Utility|The multisim File Syntax">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link href="../Skins/Default/Stylesheets/Slideshow.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/TextEffects.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Topic.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Components/Styles.css" rel="stylesheet" type="text/css" data-mc-generated="True" /><title>The extern Stage in the multisim File</title>
+        <link href="../Resources/TableStyles/StandardRules.css" rel="stylesheet" data-mc-stylesheet-type="table" />
+        <link href="../Resources/Stylesheets/docs.css" rel="stylesheet" />
+        <script src="../Resources/Scripts/custom.modernizr.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/jquery.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.config.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/foundation.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/plugins.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/MadCapAll.js" type="text/javascript">
+        </script>
+    </head>
+    <body><a name="aanchor8161"></a>
+        <MadCap:concept term="Command Reference" /><a name="aanchor8162"></a>
+        <MadCap:concept term="Desmond" /><a name="multisim_1257644870_742662"></a>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="multisim_file_solvate_pocket.htm">The solvate_pocket Stage in the multisim File</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="desmond_command_referenceTOC.htm">Desmond Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="multisim_file_analysis.htm">The analysis Stage in the multisim File</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+        <h1 class="Title">The extern Stage in the multisim File</h1>
+        <p>The extern stage provides an extremely flexible way to include your own Python code in a <code>multisim</code> run. The code can be embedded in the <code>.msj</code> file as a string value assigned to the <code>command</code> keyword. For example:</p><pre>
+extern {
+        command = "
+import os;
+def main( current_stage, job ):
+    os.system( ’ls’ )
+"
+}
+</pre>
+        <p>In the embedded Python code, you can import and use modules from your Schrödinger Python installation. If you need extra modules, you can pass their file names to <code>multisim</code> by setting the <code>auxiliary_file</code> parameter, and <code>multisim</code> transfers them to the scratch directory of the master job at run time. For example:</p><pre>
+extern {
+        auxiliary_file = [mod1.py mod2.py]
+        command = "
+import os
+import mod1
+import mod2
+def main( current_stage, job ):
+    // does something with mod1 and mod2
+    os.system( ’ls’ )
+"
+}
+</pre>
+        <p>The code given above is run once for each subjob in the previous stage. If you want to run it only once, use <code>command_once</code> instead of <code>command</code>. For example:</p><pre>
+extern {
+        auxiliary_file = [mod1.py mod2.py]
+        command_once = "
+import os
+import mod1
+import mod2
+def main( current_stage ):
+    // does something with mod1 and mod2
+    os.system( ’ls’ )
+"
+}
+</pre>
+        <p>For scripts that are stage-specific, your code must provide a <code>main</code> function that takes two arguments for <code>command</code> or one for <code>command_once</code>. The first argument in both cases corresponds to information for the current stage, while the second argument for <code>command</code> corresponds to information from the previous stage.</p>
+        <p>For very simple scripts, your code for <code>command</code> or <code>command_once</code> does not need to provide a <code>main</code> function. The following example removes a temporary file if it exists:</p><pre>
+extern {
+   command = "
+import os
+# Removes a temporary file.
+if (os.path.isfile( ’my_temporary_file’ )) :
+    os.remove( ’my_temporary_file’ )
+"
+}
+</pre>
+        <p>Without the <code>main</code> function, <code>multisim</code> cannot pass the current stage and the current job objects to the Python code, but that is presumed to be not needed for simple operations.</p>
+        <p>The <code>extern</code> stage is an advanced feature. Please do not hesitate to contact us for additional information on its use. The keywords for this stage are listed in <a class="Table_Number MCXref xref xrefTable_Number selected" href="#multisim_1257644870_741630">Table 1</a>.</p>
+        <table class="TableStyle-StandardRules" style="caption-side: top;mc-table-style: url('../Resources/TableStyles/StandardRules.css');" cellspacing="0">
+            <caption valign="top" style="padding-bottom: 7pt;">
+                <p class="Table_Caption" data-mc-autonum="Table 1. "><span class="autonumber"><span>Table 1. </span></span><a name="multisim_1257644870_741630"></a>Keywords for the extern stage</p>
+            </caption>
+            <thead>
+                <tr class="TableStyle-StandardRules-Head-Header1">
+                    <td class="TableStyle-StandardRules-HeadE-Column1-Header1">
+                        <p class="Cell_Heading">Keyword</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-HeadD-Column1-Header1">
+                        <p class="Cell_Heading">Description</p>
+                    </td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body"><code>auxiliary_file</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body1">
+                        <p class="Cell_Body">List of files containing extra modules to be transferred to the runtime directory.</p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body"><code>command</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body1">
+                        <p class="Cell_Body">Command to execute once for each subjob of the previous stage. The command specifies Python code that can span multiple lines. </p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyB-Column1-Body2">
+                        <p class="Cell_Body"><code>command_once</code>
+                        </p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyA-Column1-Body2">
+                        <p class="Cell_Body">Command to execute once for the previous stage. The command specifies Python code that can span multiple lines. </p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="multisim_file_solvate_pocket.htm">The solvate_pocket Stage in the multisim File</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="desmond_command_referenceTOC.htm">Desmond Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="multisim_file_analysis.htm">The analysis Stage in the multisim File</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

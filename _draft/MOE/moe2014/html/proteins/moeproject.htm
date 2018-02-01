@@ -1,0 +1,2602 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!      /proteins/moeproject.htm        MOE Project Database Generation
+!!
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<meta keywords project, database organizer, alignment, superposition />
+<meta panel MOE Project>
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+<style type="text/css">
+td {
+	vertical-align: text-top;
+}
+p {
+	margin-top: 0.9rem;
+	margin-bottom: 0.9rem;
+}
+li {
+	margin-top: 1.2rem;
+	margin-bottom: 1.2rem;
+}
+ul.tight > li {
+	margin-top: 0.2rem !important;
+	margin-bottom: 0 !important;
+}
+ol.tight > li {
+	margin-top: 0.2rem !important;
+	margin-bottom: 0 !important;
+}
+</style>
+
+<title>MOE Project</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+
+<h6 class="h-two">Contents</h6>
+<div id="toc-list"><script>var gman_OrderedListTOC=false; </script></div>
+
+<a name="Introduction"></a>
+<h2>Introduction</h2>
+
+<p>Structure-based drug design (SBDD) projects often involve large
+amounts of data from disparate sources: crystal structures, electron
+density maps, database identifiers of proteins or ligands, experimental
+data and assays, as well as various calculated quantities.  The MOE
+Project application is used to manage this information and keep it
+up-to-date by assembling and organizing the data into a single MOE
+database (MDB) file.  The MOE Project framework supports aligning and
+superposing all structures into a common reference frame, performing
+structure preparation work, and more.  By centralizing data into a
+single repository, MOE Project helps to ensure data integrity and
+consistency.  The use of a single integrated structure also facilitates
+data dissemination and maintenance.  </p>
+
+<a name="WhatIs"></a>
+<h2>Overview of MOE Project</h2>
+
+<p>
+MOE Project is a highly configurable meta-protocol
+for data organization.  It takes a set of standard format (PDB, mmCIF,
+SDF, MTZ, etc.) data files as input, processes this data, and outputs a
+single .mdb file.  Structures can be aligned and superposed, optionally
+with electron density around the active site and/or ligand topology
+correction.  Various forms of Structure Preparation can also be carried
+out, and associated data assembled or calculated, possibly using SOAP,
+HTTP or a number of other common access methods.</p>
+
+<p>Input structures are provided in standard PDB or mmCIF format,
+structure factors can be given as MTZ files or can be taken from
+precomputed CCP4 grids, and ligands can be specified in SDF format.  SDF
+files can be used to specify the ligand of interest in cases of
+ambiguity, such as when a cofactor or other molecule is present in the
+active site but is not the major ligand of interest.</p>
+
+<p>There are two key files that are required for building a project:
+	<ol class="tight">
+
+	<li>An XML configuration file describing the fields in the output
+	database, and establishing the various policies affecting how these
+	fields are calculated.
+
+	</li><li>A reference file, stored in MOE format, containing one or
+	more reference structures which are used to set the superposition
+	frame of reference and the alignment, and to define the rendering
+	styles, views, and annotations to inherit.
+
+	</li>
+	</ol>
+</p>
+
+<p>While the MOE reference file is specific to each project, a single
+XML configuration file can generally be applied to multiple projects
+with only minimal changes for each.  The reference and configuration
+files are described in more detail below.</p>
+
+<p>The figure below illustrates the components required for building a
+project database.  Typically, the XML configuration file and the
+reference file are built once when the database is first compiled.
+Thereafter, the database is updated as new source data becomes available.
+</p>
+
+<p>
+<center>
+<img src="moeproject/moeproject_overview.png" alt="Overview of MOE Project"
+style="border:5px" />
+</center>
+</p>
+
+<p>
+MOE Project uses the reference and configuration files to process the source
+data files and to build the output project database.  In the course of this
+processing, the source data files are examined to determine which structures
+will be included in the database, and how annotations, rendering, and other
+attributes from the reference file will be applied to those structures, in
+accordance with the specifications in the configuration file.  When a new
+project database is created, the source data may come from a limited set of
+local structures.  After the database is created, it should be updated on a
+regular basis; at this point, candidate structures can be taken from either
+in-house libraries or from outside sources, such as <a
+	href="http://www.chemcomp.com/PSILO-Protein_Structure_Database_System.htm" target="blank">PSILO</a> or
+the <a href="http://www.rcsb.org/" target="_blank">RCSB Protein Databank</a>.
+
+</p>
+
+<p>A typical workflow for creating, maintaining, and using a project database
+(described in greater detail <a href="#CreateMOEProject">below</a>) can
+be summarized as follows:
+</p>
+
+<h3>Summary of MOE Project Workflow</h3>
+
+<p>
+<ol>
+
+    <li><b>Create a <a href="#ReferenceFile">reference file</a></b>.  The
+    reference file specifies <b>what sequence and structure data will
+	constitute the project</b>.  The reference file contains representants
+    of the desired structures, as well as their alignment and rendering, and is
+    created manually.  It is stored in MOE format.
+
+    </li>
+
+    <li><b>Create a <a href="#ConfigFile">configuration file</a></b>.
+
+    The configuration file specifies <b>what fields will be created in the
+	project database</b>.  In addition to a field to store the sequence and
+    structure data, there can be fields to hold PDB record data, as well as
+    calculated property fields.  Special settings allow specific fields to
+    appear and be searchable from the <a href="../proteins/projsrch.htm">Project
+	Search</a> panel.  The configuration file is an XML file, and is
+    typically modified from an existing project, such as one of those included
+    in <tt>$MOE/lib/project</tt>.  It is most easily edited using the web-based
+    MOE Project <a href="../moe/moeweb_intro.htm#Configure_Project_Database">
+	configuration file editor</a>.
+
+    </li>
+    <li><b>Collect the project data</b>.
+
+    The source data belonging to the project should be collected into a
+    directory tree.  This includes all PDB, MTZ, SDF, and other relevant
+    files.
+
+    </li>
+    <li><b>Create the MOE Project database</b>.
+
+    The MOE Project database is created using either the <a
+	href="pdb_mdb.htm#DBUpdate"><b>Protein Database Update</b></a> panel or
+    the SVL <a href="../moe/fcnref/moeprojcreate.htm"
+	class="svl">ProjectCreate</a> command.
+
+    </li>
+
+    <li><b>Use the project database</b>.
+
+    The project database can be analyzed and used in various ways, for
+    example:
+
+	<p>
+	<ul>
+	    <p><li><b>Search and analyze the project database</b>.
+
+	    The <a href="../proteins/projsrch.htm">Project Search</a> panel
+	    displays data fields from the project database, which can be
+	    searched, analyzed using statistical plots, and browsed.
+	    Search results can be saved for further processing.
+
+	    </li></p><p><li><b>Perform PLIF analysis</b>.
+
+	    The <a href="../apps/plif.htm">Protein Ligand Interaction
+		Fingerprints</a> application summarizes the interactions
+	    between ligands and proteins into fingerprint.  These fingerprints
+	    can be taken collectively to represent a database of protein-ligand
+	    complexes.  They can also be analyzed for interactions of interest,
+	    ligand pose selection, pharmacophoric feature identification and
+	    query generation, and similarity.
+
+	    </li></p><p><li><b>Perform loop modeling</b>.  A project database
+	    can serve as a custom loop database for homology modeling
+	    activities.
+
+	    </li></p>
+	</ul>
+	</p>
+    </li>
+	    
+    <li><b>Update the project database periodically</b>.
+
+    As new source data becomes available, the project database can be updated
+    using either the <a href="pdb_mdb.htm#DBUpdate"><b>Protein Database
+	    Update</b></a> panel or the SVL <a
+	href="../moe/fcnref/moeprojcreate.htm" class="svl">ProjectCreate</a>
+    command.  The project database can be updated against either local data or
+    public repositories such as the RCSB.  The SVL <tt>ProjectCreate</tt>
+    command can be used in scripts which are automatically called on a periodic
+    basis to update the project database.
+
+    </li>
+
+</ol>
+</p>
+
+<a name="ReferenceFile"></a>
+<h3>The Reference File</h3>
+
+<h4>Composition</h4>
+
+<p>The MOE format reference file (<tt>.moe</tt>) serves as the basis of
+organization of the project data.  Typically, it will consist of 10-20
+aligned sequences, including one or more structures.  The number of
+sequences required depends on the variability of the protein family
+being studied.  They should cover the range of sequence space that is
+expected to be added to the project, but there is generally no advantage
+to adding redundant sequences &mdash; in theory no two sequences in the
+reference file should have greater than about 35% pairwise sequence
+identity [Rost&nbsp;1999].  It is not a problem, however, if there are some 
+highly similar sequences, but there is no added benefit.</p>
+
+<p><span class="note">Note:</span> The sequences and structures comprising
+the reference file are not automatically included in the output project
+database.  Sequences or structures to be included in the project database
+must be explicitly provided as project source data files, and assembled with
+the rest of the project source files.</p>
+
+<p>The structures provided should be superposed (based on the sequence
+alignment), and will normally be used when building the project to define the
+standard orientation into which all project members will be aligned and
+superposed when loaded into the MOE Window.  A set of atoms to use for
+superposition can be specified in the configuration file, and various methods
+for carrying out the superposition can be used.  A 'site' can also be specified
+in the reference file, which is used, for example, for isolating the region of
+interest in the view.</p>
+
+<h4>Family Member Detection</h4>
+
+<p>The reference file is used to determine whether a sequence or
+structure belongs to the family in question.  Each sequence from each
+candidate project member will be aligned to the multiple sequence
+alignment that is provided in the reference file.  <img style="float:
+left;" src="moeproject/zscore.png" alt="Zscore" />Any sequences that
+fail to pass a certain Z-score threshold will be discarded, ensuring
+that only structures which actually belong to the family of interest are
+ultimately added to the output database.  This also means that a
+structure file containing multiple copies of an active site (a dimer,
+for example) will by default produce a separate entry in the final MDB for each
+copy, each entry superposing and focused on its own particular
+copy.</p>
+
+<p><img style="float: right;" src="moeproject/venn.png" alt="Venn
+diagram" /> The project reference file detection method has been tested
+on the kinase family, and, as shown in the Venn diagram, correctly
+identifies all of the kinases that were identified by the previous
+kinase detection method, which was used in the past to build the
+database <b>kinome.mdb</b>.  That method relied on specific sequence
+patterns being present.  </p>
+
+<p> The new identification method implemented in MOE Project found an
+additional 85 kinases over the old method, mostly bacterial and plant,
+and excluded 16 haspins and pseudokinase structures that were included
+in the previous kinome database.  Comparison with the InterProScan
+[Jones&nbsp;2014] assignment across the full PDB for InterPro
+family IPR000719 (Protein Kinase core) shows good agreement, although
+both MOE methods filter out an additional 86 structures.  These excluded
+structures include atypical kinases such as the RIO-kinases, pseudo
+kinases, and several false positives, all of which can be considered
+incorrect assignments on the part of InterProScan.  These comparisons
+demonstrate that the new detection algorithm compares favorably to both
+the previous MOE kinase identification method and InterProScan. The new
+method also has the advantage that it can be applied to any family
+represented by a multiple-sequence alignment, and not just kinases.</p>
+
+<h4>Family Annotations</h4>
+
+<p>The reference file can be used to annotate structures; these
+annotations appear when the structures are loaded into MOE.  Residues in
+each project member can be renumbered according to the UIDs in the
+reference, which is integral to simplifying comparisons of interactions
+across different structures.  Similarly, water residues can be
+renumbered based on their proximity in space to water clusters in the
+reference, again making comparison of interactions with conserved waters
+much simpler to carry out.</p>
+
+<p>Annotations, which indicate key regions of interest, such as the Hinge
+region of a kinase, or the CDRs in an antibody, are made in the form of MOE
+sets.  These sets can be copied from the reference file to the structures being
+added to the database based on the sequence alignment.  
+</p>
+
+<p>Two sets should always be defined in a reference file: 
+	<ul>
+
+	<li>The set of ligands or other atoms of primary interest.  The set must
+	be specified in the project <a href="#ConfigFile">configuration file</a>.
+
+	</li><li>The set of atoms to be used for superposition of the family.
+	The set must be specified in the <a href="#ConfigFile">configuration
+		file</a>.
+	
+	</li>
+	</ul>
+</p>
+
+<p>The camera view, rendering options, and coloring can all be inherited from
+the reference file, so that all structures in the output database will have a
+similar appearance to those in the reference file.  Note that the inheritance
+occurs only where structures are aligned.  </p>
+
+<div class="example">
+
+<a name="TourRefFile"></a>
+<h4>Example: Protein Kinase Reference File</h4>
+
+<ol>
+
+<li><i>Open the protein kinase reference file.</i>
+
+<blockquote>
+
+<span class="menu">MOE | RHS | Open |
+<tt>$MOE/lib/project/Protein Kinase.moe</tt></span>
+
+</blockquote>
+
+<p align="center">
+<a href="moeproject/Open_pkinase.png">
+<img src="moeproject/Open_pkinase.png"
+alt="Open the Protein Kinase.moe reference file" width="500" />
+</a>
+</p>
+
+<p><b>Protein Kinase.moe</b> is a reference file that contains 20
+aligned kinases for which the rendering, view, and annotation
+sets have all been specified.  This file was used to generate
+the kinase database <tt>$MOE/lib/project/Protein Kinase.mdb</tt>.</p>
+
+<p>The structures are loaded into MOE with the particular pose, view, and
+rendering attributes set in the reference file.  These attributes are inherited
+by all structures in the project database: any structure loaded from the
+project database will have this same pose, view, and rendering.  </p>
+
+</li>
+
+<li><i>Open the <a href="../moe/gui/system.htm">System Manager</a>.</i>
+
+<blockquote>
+<span class="menu">MOE | RHS | System</span>
+</blockquote>
+
+<p>The System Manager lists all structures in the system, and also
+lists any sets that have been defined.
+</p>
+
+<p align="center">
+<a href="moeproject/Init_pkinase.png">
+<img src="moeproject/Init_pkinase.png" alt="Structures
+from the Protein Kinase.moe reference file loaded into MOE" width="800" />
+</a>
+</p>
+
+</li>
+
+<li><i>Examine the defined sets.</i>
+
+<p>
+<i>a. Expand the Set display in the System Manager.</i>
+
+<p>At the bottom of the System Manager, press the expand list button
+<img src="../moe/gui/system/sys_expand.png" align="top" /> at
+the left of the <b>Sets</b> line to expand the display of the
+currently-defined sets.  For <b>Protein Kinase.moe</b>, these include:
+</p>
+
+	<p>
+	<ul class="tight">
+	<li>The Catalytic Subunit (in red)</li>
+	<li>DFG Motif (in cyan)</li>
+	<li>The G-Loop (in green)</li>
+	<li>The Hinge (in yellow)</li>
+	<li>Hyd1 (in orange)</li>
+	<li>The alpha-C Helix (in purple)</li>
+	</ul>
+	</p>
+
+	<p><b>Protein Kinase.moe</b> contains two additional important sets:
+	<p>
+	<ul class="tight">
+	    <li>a ligand set named <b>_ligand</b>, and</li>
+	    <li>a superpose set named <b>_superpose</b>.</li>
+	</ul>
+	</p>
+
+</p>
+
+<p align="center">
+<a href="moeproject/Sets_pkinase.png">
+<img src="moeproject/Sets_pkinase.png" alt="Sets within the Protein Kinase.moe
+reference file" width="800" />
+</a><br /><br />
+<i>Important sets in the pkinase reference file: <b>_ligand</b>
+    and <b>_superpose</b>
+</i>
+</p>
+
+<p>
+<img src="moeproject/pkinase_sysman_sets_superpose_ellipse.png"
+alt="pkinase _superpose sets " style="float: right; margin: 2px" />
+
+<i>b. Select the atoms belonging to the _superpose set.</i>
+</p>
+
+<p> Press the selection control <img
+src="../moe/gui/system/sys_notselected.png" align="top" /> at the left of the
+<b>_superpose</b> line in the <b>Sets</b> list of the System Manager.  All sets
+containing selected atoms will be indicated in the System Manager by
+half-filled <img src="../moe/gui/system/sys_halfselected.png" align="top" />
+(some of the atoms are selected) or completely-filled <img
+src="../moe/gui/system/sys_selected.png" align="top" /> (all of the atoms are
+selected) selection indicators.
+
+</p>
+
+
+<p>Here, the superpose set can be seen to include Catalytic Subunit, Hinge,
+Hyd1, and part of DFG, among others.  Inclusion in the superpose set means that
+the atoms in these sets will be superposed explicitly during input structure
+processing.
+
+</p>
+
+<p>Examination in the MOE Window of the structures reveals better structural
+superposition of the specified superpose atoms (red, yellow, orange, and cyan
+segments) than of atoms not in the superpose set, such as those in the G-Loop
+(green) or in the alpha-C Helix (purple).
+
+</p>
+
+</li>
+
+<li><i>Examine the Sequence Editor annotations and constraints.</i>
+
+<p>Open the <a href="../moe/gui/se.htm">Sequence Editor</a>.</p>
+
+<blockquote>
+
+<span class="menu">MOE | SEQ</span>
+
+</blockquote>
+
+<p>The Sequence Editor provides an alternative view of the sets defined in the
+reference file.  In <b>Protein Kinase.moe</b>, the sets are annotated with
+residue coloring which matches the secondary structure (ribbon) coloring
+in the MOE Window: </p>
+
+<p align="center">
+<a href="moeproject/reffile.png">
+<img src="moeproject/reffile.png" alt="Reference File" />
+</a>
+</p>
+
+<p>In the Sequence Editor, the reference file <a
+href="../proteins/align.htm#CONSTRAINTS">alignment constraints</a> are
+displayed.  These alignment constraints are used during sequence
+alignment to enforce alignment of key residues.
+
+</p>
+
+<p align="center">
+<a href="moeproject/SE_pkinase.png">
+<img src="moeproject/SE_pkinase.png" alt="Sequence Editor display of the
+Protein Kinase.moe reference file" width="800px" />
+</a>
+</p>
+
+<p>In the figure above, alignment constraints are indicated by the blue boxes
+at positions 8, 10, 13, 15, and 34. Additional alignment constraints exist at
+higher-numbered sites, but are not visible in the figure.  To see all
+alignment constraints, open the <a
+	href="../proteins/align.htm#ManagingConstraints">Residue Alignment
+	Constraints</a> panel: </p>
+
+<blockquote>
+
+<span class="menu">SE | Alignment | Constraints | Manage Constraints</span>
+
+</blockquote>
+
+<p align="center"> 
+<a href="moeproject/ResConstraints_pkinase.png">
+<img src="moeproject/ResConstraints_pkinase.png"
+alt="Managing the constraints of the Protein Kinase.moe reference file"
+width="300px" style="border:1px solid black" />
+</a>
+</p>
+	
+<p>The figure
+above shows the details of the alignment constraints at site 8, for
+the 20 receptor chains in the project.  Constraints can also be inherited
+by structures as they are put into the output MDB, to aid aligning them
+to each other.</p>
+
+</li>
+
+<li><i>Examine the sequence diversity of the reference file.</i>
+
+<p>Open the <a href="./align.htm#Monitor">Protein Similarity Monitor</a>:</p>
+
+<ol>
+	<li><span class="menu">SE | Alignment | Similarity</span>
+	</li><li>Choose <span class="menu">Metric | <i>Identity</i></span>.
+	</li><li>Choose <span class="menu">Display | <i>Matrix</i></span>.
+
+	</li><li>Show all chains: In the Sequence Editor, press the <b>+</b>
+	to the left of the <b>Tag</b> header to expand the chain list.
+
+	</li>
+</ol>
+
+<p align="center">
+<a href="moeproject/SimMatrix_pkinase.png">
+<img src="moeproject/SimMatrix_pkinase.png" alt="Similarity matrix of
+the Protein Kinase.moe reference file" width="400px" />
+</a>
+</p>
+
+<p>The similarity matrix displays sequence identity as a heat map, with
+red being highly dissimilar, and blue being highly similar.  The
+diagonal is blue showing self-identity.  A diverse reference file should
+show few blue squares in its matrix display (off the diagonal); blue
+off-diagonal squares indicate redundant information. However, in the
+case of chains with high identity but having different ligands, it may
+be worthwhile to include both chains in the reference file so that the
+ligand pocket can be better defined by the differing ligands.  </p>
+
+
+</li>
+</ol>
+
+</div>
+
+<a name="ConfigFile"></a>
+<h3>The Configuration File</h3>
+
+<p>
+<img style="float: right;" src="moeproject/moeproj_flow.png"
+alt="flowchart" />
+
+The project configuration file controls the building of the output database,
+and specifies exactly which fields will constitute it.  At a minimum, the
+configuration file must specify a MOE field to hold the structure data of the
+project.
+
+</p>
+
+<p><span class="tip">Tip!</span> It is suggested that a configuration file from
+the MOE distribution be used as a starting point.  The <tt>.xml</tt> files in
+<tt>$MOE/lib/project</tt> contain fields typically useful for project
+databases.
+
+</p>
+
+<p>
+The figure to the right illustrates typical processing steps of source
+data.  These steps are all controlled by the configuration file.
+</p>
+
+<ol>
+    <li><b>Align/Superpose</b>.  Sequence (Fasta files) and structure
+    (PDB files) data are aligned and superposed to the reference file.
+    The frame of reference and which areas to superpose are specified
+    in the configuration file.
+
+    </li><li><b>Electron Densities</b>.  Grid data can be specified
+    for inclusion in the project database.
+
+    </li><li><b>Ligand Topology</b>.  Ligand correction and identification
+    can be made through SDF files.  The name patterns of the SDF files to
+    use are specified in the configuration file.
+
+    </li><li><b>Structure Preparation</b>. Structures correction and
+    preparation can be stipulated in the configuration file.  <span
+	class="note">Note:</span> This step can take some time.
+
+    </li><li><b>Energy Minimization</b>. Structures can be refined.
+    Alignment constraints, which are inherited properties from the
+    reference structure, are honored.
+
+    </li><li><b>Property Calculation</b>. Descriptors and
+    properties calculated using MOE or other services can be specified.
+
+    </li><li><b>Experimental Data</b>. Experimental data from local and
+    public repositories can be used.
+
+    </li>
+
+</ol>
+
+<p> A configuration file is specified in XML format, however a complete
+interactive editor has been provided so no knowledge of XML is required.
+This editor can be found as the <a
+href="../moe/moeweb_intro.htm#Configure_Project_Database">Configure
+Project Database</a> tool on the MOE/web home page.  The tool includes
+<a href="../proteins/moeprojconfig.htm">complete online
+documentation</a> describing the various field types (and their options)
+that can be added to the database.
+</p>
+
+<p>
+A quick overview of the configuration file editor can be found
+below in the <a href="#ConfigurationEditor">appendix</a>.
+
+</p>
+
+<!--
+<p>Typically, the Configure Project Database web application will
+be launched from the <a
+	href="../proteins/pdb_mdb.htm#dbupdateDBPanel">Protein Database
+	Update</a> panel, by pressing the edit button
+	next to the <b>Configuration File</b> textfield.
+	</p>
+
+	<p>
+	<span class="note">Note:</span> this button is only available when
+	the <b>Protein Family</b> is <i>not</i> Antibody, and the mode is
+	<b>Build New</b>.
+</p>
+
+<p>Pressing the edit button will launch the <a
+href="../install/web_inst.htm">MOE/web</a> server if it has not already
+been started, and load the <b>Configure Project Database</b> web
+application into a browser.  The configuration editor will open with the
+specified configuration file loaded, if any was specified in the
+<b>Configuration File</b> textfield of the Protein Database Update
+panel.  Otherwise, if no configuration file was specified, the page
+opens with the main launch page loaded.  Here, there is a choice to open
+either a new file or an existing file.  If creating a new file, it is
+
+-->
+
+<a name="ProjectFieldTypes"></a>
+<h4>MOE Project Field Types</h4>
+
+<p>
+<img src="moeproject/config_edit_page_addmenu.png" alt="Database Fields
+Add menu" style="float: right;" />
+There are a variety of different kinds of project data fields that
+can be included in a project database. A new field is added to the
+database by opening the Edit page <span class="menu">Database Fields |
+Add</span> pulldown menu to choose a field type.  Selecting a field type
+will result in a field of that type being added to the list of Database
+Fields in the left pane of the Edit page.  The new field will be opened
+for editing in the right pane.
+</p>
+
+<p>The table below gives a brief summary of the project field types.
+</p>
+
+<p> <span class="note">Note:</span> The project field types are
+meta-types, not to be confused with the data format of the contents of
+the fields.  For example, the <b>ID</b> field is used to create a unique
+identifier; the identifier itself may be an integer or character data.  </p>
+
+<table class="titlebar"
+<tr>
+<th>Type</th><th>Description</th>
+
+</tr><tr><td>ID</td>
+
+<td>The <b>ID</b> field is used to create a unique identifier on each row of
+the resulting output database.</td>
+
+</tr><tr><td>MOE</td>
+
+<td>The configuration file must specify a <b>MOE</b> field that results
+in the generation of a database MOE-format field containing the members
+of the project along with their rendering, annotations, constraints, and
+view.  Various processing elements can be added to prepare the data,
+including options related to <a href="../apps/structprep.htm">Structure
+Preparation</a>, <a href="../apps/protonate3d.htm">Protonate 3D</a>, and
+<a href="../apps/ligx.htm">LigX</a>.  Options related to alignment and
+superposition are also provided here, as are those pertaining to crystal
+contacts and electron density or other grids.  When a ligand SDF file is
+provided, ligand correction options can be specified here as well.</td>
+
+</tr><tr><td>Subsystem</td>
+
+<td>The <b>Subsystem</b> field is used to extract atoms of interest from
+a given field that contains some or all of the structure of interest.
+For example, it can be used to extract only the ligand, or only the
+binding pocket, into a separate field.  This field is useful for
+extracting elements of the system in the original frame of reference, so
+that the association between the extracted elements and other elements
+of the original system are retained.
+
+</td>
+
+</tr><tr><td>Loop&nbsp;Library</td>
+
+<td>The <b>Loop Library</b> field is used to create a structure field
+that can be read by the Loop Modeler, for example during homology
+modeling.  In this way, the project database can serve as a custom loop
+dictionary for specific homology modeling projects.  When creating a
+<b>Loop Library</b> structure, MOE Project retains only the backbone
+atoms of the protein chains, and assigns a particular atom ordering.</td>
+
+</tr><tr><td>Ligand</td>
+
+<td>The <b>Ligand</b> field is used to generate a field for holding a
+sketch of the ligand. The contents are not guaranteed to be in any
+particular frame of reference, and therefore should not be combined with
+any other molecule fields to carry out a calculation.
+</td>
+
+</tr><tr><td>PDB&nbsp;Record</td>
+
+<td><b>PDB Record</b> fields are used to create database fields to hold
+information extracted from a supplied PDB (or mmCIF) file.  The
+information to extract is obtained by parsing the information of the
+relevant entities in the PDB file, such as CODE, HEADER, COMPND, or
+SOURCE.  Any missing SEQRES data can be provided in a FASTA file, which
+must exist in the same directory as the PDB file it corresponds to, and
+must have a name similar to the <tt>.pdb</tt> file.  The exact form is
+provided in the <b>Sequence File</b> section of the <b>MOE</b> field in the
+configuration file, otherwise any FASTA files will be ignored.</td>
+
+</tr><tr><td>Calculated&nbsp;Property</td>
+
+<td><b>Calculated Property</b> fields will generate database fields to hold
+any of a variety of descriptors that can be calculated from a protein or
+small molecule.  The source of the atoms must be specified.  Color coding
+in the Database Viewer can be specified based on the values in this
+field.</td>
+
+</tr><tr><td>Experimental&nbsp;Property</td>
+
+<td><b>Experimental Property</b> fields are used to create database
+fields that will contain input data associated with the structure or
+ligand rather than computed values.  Examples might include melting
+temperature, isoelectric point, or IC50.</td>
+
+</tr><tr><td>Alignment&nbsp;Quality</td>
+
+<td>The <b>Alignment Quality</b> field will generate a database field to
+store one of various possible measures that indicate the quality of the
+superposition onto the reference structure(s) &mdash; for example, the
+RMSD.</td>
+
+</tr><tr><td>PLIF</td>
+
+<td>The <a href="../apps/plif.htm"><b>PLIF</b></a> field is used to generate
+		protein-ligand interaction fingerprints.</td>
+
+</tr></table>
+
+<a name="EnvVar"></a>
+<h4>Environment Variables</h4>
+
+<p>Each project field type has an <b>Environment Variables</b> section
+in which database field environment variables can be specified for that
+particular field type. Any database field environment variables
+set in this section will apply only to the current field and can be interpreted
+by various applications that read the database.  </p>
+
+<p>The Environment Variables section is by default collapsed in the Edit pane.
+To expand it, press the <b>+</b> symbol:</p>
+
+<p align="center">
+
+<img src="moeproject/config_env_var_unexpanded.png" alt="Environment
+variables section unexpanded" />
+
+</p>
+
+<p>A special use of database field environment variables is to indicate
+to the <a href="../proteins/projsrch.htm">Project Search</a> application
+that a particular field is to be displayed in (and hence searchable
+from) the panel.  In the figure below, the <b>Compound</b> column in the
+Project Search panel displays the contents of a field called <b>compnd</b>
+in <b>Protein Kinase.mdb</b>.  This field derives from PDB record data, and has
+been configured for display in the Project Search panel.  </p>
+
+<p align="center">
+
+<img src="moeproject/project_search_panel_annot.png" width="600px" 
+alt="Project search panel" style="border:1px solid black" />
+
+</p>
+
+<p>There are two specific database field environment variable names that
+provide support for a MOE Project database and its interaction with the
+Project Search panel:
+
+<ul>
+    <p><li>
+
+    <b><tt>projectsearchgui_listname</tt></b>
+
+    <p>This database field environment variable is used to specify that
+    the field is to appear in the listbox of the Project Search panel.
+    The following figure shows how the <b>compnd</b> field in the
+    <b>Protein Kinase.mdb</b> project database has been configured for display
+    in the Project Search panel:
+    </p>
+
+    <p align="center">
+
+    <img src="moeproject/config_env_var_pdbcode.png" alt="Protein Kinase.mdb
+    PDB Code field configuration for display in Project Search"
+    style="border:1px solid black" />
+
+    </p>
+
+    <p>The configuration settings are as follows:</p>
+
+    <ul>
+
+	<li>The <b>Name</b> field must be set to
+	<tt><b>projectsearchgui_listname</b></tt>.
+
+	</li><li>
+
+	The <b>Value</b> field is set to the name that is to appear
+	in the Project Search panel, in this case, <tt><b>Compound</b></tt>.
+
+	</li>
+    </ul>
+
+    <p><a name="SpecialFields"></a><b>Special Fields</b>.  The Project
+    Search panel has special treatment of the following fields, which
+    must be named according to the specified convention.  In the table,
+    <b>Type</b> is the MOE Project field data type, <b>Source</b>
+	is the name of the field data in the .mdb project database,
+    and <b>Value</b> is the
+    required setting for the Environment Variables <b>Value</b> field.
+
+    </p>
+
+    <p>
+    <center>
+    <table class="titlebar">
+    <tr>
+    <th>Type</th>
+    <th>Source</th>
+    <th>Value</th>
+    </tr>
+
+    <tr>
+    <td>Ligand
+    </td><td>SDF or PDB files, as specified in Ligand Properties
+    </td><td>Ligand
+    </td>
+    </tr>
+
+    <tr>
+    <td>PDB Record
+    </td><td>code
+    </td><td>Code
+    </td>
+    </tr>
+
+    <tr>
+    <td>PDB Record
+    </td><td>compnd
+    </td><td>Compound
+    </td>
+    </tr>
+
+    <tr>
+    <td>PDB Record
+    </td><td>source
+    </td><td>Species
+    </td>
+    </tr>
+
+    </table>
+    <center>
+    </p>
+
+
+    </li></p>
+
+    <p><li><b><tt>projectsearchgui_recregion:<i>set_name</i></tt></b>
+
+    <p>This database field environment variable is used by the Project
+    Search panel to calculate the RMSD between structures in the
+    database and a specified reference structure.  The RMSD is
+    calculated over named sets which identify regions of importance; the
+    sets appear in the panel in the <b>Structure</b> pulldown menu.  In
+    the figure below, the set named <b>Pocket</b> has been selected.
+    The reference structure has been specified to be <b>Selected
+    Chain</b>.
+
+    </p>
+
+    <p>The <b>RMSD</b> field specifies a threshold.
+    The Project Search panel will identify
+    all structures in the database having an RMSD
+    less than this threshold value.
+    </p>
+
+    <p align="center">
+
+    <img src="moeproject/project_search_panel_rmsd.png" alt="Project
+    Search panel RMSD field" style="border:1px solid black" />
+
+    </p>
+
+    <p>Each named set that can be used in the RMSD calculation must be
+    assigned separately to its own database field environment variable.
+    The following figure shows the configuration setting for a named set
+    called <b>Pocket</b>:
+    
+    </p>
+
+    <p align="center">
+
+    <img src="moeproject/config_env_var_recregion.png" alt="Configuration
+    file database environment variable setting for RMSD region"
+    style="border:1px solid black" />
+
+    </p>
+
+    <p>The configuration settings are as follows:</p>
+
+    <ul>
+
+	<li>The <b>Name</b> field must be set to
+	<tt>projectsearchgui_recregion:<i>set_name</i></tt>, where
+	<tt><i>set_name</i></tt> is the name of the set (here,
+	<tt>Pocket</tt>), as it will appear in the <b>Structure</b> pulldown
+	menu in the Project Search panel.
+
+	</li><li>
+
+	The <b>Value</b> field is set to a
+	<a href="../moe/fcnref/aselect.htm">selection expression</a> which
+	will be evaluated on the structure.  
+	In the figure above, the keyword <tt>pocket</tt> has been used.
+
+	</li>
+    </ul>
+
+
+    </li></p>
+
+</ul>
+</p>
+
+<h4>Common Attributes</h4>
+
+<p>Every field in the configuration file additionally supports certain
+attributes that are common to all fields:
+</p>
+
+<p>
+	<ul>
+
+	<li><i>Field Name</i>.  The name of the field that will be created in the
+	database.
+
+	</li><li><i>Field Type</i>. The data format of the contents of the
+	field, for example, <tt>moe</tt> or <tt>char</tt>.
+
+	</li><li><i>Bubble Help</i>.  Help that will be displayed in the
+	Database Viewer on hovering over the field header.
+
+	</li><li><i>Temporary</i>. When enabled, indicates that the field is
+	needed only for holding intermediate results during project database
+	generation, and therefore will not appear in the final output
+	database.
+
+	</li><li><i>Comment</i>. Text associated with the field.  This text
+	will be displayed only in the configuration editor, and does not
+	appear in the output database.</li>
+
+	</ul>
+</p>
+
+<p>Numeric fields have a few additional parameters related to
+the precision of the Database Viewer display.  Note that
+the displayed precision does not affect the storage of the data.
+</p>
+
+<p>
+	<ul>
+	<li><i>Field Precision</i>. The number of digits to
+	display after the decimal point.
+	</li><li><i>Precision Sig. Figs</i>.  When enabled,
+	Field Precision is interpreted as scientific notation, otherwise
+	it is taken to be the number of digits after the decimal.</li>
+	</ul>
+</p>
+
+<p>Each project field type has its own additional parameters that
+may need to be configured.  These are described below.
+</p>
+
+<a name="ConfigureMOEField"></a>
+<h4>Configuring the MOE Field</h4>
+
+<p>The MOE field is central to the project database, and every project
+database should have such a field.  In this field will be stored the
+structures belonging to the project, along with annotations,
+constraints, rendering, view parameters and electron density.  The
+remaining fields in the database store such associated data as
+calculated and/or experimental properties.
+
+</p>
+
+<p>
+The project MOE field supports a wide variety of configuration parameters,
+as follows:
+</p>
+
+<ul>
+
+<p><li><span class="menu">MOE Properties</span>.
+These parameters control such details as whether to include all models
+and/or alternate locations.  Notable parameters are:
+
+	<p>
+	<ul>
+	<p><li><i>Rendering Style</i>. Specifies whether to preserve the
+	original rendering style of the structure and save it to the
+	database, or to override it, for example, with MOE's
+	<a href="../apps/ligx.htm#SiteView">SiteView</a> rendering,
+	or with the rendering of the closest structure in the
+	reference file.
+
+	<p>In the figure below, the rendering style for a given
+	structure is to be inherited from the closest structure
+	in the reference.</p>
+
+	<p>Note: Fine control of rendering can be achieved using the
+	collapsed <i>Additional Rendering Options</i> section lower
+	on the page.</p>
+
+	</li></p><p><li><i>Split Character/Pattern for PDB Code</i>.  Gives
+	hints on how to parse PDB filenames to be able to extract the
+	PDB code from just the filename.  If these fields are left
+	blank, the codes are obtained from the file contents.
+
+	<p>When a PDB file is processed, its name will be split using
+	the Split Character, and the resulting name fragments indexed,
+	starting from 1.  The Split Pattern then specifies how to
+	construct the the PDB code from the name fragments, which are
+	named &quot;<b>$<i>n</i></b>&quot;, where <i>n</i> is the
+	fragment index.</p>
+	
+	<p><i>Examples:</i>
+
+
+	<ul>
+	<li>Example filename: <tt>sample_P123.pdb</tt><br />
+    Desired PDB code as result: <tt>P123</tt><br />
+	Split Character: <tt>_</tt><br />
+	Split Pattern: <tt>$2</tt><br />
+	Name fragments: <tt>sample</tt> (&quot;$1&quot;),
+        <tt>P123</tt> (&quot;$2&quot;)<br />
+    Resulting PDB code: <tt>P123</tt>
+
+	</li>
+
+	<li>Example filename: <tt>sample_P123_A.pdb</tt><br />
+    Desired PDB code as result: <tt>P123.A</tt><br />
+	Split Character: <tt>_</tt><br />
+	Split Pattern: <tt>$2.$3</tt><br />
+	Name fragments: <tt>sample</tt> (&quot;$1&quot;),
+        <tt>P123</tt> (&quot;$2&quot;), <tt>A</tt> (&quot;$3&quot;)<br />
+    Resulting PDB code: <tt>P123.A</tt>
+
+	</li>
+	</p></li>
+	</ul>
+	</p>
+
+    <p align="center">
+
+    <img src="moeproject/config_moe_properties.png" alt="Configuration
+    file MOE field properties"
+    style="border:1px solid black" />
+
+    </p>
+
+</li></p><p><li>
+
+<span class="menu">Reference Alignment</span>.  This 
+section specifies how the region of interest is to be identified, which
+determines the frame of reference in which the structures are to be
+superposed.  The parameters are:
+
+	<p>
+	<ul>
+
+	<p><a name="RefSite"></a><li><i>Site</i>. This parameter should be
+	specified in the configuration file.  It is a MOE
+	<a href="../moe/fcnref/aselect.htm">selection expression</a>
+	that indicates which atoms are
+	used to identify the region(s) of interest.
+        </p>
+
+	<p>Examples:
+
+	<ul>
+	    <li>Setting <b>Site</b> to the keyword <tt>ligand</tt> and <b>Site
+		Extend</b> to 4.5 &Aring; indicates that the atoms identified
+	    by MOE to be ligand atoms, extended by 4.5 &Aring;, will define the
+	    area of interest.
+
+	    </li><li>Specifying <b>Site</b> to be <tt>$_ligand</tt> indicates
+	    that the MOE set <tt>_ligand</tt> should be used.  In this case, a
+	    set called <tt>_ligand</tt> must exist in the reference file.
+
+	    </li>
+	</ul>
+
+	</p>
+
+	</li></p><p><li><a name="RenumberSolvent"><i>Renumber Solvent
+	Set/Extend</i></a>.  These two fields are used to specify how solvent
+	renumbering is to be carried out.  Solvent renumbering enforces a
+	consistent numbering scheme for solvent molecules, to enable
+	comparisons across different structures.  This is needed, for
+	example, for running <a href="#UsingPLIF">PLIF</a> calculations
+	when solvent interactions are of interest.
+
+	</p></li>
+	</ul>
+	</p>
+
+	<p align="center">
+
+	<img src="moeproject/config_reference_alignment.png" width="500px"
+	alt="Specifying the ligand set in the configuration file"
+	style="border:1px solid black" />
+
+</li></p><p><li>
+
+<span class="menu">Sequence Alignment</span>.
+This section specifies how alignment of sequences
+against the reference is to be done.  The options are:
+
+	<p>
+	<ul>
+
+	<p><li><a name="RenumberReceptor"></a><i>Renumber Receptor</i>. If
+	enabled, the residues of each receptor structure will be renumbered,
+	in both UID and insertion code, to match the reference file.  This
+	is required to make comparisons across structures, for example, in
+	<a href="#UsingPLIF">PLIF</a> calculations.  Any gaps will be filled
+	in using intermediate UIDs and/or insertion codes as appropriate.
+
+	</li></p><p><li><i>Realign Chains</i>.  During the generation of the
+	output database, each sequence is individually aligned against the
+	reference.  When the Realign Chains option is enabled, a final
+	alignment of all sequences is done, to ensure that the sequences are
+	aligned to each other in the output database.
+
+	</p></li>
+	</ul>
+	</p>
+
+    <p align="center">
+
+    <img src="moeproject/config_sequence_alignment.png" width="500px"
+	alt="Configuration file MOE field sequence alignment"
+    style="border:1px solid black" />
+
+    </p>
+</li></p><p><li>
+
+<span class="menu">Ligand Details</span>.  This section specifies how ligand
+corrections are to be carried out as well as under what name the ligand is to
+appear in the <a href="../moe/gui/system.htm">System Manager</a>.  The use of
+an SD file or files is also desirable when other small molecules, such as
+cofactors, may be present. In such cases, the SD file(s) identifies which
+molecules are to be considered ligands.  The SD file can also be used to signal
+the absence of any ligand; in this case, an empty file should be provided.
+
+</p>
+
+<p>
+Parameters are:
+
+	<p>
+	<ul>
+
+	<p><li><a name="LigandSource"></a><i>Source SD File Pattern</i>.
+	When specified, determines the files that will define what
+	structures will be considered ligands.  Ligand structures in the
+	specified files will be compared against candidate structures in the
+	<a href="#RefSite">Site</a> specified under Reference Alignment.
+	Only candidates which match will be considered ligands.  This
+	provides a means for filtering out unwanted cofactors.
+
+	</p>
+
+	<p>Note: If there exists an empty (0 bytes) SD file matching the
+	specified pattern, it indicates that there is no ligand in the site
+	&ndash; any structures found in the site are uninteresting.  </p>
+
+	<p><b>Important:</b> The pattern must include directories, if
+	source files are organized into subdirectories.</p>
+
+	<p><i>Example:</i>
+	<ul>
+	<li>Source SD File Pattern: <tt>data/*.sdf</tt> <br />
+	Matches: All files in subdirectory <tt>data</tt> with
+	file extension <tt>.sdf</tt>
+	</li>
+	</ul>
+
+	</li></p><p><li><i>Ligand Name</i>.  Specifies any parsing
+	on filenames or PDB records to be done to extract the ligand
+	name that will be displayed in the System Manager.  The name
+	can also be constructed from properties in a property file,
+	specified using the <i>Source Property File Pattern</i> option.
+
+	<p>In the example below, the specification <tt>$PROP:LigName$</tt>
+	causes the ligand name to be set to the property called
+	<tt>LigName</tt> from the property file matching the
+	Source Property File Pattern, in this case, files with
+	extension <tt>.prop</tt>.
+	</p>
+
+	</p></li>
+	</ul>
+	</p>
+
+    <p align="center">
+
+    <img src="moeproject/config_ligand_details.png" width="500px"
+	alt="Configuration file MOE field Ligand Details"
+    style="border:1px solid black" />
+
+    </p>
+</li></p><p><li>
+
+<span class="menu">Superpose</span>.  This section specifies
+how each structure is to be superposed onto the reference. Parameters are:
+
+	<p>
+	<ul>
+
+	    <p><li>
+
+	    <a name="RefSelection"></a><i>Reference Selection</i>.  This
+	    parameter specifies the atoms to be used as the basis for
+	    superposition using a MOE <a
+		href="../moe/fcnref/aselect.htm">selection expression</a>.
+	    These atoms are mapped through sequence alignment onto the target
+	    structure.
+
+	    <p>Examples:</p>
+
+	    <ul>
+		<li>If the keyword <tt>pocket</tt> is specified, the
+		superposition will be performed in the pocket region.
+
+		</li><li>
+
+		If the keyword <tt>receptor</tt> is specified, the
+		superposition will be performed over the entire receptor.
+
+		</li><li>
+
+		If <tt>$_superpose</tt> is specified, the set
+		<tt>_superpose</tt> is used.  In this case, a set
+		named <tt>_superpose</tt> must already exist in the
+		reference file.
+
+		</li>
+	    </ul>
+
+	    <p align="center">
+
+	    <img src="moeproject/config_superpose.png" width="500px"
+		alt="Specifying the ligand set in the configuration file"
+	    style="border:1px solid black" />
+	    
+	    </p>
+
+	</li></p><p><li><i>Superposition Method</i>.  Specifies whether
+	the superposition is to be carried based on sequence alignment,
+	pocket alignment, or sequence-independent structure alignment.
+
+	</p></li>
+	</ul>
+	</p>
+
+</li></p><p><li>
+
+<span class="menu">Grids</span>.  Specifies grids to be
+calculated after superposition.  These could be electron densities, or
+other grid-based properties.  When a structure is loaded into MOE from
+the project database, its grid(s) will be linked to the <a
+href="../apps/surfmap.htm">Surfaces and Maps</a> panel and the System
+Manager.
+
+</li>
+
+</ul>
+
+
+</p>
+
+<p>The MOE field supports many other more advanced options, which
+are described in the 
+<a href="../proteins/moeprojconfig.htm">MOE Project Configuration
+		Help</a> pages.
+</p>
+
+<a name="ConfigureLigandField"></a>
+<h4>Configuring a Ligand Field</h4>
+This field can be used to hold a 2D sketch of the ligand 
+for display purposes, or it can also be used to store a 3D ligand
+on its own (without the receptor). It is possible to use two Ligand fields
+to store the same ligand &mdash; one for 2D and the other for 3D.
+Parameters include:
+
+	<p>
+	<ul>
+	<p><li><i>Depict</i>.  If enabled, the ligand coordinates
+	will be arranged into a 2D depiction.
+
+	</li></p><p><li><i>Source</i>.  Specifies whether the ligand
+	structure will be obtained from a PDB structure file, or from
+	the MOE field <a href="#LigandSource">Source SD</a> file(s).
+	
+	</li>
+	</ul>
+	</p>
+
+	<p align="center">
+
+	<img src="moeproject/config_ligand_properties.png" alt="Configuration
+	file ligand field properties" style="border:1px solid black" />
+	
+	</p>
+<p>
+<span class="note">Note:</span> The Ligand field
+<a href="#EnvVar">database field environment variable</a>
+<i>must</i> be set in order for the
+<a href="../proteins/projsrch.htm">Project Search</a> panel
+to be able to do ligand descriptor searches (from the <b>Ligand</b>
+field of the Protein Search panel).  The <b>Name</b> and
+<b>Value</b> fields must be set as illustrated in the following
+figure.
+</p>
+
+<p align="center">
+
+<img src="moeproject/config_ligand_env_var.png" alt="Configuration
+file ligand field environment variable" style="border:1px solid black" />
+
+</p>
+
+<a name="ConfigurePDBRecord"></a>
+<h4>Configuring PDB Record Fields</h4>
+
+<p>
+
+A large number of properties from PDB records can be saved to the output
+database.  These include such properties as PDB Code and Header, Source,
+Sequence, Organism, etc.  By setting <a href="#EnvVar">database field
+environment variables</a> appropriately, these fields can be made to
+display and be searchable in the <a href="../proteins/projsrch.htm">Project
+Search</a> panel.
+
+</p>
+
+<p>
+Options are:
+</p>
+
+	<p>
+	<ul>
+	<p><li>
+	
+	<i>PDB Card</i>.  This specifies the PDB record from where to
+	draw the field data.  The textfield shortcut lists possible
+	different PDB records. The following figure displays the PDB
+	Record Properties for the PDB Record <b>code</b> field.  Here,
+	<tt>PDB Code.Chain</tt> is specified to be the source of the
+	<b>code</b> field data.
+
+	<p align="center">
+
+	<img src="moeproject/config_code_pdbcard.png" alt="Configuration
+	file PDB record code field PDB Card"
+	style="border:1px solid black" />
+
+	</p>
+
+	</li></p><p><li>
+	
+	<a name="GroupBy"></a><i>Group By</i>.  If enabled, the
+	associated property can be used to group structures in the System
+	Manager.
+
+	</li></p>
+	</ul>
+	</p>
+
+<p> <span class="note">Note:</span> Three PDB Record fields should
+always be specified in a project database, <b>code</b>, <b>compnd</b>,
+and <b>source</b>, as they are used by the <a
+href="../proteins/projsrch.htm">Project Search</a> panel.  In all three
+cases, their <a href="#EnvVar">database field environment variable</a>
+must be set in accordance with the a <a href="#SpecialFields">special
+naming convention</a>. 
+For example, the following figure shows how to set the
+environment variable for PDB <b>source</b> record data.
+The <b>Value</b> field of the environment variable must be
+set to <b>Species</b>.
+</p>
+
+<p align="center">
+
+<img src="moeproject/config_species_env_var.png" alt="Configuration
+file ligand field environment variable" style="border:1px solid black" />
+
+</p>
+
+<p>In the case of the PDB Record <b>code</b> field, Value is set to
+<b>Code</b>, and for <b>compnd</b>, Value is set to <b>Compound</b>.
+</p>
+
+<a name="UsingPLIF"></a>
+<h4>Configuring for PLIF</h4>
+
+<p> To be able to run the <a href="../apps/plif.htm">PLIF</a> applications
+successfully, the following configurations need to be made in the configuration
+file:
+
+</p>
+
+<ul>
+
+	<p><li>In the <b>MOE</b> field configuration, within the <b><a
+	href="moeprojconfig.htm#ccgts_Sequence_Alignment">Sequence
+	Alignment</a></b> section, enable the <a
+	href="#RenumberReceptor"><i>Renumber Receptor</i></a> option.
+
+	</li></p><p><li>If solvent interactions are desired, then in the
+	<b>MOE</b> field configuration, within the <b><a
+	href="moeprojconfig.htm#ccgts_Reference_Alignment">Reference
+	Alignment</a></b> section:
+
+		<p>
+		<ul>
+
+		<p><li>Provide values for the <a
+		href="#RenumberSolvent"><i>Renumber Solvent Set</i></a>.
+
+		</li></p><p><li>Provide values for the <a
+		href="#RenumberSolvent"><i>Renumber Solvent Extend</i></a>
+		properties.  In this case, the reference file must contain one
+		or more clusters of solvent atoms, and all members of each
+		cluster should be numbered with the same UID and insertion code.
+		These will be copied to other solvent residues that superpose
+		well on these clusters, to ensure consistent solvent residue
+		numbering.
+
+		</p></li>
+		</ul>
+		</p>
+
+	</p></li>
+</ul>
+
+<p>Additionally, a PLIF field must be specified in the database, to store the
+fingerprints:
+</p>
+
+    <p align="center">
+
+    <img src="moeproject/config_plif.png" alt="Configuration
+    file PLIF field" style="border:1px solid black" />
+
+    </p>
+
+
+</p>
+
+<a name="CalcExpProps"></a>
+<h4>Using Calculated and Experimental Properties</h4>
+
+<p>The calculated and experimental property fields allow data from
+external sources or local data files to be added to the project
+database.  A wide variety of data sources are supported in order to make
+the process as flexible as possible.  </p>
+
+<p>Calculated quantities can include ligand physical properties, such as
+molecular weight and clogP, and protein properties, such as active/inactive
+forms.  Calculated properties can be standard MOE descriptors, MOE
+fingerprints, the result of an arbitrary SVL function that was given the
+molecular data as input, or even the result of a remote SOAP, REST, MOE/web, or
+HTTP service.  In the case of remote calculations, the input must be provided
+as an SDF, PDB, SMILES or FASTA file, and the resulting property must be
+returned in an SDF, XML or CSV formatted text file.</p>
+
+<p>Experimental properties can include entities such as compound
+identifiers, IP owner, or scaffold class, and can be specified as a
+field within an SDF file, or within a plain text file with a <i>.prop</i>
+extension.  The latter must be a text file with only one property per
+line, in the form: <tt>property_name=value</tt>; for example:
+</p>
+
+<pre>
+	Scaffold=quinoline
+</pre>
+
+<a name="ConfigureCalcPropField"></a>
+<h5>Configuring a Calculated Property Field</h5>
+Calculated properties can be added to the output database.
+Parameters are:
+
+	<p>
+	<ul>
+
+	    <p><li>
+
+	    <i>Service</i>.  Specifies how the property is to be calculated.
+	    The property can be returned by a MOE descriptor calculation, an
+	    SVL function, or even a SOAP or HTTP call.  The name of the actual
+	    function or service must be specified using the <i>Source
+		Property</i> parameter.
+
+	    <p>
+
+	    In the figure below, the MOE descriptor <b>logS</b> is specified.
+
+	    </p>
+
+	    <p align="center">
+
+	    <img src="moeproject/config_calc_prop_descriptor.png"
+	    alt="Configuration file calculated property: MOE descriptor"
+	    style="border:1px solid black" />
+
+	    </p>
+
+	    <p>The following figure gives an example of a property
+	    that is calculated using the global SVL function name
+	    <tt>_kin_getGroup</tt>.  The SVL module must be loaded
+	    for this calculation to be successful.
+	    This example also shows the <b>Group By</b> attribute
+	    enabled, to allow grouping in the System Manager.
+	    </p>
+
+	    <p align="center">
+
+	    <img src="moeproject/config_calc_prop_kin_group.png"
+	    alt="Configuration file calculated property: Kinase Group"
+	    style="border:1px solid black" />
+
+	    </p>
+
+	</li></p><p><li><i>Result Format</i>.  The format of the
+	result is restricted to be either an SVL vector, an SD file,
+	a delimited text file, or a SOAP/XML specification.  In the
+	case of the latter three, the results are parsed out
+	from the field specified using the <i>Result Field</i>
+	parameter.
+
+	</li></p><p><li><i>Group By</i>.  Same as <a
+	href="#GroupBy">above</a>.
+
+	</li></p><p><li><i>Argument</i>.  
+	Specifies the arguments to the property calculation function.
+	The function argument name, format, and the database field
+	from where the argument value will be pulled, must all be
+	specified if arguments are to be passed.
+
+	</li>
+	</ul>
+	</p>
+
+<a name="ConfigureExptField"></a>
+<h5>Configuring an Experimental Property Field</h5>
+Experimental properties can be added to the output database.
+Parameters are:
+
+	<p>
+	<ul>
+
+	<p><li><i>Source Filename Pattern</i>.  Specifies the files from
+	where to obtain the experimental data values.
+
+	<p><b>Important:</b> The pattern must include directories, if
+	source files are organized into subdirectories.</p>
+
+	<p><i>Example:</i>
+	<ul>
+	<li>Source SD File Pattern: <tt>data/*.sdf</tt> <br />
+	Matches: All files in subdirectory <tt>data</tt> with
+	file extension <tt>.sdf</tt>
+	</li>
+	</ul>
+
+	</li></p><p><li><i>Field in Source File</i>.  Specifies the name
+	of the field from which to obtain the data.
+
+	</li></p><p><li><i>Group By</i>.  Same as <a
+	href="#GroupBy">above</a>.
+
+	</li>
+	</ul>
+	</p>
+
+<a name="ConfigureLoopLibrary"></a>
+<h4>Configuring the Loop Library Field</h4>
+
+<p>If the project database is to be used as a custom loop library by the <a
+    href="../apps/proloop.htm">Loop Modeler</a>, for example in <a
+    href="../proteins/promodel.htm">homology modeling</a>, it must contain a
+loop library field.  The parameters are:
+
+</p>
+
+	<p>
+	<ul>
+	    <p><li><i>Selection</i>.  A MOE
+	    <a href="../moe/fcnref/aselect.htm">selection expression</a>
+	    that specifies which atoms from the
+	    <b>Source Field</b> will be used to
+	    generate the loop library data.  For example,
+	    if the Source Field is <b>moe</b>, 
+	    entering the keyword <tt>receptor</tt> will
+	    create the loop data from project receptor data.
+
+	    </li></p>
+
+	    <p><li><i>Source Field</i>.  Specifies a MOE field from
+	    which the loop library field is generated.  Typically, this
+	    will be the default MOE field used to store the project
+	    structure data.
+
+	    </li></p>
+	</ul>
+	</p>
+
+	<p align="center">
+
+	<img src="moeproject/config_loop_library.png"
+	alt="Configuration file loop library"
+	style="border:1px solid black" />
+
+	</p>
+
+<a name="CreateMOEProject" />
+
+<h2>How to Create a MOE Project Database</h2>
+
+<p>A typical process for creating a MOE Project involves the following
+steps:
+</p>
+
+<ol class="tight">
+
+<a name="sourcedatatree"></a>
+<li><b>Create a source data directory</b>.
+
+<p> All source data files, including the project reference and
+configuration files, must be collected under a single source data
+directory tree.  The recommended directory structure is a flat directory
+of all files, for example:
+
+</p>
+
+<p>
+<blockquote>
+<dl>
+	<dt>
+	<tt>MyProject/</tt>
+	</dt>
+	<dd>
+	<tt>project.xml</tt> <br />
+	<tt>project.moe</tt> <br />
+	<tt>1xyz.pdb</tt><br />
+	<tt>1xyz.sdf</tt><br />
+	<tt>1xyz.mtz</tt><br />
+	<tt>1xyz.prop</tt><br />
+	<tt>2abc.pdb</tt><br />
+	<tt>2abc.sdf</tt><br />
+	<tt>2abc.mtz</tt><br />
+	<tt>2abc.prop</tt><br />
+	<tt>...</tt>
+	</dd>
+</dl>
+</blockquote>
+</p>
+
+<p>The configuration and reference files should be located in the
+root of the source data tree.</p>
+
+</li>
+
+<li><b>Create a <a href="#ReferenceFile">reference file</a></b>.
+Detailed instructions can be found <a href="#CreateRefFile">below</a>.
+
+<p>
+
+The reference file  must be saved in MOE format (<tt>.moe</tt>).
+
+</p>
+
+</li><li>
+
+<b>Create a new or modify an existing <a
+href="#ConfigFile">configuration file</a></b>.  Detailed instructions
+can be found <a href="#CreateConfigFile">below</a>.
+
+<p>
+
+The MOE distribution includes the XML configuration files used to
+generate the <a href="../moe/databases.htm">project databases</a>
+distributed with MOE.  The files are located in
+<tt>$MOE/lib/project</tt>.  For the most part, a single common
+configuration file was used to generate all project databases.  The file
+<tt>$MOE/lib/project/ABC Transporter.xml</tt> can serve as a template configuration
+file.  Note that the configuration file need not be located in the
+source data directory, and that a single configuration file can be used
+to create multiple projects.
+
+</p>
+
+<p>The configuration file, which must be in XML format, is typically edited
+using the <a href="../moe/moeweb_intro.htm#Configure_Project_Database">
+	Configure Project Database</a> MOE/web application.  </p>
+
+</li><li><b>Collect all project files into the source
+data directory</b>.
+
+<p>
+The reference and configuration files should be in the root of the source
+data directory tree.  Data files can include, for example, PDB and mmCIF
+structure files, SDF ligand files, <tt>.prop</tt> property files, and
+MTZ structure factor files.
+
+</p>
+
+</li><li><b>Generate the project database file</b>.
+
+<p>Once the data files to be processed have been placed in the source data
+directory, and the <a href="#ReferenceFile">reference file</a> and <a
+href="#ConfigFile">configuration file</a> have been prepared and also
+added to the source data directory, the project database, which will be an MDB
+file (<tt>.mdb</tt>), can be generated.
+
+</li>
+
+</ol>
+
+<a name="CreateRefFile"></a>
+<h3>How to Create a Project Reference File</h3>
+
+<h4>Finding Structures</h4>
+
+<p>A key task in the creation of a reference file is collecting the
+structures to be included in it.  This process is typically iterative, and
+involves searching for structures, aligning them, and determining whether to
+add them to the reference file based on whether their conservation and
+diversity would make a valuable contribution to the accumulated reference
+structures.
+
+<ol>
+
+<li><p><i>Select a high-quality representative structure, ideally with a
+ligand and good pocket.</i>
+</p>
+
+<p>This structure will be used to find homologs and to establish the
+annotations and view for the project.  If there is no appropriate
+representative structure to be found within available local libraries, <a
+		href="http://www.chemcomp.com/PSILO-Protein_Structure_Database_System.htm"
+		target="blank">PSILO</a> or the <a href="http://www.rcsb.org/"
+		target="_blank">RCSB Protein Databank</a> can be searched for a
+candidate.
+
+</p></li>
+
+<li><i>Search for similar structures.</i>
+
+<p>Use <span class="menu">MOE | Protein | Search | PDB</span> to
+collect a reasonable number of similar structures.
+</p>
+
+	<ul>
+
+	<li>In the MOE-SearchPDB panel, use <b>Load Chain</b> to specify the
+	query sequence.
+
+	</li><li>Press <b>Search</b>.
+	</li><li>From the search results, select candidate structures
+	and then press <b>Load Alignment</b> to
+	load them into MOE.
+	</li>
+	</ul>
+
+<p>Usually, 10&ndash;20 protein structures and sequences are sufficient for
+the reference file.  More than 20 sequences may be needed in cases where the
+sequence consensus is not sufficiently conserved.  Collecting reference
+structures is often an iterative process.  </p>
+
+<p><span class="note">Note:</span> If the PDB search returns more than
+one family, it can be useful to select structures from more than one
+family to maintain diversity within the reference file.</p>
+
+</li>
+
+</ol>
+
+<h6>Alignment</h6>
+
+<ol start="3"> <!-- hard-coded!! -->
+
+<li><i>Align the sequences.</i>
+
+<p>Open the Sequence Editor</p>
+
+<blockquote>
+<span class="menu">MOE | SEQ</span>
+</blockquote>
+
+<p>and align the reference sequences using
+<span class="menu">SE | Alignment | <a href="align.htm">
+Align</a></span>.
+
+</p></li>
+
+<li><i>Examine the alignment and curate the structures.</i>
+
+<p>Review the aligned sequences and remove any
+regions with large gaps.
+</p>
+
+<p><span class="tip">Important:</span> It is important to reduce the
+structure to just the domain of interest by cutting away the parts of the
+structure that will not be annotated, as well as those parts that might be
+harmful to the alignment.  A tight and well-conserved core is essential to
+creating a meaningful reference file.
+
+</p></li>
+
+<li><p><i>Re-align the reference sequences.</i>
+
+<p>This is necessary if substantial trimming of the structure has been
+performed.</i>
+
+</p></li>
+
+<li><i>Apply <a href="../proteins/align.htm">alignment</a>
+constraints to ensure a good alignment of the reference sequences.</i>
+
+<p>Constraints should be created over an
+entire column in the Sequence Editor so that they will be inherited by new
+structures when the family is updated. If a constraint is not applied to an
+entire column, it will not be inherited.  Constraints can be managed using
+the <a href="../proteins/align.htm#ManagingConstraints">Residue Alignment
+	Constraints</a> panel, opened with <span class="menu">SE | Alignment |
+	Constraints | Manage Constraints</span>.  Put constraints in key
+	highly conserved columns of the alignment to ensure they are correctly
+	aligned.
+
+</p></li>
+
+</ol>
+
+<h6>Consensus and Diversity</h6>
+
+<ol start="7">
+
+<li><p>
+<img src="moeproject/ConsensusRMSD.png" alt="Consensus RMSD"
+style="float: right;" />
+
+<i>Verify that there is good consensus among the reference sequences.</i>
+
+<p>This can
+be achieved by plotting the RMSD above the chains in the Sequence Editor:
+</p>
+
+<blockquote>
+	<span class="menu">SE | Footer | Consensus Preferences
+	<img src="moeproject/se_consensus_preferences.png"
+	 style="vertical-align:middle" /> | Plot |
+	    <a href="../moe/gui/se.htm#Footer">RMSD</a></span>
+</blockquote>
+
+and by using MOE's <a href="../proteins/procore.htm">Protein Consensus</a>
+application.
+
+<blockquote>
+		<span class="menu">SE | Alignment | Consensus</span>
+</blockquote>
+
+<p>Regions of low consensus or poor alignment may be considered for
+deletion.</p>
+
+</p></li>
+
+<li><i>Verify that there is sufficient diversity among the reference
+sequences.</i>
+
+<p>This is necessary to eliminate redundant information and to ensure that
+all future interesting sequences are successfully collected in the project.
+The diversity can be examined with the <a
+		href="./align.htm#Monitor">Protein Similarity Monitor</a>:
+</p>
+		
+<blockquote>
+    <span class="menu">SE | Alignment | Similarity</span>
+</blockquote>
+
+<p>
+Ideally, none of the squares in the Identity Matrix of the Protein
+Similarity Monitor will show an identity greater than 50% (that is, no
+blue or white squares in the matrix).
+</p>
+
+<p>
+The Similarity Monitor values can be used to guide deletion of
+chains with overly high (&gt;50%) similarity, to reduce
+unnecessary redundancy.
+Very distant structures may also be considered for deletion if
+they are not of interest.
+</p>
+
+</p></li>
+
+<li><i>Consult other sources.</i>
+
+<p>The
+<a href="http://pfam.xfam.org">PFAM</a>,
+<a href="http://scop.mrc-lmb.cam.ac.uk/scop">SCOP</a>, and
+<a href="http://www.ebi.ac.uk/interpro">Interpro</a>
+
+web databases are other sources of protein families that can be consulted to
+check that the reference sequences create a reasonable family.
+
+</p></li>
+
+</ol>
+
+<h4>Annotations and Rendering</h4>
+
+<p>A second key task in building a reference file is creating
+annotations for the family.  These highlight key regions of
+interest.  By creating sets and setting the display and rendering
+characteristics for each, it becomes easy to visualize these
+regions, both in the MOE Window and in the Sequence Editor.
+When the database is updated to include new structures,
+annotations, constraints, view, and rendering are all propagated
+to new members of the family in areas of high conservation,
+if the <b>Rendering Style</b> option of the MOE field in the configuration
+file is set to <i>Inherit</i>.
+</p>
+
+<ol start="10">
+
+<li><i>Annotate key regions of the sequences.</i>
+
+<p>The scientific literature can be consulted for known motifs.  In kinases,
+for example, the hinge and G-Loop regions are well-documented, and their
+extents can be easily researched.
+
+</p>
+
+	<ol type="a">
+
+	<p><li>Apply annotations taken from a family database (if available):
+
+	<blockquote>
+		<span class="menu">SE | Annotate | Sequence</span>
+	</blockquote>
+
+	<p>This will create sets in the <a href="../moe/gui/system.htm">System
+		Manager</a> that match the annotation scheme, and color the
+	associated annotated residues in the Sequence Editor.
+	</p>
+
+	</li></p>
+
+	<p><li>Color ribbons in MOE to match annotations:
+
+	<p>With <span class="menu">MOE | Select | Synchronize</span> enabled,
+	select all atoms in MOE using:
+
+	<blockquote>
+		<span class="menu">MOE | Select | All</span>
+	</blockquote>
+
+	<p>Color ribbons by residue color to match the colors in the Sequence
+	Editor:</p>
+
+	<blockquote>
+
+		<span class="menu">MOE | Footer | Ribbon | Color |
+			<i>Residue</i></span>
+
+	</blockquote>
+
+	</li></p>
+	</ol>
+</li>
+
+<p><li><i>Highlight the region of interest.</i>
+
+<p>
+In the MOE Window, highlight the site of interest by
+isolating the desired residues and ribbons
+(hide atoms and ribbons that are not of interest).
+The <a href="../moe/gui/mainwin.htm">MOE Window</a>
+documentation describes how to render molecular objects, including
+<a href="../moe/gui/mainwin.htm#Rendering">atoms</a> and 
+<a href="../moe/gui/mainwin.htm#RenderingBackbone">ribbons</a>.
+
+</p>
+
+</li></p>
+
+<li><i>Set the view.</i>
+
+<p>Orient the site of interest in the MOE Window to the desired
+<a href="../moe/gui/mainwin.htm#Viewing">view</a>.</p>
+
+</p></li>
+
+<li><i>Save the reference file.</i>
+
+<p>Save the current system, in MOE format (<tt>.moe</tt>).</p>
+
+<blockquote>
+    <span class="menu">MOE | File | Save</span>
+</blockquote>
+
+<p>This is the protein family reference file.</p>
+
+</p></li>
+
+</ol>
+
+<a name="CreateConfigFile"></a>
+<h3>How to Create a Project Configuration File</h3>
+
+<p> The easiest way to create a configuration file is to modify an existing
+one.  It is recommended to start with one of the XML configuration files
+distributed with MOE, which can be found in <tt>$MOE/lib/project</tt>.
+Modifications are easiest done using the
+ <a href="../moe/moeweb_intro.htm#Configure_Project_Database">Configure Project
+     Database</a> web application, which does not require any knowledge of XML.
+ This web application can be launched from the <a
+     href="../proteins/pdb_mdb.htm#dbupdateDBPanel">Protein Database Update</a>
+ panel, which is ultimately used to create the final output
+database.
+
+</p>
+
+<ol>
+<p><li><i>Open the Protein Database Update panel.</i>
+
+<p>At the SVL Command Line (<a
+href="../moe/gui/svlcommands.htm">CLI</a>) enter:</p>
+
+<pre>
+	svl&gt; run 'dbupdate.svl'
+</pre>
+
+</li></p><p><li><i>Select the protein family whose XML file will be
+used as a template.</i>
+
+<p>For example, <tt>Protein Kinase.xml</tt> file gives examples of calculated
+properties that have been generated using special SVL code.  However,
+if special calculated properties are not needed, the <tt>ABC Transporter.xml</tt>
+file provides a good starting point, in which case select <b>ABC
+    Transporter</b> from the <b>Protein Family</b> pulldown menu.
+</p>
+
+</li></p><p><li><i>Change mode to building a new database.</i>
+
+<p>In the Protein Database panel, select <b>Build New</b>.  In this
+mode, a new database will be created (or an old one overwritten).
+The <b>Configuration File</b> text field will become available.
+
+	<p><span class="note">Note:</span> The Configuration File
+	field is available only when the mode is Build New, and
+	the Protein Family is <i>not</i> Antibody.  If Protein
+	Family is set to Antibody, choose a different family to
+	make the field accessible.
+
+	</p>
+
+<p align="center">
+<img src="moeproject/dbupdate_panel_launchconfig.png" alt="Launch
+Configuration File Editor from Database Update Panel" />
+</p>
+
+</li></p><p><li><i>Choose an existing configuration file to modify.</i>
+
+<p>Fill the <b>Configuration File</b> field. This can be a file from
+another project, or just the default configuration file associated
+with the currently selected <b>Protein Family</b>.
+</p>
+
+<p>If no configuration file is specified, the configuration editor will
+open on a landing page in which a choice can be made between creating
+a new file and opening an existing file.  If a new file is to be created,
+a <b>Basic Template</b> can be used.
+</p>
+
+<p>It is recommended to start with one of the configuration files
+included in the MOE distribution, for example:
+</p>
+
+<pre>
+	$MOE/lib/project/ABC Transporter.xml
+</pre>
+
+</li></p><p><li><i>Launch the Configure Project Database MOE/web
+application.</i>
+
+<p>In the Protein Database Update panel, press the edit button next to the
+<b>Configuration File</b> textfield.  The configuration editor, <b>Configure
+		Project Database</b>, will open in a browser with the chosen
+configuration file already loaded.
+
+</li></p><p><li><i>Edit the project configuration file.</i>
+
+<p>Make modifications to the project configuration as appropriate.
+Some of the configuration fields and their parameters are described
+<a href="#ConfigFile">above</a>.
+</p>
+
+<p> The Configure Project Database application itself contains extensive help
+(identical to that found at <a href="../proteins/moeprojconfig.htm">MOE
+Project Configuration Help</a>) to help guide the configuration
+process.</p>
+
+<p>There are several key fields that should be reviewed in the configuration
+file.  A good rule of thumb is to have fields similar to those specified in
+<tt>$MOE/lib/project/ABC Transporter.xml</tt>.
+These include:
+</p>
+
+<ul>
+    <p><li>
+    
+    <a href="#ConfigureMOEField"><b>MOE</b></a>.  This key field should
+    be reviewed especially for the <b>Reference Alignment</b> and
+    <b>Superpose</b> fields.
+
+    </li></p><p><li>
+
+    <a href="#ConfigureLigandField"><b>Ligand</b></a>.  This field is used 
+	for storing the ligand on its own. The field can be configured to hold 
+	a 2D depiction of the ligand for display.
+
+    </li></p><p><li>
+
+    <a href="#ConfigurePDBRecord"><b>PDB Records</b></a>.
+	Certain PDB record fields are important for searching, for example, the
+	<tt>code</tt> and <tt>compnd</tt> fields.  By setting <a href="#EnvVar">
+	database field environment
+	    variables</a> appropriately, these fields will be visible and
+	searchable in the <a href="../proteins/projsrch.htm">Project Search</a>
+	panel.
+
+    </li></p><p><li>
+
+    <a href="#CalcExpProps"><b>Calculated properties</b></a>.
+    Calculated descriptor fields can be of interest for data analysis.
+
+    </li></p><p><li>
+
+    <a href="#UsingPLIF"><b>PLIF</b></a>. This field needs to be
+    specified to be able to run the <a href="../apps/plif.htm">PLIF</a>
+    application on the database.
+
+    </li></p><p><li>
+
+    <a href="#ConfigureLoopLibrary"><b>Loop Library</b></a>. If the project
+    database is to be fed to the <a href="../apps/proloop.htm">Loop
+	Modeler</a>, for example, in homology modeling, this field needs to be
+    specified.
+
+    </li></p>
+
+</ul>
+</p>
+
+</li></p><p><li><i>Save the project configuration file.</i>
+
+<p>In Configure Project Database, press <b>Download</b> to open a file
+browser that will permit saving the XML configuration file locally.
+</p>
+
+<p><span class="note">Note:</span> The configuration file need not
+be saved to generate the database file from the Protein Database Update
+panel.  The panel can have the configuration information transferred
+directly from the web page.  It is still recommended, however, to save
+a copy of the configuration file locally so that it may be used again
+later, after the Protein Database Update panel has been closed.
+</p>
+
+</li></p>
+
+</ol>
+</p>
+
+<a name="CreateProjectDatabase"></a>
+<h3>How to Generate a Project Database</h3>
+
+<p>Once the reference file and configuration file are ready, and the
+source data available, the project database can be created.
+
+<ol>
+
+<p><li><i>Name the reference and configuration files appropriately.</i>
+
+<p>The reference file and configuration file should have the
+same filename, with <tt>.moe</tt> and <tt>.xml</tt> file extensions,
+respectively.
+
+</li></p>
+
+<p><li><i>Collect the source files in the source data directory.</i>
+
+<p>
+Gather the data belonging to the project into a directory structure
+under a single root directory (that is, the
+<a href="#sourcedatatree">source data directory tree</a>). This
+includes all PDB, MTZ, SDF, <tt>.prop</tt> and other relevant files,
+including the project reference file.  Note that MOE Project
+will automatically recognize and read standard format files.
+
+</li></p>
+
+<p><li><i>Open the <a
+href="../proteins/pdb_mdb.htm#dbupdateDBPanel">Protein Database
+Update</a> panel.</i>
+
+<p>If the panel is not already open, enter the following
+at the <a href="../moe/gui/svlcommands.htm">CLI</a> to
+launch the panel:
+
+<pre>
+	svl&gt; run 'dbupdate.svl'
+</pre>
+
+</li></p>
+
+<p><li><i>Fill the fields in the panel.</i>
+
+<p>
+<img src="moeproject/dbupdate_buildnew.png" alt="Build New database"
+style="float: right">
+To generate a new project database:</p>
+
+<p>
+<ol class="tight">
+
+	<li>Select <b><i>Build New</i></b>.</li>
+
+	<li>Enter the name of the <b>Output Database</b>.</li>
+
+	<li>Browse for the previously created <b>Configuration File</b> and
+	<b>Reference File</b>.</li>
+
+	<li>Select <span class="menu">Source | <i>Local</i></span>, and browse
+	for the <b>Source Directory</b>, which is the root directory of the
+	<a href="#sourcedatatree">source data tree</a> for the project.</li>
+
+	<li>If desired, specify an <b>Include Pattern</b> and/or an <b>Exclude
+	Pattern</b> to narrow the scope of the data files used in the
+	project.
+	The pattern must match both the desired directories and files.
+	Use <b>*</b> to process all files and directories.
+	</li> 
+
+</ol>
+</p>
+
+</p>
+
+<p>To update an existing MOE Project database:</p>
+
+<p>
+<ol class="tight">
+
+	<li>Select <b><i>Update</i></b>.</li>
+
+	<li>Enter the name of the <b>Input Database</b>.</li>
+
+	<li>Enter the name of the <b>Output Database</b>.</li>
+
+	<li>Specify the data <b>Source</b> where the structures
+	for updating the database are located. </li>
+</ol>
+</p>
+
+    <p align="center">
+
+    <img src="moeproject/dbupdate_updatedatabase.png"
+    alt="Update project database"
+    style="border:1px solid black" />
+
+    </p>
+
+</li></p>
+
+<p><li><i>Generate the project database.</i>
+
+<p>Press the <b>Generate Database</b> button at the bottom of the
+	panel.
+	</p>
+
+<p>While the database is being created, a progress bar will be
+displayed.  Any errors or warnings will be printed to the
+<a href="../moe/gui/svlcommands.htm">SVL Commands Window</a>.
+
+</p>
+	
+</li></p>
+
+<p><li><i>Connect the project database to MOE.</i>
+
+<p>
+After the output database has been created, MOE can be made to recognize the
+database as a known project.
+</p>
+
+<ol type="i">
+
+    <li>Open the <a href="../appendix/settings.htm">Configuration Options</a>
+    panel using
+
+    <blockquote>
+
+	<span class="menu">MOE | Settings <img
+	    src="../moe/hellomoe/gear_wheel.png" style="vertical-align:middle"
+	    /></span>
+
+    </blockquote>
+
+    </li><li>On the <b>Protein Defaults</b> page, add the path
+    of the output database file 
+	(<tt>c:/work/myproject/project_databases/</tt>, for example) 
+	to the <b>Project Path</b>.
+
+    <p>
+    <span class="note">Note:</span> The path elements are
+    semi-colon separated, and the directory must end in a slash
+    &quot;/&quot;.
+    </p>
+
+    <p align="center">
+
+    <img src="moeproject/config_options_projectpath.png" width="500px"
+    alt="Configuration Options Project Path"
+    style="border:1px solid black" />
+
+    </p>
+
+    </li><li>
+
+    Quit and restart MOE to put the the Project Path changes into
+    effect.
+
+    </li>
+</ol>
+
+<p>
+This procedure will allow:
+</p>
+
+    <ul>
+
+	<li>
+
+	MOE to automatically add the project, and any other projects in the
+	same location, into the <span class="menu">Protein | Search</span>
+	menus in the MOE and Sequence Editor windows;
+
+	</li><li>
+
+	<span class="menu">SE | Annotate | <a
+		href="../moe/gui/se.htm#SpecialAnnotations">Sequence</a></span>
+	to access the project's annotations; and
+
+	</li><li>
+
+	<span class="menu">SE | Alignment | Constraints | <a
+		href="../moe/gui/se.htm#Constraints">Automatic</a></span>,
+        to access its constraints.
+
+	</li>
+    </ul>
+
+<p>The <span class="menu">Protein | Search</span> menus
+are auto-loaded with all project databases found in the paths
+specified by the <b>Project Path</b> field in the Configuration Options
+panel.  Selecting one of the databases causes the
+<a href="../proteins/projsrch.htm">Project Search</a> panel to open, loaded
+with the specified database.
+</p>
+
+	
+</li></p>
+
+</ol>
+</p>
+
+<a name="ConfigurationEditor"></a>
+<h2>Appendix: Using the Configuration File Editor</h2>
+
+<p>The project configuration file editor, <b>Configure Project
+Database</b>, has two main tabs:
+
+</p>
+	<ol>
+	<li><i>Edit</i>: for specifying and configuring database fields
+	</li><li><i>Display</i>: for sorting
+entries in the database, and for controlling the viewing parameters of
+the Database Viewer when the database is to be viewed.
+	</li>
+	</ol>
+	
+<p>Error checking is performed on a continuous basis, and at any point,
+the file can be saved using the <b>Download</b> button.</p>
+
+<p>A third tab serves as a reminder to save the configuration file,
+and also warns of errors.</p>
+
+<h6>Edit Tab</h6>
+
+<p>The <b>Edit</b> tab consists of two panes.  The left pane accumulates
+a list of all fields that have been specified for generation.  The right
+pane lists the parameters of the field currently being edited.  The
+field being edited is highlighted in the left pane by a grey shadow.
+</p>
+
+<p>To add new fields, select the field type from the <b>Add</b> pulldown
+menu in the left pane.  A field of the selected type will be
+created.</p>
+
+<p align="center">
+
+<img src="moeproject/config_edit_page_annot_cropped.png" alt="Configure
+Project Database" style="border:1px solid black" />
+
+</p>
+
+<p>When editing non-MOE fields, buttons for deleting the current field and for
+duplicating it appear at the top of the right pane.  A deletion action will be
+verified with a confirmation dialog.
+
+</p>
+
+<p align="center">
+
+<img src="moeproject/config_edit_nonmoe_buttons.png" alt="Configure
+Project Database" style="border:1px solid black" />
+
+</p>
+
+<h6>Display Tab</h6>
+
+<p>The <b>Display</b> tab features a tabular view of all
+database fields, their types, and attributes controlling
+sort order and display in a Database Viewer.
+</p>
+
+<p>The order of the lines in the table determines the order of the
+fields (columns) in the database.  The <b>Sort Priority</b>, on the
+other hand, is used to establish the order of the entries (records) in
+the database.  The priority is used as a sorting key: entries will first
+be sorted according to the field with priority 1; any ties will be
+broken by sorting on the field with priority 2, and so on.  </p>
+
+<p>The <b>Display</b> attribute is used to control whether the
+database field is visible in a Database Viewer, and the
+<b>Color</b> attributes are applied to Database Viewer cells.
+</p>
+
+<p align="center">
+
+<img src="moeproject/config_display_page_annot.png" alt="Configure
+Project Database" style="border:1px solid black" />
+
+</p>
+
+<a name="References" />
+<h2>References</h2>
+
+<table width="100%" cellpadding="5" border="0">
+
+<tr>
+<td valign="top">[Jones&nbsp;2014]</td>
+<td valign="top">
+Jones, P., Binns, D., <i>et al.</i>;
+InterProScan 5: genome-scale protein function classification;
+<i>Bioinformatics 30</i> (<b>2014</b>) 1236&ndash;1240.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Rost&nbsp;1999]</td>
+<td valign="top">
+Rost, B.;
+Twilight zone of protein sequence alignments;
+<i>Protein Engineering Design and Selection 12</i> 
+(<b>1999</b>) 85&ndash;94.
+</td>
+</tr>
+
+</table>
+
+<a name="SVLCommands" />
+<h2>SVL Commands</h2>
+
+<a class="svl" href="../moe/fcnref/moeprojcreate.htm">ProjectCreate</a>
+
+
+<a name="SeeAlso" />
+<h2>See Also</h2>
+
+<a href="../proteins/pdb_mdb.htm#dbupdateDBPanel">Protein Database
+Update</a> <br />
+
+<a href="../moe/moeweb_intro.htm#Configure_Project_Database">Configure
+Project Database</a> <br />
+
+<a href="../proteins/moeprojconfig.htm">MOE Project Configuration
+Help</a> <br />
+
+<a href="../moe/databases.htm">Databases Distributed with MOE</a> <br />
+
+<a href="../proteins/projsrch.htm">Project Search</a> <br />
+
+<a href="../moe/gui/system.htm">System Manager</a> <br />
+
+<a href="../moe/gui/se.htm">Sequence Editor</a> <br />
+
+<noscript>
+		<hr noshade="noshade" />
+		<font size="2"> Copyright &copy; 1997&ndash;2015
+		<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+
+</body>
+</html>

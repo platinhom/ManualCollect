@@ -1,0 +1,369 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--	mutex.htm	Mutual exclusion
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+
+<meta functions mutex_capacity>
+<meta functions mutex_close>
+<meta functions mutex_key>
+<meta functions mutex_keylist>
+<meta functions mutex_lock>
+<meta functions mutex_name>
+<meta functions mutex_open>
+<meta functions mutex_rcapacity>
+<meta functions mutex_ref>
+<meta functions mutex_setcapacity>
+<meta functions mutex_taskref>
+<meta functions mutex_unlock>
+
+<title>SVL Mutual Exclusion Functions</title>
+
+<style type="text/css">
+dd { padding-bottom: 0.5em; }
+table.display {
+    width: 90%;
+    border: solid thin grey;
+}
+table.display th {
+    border: solid thin grey;
+    background-color: #bbb;
+}
+table.display td {
+    border: solid thin grey;
+    padding: 0.25em 0.5em;
+}
+</style>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    key = <a class="fcnlink" href="#mutex_open">mutex_open</a> []
+    key = <a class="fcnlink" href="#mutex_open">mutex_open</a> key
+    key = <a class="fcnlink" href="#mutex_open">mutex_open</a> 'name'
+    key = <a class="fcnlink" href="#mutex_open">mutex_open</a> [key_or_name_or_null, capacity]
+
+    <a class="fcnlink" href="#mutex_close">mutex_close</a> key
+
+    <a class="fcnlink" href="#mutex_lock">mutex_lock</a> key
+    <a class="fcnlink" href="#mutex_unlock">mutex_unlock</a> key
+
+    val = <a class="fcnlink" href="#mutex_rcapacity">mutex_rcapacity</a> key
+    val = <a class="fcnlink" href="#mutex_capacity">mutex_capacity</a> key
+    <a class="fcnlink" href="#mutex_setcapacity">mutex_setcapacity</a> [key, val]
+
+    key = <a class="fcnlink" href="#mutex_key">mutex_key</a> key_or_name
+    name = <a class="fcnlink" href="#mutex_name">mutex_name</a> key_or_name
+    keylist = <a class="fcnlink" href="#mutex_keylist">mutex_keylist</a> []
+
+    count = <a class="fcnlink" href="#mutex_ref">mutex_ref</a> key
+    count = <a class="fcnlink" href="#mutex_taskref">mutex_taskref</a> key
+</pre>
+
+<h2>Description</h2>
+
+A mutual exclusion object (<i>mutex</i>) is a programmatic tool
+that allows cooperating tasks to control their access to
+a shared resource.  It functions similarly to a switchboard with
+a limited number of phones lines serving multiple customers:
+    <ul>
+    <li>If there is a phone line available, the customer can use it right away.
+    <li>If all phone lines are in use, the customer must wait until
+    one becomes available.
+    </ul>
+
+<p>
+If a task needs to access a resource, it requests access to it with
+<tt>mutex_lock</tt>.  If access can't be granted because the resource
+is already locked by other tasks, the calling task is blocked until the
+resource becomes available.  When the task does not need to access the
+resource any more, it must indicate so with <tt>mutex_unlock</tt>.  If
+the task is destroyed, its locked resources are automatically unlocked.
+
+<p>
+Each mutex object is associated with two numbers:
+    <ul>
+    <li>The <i>maximum capacity</i> is the analog of the total number
+	of phone lines available in the switchboard: it is the maximum
+	total number of calls to <tt>mutex_lock</tt> that can be executed
+	in a row without the calling task being blocked.
+
+	<p> The default maximum capacity is&nbsp;1.  The maximum capacity
+	does not change with <tt>mutex_lock</tt> or
+	<tt>mutex_unlock</tt> but can be explicitly set with
+	<tt>mutex_setcapacity</tt>.
+
+    <li>The <i>remaining capacity</i> is the analog of the number of
+	phone lines available to the customer at the moment: it is
+	the number of calls to <tt>mutex_lock</tt> that can be executed
+	in a row on the mutex object in its current state without the
+	calling task being blocked.
+
+	<p> The remaining capacity is decremented by <tt>mutex_lock</tt>
+	and incremented by <tt>mutex_unlock</tt> or when the locking
+	task is destroyed.  It can't be set explicitly.
+
+	<p> Positive values indicate that a task calling
+	<tt>mutex_lock</tt> can lock the mutex object without blocking.
+	A value of&nbsp;0 indicates that a task calling <tt>mutex_lock</tt>
+	would be blocked until the mutex object is unlocked by another
+	task.  Negative values indicate that other tasks are
+	already blocked waiting for the mutex to unlock.  A task calling
+	<tt>mutex_lock</tt> would be blocked until the mutex object is
+	unlocked enough times to unblock all the blocked tasks, as well
+	as the calling task.
+
+    </ul>
+
+
+<p><a name="mutex_open"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>key = <span class="fcndef">mutex_open</span> []
+key = <span class="fcndef">mutex_open</span> 'name'
+key = <span class="fcndef">mutex_open</span> key
+key = <span class="fcndef">mutex_open</span> [key_or_name_or_null, capacity]
+</pre>
+
+<p>
+Function <tt>mutex_open</tt> with an empty argument creates a new
+mutual exclusion (<i>mutex</i>) object and returns its key.  If the argument
+is a key of an existing object or a token name of an existing object,
+the function duplicates the object and return the key of the duplicate.
+If the argument is a token name and no object of such a name exists,
+the function creates a new object of the given name.
+
+<p>
+If the second argument is present, then
+
+<pre>
+    key = mutex_open [x, capacity]
+</pre>
+
+is equivalent to
+
+<pre>
+    mutex_setcapacity [key = mutex_open x, capacity]
+</pre>
+
+<p>
+The object will remain available for the calling task until the function
+<tt>mutex_close</tt> is called by the same task.  For each call to
+<tt>mutex_open</tt> there must be a corresponding call to <tt>mutex_close</tt>
+in the same task.
+
+<p>
+The maximum capacity and the remaining capacity of a new mutex object is&nbsp;1.
+
+<p><a name="mutex_close"></a></p>
+<p><hr noshade="noshade" />
+
+<pre><span class="fcndef">mutex_close</span> key
+</pre>
+
+Function <tt>mutex_close</tt> closes the given mutex object.
+The argument may be a nested vector.
+The function ignores keys that refer to non-existing objects.
+
+<p><a name="mutex_lock"></a></p>
+<p><hr noshade="noshade" />
+
+<pre><span class="fcndef">mutex_lock</span> key
+</pre>
+
+Decreases the remaining capacity of the given mutex object by&nbsp;1.
+If the remaining capacity becomes negative, the calling tasks
+blocks until the remaining capacity of the mutex increases
+to a positive value.
+
+If the calling task is destroyed or the calling task executes
+<tt>mutex_close</tt>, the mutex object is automatically unlocked.
+
+<p><tt>mutex_lock</tt> also implicitly calls <tt>mutex_open</tt>,
+while <tt>mutex_unlock</tt> implicitly calls <tt>mutex_close</tt>.
+As a result, the mutex object is guaranteed to remain open
+until the corresponding call to <tt>mutex_unlock</tt>.
+
+<p><a name="mutex_unlock"></a></p>
+<p><hr noshade="noshade" />
+
+<pre><span class="fcndef">mutex_unlock</span> key
+</pre>
+
+If the remaining capacity is zero and there are tasks blocked by
+<tt>mutex_lock</tt>, the function unblocks the first blocked task.
+Otherwise, the function increases the remaining capacity by&nbsp;1.
+(Note: If the remaining capacity is positive, there will be no blocked
+tasks.)
+
+The function assumes that the calling task has previously locked the
+mutex object with <tt>mutex_lock</tt>.   If this is not the case, the
+function does nothing.
+
+<p><a name="mutex_rcapacity"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>val = <span class="fcndef">mutex_rcapacity</span> key
+</pre>
+
+Returns the remaining capacity of the given mutex object.
+
+<p>
+Each call to <tt>mutex_lock</tt> decreases the remaining capacity
+by&nbsp;1.  Each call to <tt>mutex_unlock</tt> increases the remaining
+capacity by&nbsp;1.  If a task with a locked mutex object is destroyed
+or calls <tt>mutex_close</tt> without explicitly unlocking the mutex,
+the mutex is unlocked automatically and its remaining capacity is
+increased.  An attempt to lock the mutex when the residual capacity is
+non-positive results in the calling task being blocked until the
+residual capacity increases above&nbsp;0.
+
+<p>
+The function can be used to determine whether or not a subsequent call
+to <tt>mutex_lock</tt> would block the task.  If the return value is
+zero or negative, the task would be blocked.
+
+<p><a name="mutex_capacity"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>val = <span class="fcndef">mutex_capacity</span> key
+</pre>
+
+Returns the maximum capacity of the given mutex.
+The default maximum capacity is&nbsp;1.
+
+<p><a name="mutex_setcapacity"></a></p>
+<p><hr noshade="noshade" />
+
+<pre><span class="fcndef">mutex_setcapacity</span> [key, val]
+</pre>
+
+Sets the maximum capacity of the given mutex to the given value.
+The residual capacity is automatically increased or decreased
+by the same amount.  If the capacity increases and there
+are tasks blocked by <tt>mutex_lock</tt>, the function unblocks
+the first blocked tasks until the capacity decreases to&nbsp;0 or
+all tasks are unblocked.  If the capacity decreases, the
+function does nothing.
+
+<p><a name="mutex_key"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>key = <span class="fcndef">mutex_key</span> key
+key = <span class="fcndef">mutex_key</span> 'name'
+</pre>
+
+Returns the key of the given mutex.  If the mutex does not exist,
+the function returns&nbsp;0.  The argument may be a nested vector.
+
+<p><a name="mutex_name"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>name = <span class="fcndef">mutex_name</span> key
+name = <span class="fcndef">mutex_name</span> 'name'
+</pre>
+
+Returns the name of the given mutex.  If the mutex does not exist, the
+function returns <tt>''</tt> (empty token).  The argument may be a nested
+vector.
+
+<p><a name="mutex_keylist"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>keylist = <span class="fcndef">mutex_keylist</span> []
+</pre>
+
+Returns the list of keys of all currently open mutex objects.
+
+<p><a name="mutex_taskref"></a></p>
+<p><a name="mutex_ref"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+count = <span class="fcndef">mutex_ref</span> [ key1, key2, ...]
+count = <span class="fcndef">mutex_taskref</span> [ key1, key2, ...]
+</pre>
+
+Each mutex object has associated with it a reference count.
+
+When the object is opened or reopened with <tt>mutex_open</tt>
+or when the object is locked with <tt>mutex_lock</tt>,
+the reference count is increased.
+
+When the object is closed with <tt>mutex_close</tt> or when the
+the object is unlocked with <tt>mutex_unlock</tt> or when the
+opening task is destroyed, the reference count is decreased.
+
+<p> For each <tt>key</tt> specified, function <tt>mutex_ref</tt>  returns
+the reference count of the corresponding mutex object or&nbsp;0 if
+no such object exists.  Function <tt>mutex_taskref</tt> returns only the
+reference count associated with
+<tt>mutex_open</tt>&nbsp;/&nbsp;<tt>mutex_close</tt>
+calls executed by the calling task.
+
+<h2>See Also</h2>
+
+<p>
+<table>
+<tr>
+<td valign="top">
+
+<a class="svl" href="tasksend.htm">task_send</a><br />
+<a class="svl" href="tasksend.htm">task_receive</a><br />
+<a class="svl" href="tasksend.htm">task_reply</a><br />
+<br />
+
+<a class="svl" href="sync.htm">sync_open</a><br />
+<a class="svl" href="sync.htm">sync_close</a><br />
+<a class="svl" href="sync.htm">sync_wait</a><br />
+<a class="svl" href="sync.htm">sync_update</a>
+</td>
+</tr>
+
+</table>
+
+<p>
+<a href="introcomm.htm">SVL Task Communication Functions</a>
+</p>
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

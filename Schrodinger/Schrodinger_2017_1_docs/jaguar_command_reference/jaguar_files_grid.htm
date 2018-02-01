@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html xmlns:MadCap="http://www.madcapsoftware.com/Schemas/MadCap.xsd" lang="en-US" xml:lang="en-US" data-mc-search-type="Stem" data-mc-help-system-file-name="Documentation.xml" data-mc-path-to-help-system="../" data-mc-target-type="WebHelp2" data-mc-runtime-file-type="Topic" data-mc-preload-images="false" data-mc-in-preview-mode="false" data-mc-toc-path="Command References|Jaguar Command Reference|Other Jaguar Files">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link href="../Skins/Default/Stylesheets/Slideshow.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/TextEffects.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Topic.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Components/Styles.css" rel="stylesheet" type="text/css" data-mc-generated="True" /><title>The Grid File for Jaguar Calculations</title>
+        <link href="../Resources/TableStyles/StandardRules.css" rel="stylesheet" data-mc-stylesheet-type="table" />
+        <link href="../Resources/Stylesheets/docs.css" rel="stylesheet" />
+        <script src="../Resources/Scripts/custom.modernizr.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/jquery.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.config.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/foundation.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/plugins.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/MadCapAll.js" type="text/javascript">
+        </script>
+    </head>
+    <body><a name="aanchor311"></a>
+        <MadCap:concept term="Command Reference" /><a name="aanchor312"></a>
+        <MadCap:concept term="Jaguar" /><a name="jaguar_files_3527134811_180937"></a><a name="jaguar_files_3527134811_70981"></a>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="jaguar_files_daf_sample.htm">Sample Dealiasing Function File</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="jaguar_command_referenceTOC.htm">Jaguar Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="jaguar_files_cutoff.htm">The Cutoff File for Jaguar Calculations</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+        <h1 class="Title">The Grid File for Jaguar Calculations</h1>
+        <p>The grid input file (<code>.grid</code> file) determines the grids used during the calculation. Each grid type, for example, “coarse” or “ultrafine,” is constructed from grids assigned to each atom in the molecule. For any basis set for which the pseudospectral method is used, the grid file must contain grids for each grid type used, where each of these grid types in turn requires atomic grids for each element in the molecule. Grids can be assigned to grid types in the input file using the <span class="Keyword">gen</span> section keywords <span class="Keyword"><a href="jaguar_input_gen_griddaf.htm#jaguar_input_1430212170_gcoarse">gcoarse</a></span>, <span class="Keyword"><a href="jaguar_input_gen_griddaf.htm#jaguar_input_1430212170_gmedium">gmedium</a></span>, and so on.</p>
+        <p>The first line of a <code>.grid</code> file contains a character string which includes the version number of Jaguar. This string should be <code>gridv</code> followed immediately by four digits giving the version number times 100. Leading zeroes are added if necessary.</p>
+        <p>The next line should consist of an integer which gives the number of grid types described in the file. For instance, this number would be six if the grids specified were of the types coarse, medium, fine, ultrafine, eldens (for electron density calculations), and gradient. By default, Jaguar uses the coarse grid for electron density calculations and the ultrafine grid for gradient calculations, and the “extreme” grid is included for testing purposes, so the number of grid types in the file <code>default.grid</code> is actually five. Jaguar uses the grids upon each atom in the molecule provided by the <code>.grid</code> file to generate molecular grids.</p>
+        <p>All grids for each basis set are then listed in turn. The basis set is identified with a <code>BASIS</code> line and containing its name, and is followed by a blank line.</p>
+        <p>Each molecular grid description starts with two comment lines, usually a blank line followed by a descriptive line. The next line contains an integer flag which determines which points from the atomic grids for the atoms in a molecule are included in the molecular grid. Jaguar generates a boundary plane between the two atoms and perpendicular to the vector between them, disposing of any points from one atom that are on the other atom’s side of the boundary plane. The integer flag determines the location of this plane: if the flag is 0, the plane is located so that the ratio of the distances of the atoms to the plane is the same as the ratio of their covalent radii, while if it is −1, the boundary plane is set where the grid point density from each atom, on the vector between the atoms, is equal. The grid point density is determined as a spline fit of the density for each shell, where each shell’s density is determined as the number of points for that shell divided by the shell volume, which is the volume between the spheres whose radii are the average of the current and previous shell radii, and the current and following shell radii.</p>
+        <p>After the flag for the grid, information for each atomic grid is provided. The first line of each atomic grid section contains two integers, one providing the atomic number for that atom and the other giving the number of shells to be described. Currently, this second number should be 30 or less. The next line contains that number of entries defining the radial shell spacing, listing the radius of each shell in bohr. Grid points for that shell will be placed at that radius, in a pattern determined by the integers given in the third line. This last line of integers represents the density of the angular grid for each shell. The values are explained below.</p>
+        <p>The <code>default.grid</code> file for Jaguar begins as follows:</p><pre>
+gridv<i class="UserReplace">version</i>
+5 24
+&#160;
+BASIS 6-31G
+&#160;
+coarse grid
+-1
+&#160;
+1 6
+0.23021 0.71955 1.74518 2.82595 3.94135 6.40743 
+1 3 7 7 3 1 
+&#160;
+2 7
+0.20699 0.45860 0.97184 1.61794 2.40119 3.26487 5.20964 
+1 3 7 9 7 3 1 
+&#160;
+3 7
+0.59584 1.69094 3.39571 5.30494 7.49262 11.30338 16.61803 
+1 3 7 9 7 3 1 
+</pre>
+        <p>Blank lines have been added between atomic grids for readability. Data may be spread over multiple lines.</p>
+        <p>As explained above, the beginning of the <code>default.grid</code> file indicates that five grid types are listed for each atom (corresponding to the coarse, medium, fine, ultrafine, and gradient grids. All coarse grids for 6&#8209;31G (with or without the polarization functions indicated by the **) will set the boundary plane between atoms (described earlier) at the point where the grid point densities are the same for the two atoms, because of the “−1” flag. Next, seven shells apiece are specified for H (atomic number 1), He (atomic number 2), and Li (atomic number 3). The actual <code>default.grid</code> file continues with a list of coarse atomic grids for the other atoms in the basis set, followed by the medium, fine, and ultrafine atomic grids in the same format, before proceeding to define the grids for another basis set in the same manner.</p>
+        <p>The possible values of the numbers on the angular grid line are listed in <a class="Table_Number MCXref xref xrefTable_Number selected" href="#jaguar_files_3527134811_188116">Table 1</a>, along with the corresponding number of points per angular shell and the degree of the highest spherical harmonic which the grid integrates exactly, when relevant. The full references are provided in <a class="TopicLink MCXref xref xrefTopicLink" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_84114">Jaguar References</a>.</p>
+        <table class="TableStyle-StandardRules" style="caption-side: top;mc-table-style: url('../Resources/TableStyles/StandardRules.css');" cellspacing="0">
+            <caption valign="top" style="padding-bottom: 7pt;">
+                <p class="Table_Caption" data-mc-autonum="Table 1. "><span class="autonumber"><span>Table 1. </span></span><a name="jaguar_files_3527134811_188116"></a><span class="_Override">Number of points per angular shell and degree of the highest spherical harmonic exactly integrated by grids specified by various entries on the angular grid line</span>
+                </p>
+            </caption>
+            <thead>
+                <tr class="TableStyle-StandardRules-Head-Header1">
+                    <td class="TableStyle-StandardRules-HeadE-Column1-Header1">
+                        <p class="Cell_Heading">Entry</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-HeadE-Column1-Header1">
+                        <p class="Cell_Heading">Points</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-HeadE-Column1-Header1">
+                        <p class="Cell_Heading">Degree</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-HeadD-Column1-Header1">
+                        <p class="Cell_Heading">Reference for Grid</p>
+                    </td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">1</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">6</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">3</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body1">
+                        <p class="Cell_Body">Un 3-1 (Stroud), p.294 <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_63818">[<span style="color: #0e6895;" class="mcFormatColor">210</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">2</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">8</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">3</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body1">
+                        <p class="Cell_Body">Un 3-2 (Stroud), p.294 <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_63818">[<span style="color: #0e6895;" class="mcFormatColor">210</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">3</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">12</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">3</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body2">
+                        <p class="Cell_Body">U3 3-1 (McLaren), p.296 <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_63818">[<span style="color: #0e6895;" class="mcFormatColor">210</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">4</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">14</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">5</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body2">
+                        <p class="Cell_Body">Un 5-2 (Albrecht &amp; Collatz), p.294 <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_63818">[<span style="color: #0e6895;" class="mcFormatColor">210</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">5</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">18</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">5</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body1">
+                        <p class="Cell_Body">Un 5-1 (Albrecht &amp; Collatz), p.294 <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_63818">[<span style="color: #0e6895;" class="mcFormatColor">210</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">6</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">18</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">5</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body1">
+                        <p class="Cell_Body">Un 5-1 (Albrecht &amp; Collatz), p.294 <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_63818">[<span style="color: #0e6895;" class="mcFormatColor">210</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">7</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">24</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">5</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body2">
+                        <p class="Cell_Body">Un 5-4 (Stroud), p.295 <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_63818">[<span style="color: #0e6895;" class="mcFormatColor">210</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">8</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">26</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">7</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body2">
+                        <p class="Cell_Body">Un 7-1 (Albrecht &amp; Collatz), p.295 <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_63818">[<span style="color: #0e6895;" class="mcFormatColor">210</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">9</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">38</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">9</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body1">
+                        <p class="Cell_Body">9.1 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">10</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">38</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">9</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body1">
+                        <p class="Cell_Body">9.1 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">11</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">42</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">9</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body2">
+                        <p class="Cell_Body">9.2 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">12</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">44</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">9</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body2">
+                        <p class="Cell_Body">9.3 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">13</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">44</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">9</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body1">
+                        <p class="Cell_Body">9.4 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">14</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">50</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">11</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body1">
+                        <p class="Cell_Body">U3 11-1 (McLaren), p.301 <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_63818">[<span style="color: #0e6895;" class="mcFormatColor">210</span>]</a>; 11.1 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">15</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">54</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">11</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body2">
+                        <p class="Cell_Body">11.2 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">16</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">56</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">11</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body2">
+                        <p class="Cell_Body">U3 11-2 (Stroud), p.301 <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_63818">[<span style="color: #0e6895;" class="mcFormatColor">210</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">17</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">60</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">11</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body1">
+                        <p class="Cell_Body">11.3 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">18</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">60</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">11</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body1">
+                        <p class="Cell_Body">11.3 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">19</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">78</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">13</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body2">
+                        <p class="Cell_Body">13.2 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">20</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">78</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">13</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body2">
+                        <p class="Cell_Body">13.3 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">21</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">86</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">15</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body1">
+                        <p class="Cell_Body">15.1 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">22</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">90</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">15</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body1">
+                        <p class="Cell_Body">15.2 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">23</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">90</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">15</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body2">
+                        <p class="Cell_Body">15.2 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">24</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">110</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">17</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body2">
+                        <p class="Cell_Body">17.1 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">25</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">116</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">17</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body1">
+                        <p class="Cell_Body">17.2 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_68927">[<span style="color: #0e6895;" class="mcFormatColor">211</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">26</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">146</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body1">
+                        <p class="Cell_Body">19</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body1">
+                        <p class="Cell_Body">19 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_25322">[<span style="color: #0e6895;" class="mcFormatColor">212</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">27</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">146</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body2">
+                        <p class="Cell_Body">19</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body2">
+                        <p class="Cell_Body">19 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_25322">[<span style="color: #0e6895;" class="mcFormatColor">212</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body2">
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">28</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">194</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyE-Column1-Body2">
+                        <p class="Cell_Body">23</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyD-Column1-Body2">
+                        <p class="Cell_Body">23 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_25322">[<span style="color: #0e6895;" class="mcFormatColor">212</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">29</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">302</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyH-Column1-Body1">
+                        <p class="Cell_Body">29</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyG-Column1-Body1">
+                        <p class="Cell_Body">29 (Lebedev) <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_58882">[<span style="color: #0e6895;" class="mcFormatColor">213</span>]</a></p>
+                    </td>
+                </tr>
+                <tr class="TableStyle-StandardRules-Body-Body1">
+                    <td class="TableStyle-StandardRules-BodyB-Column1-Body1">
+                        <p class="Cell_Body">30</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyB-Column1-Body1">
+                        <p class="Cell_Body">434</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyB-Column1-Body1">
+                        <p class="Cell_Body">35</p>
+                    </td>
+                    <td class="TableStyle-StandardRules-BodyA-Column1-Body1">
+                        <p class="Cell_Body">Lebedev <a class="Reference_Number MCXref xref xrefReference_Number" href="../jaguar_user_manual/jaguar_references.htm#jaguar_references_1926199490_95686">[<span style="color: #0e6895;" class="mcFormatColor">214</span>]</a></p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="jaguar_files_daf_sample.htm">Sample Dealiasing Function File</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="jaguar_command_referenceTOC.htm">Jaguar Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="jaguar_files_cutoff.htm">The Cutoff File for Jaguar Calculations</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

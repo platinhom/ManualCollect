@@ -1,0 +1,663 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	view.htm	Molecule Viewing Functions Fcnref
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions View, ViewObj>
+<meta functions ViewLookAt, ViewOrientation, ViewScale, ViewLoad>
+<meta functions ViewSave, ViewReset>
+<meta functions ViewSetup>
+<meta functions ViewSetupList, ViewSetupLoad, ViewSetupSave, ViewSetupDelete>
+<meta functions ViewSetupDefault>
+<meta functions ViewZFront, ViewZWidth>
+<meta functions ViewZSFront, ViewZSWidth>
+<meta functions ViewDepthCueFront, ViewDepthCueStrength>
+<meta functions ViewSetFocus, ViewRotationCenter>
+<meta functions ViewZRange, ViewTranslate>
+
+<meta obsolete ViewSetRotationCenter>
+
+<title>Molecule Viewing Functions</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    <a class="fcnlink" href="#View">View</a> atom_keys
+    <a class="fcnlink" href="#View">View</a> []
+
+    <a class="fcnlink" href="#ViewObj">ViewObj</a> atom_keys
+
+    [x, y, z] = <a class="fcnlink" href="#ViewLookAt">ViewLookAt</a> []
+    <a class="fcnlink" href="#ViewLookAt">ViewLookAt</a> [x,y,z]
+
+    [y_dir, z_dir] = <a class="fcnlink" href="#ViewOrientation">ViewOrientation</a> []
+    <a class="fcnlink" href="#ViewOrientation">ViewOrientation</a> [y_dir,z_dir]
+
+    current_diagonal_size = <a class="fcnlink" href="#ViewScale">ViewScale</a> []
+    <a class="fcnlink" href="#ViewScale">ViewScale</a> diagonal_size
+
+    <a class="fcnlink" href="#ViewTranslate">ViewTranslate</a> [x, y, z]
+
+    <a class="fcnlink" href="#ViewSetFocus">ViewSetFocus</a> [x,y,z]
+    atom = <a class="fcnlink" href="#ViewRotationCenter">ViewRotationCenter</a> atom_key
+    atom = <a class="fcnlink" href="#ViewRotationCenter">ViewRotationCenter</a> 0
+    atom = <a class="fcnlink" href="#ViewRotationCenter">ViewRotationCenter</a> []
+
+    <a class="fcnlink" href="#ViewLoad">ViewLoad</a> view_id
+    <a class="fcnlink" href="#ViewSave">ViewSave</a> view_id 
+    <a class="fcnlink" href="#ViewReset">ViewReset</a> []
+
+    current_setup_options = <a class="fcnlink" href="#ViewSetup">ViewSetup</a> []
+    <a class="fcnlink" href="#ViewSetup">ViewSetup</a> setup_options
+    default_setup_options = <a class="fcnlink" href="#ViewSetupDefault">ViewSetupDefault</a> []
+
+    [themes, filenames, types] = <a class="fcnlink" href="#ViewSetupList">ViewSetupList</a> []
+    [themes, filenames, types] = <a class="fcnlink" href="#ViewSetupList">ViewSetupList</a> 'filename'
+    <a class="fcnlink" href="#ViewSetupLoad">ViewSetupLoad</a> ['theme', 'filename']
+    <a class="fcnlink" href="#ViewSetupSave">ViewSetupSave</a> ['theme', 'filename']
+    <a class="fcnlink" href="#ViewSetupDelete">ViewSetupDelete</a> ['theme', 'filename']
+
+    <a class="fcnlink" href="#ViewZFront">ViewZFront</a> front_fraction
+    current_front_fraction = <a class="fcnlink" href="#ViewZFront">ViewZFront</a> []
+
+    <a class="fcnlink" href="#ViewZWidth">ViewZWidth</a> between_fraction
+    current_between_fraction = <a class="fcnlink" href="#ViewZWidth">ViewZWidth</a> []
+
+    <a class="fcnlink" href="#ViewZSFront">ViewZSFront</a> front_fraction
+    current_front_fraction = <a class="fcnlink" href="#ViewZSFront">ViewZSFront</a> []
+
+    <a class="fcnlink" href="#ViewZSWidth">ViewZSWidth</a> between_fraction
+    current_between_fraction = <a class="fcnlink" href="#ViewZSWidth">ViewZWidth</a> []
+
+    [[sys_front, sys_back], [surf_front, surf_back]] = <a class="fcnlink" href="#ViewZRange">ViewZRange</a> []
+
+    <a class="fcnlink" href="#ViewDepthCueFront">ViewDepthCueFront</a> front_fraction
+    current_front_fraction = <a class="fcnlink" href="#ViewDepthCueFront">ViewDepthCueFront</a> []
+
+    <a class="fcnlink" href="#ViewDepthCueStrength">ViewDepthCueStrength</a> strength
+    current_strength = <a class="fcnlink" href="#ViewDepthCueStrength">ViewDepthCueStrength</a> []
+</pre>
+
+<h3 class="obsolete">Obsolete</h3>
+<pre>
+    <a class="fcnlink" href="#ViewSetRotationCenter">ViewSetRotationCenter</a> atom_key
+    <a class="fcnlink" href="#ViewSetRotationCenter">ViewSetRotationCenter</a> []
+</pre>
+
+<h2>Description</h2>
+
+<p>In MOE, the view is primarily specified by three parameters:  the view
+&quot;look-at&quot; point, and the view <i>y</i>- and <i>z</i>-direction
+vectors.  These three parameters define the location and orientation of a
+projection plane in world-coordinate (molecule) space onto which 3-D world
+points project. The look-at point anchors the plane in 3-D space, and acts
+as a gimbal upon which the plane may incline; the inclination of the plane
+is given by the <i>y</i> and <i>z</i> vectors. World coordinates are in
+angstroms.</p>
+
+<p>
+The <tt>MOE</tt> Window displays a rectangular portion
+of the projection plane, delineated by a rectangular viewing window that
+is mapped into a viewport on the computer monitor screen.  This viewing
+window (defined in the world coordinate system) has the same aspect ratio
+as the viewport, and its center is the view look-at point.  <tt>z_dir</tt>
+is normal to the projection plane (giving the tilt of the plane), and
+hence is also normal to the viewing window. <tt>y_dir</tt> is the slant of
+the plane; the viewing window is oriented so that the <i>y</i>-direction
+is always pointing upward. (The <i>x</i>-direction is defined according to
+a right-handed coordinate system.)
+</p>
+
+<!-- Figure XXX FIGURE illustrates the view look-at point and 
+orientation vectors. -->
+
+<p>
+The viewport on the computer monitor can be thought of as coincident
+with the viewing window in the projection plane; <i>i. e.</i>, they can be
+considered one and the same.  Thus, in the viewer's (you, the user's)
+coordinate system, the origin (center) of the viewport is effectively the
+view look-at point, the up direction is <tt>y_dir</tt>, pointing
+perpendicularly out of the screen towards you is <tt>z_dir</tt>, and
+towards the right is the <i>x</i>-axis. The system is calibrated for
+correct perspective viewing using the values for viewer eye separation and
+eye distance from the monitor (as found in the <tt>moe-rc</tt> file; do
+not edit this file by hand).  Viewer coordinates are in millimeters.
+</p>
+
+<p>
+When the view is changed, the actual positions and sizes of objects in
+the world-coordinate system (molecule space) are unaffected.  Panning
+across, zooming in on, and rotating objects in the visualization window
+are accomplished by altering the view look-at point and orientation
+vectors, and not by any manipulation of the objects in the view.
+</p>
+
+<p>
+When panning, only the view look-at point is changed; the view
+orientation vectors are not modified. When rotating, the viewing window
+must follow a circular trajectory about a center of rotation. This means
+that all three view parameters must be modified. Use a matrix
+transformation to rotate the view about the fixed rotation point. Note
+that <tt>z_dir</tt> need not lie along the line connecting the center of
+rotation to the view look-at point.
+</p>
+
+<p>The <tt>ViewZFront</tt>, <tt>ViewZWidth</tt>
+functions control the Z-axis clipping region and <tt>ViewDepthCueFront</tt>,
+<tt>viewDepthCueStrength</tt> the Z-axis depth cue shading in the MOE Window.
+A secondary Z-axis clipping region just for graphics objects, such as molecular
+surfaces, is controlled by the functions <tt>ViewZSFront</tt> and
+<tt>ViewZSWidth</tt>.
+The clipping and shading parameters are defined on the data bounding box
+that delimits the current molecular system.  This box is the smallest box
+that can contain all objects in the system, including molecules, ribbons,
+graphic surfaces, and text.  As data is added to or removed from the system,
+the absolute positions of both clipping planes and shading region are
+automatically adjusted.
+</p>
+
+<p><a name="View"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">View</span> atom_keys
+<span class="fcndef">View</span> []
+</pre>
+
+<p>
+Shifts the viewpoint using panning and zooming as necessary,
+so that all the atoms specified by keys in <tt>atom_keys</tt> are viewable
+and centered in the visualization window. If no atom keys are specified,
+then all atoms are brought into view; this form is equivalent to:
+</p>
+
+<pre>
+    View Atoms []
+</pre>
+
+<p><a name="ViewObj"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewObj</span> atom_keys
+</pre>
+
+<p>
+<tt>ViewObj</tt> is similar to <tt>View</tt> in that it arranges the view
+specification such that atoms specified by keys in <tt>atom_keys</tt> can
+all be seen in the viewing area.  Unlike <tt>View</tt>, however, no action
+is taken when <tt>atom_keys</tt> is <tt>[]</tt>.
+</p>
+
+<p><a name="ViewLookAt"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewLookAt</span> [x,y,z]
+[x, y, z] = <span class="fcndef">ViewLookAt</span> []
+</pre>
+
+<p>
+Sets the view look-at point.  If passed a null argument, the 
+current view look-at point coordinates are returned.
+</p>
+
+<p><a name="ViewOrientation"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewOrientation</span> [y_dir,z_dir]
+[y_dir, z_dir] = <span class="fcndef">ViewOrientation</span> []
+</pre>
+
+<p>
+Sets the view orientation vectors <tt>y_dir</tt> and <tt>z_dir</tt>.
+If passed a null argument, the current orientation vectors are returned.
+</p>
+
+<p><a name="ViewScale"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewScale</span> diagonal_size
+current_diagonal_size = <span class="fcndef">ViewScale</span> []
+</pre>
+
+<p>
+Sets the view zoom.  <tt>diagonal_size</tt>, which
+may be any non-negative floating-point value, is the length
+(angstroms) of the diagonal of the viewing window.  If passed a null
+argument, the current diagonal length is returned.
+</p>
+
+<pre>
+    svl&gt; ViewScale 20 // 20 1-A-wide atoms will span window diagonal
+</pre>
+
+<p><a name="ViewTranslate"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewTranslate</span> [x, y, z]
+</pre>
+
+<p>
+Move the view parallel (x, y) and perpendicular (z) to the screen.
+The movement is done in screen coordinates as if the view was translated
+with the mouse.
+</p>
+
+<pre>
+    svl&gt; ViewTranslate [10, 0, 0] // Move system 10 Anstrom to the right
+</pre>
+
+<p><a name="ViewSetFocus"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewSetFocus</span> [x,y,z]
+</pre>
+
+<p>
+Sets the view focus so that the specified coordinate is inside the
+focal plane.  The change of the focal point is only visible when in
+<a href="stereo.htm">3D stereo mode</a> or using the
+<a href="../../appendix/viewsetup.htm#EffectsText">focal blur effect</a>.
+Changing the focal plane is achieved by moving the view look-at point
+in the direction of the current z_dir orientation and adjusting the
+diagonal size of the view.
+</p>
+
+<p><a name="ViewRotationCenter"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+atom = <span class="fcndef">ViewRotationCenter</span> atom_key
+atom = <span class="fcndef">ViewRotationCenter</span> 0
+atom = <span class="fcndef">ViewRotationCenter</span> []
+</pre>
+
+<p>
+Sets the center of rotation to the coordinates of the specified atom.
+If 0 is passed as the argument, the center of rotation is reset to the
+molecular center of mass.  The key of the old center
+of rotation atom is returned, or 0 if none was set. If [] is passed
+as the argument, the atom key of the current center of rotation or 0
+is returned.
+</p>
+
+<p><a name="ViewSave"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewSave</span> view_id 
+</pre>
+
+<p>
+Saves the current viewing parameters into one of eight
+locations in the range <tt>[1..8]</tt>, as specified by <tt>view_id</tt>.
+</p>
+
+<p><a name="ViewLoad"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewLoad</span> view_id
+</pre>
+
+<p>
+Restores a previously saved view from one of eight
+locations in the range <tt>[1..8]</tt>, as specified by <tt>view_id</tt>.
+</p>
+
+<p><a name="ViewReset"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewReset</span> []
+</pre>
+
+<p>
+Resets the view to the start-up defaults:
+</p>
+
+<blockquote>
+<table class="titlebar" border="1" cellpadding="3">
+  <tr>
+    <th>View Parameter</th>
+    <th>Default Value</th>
+  </tr>
+  <tr>
+    <td><tt>ViewOrientation</tt></td>
+    <td>[ [0,1,0], [0,0,1] ]</td>
+  </tr>
+  <tr>
+    <td><tt>ViewLookAt</tt></td>
+    <td>[0, 0, 0]</td>
+  </tr>
+  <tr>
+    <td><tt>ViewZFront</tt></td>
+    <td>0 </td>
+  </tr>
+  <tr>
+    <td><tt>ViewZWidth</tt></td>
+    <td>1</td>
+  </tr>
+  <tr>
+    <td><tt>ViewZSFront</tt></td>
+    <td>0 </td>
+  </tr>
+  <tr>
+    <td><tt>ViewZSWidth</tt></td>
+    <td>1</td>
+  </tr>
+  <tr>
+    <td><tt>ViewSetRotationCenter</tt></td>
+    <td>[]</td>
+  </tr>
+</table>
+</blockquote>
+
+<p><a name="ViewSetup"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewSetup</span> setup_options
+current_setup_options = <span class="fcndef">ViewSetup</span> []
+</pre>
+
+<p>
+Sets the visualization setup options.  If a null argument is passed,
+a list of the current setup attribute-value pairs is returned.
+</p>
+
+<pre>
+    svl&gt; ViewSetup [background_color:0x0000FF]    // set MOE Window background to blue
+</pre>
+
+<p><a name="ViewSetupDefault"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+default_setup_options = <span class="fcndef">ViewSetupDefault</span> []
+</pre>
+
+<p>
+Returns the default visualization setup options.
+</p>
+
+<p><a name="ViewSetupList"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+[themes, filenames, types] = <span class="fcndef">ViewSetupList</span> []
+[themes, filenames, types] = <span class="fcndef">ViewSetupList</span> 'filename'
+</pre>
+
+<p>
+Returns content information from the specified theme file.
+If a null argument is passed, the information of the available system
+and user themes is output.
+The data (theme names, associated files, and theme types) are returned in
+a laminated vector. <tt>themes</tt> and <tt>filenames</tt> are vectors of 
+tokens; <tt>types</tt> is a vector of numbers.
+A theme type is either <tt>0</tt> (user theme), <tt>1</tt> 
+(user theme in read-only file), or <tt>2</tt> (system theme).
+</p>
+
+<pre>
+    svl&gt; first ViewSetupList []		// return names of available themes
+    ['Standard','Standard white','Schematic']
+</pre>
+
+<p><a name="ViewSetupLoad"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewSetupLoad</span> ['theme', 'filename']
+</pre>
+
+<p>
+Loads visualization settings of the theme specified by name (<tt>'theme'</tt>)
+from the specified file.
+If <tt>'filename'</tt> is omitted,
+the system and user theme file are searched for a theme of the specified name.
+</p>
+
+<pre>
+    svl&gt; ViewSetupLoad 'Standard'	// load standard theme settings
+</pre>
+
+<p><a name="ViewSetupSave"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewSetupSave</span> ['theme', 'filename']
+</pre>
+
+<p>
+Saves the current visualization settings under the specified
+theme name into the specified
+file. If <tt>'filename'</tt> is omitted, the theme is written into
+the user theme file.
+</p>
+
+<pre>
+    svl&gt; ViewSetupSave ['My Theme', 'my_theme_collection']	// save theme into separate file
+</pre>
+
+<p><a name="ViewSetupDelete"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewSetupDelete</span> ['theme', 'filename']
+</pre>
+
+<p>
+Deletes the specified theme from the given file.
+If <tt>'filename'</tt> is omitted, the theme is deleted from
+the user theme file.
+</p>
+
+<pre>
+    svl&gt; ViewSetupDelete ['My Theme', '$HOME/moe-themes']	// delete 'My Theme' from user theme file
+</pre>
+
+<p><a name="ViewZFront"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewZFront</span> front_fraction
+current_front_fraction = <span class="fcndef">ViewZFront</span> []
+</pre>
+
+<p>
+Sets the location of the front clipping plane.  All objects between the 
+front of the data bounding box and the front clipping plane are hidden.
+<tt>front_fraction</tt> is a floating-point number clamped to the range [0,1],
+giving the fraction of the box to be clipped in front.
+If passed a null argument, the current front value is returned.
+The default value is 0, which places the front clipping plane
+at the front of the data bounding box.
+</p>
+
+<p><a name="ViewZWidth"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewZWidth</span> between_fraction
+current_between_fraction = <span class="fcndef">ViewZWidth</span> []
+</pre>
+
+<p>
+Sets the separation between the front and rear clipping planes, specifying
+the region in which objects are visible in the MOE Window.
+<tt>between_fraction</tt> is a floating-point number clamped to the
+range [0,1], giving the distance between the planes as a fraction of the
+data bounding box.  If passed a null argument, the current width value is
+returned. The default value is 1, which places the rear clipping plane
+at the back of the data bounding box (width is 100%).
+</p>
+
+<p><a name="ViewZSFront"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewZSFront</span> front_fraction
+current_front_fraction = <span class="fcndef">ViewZSFront</span> []
+</pre>
+
+<p>
+Sets the location of the front clipping plane that is applied only to
+<a href="../../apps/surfmap.htm">surfaces</a>
+and <a href="gobj.htm">graphics objects</a>.
+All <a href="gobj.htm#GClippable">clippable</a> graphics objects between the 
+front of the data bounding box and the front surface clipping plane are clipped.
+<tt>front_fraction</tt> is a floating-point number clamped to the range [0,1],
+giving the fraction of the box to be clipped in front.
+If passed a null argument, the current front value is returned.
+The default value is 0, which places the front surface clipping plane
+at the front of the data bounding box.
+</p>
+
+<p><a name="ViewZSWidth"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewZSWidth</span> between_fraction
+current_between_fraction = <span class="fcndef">ViewZSWidth</span> []
+</pre>
+
+<p>
+Sets the separation between the front and rear clipping planes that
+are applied only to
+<a href="../../apps/surfmap.htm">surfaces</a>
+and <a href="gobj.htm">graphics objects</a>.  The separation specifies
+the region in which graphics objects are visible in the MOE Window.
+<tt>between_fraction</tt> is a floating-point number clamped to the
+range [0,1], giving the distance between the planes as a fraction of the
+data bounding box.  If passed a null argument, the current width value is
+returned. The default value is 1, which places the rear surface clipping plane
+at the back of the data bounding box (width is 100%).
+</p>
+
+<p><a name="ViewZRange"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+[[sys_front, sys_back], [surf_front, surf_back]] = <span class="fcndef">ViewZRange</span> []
+</pre>
+
+<p>
+Returns the relative front and back of the molecular system and graphics
+objects in relation to the viewing volume. The values are floating-point
+numbers clamped to the range [0, 1]. The values can be used to set the
+position of the Z-clipping planes. The special value -1 is returned if i.e.
+no clippable graphics object or molecular system is loaded.
+</p>
+
+<p><a name="ViewDepthCueFront"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewDepthCueFront</span> front_fraction
+current_front_fraction = <span class="fcndef">ViewDepthCueFront</span> []
+</pre>
+
+<p>
+Sets the distance from the front of the data bounding box at which
+distance-dependent shading begins to take effect.  <tt>front_fraction</tt>
+is a floating-point number clamped to the range [0,1], giving the distance
+as a fraction of the data bounding box.
+If passed a null argument, the current value is returned.  The default value
+is 0, which causes shading to begin from the front of the data bounding box.
+</p>
+
+<p><a name="ViewDepthCueStrength"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewDepthCueStrength</span> strength
+current_strength = <span class="fcndef">ViewDepthCueStrength</span> []
+</pre>
+
+<p>
+Sets the rate at which intensity in the MOE Window decreases as a function
+of distance. <tt>strength</tt> is a floating-point number clamped to the
+range [0,1], where 0 specifies no depth-cue shading (full intensity), and 1
+specifies that the intensity drops to 0 immediately.  If passed a null
+argument, the current value is returned.  The default value is 0.  The
+decrease in intensity starts at the position in the data bounding box
+specified by <tt>ViewDepthCueFront</tt>.
+</p>
+
+<h4><span class="obsolete">Obsolete Functions</span></h4>
+
+<p><a name="ViewSetRotationCenter"></a></p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">ViewSetRotationCenter</span> atom_key
+<span class="fcndef">ViewSetRotationCenter</span> []
+</pre>
+
+<p>
+Sets the center of rotation to the coordinates of the specified atom.
+If passed a null argument, the center of rotation is reset to the
+molecular center of mass. This syntax is obsolete. Use the following
+code instead:
+
+<pre>
+    ViewRotationCenter atom_key		# Set atom as center of rotation
+    ViewRotationCenter 0		# Unset current rotation center
+</pre>
+
+</p>
+
+<h2>See Also</h2>
+<p>
+<a href="rc.htm">Configuration File Functions</a><br />
+<a href="gobj.htm">Graphics Object Functions</a><br />
+<a href="../../appendix/viewsetup.htm#VisualizationSetup">Visualization Setup</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

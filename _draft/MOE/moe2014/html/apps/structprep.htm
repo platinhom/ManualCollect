@@ -1,0 +1,1501 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	structprep.htm	Structure Preparation
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+
+<title>Structure Preparation: Preparing Biomolecular Structures</title>
+
+<meta panel Structure Preparation>
+<meta keywords structure preparation protein ligand system />
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Introduction">Introduction</a></li>
+<li><a href="#BeforeStructPrep">Before Running Structure Preparation</a></li>
+<li><a href="#RunStructPrep">Running Structure Preparation</a></li>
+    <ul>
+    <li><a href="#StructPrepPanel">The Structural Preparation Panel</a></li>
+    <li><a href="#DiagnoseProblems">Diagnosed Structural Items</a></li>
+	<ul>
+	<li><a href="#DiagnoseProblemsIssues">Issues</a></li>
+	<li><a href="#DiagnoseProblemsProtonation">Protonation</a></li>
+	<li><a href="#DiagnoseProblemsWarnings">Warnings</a></li>
+	</ul>
+    <li><a href="#CorrectProblems">Correcting Structural Problems</a></li>
+    <li><a href="#ProtonationPage">Using the Protonation Page</a></li>
+    <li><a href="#WarningsPage">Warnings</a></li>
+    <li><a href="#Example1" class="example">
+	Example 1: Automatic Preparation of 1ERR</a>
+    <li><a href="#Example2" class="example">
+	Example 2: Manual Preparation of 1ERR</a>
+    </ul>
+<li><a href="#AfterStructPrep">After Running Structure Preparation</a></li>
+    <ul>
+    <li><a href="#Protonation_and_Partial_Charge">
+    Setting Protonation States and Partial Charges</a></li>
+    <li><a href="#Fixing_and_Tethers">Fixing Atoms and Setting Tethers</a>
+    </li>
+    <li><a href="#Energy_Refinement">Energy Refinement</a></li>
+    </ul>
+</li><li><a href="#Using_LigX">Using LigX</a>
+</li><li><a href="#Saving_the_Prepared_Data">Saving the Prepared Data</a>
+</li><li><a href="#Conclusions">Conclusion</a>
+
+</li><li><a href="#See_Also">See Also</a>
+</li>
+</ul>
+
+<!-- ============================= Introduction =========================== -->
+
+<p>
+<a name="Introduction"></a>
+<h2>Introduction</h2>
+
+<p>
+<div class="floatleft">
+<img src="structprep/xray_diffr.png" alt="X-ray diffraction pattern" />
+</div>
+
+The purpose of preparing 3D macromolecular structures is to correct structures
+and to prepare macromolecular data for further
+computational analysis. At present, the primary source of 
+3D biomolecular structural data is X-ray crystallography.
+Since there are far fewer nuclear magnetic resonance (NMR) structure 
+files than X-ray files, and NMR files tend to contain fewer data-related issues
+such as missing atoms and residues, this document will focus primarily 
+on the preparation of X-ray crystallographic data.
+
+<p>
+One major issue with macromolecular X-ray crystal structures is that
+of missing or poorly resolved atomic data. Areas that cannot be 
+well-resolved may result in either multiple models, alternate 
+locations (atoms are assigned &quot;partial occupancies&quot; based 
+on how often they are found in different locations) or data being absent 
+altogether.
+The severity of missing data ranges from occasional missing atoms through 
+to entire sections of the structure being absent. In many cases the
+missing data needs to be modeled and fixed before subsequent 
+computational analyses can proceed.
+</p>
+
+<p>
+Another issue with X-ray crystal structures is that the bonding  
+patterns of non-amino acids must be inferred from the positions of heavy
+atoms. Bond orders of ligands and co-factors can in principle be 
+predicted from interatomic distances and angles (provided atomic coordinates 
+are sufficiently accurate) but flexible regions of a structure can 
+lead to positional ambiguities that make automatic bond perception difficult. 
+Furthermore, determination of bond orders relies on knowledge of hydrogen
+atoms, which owing to their high mobility, cannot typically be located with any degree of accuracy. As a result, the bond orders, charges and protonation 
+states of ligands and cofactors should be inspected and corrected manually if
+necessary.
+</p>
+
+<p>
+Typical manual processing of an X-ray protein structure
+involves the follow steps:
+</p>
+
+<ol>
+<li>Load the structure data from a PDB file.
+</li><li>Assess the quality of the data using temperature 
+factors, protein geometry checks and electron density.
+</li><li>Explore alternate structure data if necessary.
+</li><li>Replace missing protein sections using homology modeling and 
+rotamer exploring.
+</li><li>Consider whether fixing bonding patterns in co-factors and 
+ligands, and deleting unbound water molecules is necessary. 
+</li><li>Add hydrogens and optimize their positions.
+</li><li>Set tethers and restraints.
+</li><li>Perform final energy minimization of the structure.
+</li>
+</ol>
+
+<p>
+The manual processing of biomolecular structures can be time consuming
+and prone to human error. By automating the most common tasks associated with
+preparing a biomolecular structure, these errors can be reduced. This is the
+main goal of the Structure Preparation application. Additionally, the
+application provides an environment for manual inspection of each item
+identified while allowing some flexibility in the correction to be applied.
+The Structure Preparation application can be used to prepare 3D biomolecular
+structures for simulations such as docking, electrostatic map calculations,
+molecular mechanics minimizations and molecular dynamics.
+</p>
+
+
+<a name="BeforeStructPrep"></a>
+<h2>Before Running Structure Preparation</h2>
+
+<p>Although the operations in this chapter do not require that the 
+source data come from PDB files, PDB source data is used in all examples.
+</p>
+
+<div class="floatright">
+<img src="structprep/ReadPDB.png" alt="Load PDB File" />
+</div>
+
+<h3>Load PDB File</h3>
+
+<p>
+Structure data can be read into MOE by opening a
+<a href="../proteins/pdb_mdb.htm#OpeningPDBFiles">PDB file</a>
+directly using
+</p>
+
+<blockquote>
+<span class="menu">MOE | File |
+
+<a href="../moe/gui/fileopen.htm">Open</a></span>
+</blockquote>
+
+<p>which raises the Load PDB File panel.
+This panel offers options that address a number of issues:
+</p>
+
+<ul>
+<p><li>
+<b>Load Models</b>.  For files that contain more than
+one model, choose <b>Models</b> to allow loading of all of them;
+otherwise only the first model will be loaded.
+
+</li></p><p><li>
+<b>Sequence</b>. Allow residues having no atom information (i.e.
+whose structure could not be determined) to be created. Such residues
+are represented in the <tt>SEQRES</tt> records. To automatically build
+missing loops ensure that <b>Integrate SEQRES Records</b> is
+<b>enabled</b>.
+</li></p><p><li>
+<b>Connect</b>. As  <tt>CONECT</tt> records in PDB files are not
+necessarily entirely reliable, the default policy for assigning bonds
+is to ignore them, and to apply only
+automatic, geometry-based bonds. Standard residues, such as amino acids,
+are always bonded according their atom names.
+</li></p><p><li>
+<b>Alternates</b>. Atoms with multiple solutions
+(partial occupancy) can have all alternates created (as inert atoms
+which are collected together into <i>named sets</i>)
+or ignored. To be able to explore alternate data within the Structure
+Preparation application ensure that
+<b>Alternates</b> is set to <b>Show</b>.
+
+</li></p>
+</ul>
+
+<p>Pressing <b>OK</b> loads the PDB file into MOE.</p>
+
+<p>
+For additional information on loading protein files see
+<a href="../proteins/pdb_mdb.htm">Loading Protein
+Structure Data</a>.
+
+<h3>Assessing Protein Structure Data</h3>
+<p>
+Not every structure should be used for a simulation. Some key factors which
+may guide selection of a structure are:
+<ul>
+<li><b>Resolution</b>. 2&nbsp;&Aring; or finer (smaller) is suggestive of a reliable model.
+<li><b>R, R<sub>free</sub></b>. The smaller the value, the better the agreement.
+R value of 0.5 or greater indicates a poor model.
+<li><b>Compare to electron density</b>. Regions with low to no electron density
+close to a region of interest may be indicative of a poor model. The comparison
+can be done by loading the electron density data into MOE and creating an
+<a href="../apps/surfmap.htm#ElectronDensity|">Electron Density Surface</a>.
+<li><b>Protein Geometry</b>. The quality of a protein structure with
+respect to known geometric constraints such as bond lengths, bond angles and 
+torsion angles should also be checked. For projects such as docking and 
+structure-based drug design, this assessment can be restricted to regions of 
+interest, but for advanced all-atom simulations such as MD, an extensive 
+assessment of the entire structure is recommended. For more information see
+<a href="../apps/progeom.htm">
+Protein Geometry</a>.
+</ul>
+
+<!-- ====================== RUNNING STRUCTURE PREP ======================= !-->
+<p>
+<a name="RunStructPrep"></a>
+<h2>Running Structure Preparation</h2>
+
+<!-- ============================ PANEL ================================ !-->
+<p>
+
+<a name="StructPrepPanel"></a>
+<h2>The Structure Preparation Panel</h2>
+
+<p>To use the Structure Preparation application, select
+<span class="nobr">
+<b>MOE | Compute | Prepare | Structure Preparation</b>
+</span> or
+<span class="nobr">
+<b>MOE | Protein | Structure Preparation</b>
+</span>.
+The following panel will appear:
+</p>
+
+<p align="center">
+<img src="structprep/structprep_ann.png" alt="Structure Preparation Panel" />
+</p>
+
+<p>
+The Structure Preparation application defines all items as belonging to one of
+three classes: <a href="#DiagnoseProblemsIssues">Issues</a>,
+<a href="#DiagnoseProblemsProtonation">Protonation</a> and
+<a href="#DiagnoseProblemsWarnings">Warnings</a>.
+
+All items are displayed on one of three pages depending on which class
+it belongs to.
+
+<p align="center">
+<img src="structprep/panel_itemclasses.gif" alt="panel classes" />
+
+<p>Clicking on individual items will change the options available in the
+Manual Preparation section of the panel. By default the residues in question
+will be isolated in the MOE window. 
+<p>It is possible to correct one or many items on the Issues page 
+by selecting the items and clicking on <b>Correct</b>. This will apply
+the default fix to the selected items. When no item is selected and the
+<b>Correct</b> button is clicked the application will try to 
+automatically correct all structural items.
+
+<table cellpadding="5">
+
+<tr>
+<td  valign="top"><b>Chains</b></td>
+<td valign="top">
+The collection of chains which the Structure Preparation application
+will use. All chains containing only dummy atoms will be ignored. The default is
+<b>All Chains</b> except when there is one active Chain Tag.
+</td></tr>
+
+<tr>
+<td  valign="top"><b>Select</b></td>
+<td valign="top">
+Select specific items in the list unless <b>Select in MOE</b> is clicked, which
+would select the corresponding residues in the MOE Window and Sequence Editor.
+</td></tr>
+
+<tr>
+<td  valign="top"><b>Auto Isolate</b></td>
+<td valign="top">
+When enabled, residues corresponding to the list selection will be
+isolated in the MOE window. By default this is enabled.
+</td></tr>
+
+<tr>
+<td  valign="top"><b>Types...</b></td>
+<td valign="top">
+Enable/disable specific item types. When disabled the specified types
+will not be displayed and corrected.
+By default all types are enabled except HName.
+</td></tr>
+
+<tr>
+<td  valign="top"><b>Preparation Summary</b></td>
+<td valign="top">
+This section of the panel gives the number of issues per group. When all types
+of a group are disabled then it is grayed out. The groups are split
+into their classes corresponding from top to bottom: Issues, Protonation and
+Warnings.
+</td></tr>
+
+<tr>
+<td  valign="top"><b>Preparation Items List</b></td>
+<td valign="top">
+All issues found within a structure will be listed here. Each issue
+is identified by the following details:
+<ul>
+<li><b>P</b>: The presence of a <i>P</i> indicates that the residue is
+considered part of the pocket.</li>
+<li><b>Chain</b>: Chain number and name.</li>
+<li><b>Res</b>: Residue Type.</li>
+<li><b>UID</b>: Residue UID and Insertion code.</li>
+<li><b>Type</b>: Preparation issue type.</li>
+<li><b>Details</b>: Detailed information on the Preparation item.</li>
+</ul>
+</td></tr>
+</table>
+
+<!-- ======================== DIAGNOSED PROBLEMS ========================= !-->
+
+<p>
+<a name="DiagnoseProblems"></a>
+<h2>Diagnosed Structure Items</h2>
+<p>
+The following items are diagnosed by the Structure Preparation application.
+Items are broken into three classes:
+<ul>
+<li><i>Issues.</i> Structural problems that need to be addressed
+before proceeding with a simulation. Most items identified on the Issues page
+can be automatically corrected by the Structure Preparation application. 
+<li><i>Protonation.</i> Residues where it is possible to have
+multiple protomers and/or tautomers. The items on this page are not  
+automatically corrected.
+<li><i>Warnings.</i> Items that are not corrected by the
+Structure Preparation application but of which the user should be aware.
+</ul>
+
+<a name="DiagnoseProblemsIssues"></a>
+<h3>Issues Types</h3>
+<p>This section describes all Issue groups and their types, followed by their
+default correction.
+<table cellpadding="5">
+
+<tr>
+<td  valign="top"><b>Alternates</b></td>
+<td valign="top">
+Residues with alternate locations
+and/or ambiguous sequence identities. These residues are automatically
+assigned to the <i>PDB_ALTLOC_?</i> that is automatically created when loaded
+from a PDB file containing values in the <i>Alternate Location Indicator</i>
+column. Residues with atoms having fractional occupancies will be identified.
+<br>
+<i>Correction:</i> By default the highest occupancy alternate is used and 
+other alternate locations and/or sequence identities are deleted.
+Atom occupancies will be set to one for the remaining atoms of the residue.
+</td></tr>
+
+<tr>
+<td  valign="top"><b>Termini</b></td>
+<td valign="top">
+Termini group refers to three possible types of items:
+Nucleotide, Termini, and Break:
+<br><br>
+<b>Nucleotide</b> identifies uncapped breaks in a DNA or RNA chain where
+there are terminal PO4 groups without an OHE cap. Residues
+which do not have a terminal PO4 are not flagged as having a
+problem.
+<br>
+<i>Correction:</i> If the terminal PO4 only has three oxygens bonded to the
+phosphorous then an additional oxygen will be added. Once the terminal PO4 is
+complete, an oxygen is reparented into a new OHE residue.
+<br><br>
+<b>Termini</b> identifies protein chain C- or N-termini (first or last residue
+in a chain with atoms) which need to be
+charged or capped as well as empty residues preceding a capped N-terminus
+or following a capped C-terminus.
+<br>
+<i>Correction:</i> An N-terminus of a chain preceded by an empty residue will
+be capped with ACE. If there are no preceding residues then the N-terminus
+will be charged. A C-terminus followed by an empty residue will be capped
+with an NME. If there is no empty residue following then the C-terminus
+will be charged (which when needed includes the addition of OXT).
+Empty residues preceding or following a
+chain terminus will automatically be deleted.
+NOTE: If there are missing backbone atoms in a terminal
+residue, the residue will be deleted and replaced with
+the appropriate cap.
+<br><br>
+<b>Break</b> identifies the last residue with atoms before a chain break.
+<br>
+<i>Correction:</i>
+If the number of consecutive empty residues is less than seven but greater then
+zero, a loop will be built, otherwise it will be capped with an ACE (acetyl) or
+NME (formyl) residue.
+The empty residues will be deleted when the break is capped.
+NOTE: If there are residues with missing (incomplete) backbone atoms in the
+break, these will be deleted and either be replaced with the appropriate cap
+or included in the loop building, depending on the fix.
+</td></tr>
+
+<tr>
+<td  valign="top"><b>HCount</b></td>
+<td valign="top">
+Identifies whether there are atoms with incorrect number of hydrogens.
+<br>
+<i>Correction:</i> Add and/or delete hydrogens.
+</td></tr>
+
+<tr>
+<td  valign="top"><b>Library</b></td>
+<td valign="top">
+Library refers to four types of errors: Selenium, Metal, 
+Library and Topology.
+<br><br>
+<b>Selenium</b> identifies residues containing a selenium atom that would
+match an entry in the library if the Se
+was mutated to S.
+<br>
+<i>Correction:</i> Mutate Se to S.
+<br><br>
+<b>Metal</b> identifies residues where a metal atom has
+bonds to protein, DNA or RNA residues.
+<br>
+<i>Correction:</i> Delete bonds to metal atoms and reset
+charges of metal and atoms it was bonded to.
+<br><br>
+<b>Library</b> identifies structural differences between the residues in MOE
+and a library defined in <tt>$MOE/lib/amber10.mdb</tt>.
+The following problems are identified:
+<ul>
+
+<li>"XXXX residue not in library". Residues whose structure and name
+cannot be found in the library.
+<br>
+<i>Correction:</i> These issues cannot be fixed by the Structure Preparation 
+application. NOTE: This issue should be treated as an indication
+to the user that manual intervention may be needed.
+
+<li>"Missing atoms". Identifies residues missing atoms.
+<br>
+<i>Correction:</i> Mutate to complete residue. NOTE: If the residue is
+either a ligand or solvent molecule, it cannot be fixed.
+
+<li>"Library mismatch". Identifies where there is inconsistency between the
+residue name and its 3D structure.
+<br>
+<i>Correction:</i> Mutate residue to match the sequence identity.
+
+<li>"Incorrect residue name". Identifies terminal DNA/RNA residues which
+should be renamed.
+<br>
+<i>Correction:</i> Assign correct residue name.
+
+<li>"Inter-chain bond". Identifies covalent bonds between residues in
+different chains.
+<br>
+<i>Correction:</i> Where the result after merging residues matches
+a residue in the library the new residue is assigned the appropriate name.
+If it was not successful this error cannot be fixed.
+NOTE: Cases where this issue cannot be
+fixed should be treated as an indication to the user that
+manual intervention may be needed.
+
+<li>"Extra intra-chain bond". Indicates residues which have an additional
+covalent bond to a residue within the same chain.
+<br>
+<i>Correction:</i> These issues cannot be fixed by the Structure Preparation 
+application. NOTE: This issue should be treated as an indication
+to the user that manual intervention may be needed for some simulations.
+
+<li>"Ambiguous residue name". Identifies residues which have multiple
+structural matches in the library.
+<br>
+<i>Correction:</i> Set residue name to first match found.
+
+<li>"Incorrect CA chirality". Identifies residues in which the alpha carbon
+stereochemistry does not agree with the corresponding library entry.
+<br>
+<i>Correction:</i> Mutate residue to its corresponding library entry.
+
+<li>"CA/P structure only". Identifies residues only containing an
+alpha carbon or phosphorous.
+<br>
+<i>Correction:</i> This issues cannot be fixed by the Structure Preparation 
+application. NOTE: This issue should be treated as an indication
+to the user that manual intervention may be needed.
+
+<li>"Residue contains dummy atoms". Identifies residues containing 
+at least one dummy atom.
+<br>
+<i>Correction:</i> These issues cannot be fixed by the Structure Preparation 
+application. NOTE: This issue should be treated as an indication
+to the user that manual intervention may be needed.
+</ul>
+
+<br />
+<br />
+
+<b>Topology</b> identifies various topological problems present in a residue.
+<br>
+<i>Correction:</i> In all of the following cases, the topology is copied from
+the library.
+<ul>
+<li>"Backbone". Identifies where there is a disagreement between the aBackbone flag for a residue flag and its library entry.
+<li>"Hybridization". Identifies where there is a disagreement between the
+aGeometry and aHintLP flag for a residue and its library entry.
+<li>"Ion". Identifies where there is a disagreement between
+aIon and its library entry.
+<li>"Chirality". Identifies where there is a difference between a residue's
+3D chirality and its aForceRS flag.
+<li>"Sigma Skeleton". Identifies disagreements between the sigma skeleton of a
+residue and a library entry. This captures cases of missing double bonds.
+</ul>
+
+</td></tr>
+
+<tr>
+<td  valign="top"><b>S-S</b></td>
+<td valign="top">
+Identifies missing disulfide bonds and disulfide bonds with non-optimal
+geometry.
+<br>
+<i>Correction:</i> Creates missing disulfide bond when indicated. 
+If the geometry of an existing
+one is non-optimal this is an indication to the user that closer inspection is
+needed to determine if the presence of this disulfide bond is warranted.
+</td></tr>
+
+<tr>
+<td  valign="top"><b>AName</b></td>
+<td valign="top">
+The AName group identifies atom name problems. Two types of problems
+are identified:
+<br><br>
+<b>HName</b> identifies residues where there is a hydrogen atom name
+disagreement between the residue and the library entry.
+<br>
+<i>Correction:</i> Assign atom name from library.
+<br><br>
+<b>AName</b> identifies residues where there is a heavy atom name
+disagreement between the residue and the library entry.
+<br>
+<i>Correction:</i> Assign atom name from library.
+</td></tr>
+
+<tr>
+<td  valign="top"><b>UID</b></td>
+<td valign="top">
+Identifies the presence of non-unique residue UIDs in a chain and whether the
+entire chain needs to be renumbered.
+<br>
+<i>Correction:</i> Reassign UID of residue or renumber entire chain.
+</td></tr>
+
+<tr>
+<td  valign="top"><b>Charge</b></td>
+<td valign="top">
+Identifies molecules in the system with incorrect or no charges.
+<br>
+<i>Correction:</i> Apply default charging method of current forcefield.
+</td></tr>
+
+</table>
+
+<a name="DiagnoseProblemsProtonation"></a>
+<h3>Protonation</h3>
+Items on this page have no automatic fix. This page highlights residues with
+possible rotamers, protomers, or tautomeric states, and allows modification
+through the Structure Preparation application.
+
+<table cellpadding="5">
+
+<tr>
+<td  valign="top"><b>Protonate3D</b></td>
+<td valign="top">
+Identifies protein
+residues where multiple rotamer, protomer, and/or tautomeric states are possible,
+such as:
+<ul>
+<li>rotamers of -SH -OH CYS, SER, TYR and THR;
+<li>the ionization states of acids and bases in ARG, ASP, GLU, LYS, HIS;
+<li>the tautomers of imidazoles (HIS) and carboxylic acids (ASP, GLU);
+</ul>
+
+NOTE: The Structure Preparation application will not automatically assign
+rotamers, protomers, or tautomers. For this please see
+<a href="../apps/protonate3d.htm">Protonate3D.</a>
+</td></tr>
+
+<tr>
+<td  valign="top"><b>Ligand</b></td>
+<td valign="top">
+Identifies all ligands and enables the user to select
+possible protomers and tautomers. NOTE: There is no automatic selection of the
+best protomer/tautomer of a ligand by the Structure Preparation application.
+</td></tr>
+
+</table>
+
+<a name="DiagnoseProblemsWarnings"></a>
+<h3>Warnings</h3>
+<p>
+All items on the warning page cannot be fixed or manipulated through the
+Structure Preparation application. 
+
+<table cellpadding="5">
+
+<tr>
+<td  valign="top"><b>Clash</b></td>
+<td valign="top">
+Identifies all atoms that are within 65%
+of the sum of their covalent radii. 
+The Structure Preparation application will not
+remove clashes.
+</td></tr>
+
+<tr>
+<td  valign="top"><b>Cis-amide</b></td> 
+<td valign="top">
+Identifies all residues with cis-amide
+bonds. 
+</td></tr>
+
+<tr>
+<td  valign="top"><b>Forcefield</b></td>
+<td valign="top">
+Identifies all residues which have missing forcefield
+parameters.
+<ul>
+<li>"type" indicates an atom within the residue which has missing atom types.
+<li>"str" indicates a missing stretch (bond) parameter.
+<li>"ang" indicates a missing angle parameter.
+<li>"tor" indicates a missing torsion parameter.
+<li>"vdw" indicates a missing van der Waals parameter.
+</ul>
+</td></tr>
+
+</table>
+
+</table>
+
+<!-- ======================= RUNNING: CORRECT ========================= -->
+<a name="CorrectProblems"></a>
+<h2>Correcting Structural Issues</h2>
+<p>
+To automatically correct all issues, deselect all items in the
+list and press <b>Correct</b>. This will attempt to correct all items within
+a structure. When an item is selected, a series of options will become
+available in the Manual Preparation section of the panel. When multiple items
+with different types are selected, these options will be no longer available
+and these items can only be corrected using the fixes described above. 
+<p>
+The following sections
+describe the Manual Preparation options available when items of the same type
+are selected. 
+
+<table cellpadding="5" border="1">
+<tr>
+<th>Type</th>
+<th>Button</th>
+<th>Description</th>
+</tr>
+<tr>
+<td rowspan="2"><b>All</b>
+</td><td>
+<p align="center">
+<img src="structprep/correctselected_panel.gif" alt="Correct Selected"/></p>
+</td><td>
+Correct the selected items using the selected treatment option,
+or if not available apply the default correction.
+</td></tr>
+<tr>
+<td>
+<p align="center">
+<img src="structprep/correctsimilar_panel.gif" alt="Correct Similar"/></p>
+</td><td>
+Correct all items with same type as the selected items using the
+selected treatment option or if not available apply the default correction.
+</td></tr>
+
+<tr>
+<td rowspan="2"><b>Alternates</b>
+</td><td>
+<p align="center">
+<img src="structprep/alternates_panel_treatment.gif" alt="Treatment"/></p>
+</td><td>
+The treatment pull down option allows for manual selection of an alternate
+location. When all selected items are present in the same alternate location
+sets then this option will be enabled. The default value for this option
+is the alternate location with the highest occupancy or "Highest Occupancy"
+when the highest occupancy sets of the selected items are different.
+</tr>
+<tr>
+<td>
+<p align="center">
+<img src="structprep/panel_show.gif" alt="Show"/></p>
+</td><td>
+Briefly select in the MOE Window the atoms belonging to the set indicated by
+the treatment option.
+</td></tr>
+
+<tr>
+<td><b>Break</b>
+</td><td>
+<p align="center">
+<img src="structprep/break_panel_treatment.gif" alt="Treatment"/></p>
+</td><td>
+The treatment pull-down options allow for manual selection of a fix for
+chain breaks. By default, if all selected items have the fix
+then it is shown, otherwise "Auto" will be displayed.
+
+<ul>
+<li><b>Auto</b>: Use the fix outlined in the details section of the selected
+Break items.</li>
+<li><b>Cap</b>: Cap both ends of a chain break and delete the empty residues.
+This is the default fix for breaks containing no sequence
+information or when the missing loop is longer than six residues.</li>
+<li><b>Charge</b>: Charge both ends of the loop and delete the empty residues.
+</li>
+<li><b>Build Loop</b>: Build the loop when sequence information is present.
+This is the default when the missing loop is six residues in length or
+shorter. The option is only available when there is sequence information.
+</ul>
+</td></tr>
+
+<tr>
+<td><b>Termini</b>
+</td><td>
+<p align="center">
+<img src="structprep/termini_panel_treatment.gif" alt="Treatment"/></p>
+</td><td>
+The treatment pull-down options allow for manual selection of a fix for
+chain termini. By default, if all selected items have the fix
+then it is shown, otherwise "Auto" will be displayed.
+<ul>
+<li><b>Auto</b>: Use the fix outlined in the details section of the selected
+Termini items.</li>
+<li><b>Cap</b>: Cap chain termini and delete preceding or following
+empty residues.
+This is the default fix for termini containing outgap information.</li>
+<li><b>Charge</b>: Charge chain termini and delete preceding or following
+empty residues. This is the default fix when there is no outgap
+information.</li>
+</ul>
+</td></tr>
+
+<tr>
+<td><b>Nucleotide</b>
+</td><td>
+<p align="center">
+<img src="structprep/nucleotide_panel_treatment.gif" alt="Treatment"/></p>
+</td><td>
+The treatment pull-down options allow for manual selection of a fix for
+chain termini for nucleotide sequences. By default, if all selected items
+have the fix then it is shown, otherwise "Auto" is displayed.
+<ul>
+<li><b>Cap</b>: Cap terminal phosphate group with an OHE cap. This is the
+default fix when a terminal phosphate group is present.
+<li><b>Delete</b>: Delete terminal phosphate group.</li>
+</ul>
+</td></tr>
+
+<tr>
+<td rowspan="2"><b>HCount</b>
+</td><td>
+<p align="center">
+<img src="structprep/hcount_panel_addH.gif" alt="Add H"/></p>
+</td><td>
+Adjust hydrogen count by adding and/or deleting hydrogens.
+</td></tr>
+<tr>
+<td>
+<p align="center">
+<img src="structprep/panel_show.gif" alt="Show"/></p>
+</td><td>
+Briefly select in the MOE Window the atoms with incorrect number of hydrogens.
+</td></tr>
+
+<tr>
+<td><b>Selenium</b>
+</td><td>
+<p align="center">
+<img src="structprep/panel_state.gif" alt="State"/></p>
+</td><td>
+Display 2D depictions of candidates matching when the
+Selenium is mutated to Sulfur. Clicking a 2D depiction will change the
+Se to Sulfur and rename the residue.
+</td></tr>
+
+<tr>
+<td><b>Library</b>
+</td><td>
+<p align="center">
+<img src="structprep/panel_state.gif" alt="State"/></p>
+</td><td>
+Display a 2D depiction of candidates matching structurally
+or that have the same residue name as the entry in the library.
+Multiple 2D depictions of the candidate's matches will be displayed.
+Clicking an individual candidate will cause the residue to be mutated or 
+renamed appropriately.
+</td></tr>
+
+<tr>
+<td><b>S-S</b>
+</td><td>
+<p align="center">
+<img src="structprep/s-s_panel_treatment.gif" alt="Treatment"/></p>
+</td><td>
+The treatment pull-down options allow for manual selection of a fix for
+disulfide bonds. By default, if all selected items have the fix
+then it is shown, otherwise "Auto" will be displayed.
+<ul>
+<li><b>Auto</b>: Create disulfide bonds when indicated in the details
+section of items, otherwise no fix is applied.</li>
+<li><b>Bond</b>: Create disulfide bonds between the indicated residues.
+</li>
+<li><b>No Bond</b>: Delete disulfide bonds between the indicated residues.
+</li>
+</ul>
+</td></tr>
+
+<tr>
+<td><b>UID</b>
+</td><td>
+<p align="center">
+<img src="structprep/uid_panel_renumber.gif" alt="Renumber"/></p>
+</td><td>
+Renumber all residues in chain.
+</td></tr>
+
+<tr>
+<td rowspan="2"><b>Charge</b>
+</td><td>
+<p align="center">
+<img src="structprep/charge_panel.gif" alt="Charge"/></p>
+</td><td>
+Apply default charging scheme for the current forcefield to atoms in system.
+</td></tr>
+
+<tr>
+<td>
+<p align="center">
+<img src="structprep/panel_show.gif" alt="Show"/></p>
+</td><td>
+Briefly select in the MOE Window the atoms needing to be charged.
+</td></tr>
+
+</table>
+
+<!-- ======================= RUNNING: PROTONATION ========================= -->
+
+<a name="ProtonationPage"></a>
+<h2>Using the Protonation Page</h2>
+The Protonation Page list all residues where there are multiple tautomeric and
+protomeric states along with possible flips associated with uncertainty
+in crystal structures. Protonate3D (
+<b>Structure Preparation | Protonate3D...</b> or 
+<b> MOE | Compute | Prepare | Protonate 3D</b>) can be used to automatically
+assign the best state for Protonate3D items displayed. If an item is
+indicated as being protected in the details section then it will not
+be optimized by Protonate3D. When on this page the Correct option will
+always be grayed out.
+
+<p>
+<table cellpadding="5" border="1">
+<tr>
+<th>Button</th>
+<th>Description</th>
+</tr>
+<tr>
+<td>
+<p align="center">
+<img src="structprep/protonation_panel_state.gif" alt="State"/></p>
+</td><td>
+Display 2D depiction of the possible tautomers, protomers and flips (if it
+is a Protonate3D type). By selecting an individual option the tautomer,
+protomer or flip will be applied and the atoms will be added
+the Protonate3d_Protect set. This set, when present, is the default for
+<span class="menu">MOE | Compute | Prepare | Protonate3D | Protect</span>,
+which constrains the atoms to their current states during optimization
+by Protonate3D.
+</td></tr>
+
+<tr>
+<td>
+<p align="center">
+<img src="structprep/protonation_panel_protect.gif" alt="Protect"/></p>
+</td><td>
+Add the atoms associated with the items selected to
+the Protonate3d_Protect set. This set, when present, is the default for
+<span class="menu">MOE | Compute | Prepare | Protonate3D | Protect</span>,
+which constrains the atoms to their current states during
+optimization by Protonate3D.
+
+</td></tr>
+
+<tr>
+<td>
+<p align="center">
+<img src="structprep/protonation_panel_unprotect.gif" alt="Unprotect"/></p>
+</td><td>
+Remove the atoms associated with items selected from the 
+Protonate3d_Protect set. This set, when present, is the default for
+<span class="menu">MOE | Compute | Prepare | Protonate3D | Protect</span>,
+which constrains the atoms to their current states during optimization by
+Protonate3D. Removing from the set allows for their
+optimization by Protonate3D.
+</td></tr>
+
+<tr>
+<td>
+<p align="center">
+<img src="structprep/protonation_panel_dihedral.gif" alt="Dihedral"/></p>
+</td><td>
+This option is only available with Protonate3D types.
+When selected a popup will appear. 
+This will allow for the manual manipulation of a
+dihedral by clicking on the plot.
+Example: adjust the position of the HO of a serine.
+<p align="center">
+<img src="structprep/protonation_panel_dihedral_plot.gif" alt="Dihedral"/></p>
+</td></tr>
+
+</table>
+
+
+<!-- ======================= RUNNING: WARNINGS ========================= -->
+<a name="WarningsPage"></a>
+<h2>Warnings</h2>
+The Warnings Page lists issues that may be of concern and
+may require other tools than the Structure Preparation application to correct.
+
+<!-- ============================= EXAMPLE ============================= -->
+
+<p>
+<a name="Example"></a>
+<h2>Examples</h2>
+
+<div class="example">
+
+<a name="Example1"></a>
+<h3>Example 1: Automatic Preparation of 1ERR</h3>
+1ERR is the structure of the human estrogen receptor (ER) complexed with
+raloxifene.
+
+<ol>
+<p><li><i>Load 1ERR into MOE.</i>
+<p class="indent_novspace">
+<span class="menu">MOE | File | Open | <tt>$MOE/sample/mol/1err.pdb</tt></span>
+<p>Press
+<p><span class="menu"> Load PDB File | Alternates | Show</span>
+</p>
+</li></p><p><li>
+<i>Open the Sequence Editor.</i>
+<p class="indent_novspace">
+<span class="menu">MOE | Window | Sequence Editor</span>
+</p>
+or
+<p class="indent_novspace">
+<span class="menu">MOE | SEQ</span> (upper right corner)
+</p>
+
+<p>For the purposes of clarity, we will delete chain
+1ERR.B. Select chains 2,4,6 which belong to
+1ERR.B. 
+
+<span class="menu">SE | Chain Header Popup | Delete...</span>
+<p align="center">
+
+</li></p><p><li>
+<i>Open the Structure Preparation Application.</i>
+<p class="indent_novspace">
+<span class="menu">MOE | Compute | Prepare | Structure Preparation...</span>
+</p>
+<p align="center">
+<img src="structprep/structprep_example_1err.png"
+alt="Structure Preparation 1ERR"/>
+</p>
+
+</li></p><p><li>
+<i>Automatically correct all structural items.</i>
+<p> Ensure that nothing is selected in the list by right-clicking on the list
+and choose (if not grayed out)
+<p class="indent_novspace">
+<span class="menu">Structure Preparation | Popup | Clear Selection</span>
+</p>
+<p>then click on
+<p class="indent_novspace">
+<span class="menu">Structure Preparation | Correct</span>
+</p>
+
+<p>
+This will automatically attempt to correct all structural items. To view
+any heavy atoms which have been added during this correction step choose 
+<p class="indent_novspace">
+<span class="menu">MOE | RHS | Select | Sets | STRUCTPREP_NEWATOMS</span>
+<p>Render the atoms in following manner to get the picture below:
+<p class="indent_novspace">
+<span class="menu">MOE | RHS | Show | All Atoms</span>
+<p class="indent_novspace">
+<span class="menu">MOE | RHS | Hide | Nonpolar Hydrogens</span>
+<p class="indent_novspace">
+<span class="menu">MOE | Footer | Atoms | Green</span>
+<p class="indent_novspace">
+<span class="menu">MOE | Footer | Atoms | Stick</span>
+
+<p align="center">
+<a href="structprep/example_autocorrect_1err.png">
+<img src="structprep/example_autocorrect_1err_thumb.png"
+alt="Example AutoCorrect"/></a>
+<p>
+</ol>
+
+</div>
+
+<a name="Example2"></a>
+<div class="example">
+<h3>Example 2: Manual Preparation of 1ERR</h3>
+This example uses the same protein as in the previous example,
+but highlights some of the manual features of the Structure Preparation
+Application. Follow the previous example except step four.
+
+<ol>
+
+<!-- EXAMPLE ALTERNATES -->
+<li><i>Exploring Alternate Data</i>
+<p>
+To display only the Alternates items click on
+<span class="menu">Structure Preparation | Types ...</span>.
+The types popup will appear. Disable all types except Alternates by clicking
+on the appropriate checkboxes.
+<p>
+Select the first item in the list.
+<p align="center">
+<img src="structprep/structprep_example_alternates.png"
+alt="Structure Preparation Alternates Example"/>
+<p>
+Notice that default treatment option is alternate "A". By clicking
+on the <b>?</b> the corresponding atoms will flash on the screen.
+<p align="center">
+<img src="structprep/example2_p1_selection.png"
+alt="Example2 Alternates Selection"/>
+<p>
+All alternates can be browsed by selecting individual lines in the list
+or by pressing 
+<img src="structprep/example2_p1_prevnext.gif"
+alt="previous and next buttons"/>.
+These buttons will move the selection up and down the list. If
+<b>Auto Isolate</b> is enabled the corresponding atoms will be
+centered in the MOE Window.
+<p>
+To correct all Alternates items, select the first Alternates item then press
+<p class="indent_novspace">
+<span class="menu">
+Structure Preparation | Manual Preparation | Correct Similar</span>.
+<p>
+The list will now be empty and all other alternate conformation
+have been deleted. Notice that the extra imidazole
+ring is not present in the image below when compared to the image above.
+<p align="center">
+<img src="structprep/example2_p1_fix.png"
+alt="Example2 Alternates Fix"/>
+</li>
+
+<!-- EXAMPLE TERMINI -->
+<li><i>Exploring Chain Termini</i>
+<p>
+To display only the Termini items press on
+<span class="menu">Structure Preparation | Types ...</span>.
+The types popup will appear. Disable all types except Termini by clicking
+on the appropriate checkboxes.
+<p>
+Select the first item in the list.
+<p align="center">
+<img src="structprep/structprep_example_termini.png"
+alt="Structure Preparation Chain Termini Example"/>
+<p>
+Notice that the default treatment is <i>Cap</i>.
+In both the N-terminus and C-terminus cases there is outgap
+information which enables the Structure Preparation application
+to determine that these ends should be capped. Press on 
+<span class="menu">
+Structure Preparation | Manual Preparation | Correct Similar</span>
+to correct both termini items by capping
+the residues with an ACE and NME respectively and then deleting the
+outgap residues.
+No more Termini items will be present in the list. In the image below
+the new atoms are colored in green and rendered in ball and stick.
+<p align="center">
+<a href="structprep/example2_p2_fix.png">
+<img src="structprep/example2_p2_fix_thumb.png"
+alt="Example2 Chain Termini Fix"/></a>
+</li>
+
+
+<!-- EXAMPLE Chain Breaks -->
+<li><i>Exploring Chain Breaks</i>
+<p>
+To display only the Break items press on
+<span class="menu">Structure Preparation | Types ...</span>.
+The types popup will appear. Disable all types except Break by clicking
+on the appropriate checkboxes.
+<p>
+Select the first item in the list.
+<p align="center">
+<img src="structprep/structprep_example_breaks.png"
+alt="Structure Preparation Chain Breaks Example"/>
+<p>
+Notice that the default treatment is <i>Cap</i>.
+The build loop methodology should only be used on loops
+or six residues or shorter which is the default within the Structure Preparation
+application. To build a longer loop such as in the case of the first
+break item select <i> Build Loop</i> instead.
+
+<p align="center">
+<img src="structprep/example2_p3_break_treatment.gif"
+alt="Example2 Break Treatment"/>
+<p>
+Then press 
+<span class="menu">Structure Preparation | Manual Preparation |
+Correct Similar</span>. This will correct all breaks by building a loop using
+the empty residue sequence information between both ends of the break.
+The image below shows the atoms of the newly built loop highlighted
+in orange. Its rendering was achieved using the following steps.
+    <ol>
+    <li>Set the display mode to ribbon by
+        <span class="menu">MOE | Footer | Ribbon | Ribbon </span> and color
+	the ribbon light blue with 
+	<span class="menu">MOE | Footer | Ribbon | Color | Light Blue</span>.
+    <li>Select residues T460 to L469 and K529 to V534 in the SEQ.
+        These are the residues of the loops which were just built.</li>
+    <li>Hide all unselected atoms with 
+        <span class="menu">MOE | RHS | Hide | Unselected</span></li>
+    <li>Show all selected atoms with
+        <span class="menu">MOE | RHS | Show | Selected</span></li>
+    <li>Color atoms and ribbons orange by
+        <span class="menu">MOE | RHS | Atoms | Color | Orange</span> and 
+        <span class="menu">MOE | RHS | Ribbon | Color | Orange</span></li>
+    </ol>
+    	
+
+<p align="center">
+<a href="structprep/example2_p3_fix.png">
+<img src="structprep/example2_p3_fix_thumb.png"
+alt="Example2 Chain Break Fix"/></a>
+</li>
+
+<!-- EXAMPLE Library -->
+<li><i>Exploring Library items</i>
+<p>
+To display only the Library items press on
+<span class="menu">Structure Preparation | Types ...</span>.
+The types popup will appear. Disable all types except Library by clicking
+on the appropriate checkboxes.
+<p>
+Select the first item in the list.
+<p align="center">
+<img src="structprep/structprep_example_library.png"
+alt="Structure Preparation Library Example"/>
+<p>
+Under "Details", "Missing Atoms" is reported. The sequence suggests that the
+residue is Tyr but structurally appears as Ala.
+In this case the Structure Preparation application will use the sequence over
+the structure. Pressing <b>Correct Selected</b> will
+mutate the residue to Tyr. To override this click
+<span class="menu">Structure Preparation | Manual Preparation | State</span>
+and 2D drawings of the possibilities will appear. Select ALA in the
+panel.
+<p align="center">
+<img src="structprep/example2_p4_state.gif"
+alt="Example2 Library State"/>
+
+<p>
+The Tyr residue is now complete.
+
+<p>
+Now correct all other library items by selecting a Library item and pressing 
+<span class="menu">Structure Preparation | Manual Preparation |
+Correct Similar</span>. Notice that only two items remain in the list. Both
+are cases where the residue is not found in the library.
+This is normal for ligands such as RAL.
+In cases where a receptor residue is not found in the library,
+careful consideration should be given to whether the residue should be 
+used in further simulations.
+Please note that in cases where the residue has been mutated
+there may be clashes that have been created and therefore the structure
+should be minimized to relieve these clashes once finished with the
+Structure Preparation application.
+</li>
+
+<li><i>Adding Hydrogens</i>
+<p>
+To display only the HCount items press on
+<span class="menu">Structure Preparation | Types ...</span>.
+The types popup will appear. Disable all types except Hcount by clicking
+on the appropriate checkboxes.
+<p>
+Select the HCount item in the Preparation items list and press
+<span class="menu">Structure Preparation | Manual Preparation | Add Hydrogens
+</span>.
+
+<li><i>Final Inspection</i>
+<p>
+<p>
+To display all remaining items press on
+<span class="menu">Structure Preparation | Types ...</span>.
+The types popup will appear. Press on <b>All Types</b>.
+Notice that only the two library errors mentioned above remain.
+Even though the Structure Preparation Application has corrected
+all items it is recommended to perform some
+additional preparation steps which are outlined in
+the <a href="#AfterStructPrep">After Running Structure Preparation</a> section.
+</li>
+</ol>
+</div>
+
+<!-- ============================ AFTER ================================ -->
+<a name="AfterStructPrep"></a>
+<h2>After Running Structure Preparation</h2>
+
+After using the Structure Preparation application there are additional
+preparatory steps which are recommended before performing
+any molecular simulations. The following steps should be included in any
+preparation of a biomolecular structure.
+
+<a name="Protonation_and_Partial_Charge"></a>
+<h2>Setting Protonation States and Partial Charges</h2>
+<p>Once the backbone and sidechains are complete and any errors 
+in the ligand and cofactor structures have been corrected, a 
+typical structure preparation workflow includes
+<a href="../apps/protonate3d.htm">addition of hydrogens</a>
+and calculation of
+<a href="../moe/pot.htm#Charges">partial charges</a> followed by
+tethered energy minimization (molecular mechanics refinement)
+to relieve bad crystallographic contacts or other bad geometries.
+The actual steps depend on the type of study being done, and may vary.
+Indeed, many computational procedures involve energy minimization or
+require that the geometry already have been optimized.  For example,
+docking simulations typically feature a minimization stage in which
+the docked ligand and binding site are relaxed together.  Molecular dynamics
+requires structural strain to have already been relieved, so the input 
+structures for MD runs should be well-minimized.
+</p>
+
+<p>To perform molecular mechanics refinement to
+relieve strain, the protein must first have
+an optimized hydrogen bond network and partial charges assigned. 
+These operations can be done through the
+<a href="../apps/emin.htm">Energy Minimize</a> application
+(<span class="menu">MOE | Compute | Energy Minimize...</span>)
+by choosing the
+
+<span class="menu">Adjust H and LP</span> and
+<span class="menu">Calculated Forcefield Partial Charges</span> options.
+</p>
+
+<p>However, a more sophisticated
+algorithm for calculating protonation state and hydrogen placement,
+designed especially for macromolecular systems, is provided by
+</p>
+
+<blockquote>
+<span class="menu">MOE | Compute | Prepare | 
+<a href="../apps/protonate3d.htm">Protonate 3D</a></span>
+</blockquote>
+
+<p>This is the method of choice for proteins, as the 
+<b>Protonate3D</b> application automatically optimizes the hydrogen 
+orientations so as to maximize H-bond networks and minimize the 
+overall self-energy. This typically results in a structure where the 
+hydrogen atoms undergo little displacement upon minimization.</p>
+
+<p>
+The <b>Protonate3D</b> application applies the partial charge model of 
+the currently loaded forcefield. However, if a different partial charge 
+method is desired, the</p>
+
+<blockquote>
+<span class="menu">MOE | Compute | Prepare |
+<a href="../moe/pot.htm#Charges">Partial Charges</a></span>
+
+</blockquote>
+
+<p>
+application allows for explicitly selecting the method
+used to calculate the charges.
+</p>
+
+<p>Protonation state and partial charges, if calculated separately,
+must be calculated prior to forcefield minimization.
+</p>
+
+<a name="Fixing_and_Tethers"></a>
+<h2>Fixing Atoms and Setting Tethers</h2>
+
+<p>During minimization, fixing prevents atoms from moving entirely,
+<i>tethering</i> prevents atoms from deviating too far from their
+initial positions, and restraints enforce geometric constraints such
+as distances, bond angles and torsion angles.</p>
+
+<p>To <i>fix</i> atoms, simply select the atoms to fix and use the command 
+<span class="menu">MOE | Edit | Potential | Fix</span>. Note that fixed atoms
+will not move unless unfixed. To unfix atoms, use the command 
+<span class="menu">MOE | Select | Potential | Fixed</span> to select the 
+fixed atoms and then use the command 
+<span class="menu">MOE | Edit | Potential | Fix</span> to unfix
+the selected atoms.</p>
+
+<p>Atom <i>tethers</i> can be enforced for just the refinement calculation 
+by turning on the <b>Tether Atoms</b>
+
+option in the <a href="../apps/emin.htm">Energy Minimize</a> panel.
+Alternatively, the <a href="#Using_LigX"><span class="menu">LigX </span></a>
+panel can be used to set tethers of different strengths on the receptor,
+ligand and solvent atoms.</p>
+
+<a name="Energy_Refinement"></a>
+<h2>Energy Refinement</h2>
+<p>Molecular mechanics refinement of proteins and protein-ligand complexes
+should be conducted under a molecular mechanics 
+forcefield parameterized for proteins, such as AMBER or CHARMM.
+The <span class="menu">MOE | Footer | <i>Forcefield</i></span>
+opens the <a href="../moe/pot.htm">Potential Setup</a> panel, which
+is used to select the forcefield and solvation model.
+If the system is explicitly solvated, the
+<b>Solvation</b> model in the Potential Setup panel should be set to
+<b>R-Field</b> (Reaction Field).
+
+</p>
+<p>To run the minimization, use either the <b>Minimize</b> button in 
+the right-hand button bar, or use the <b>Energy Minimize</b> panel with the 
+<span class="menu">MOE | Compute | Energy Minimize...</span> command.
+
+
+
+
+<a name="Using_LigX"></a>
+<h2>Using LigX Panel for Structure Preparation</h2>
+
+<p>
+The <a href="../apps/ligx.htm">LigX</a> panel in MOE provides
+an automated process for the correction, protonation, tethering and 
+minimization stages of structure preparation.
+Once the missing atoms of the protein have been modeled and 
+the ligand/co-factor bonding patterns have been checked and corrected
+(see previous sections), the <b>LigX</b> panel allows the user perform the 
+remaining preparation steps in a semi-automated fashion. 
+The <b>LigX</b> panel can be configured to 
+perform structure preparation operations in the following order:
+
+</p>
+
+<ol>
+<li>Correct structural issues with <b>Structure Preparation</b>.
+</li><li>Protonate the structure with <b>Protonate 3D</b>.
+</li><li>Delete "unbound" water molecules.
+</li><li>Set tethers of different strengths on the receptor, ligand 
+and solvent atoms.
+</li><li>Fix atoms beyond a cut-off distance from the active site.
+</li><li>Minimize the structure to a specified gradient.
+</ol>
+
+<p>The panel is opened using the <b>LigX</b> command in the right-hand 
+button bar. The LigX panel is shown below:
+<p>
+
+<center>
+<img src="structprep/ligx_panel.png">
+</center>
+</p>
+<p>
+</p>
+<p>To perform the preparation operations, press <b>OK</b> in the 
+<b>LigX</b> panel.
+
+
+<a name="Saving_the_Prepared_Data"></a>
+<h2>Saving the Prepared Data</h2>
+
+<p>
+Molecular data that has been prepared should be saved prior to any further 
+work. This is recommended to allow a good initial starting point to be 
+used subsequently without having to repeat the preparation steps.
+
+The <b>MOE | File | Save</b> command allows the current system to be saved in 
+a number of data formats. However, the MOE (.moe) format is recommended if 
+the prepared system contains graphical objects, fixed atoms, 
+tethers and/or restraints, as these properties can be saved into the 
+MOE file format.
+
+
+<a name="Conclusions"></a>
+<h2>Conclusion</h2>
+The above sections describe procedures and considerations
+for preparing a biomolecular structure 
+for subsequent computational analysis. The product of this procedure 
+is a fully-prepared structure, where important missing atomic data has 
+been modeled, hydrogens have been added, tethers and restraints have been
+applied to the relevant atoms, and a forcefield minimization has been
+performed. This structure is now ready to use as input in docking, MD and
+other atomistic simulations.
+
+<!-- ========================= SVL ============================== -->
+
+<a name="svl_commands">
+<h2>SVL Commands</h2>
+
+<a href="../proteins/fcnref/structprep_fcn.htm">
+<tt>StructurePreparation</tt></a>
+<br>
+<a href="../proteins/fcnref/intropro.htm">Protein Functions</a>
+
+<!-- ========================= SEE ALSO ============================== -->
+
+<a name="See_Also"></a>
+<h2>See Also</h2>
+<p>
+<ul class="nobullet_novspace">
+<li><a href="../mdb/dbio.htm">Import and Export Data</a>
+</li><li><a href="../apps/ligx.htm#Prepare">LigX:
+    Prepare a Molecular System</a><br />
+</li>
+</ul>
+<br />
+
+Validating Molecular Structure
+<ul class="nobullet_novspace">
+<li><a href="../apps/progeom.htm">
+    Protein Geometry: Assess Stereochemical Quality</a>
+</li><li><a href="../apps/prolig2d.htm">
+
+    Ligand Interactions: Site Wall Clash</a>
+</li><li><a href="../moe/moeweb_intro.htm#SFCHECK">
+    SFCHECK (MOE/web application)</a>
+</li>
+</ul>
+<br />
+
+Cleaning the Data
+<ul class="nobullet_novspace">
+</li><li><a href="../apps/protoview.htm">Protomer and Tautomer Viewer</a>
+
+</li><li><a href="../apps/protonate3d.htm">
+    Protonate&nbsp;3D: Macromolecular Protonation</a>
+</li>
+</ul>
+<br />
+
+Refining 3D Structures
+<ul class="nobullet_novspace">
+<li><a href="../moe/pot.htm#Charge">Partial Charges</a>
+
+</li><li><a href="../apps/emin.htm#DBMin">Database Minimize:
+    Refine 3D Structures</a>
+</li><li><a href="../apps/emin.htm">Energy Minimize</a>
+</li>
+</ul>
+
+<p>
+<a href="http://www.chemcomp.com/PSILO-Protein_Structure_Database_System.htm">PSILO: A Repository for
+Protein-Ligand Structural Information</a>
+</p>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

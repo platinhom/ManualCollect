@@ -1,0 +1,2471 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	Loop Modeler GUI Manual
+
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Loop/Linker Modeler & Browser</title>
+
+<meta panel Loop Modeler & Browser>
+<meta main_keywords loop search, loop browser, conformational search/>
+<meta main_keywords linker search, linker browser/>
+<meta main_keywords linker modeler, loop modeler/>
+
+
+<style type="text/css">
+td { vertical-align: top; }
+</style>
+
+<style type="text/css">
+.subsup_f { line-height: 1.8; }
+.subsup_f sub { margin-right: 1ex; }
+.subsup_f sup { margin-left: -1ex; }
+</style>
+
+</head>
+
+<body>
+<div id="useMathJax"></div>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Introduction">Introduction</a>
+</li><li><a href="#Methodology">Methodology Overview</a>
+    <ul>
+    <li><a href="#Searching">Searching Conformational Space</a>
+	<ul>
+	<li><a href="#PDBSearch">PDB Search Methodology</a>
+	</li><li><a href="#DeNovoSearch">De Novo Search Methodology</a>
+	</li>
+	</ul>
+    </li><li><a href="#OptimizeLoops">Building Loop Models</a>
+    </li><li><a href="#Scoring">Scoring Loops</a>
+	<ul>
+	<li><a href="#coarseScore">Scoring Initial Backbone Conformations</a>
+	</li><li><a href="#finalScore">Scoring Modeled Loops</a>
+	</li><li><a href="#AffinityScore">Affinity Scoring</a>
+	</li><li><a href="#EDScore">Electron Density Scoring</a>
+	</li>
+	</ul>
+    </li>
+    </ul>
+</li><li><a href="#LoopSearch">Running the Loop/Linker Modeler</a></li>
+    <ul>
+    <li><a href="#Preparing_the_Data">Preparing the Data</a>
+    <li><a href="#Using_LoopSearch">Using the Loop\/Linker Modeler Panel</a>
+    </li><li><a href="#InputOptions">Input Options</a>
+    </li><li><a href="#Defining_a_Loop_Sequence">Defining a Loop/Linker Sequence</a>
+    </li><li><a href="#method_options">Loop Methods/Options</a>
+    </li><li><a href="#batch_file">Using the Batch File</a>
+    </li>
+    </ul>
+    <li><a href="#LoopBrowser">Running the Loop/Linker Browser</a>
+    <ul>
+    <li><a href="#Browsing_Loops">Browsing & Rendering Loops</a>
+    </li><li><a href="#Saving_loops">Saving Loops</a>
+    </li><li><a href="#Optimizing_loops">Optimizing Loops</a>
+    </ul>
+    <li><a href="#UpdatingLoopLibrary">Updating the Loop Library</a>
+</li><li><a class="example" href="#Examples">Examples</a></li>
+    <ul>
+    <li><a class="example" href="#Example1_Data_Preparation">
+	Example 1: Data Preparation for Loop/Linker Modeler</a></li>
+    <li><a class="example" href="#Example2_SingleLoopSearch">
+	Example 2: Loop Search of the H3 Loop of 1VFB</a></li>
+    <li><a class="example" href="#Example3_Browsing">
+	Example 3: Browsing and Analysing Loop Search Results</a></li>
+    <li><a class="example" href="#Example4_Optimizing">
+	Example 4: Optimizing Loops</a></li>
+    <li><a class="example" href="#Example5_MultiLoopSearch">
+	Example 5: Loop Search of the Heavy Chain Loops of 1VFB</a></li>
+    <li><a class="example" href="#Example6_LinkerSearch">
+	Example 6: Finding a Linker to Create a Single Chain
+	Antibody</a></li>
+    </ul>
+</li><li><a href="#References">References</a>
+</ul>
+
+<a name="Introduction"></a>
+<h2>Introduction</h2>
+
+<p>
+<div class="floatleft">
+<a href="proloop/11res_1dad_introduction.png">
+<img src="proloop/11res_1dad_introduction_thumb.png"
+alt="Loop Search Problem"/>
+</a>
+</div>
+
+<p>
+Biologics are human or animal protein derived compounds. Such substances
+play an ever-increasing role in everyday life, from laundry to therapeutics,
+and their great promise has given rise to an urgent need for efficient methods
+for engineering new biomolecules. A major issue when designing new therapeutics
+is that in most cases the region of a protein which allows for specificity
+is quite flexible, for example the CDR loops of antibodies. Correct prediction
+of the flexible loops is therefore of the utmost importance since the
+conformation of a loop affects the predicted physical and biological properties
+of a protein.
+
+<p>
+The Loop/Linker Modeler and Browser application in MOE is used to
+find and select loop conformations. Interactive searching and browsing of
+potential loop candidates makes it possible to bring expert knowledge
+of a system to bear when selecting loop candidates for further optimization.
+Ready access to useful tools, such as affinity and electron density
+scoring, make it possible to use additional criteria when selecting a
+loop conformation.
+</p>
+
+<br clear="all">
+
+
+<a name="Methodology"></a>
+<h2>Methodology Overview</h2>
+
+<div class="floatleft">
+<a href="proloop/loop_method_overview.png">
+<img src="proloop/loop_method_overview_thumb.png"
+alt="Loop Modeler Method Overview"/>
+</a>
+</div>
+
+<p>
+Identifying native-like loop conformations is a difficult problem due to the
+size of the conformational space, as illustrated in the figure shown above.
+Given the anchor points (the residues adjacent to the loop to be searched),
+the generation of an arbitrary loop conformation in principle requires
+covering a large conformation space. Not only does the method need to search
+the space efficiently, it must also identify which loop conformations are best.
+
+<a name="Searching"></a>
+<h2>Searching Conformational Space</h2>
+
+<p>
+The Loop/Linker Modeler application employs two methods for generating the
+possible backbone conformations of a loop: a <i>de novo</i> method
+and a knowledge-based approach using crystal structures from the PDB.
+All generated loop conformations are scored using an
+<a href="#Scoring">initial scoring</a> based on backbone atoms only.
+Once a search has been defined, the Loop Modeler method
+proceeds as follows, using one or both of the search methods described:
+
+<br clear="all">
+
+<ol>
+<p><li><b>De Novo Search.</b> The De Novo search engine is a stochastic-based
+method for generating backbone loop conformations.</li>
+At least three residues are required in each anchor region.
+    <ol type="i">
+    <li><b>Sampling of C<span class='LaTeX'>\( \alpha \)</span> Loop Segments.</b>Random sampling of C<span class='LaTeX'>\( \alpha \)</span>
+    pseudo-angle and torsion probability profiles based on PDB statistics
+    is used to generate an initial random loop conformation.
+    </li><li><b>Loop Closure.</b> The loop is then closed by minimizing
+	the candidate loop of the desired length in the sequence of the 
+	potential match PDB structure.
+	If the C<span class='LaTeX'>\( \alpha \)</span> atoms of the anchor residues are
+	a similar distance apart in the PDB structure as in the input
+	structure, then the library loop is considered a match and proceeds to
+	the next step.
+    </li><li><b>Graft Loops.</b> The anchor residues of candidate loops are
+	superimposed onto the anchor residues of the input structure.
+	This determines 1) if the geometry of the anchors allows a good
+	quality join and 2) grafts the loop in the correct frame of
+	reference.
+    </li><li><b>Clash Test.</b> A clash test is performed between the
+	loop candidate and the backbone atoms of the input structure. Side
+	chains are excluded because repacking may relieve some clashes between
+	the loop and its environment.
+	</li><li><b>Duplicate Test.</b> A duplicate check, performed
+        on C<span class='LaTeX'>\( \alpha \)</span>s only, is used to remove similar structures.
+    </li>
+    </ol>
+
+<p><li><b>Coarse Scoring.</b> An initial coarse score is calculated to rank
+and assess the quality of the backbone of the loop candidates.
+This score uses only the backbone atoms
+of the input structure since, again, the conformation of the side chains
+may change upon optimization of the loops. The units for the score are
+in kcal/mol.
+</li>
+
+<p><li><b>Add Side Chains.</b> Addition of side chains proceeds according
+to the method described in the
+<a href="../apps/prodesign.htm">Protein Design</a> application.
+During optimization of side chain orientation, it is also
+possible to optimize the side chains of nearby residues in the environment.
+</li>
+
+<p><li><b>Refine Coordinates.</b> Once the side chains and nearby residues
+have been optimized, the loop undergoes energy minimization. The
+minimization proceeds through multiple steps to ensure that the closest
+local minimum is found.
+</li>
+
+<p><li><b>Final Scoring.</b> The final structure can be used to calculate
+various properties such as a final loop score using GBVI, a binding affinity,
+and an Electron Density Score.
+</li>
+
+</ol>
+
+<a name="PDBSearch"></a>
+<h3>PDB Search Methodology</h3>
+
+<div class="floatright">
+<a href="proloop/pdb_method_overview.png">
+<img src="proloop/pdb_method_overview_thumb.png"
+alt="PDB Search Method Overview"/>
+</a>
+</div>
+
+<p>
+When performing a Loop Search using the PDB engine, 3
+parameters are determined from the input: 1) the distance between
+C<span class='LaTeX'>\( \alpha \)</span> atoms in the anchor residues in the input structure; 2) the desired loop sequence (from
+which we can determine the desired length and geometry restrictions); and 3)
+whether the search is for an outgap or a loop.
+
+<blockquote>
+<p>
+<b>C<span class='LaTeX'>\( \alpha \)</span> distance</b>.
+<p>
+Anchor residues are automatically determined from the selection and
+defined as a single residue immediately to the left (left anchor) and right
+(right anchor) of the selection. When searching for an outgap this definition
+changes slightly so that for a N-terminal outgap the left anchor is first
+residue to the left of the selection, with the right anchor to right of the
+left anchor. In the case of the C-terminal outgaps this is reversed.
+
+<p>
+<b>Loop sequence</b>.
+The loop sequence is defined using a ProSite definition (see
+<a href="#Defining_a_Loop_Sequence">Defining a Loop/Linker Sequence</a>).
+The loop sequence is used to determine loop length and geometry
+restrictions (accounting for Proline backbone geometry). Additionally,
+the PDB engine supports searching variable loop lengths simultaneously
+which can be defined by the loop sequence.
+
+<p>
+<b>Search type</b>.
+The loop search can be for either an outgap or a loop.
+An outgap is defined as being either the N&ndash; or C&ndash;terminal ends of a
+chain. A loop is defined as a series of sequential residues in the interior
+of a chain.
+</p>
+
+</blockquote>
+
+<p>
+If additional loop candidates are desired, when using the PDB search engine,
+it is possible to search using multiple anchor residues simultaneously.
+This is illustrated in the figure below.  The upper figure depicts the
+typical case of single anchors:
+only the loop residues being searched (E98-Y105, shown in red)
+are selected, and the anchors will be defined as R97 and
+W106. To allow for greater diversity, it is possible to include multiple anchors
+by selecting a larger region (for example A96-G107) and changing a
+<b>Maximum Walk</b> option from its default of 0 to 2. This will allow the
+PDB engine to consider the next 2 residues (2 being defined by
+<b>Maximum Walk</b>) from the right and left edges
+of the selection as anchors as well.
+With 3 right anchors (C95, A96, R97) and 3 left anchors (W106, G107 and Q108),
+the PDB engine will try all possible combinations of left and right
+anchors, yielding a total of 9 anchor possibilities in this example.
+</p>
+
+<p align="center">
+<img src="proloop/pdb_method_walk.png"
+alt="PDB Search Method Overview"/>
+
+<p>
+With the desired loop defined, the search is initialized by first reading the
+loop library. <tt>$MOE/lib/loop.mdb</tt>. The starting point for the library is the
+<a href="../proteins/pdb_mdb.htm#MOEPDB"><tt>$MOE/lib/pdb.mdb</tt></a>.
+The <tt>pdb.mdb</tt> is a database of non-redundant
+protein chains from the Protein Data Bank. Entries consist of single protein
+chains (not full protein molecules). Solvent, ions and ligands are not
+included. Since this is the basis for the loop library, when updating
+<tt>pdb.mdb</tt>, <tt>loop.mdb</tt> should also be updated.
+For more information on how to update the loop library see
+<a href="#UpdatingLoopLibrary">Updating the Loop Library</a>. If a custom
+loop library is used, the default must be changed in
+<span class="menu">MOE | Settings | Protein Defaults</span>.
+
+<p>
+The curation first proceeds by eliminating all entries which have a resolution
+more than 2.5&Aring; along with all NMR structures. The remaining entries
+have their side chains stripped and their backbone atoms placed in
+canonical order (N, C, CA, O). Chains that contain breaks are then separated
+into multiple entries within the loop library so that
+each entry is a single continuous
+chain. This is required to ensure that all loop matches for the PDB Search
+are continuous loops with no breaks. 
+
+<p>
+<a name="pdb_options">
+The search proceeds sequentially though the entire database, with the
+following steps occurring with each entry in the loop library. Initial loop
+candidates are found by determining which protein segments have the
+C<span class='LaTeX'>\( \alpha \)</span>s of the anchor points separated by a distance similar to
+that found in the input
+structures, and a length in the desired range. For example, if in the input
+structure the C<span class='LaTeX'>\( \alpha \)</span> distance between the anchors is 6&Aring; and the desired
+loop range is 8-10, only loops which match that critera will be grafted and
+their join quality assessed. The error tolerance in C<span class='LaTeX'>\( \alpha \)</span> distance can
+be configured by specifying a maximum anchor error,
+which specifies the maximum absolute
+difference between the C<span class='LaTeX'>\( \alpha \)</span> distances. If the loop candidate evaluates
+to within this limit,
+the segments are said to match.
+
+<p>
+With the initial matches, a measure of the anchor conformation similiarity is 
+done by superposing the N, CA, and C atoms of the anchor residues from the library
+segments onto the input structure. This is done to ensure a good
+quality join between the anchor and the grafted loop. If the RMSD after
+superposition is greater than the <b>Maximum Anchor RMSD</b>, then the
+loop candidate is discarded. If the candidate passes this check, the loop
+is then grafted (rotated/translated into the same frame of reference as the
+input) into the structure.
+
+<p>
+Once grafted, 4 checks are performed: 
+
+1) sequence compatibility;
+2) the quality of the join;
+3) a clash test between the loop and the input loop environment; and
+4) has a similiar loop conformation been found before. The sequence compatibility
+check ensures that the backbone amide bond is <i>trans</i> for all amino acids (except
+proline) and that <span class='LaTeX'>\( \phi \)</span> angle for proline is positive. The geometry of the join
+is then checked to ensure that the pC<span class='LaTeX'>\( \alpha \)-pC-N-C\( \alpha \)</span> bond is <i>trans</i>,
+and that the pO-pC-N angle is close to 120&deg;. A clash test is then
+performed between the loop candidate and the backbone of the loop
+environment. The side chains of the loop environment are ignored at this stage
+since clashes can be removed during the refinement stage. Finally, a duplicate
+check (based on C<span class='LaTeX'>\( \alpha \)</span> RMSD, see 
+RMSD limit in <a href="#panel_options">Loop/Linker Options</a>)
+is used to ensure a diversity of loop candidates.
+
+<br clear="all">
+
+<a name="DeNovoSearch"></a>
+<h3>De Novo Search Methodology</h3>
+
+<p>
+A common problem in structure prediction, homology modeling, and ab initio 
+structure prediction is the requirement to connect two fixed segments.
+The fixed residues on either side of the loop are constraints on the
+available conformations and represent a computational challenge in finding
+valuable and diverse conformation sets. Over the years, several methods
+have been presented that solve the "loop closure" problem. One of the classic
+approaches describes an analytical solution to delineate all possible backbone
+conformations [Go&nbsp;1970], another makes use of a fragment library
+from a set of solved protein structures [Liu&nbsp;2009], others use various
+Monte Carlo chain perturbation methods, often combined with analytical methods.
+<!-- I can't find this reference [Favrino&nbsp;2001]-->
+More recently, the loop closure problem has been
+addressed using algorithms borrowed from the field of robotics, namely
+inverse kinematics methods, that are based on computing the Jacobian
+and its inverse or pseudoinverse [Coutsias&nbsp;2004]. One particularly
+successful approach has been presented by Cantanescu et al.
+[Canutescu&nbsp;2003] termed the Cyclic Coordinate Descent (CCD) method,
+that does not directly generate conformations to bridge a given gap, but
+alters the dihedral angles of a given starting segment overlapping in
+one of the anchor points in order to close at the other anchor. The CCD
+algorithm alters the (<span class='LaTeX'>\( \phi \)\( \psi \)</span>) dihedral
+angles for every residue
+in the loop segment in an iterative way. Since the CCD is operating
+on the full set of backbone atoms, the angular term is kept fixed or
+semi-fixed and the optimization is acting on the dihedral angle. An
+alternative or extension of the CCD methods has been proposed by Boomsma
+et al, FCCD, that operates on the C<span class='LaTeX'>\( \alpha \)</span> backbone atoms alone and optimizes
+both terms, the angular as well as the dihedral angles  [Boomsma&nbsp;2005].
+
+The FCCD method uses pseudo bond and torsion angles as outlined in the
+figure below, and a constant 3.80 &Aring; C<span class='LaTeX'>\( \alpha \)</span>-C<span class='LaTeX'>\( \alpha \)</span> distance term.
+
+
+<p align="center">
+<img src="proloop/denovo_fig1.png"
+alt="De Novo Fig 1"/>
+
+<p align="center">
+<i>C<span class='LaTeX'>\( \alpha \)</span> position numbering of 5mer segment fully
+described by 2 pseudo bond angles <span class='LaTeX'>\( \theta \)</span> and pseudo dihedral angles <span class='LaTeX'>\( \tau \)</span>
+</i>
+
+<p>
+The FCCD algorithm changes the pseudo bond angles and pseudo bond
+dihedral angles in such a way that the RMSD between the last three
+C<span class='LaTeX'>\( \alpha \)</span> positions of the moving loop and the C<span class='LaTeX'>\( \alpha \)</span> positions of the right anchor
+are minimized, thereby seamlessly closing the gap, while the first three
+C<span class='LaTeX'>\( \alpha \)</span> positions of the segment are kept fixed at the positions of the left
+anchor. Hence, finding the optimal <span class='LaTeX'>\( \theta \)</span><sub>i</sub> and  
+<span class='LaTeX'>\( \tau \)</span><sub>i</sub> pair simply corresponds to
+finding the optimal rotation matrix using C<span class='LaTeX'>\( \alpha \)</span> position i as the center of
+rotation as depicted in figure below.
+
+<p align="center">
+<img src="proloop/denovo_fig2.png"
+alt="De Novo Fig 2"/>
+
+<p align="center">
+<i>Action of the FCCD algorithm</i>
+
+<p>
+<h3>Sampling of C<span class='LaTeX'>\( \alpha \)</span> loop segments</h3>
+
+To ensure proper sampling and conformation coverage in C<span class='LaTeX'>\( \alpha \)</span> space,
+probability densities were calculated from high resolution PDB structures
+( &lt; 1.5 &Aring;) curated for non-redundancy. This revealed distinct
+profiles for the C<span class='LaTeX'>\( \alpha \)</span> pseudo bond angles and pseudo torsion angles. The
+fitted profiles were then used to randomly assign the respective angular
+and torsional value of the composed seed conformation.  The statistics of
+the dihedral distribution show full coverage (-180&deg; to 180&deg;) in
+the torsional term but in angular space were restricted to between
+80&deg; to 150&deg;.  To ensure proper sampling and conformation coverage,
+the probability densities were normalized and used as guides for
+conformation sampling of the loop seeds.
+
+<p>
+<h3>Loop Closure</h3>
+
+The randomly generated seed conformations are then optimized to superpose
+onto the three flanking C<span class='LaTeX'>\( \alpha \)</span> positions of the left and right anchor of the
+dedicated target protein by employing the FCCD method as described above.
+All samples within 0.5&Aring; RMSD to the target anchors are collected and
+subjected to a C<span class='LaTeX'>\( \alpha \)</span> structure optimization protocol followed by a C<span class='LaTeX'>\( \alpha \)</span>
+geometry check to eliminate candidates with irremovable clashes or
+unfavorable geometry as described in the following sections.
+
+<p>
+<h3>Optimization of C<span class='LaTeX'>\( \alpha \)</span> positions</h3>
+Since the angular or even the dihedral terms may have been modified
+by using the FCCD loop closure procedure, it is essential to optimize
+and reorganize  the C<span class='LaTeX'>\( \alpha \)</span> positions. This is done by employing a steepest-descent
+gradient minimization algorithm and a simple harmonic potential as
+published by Rotkiewicz et al. [Rotkiewicz&nbsp;2008] as the PULCHRA method.
+It consists of the following terms: pairwise C<span class='LaTeX'>\( \alpha \)</span>-C<span class='LaTeX'>\( \alpha \)</span> distances,
+C<span class='LaTeX'>\( \alpha \)</span> bond angles, C<span class='LaTeX'>\( \alpha \)</span> excluded volume and the deviation of the initial
+positions as outlined below;
+
+<span class='LaTeX'>
+\begin{align}
+V =
+       w_{1} \sum_{i=1}^{N-1} \left( d_{i,i+1} - d_{0} \right)^2
+     + w_{2} \sum_{i=1}^{N-2} \left( \theta_{i,i+1,i+2} - \theta_{0} \right)^2
+     + w_{3} \sum_{i=1}^{N-2} \sum_{j=i+2}^{N} \left( d_{i,j} - d_{ex} \right)^2
+     + w_{4} \sum_{i=1}^{N}   \left( d_{i,i_{0}} - d_{u} \right)^2
+%    \begin{array}{cclccl}
+%    &   & w_{1} \sum_{i=1}^{N-1} \left( d_{i,i+1} - d_{0} \right)^2
+%    & + & w_{2} \sum_{i=1}^{N-2} \left( \theta_{i,i+1,i+2} - \theta_{0} \right)^2
+%    \\
+%    & + & w_{3} \sum_{i=1}^{N-2} \sum_{j=i+2}^{N} \left( d_{i,j} - d_{ex} \right)^2
+%    & + & w_{4} \sum_{i=1}^{N}   \left( d_{i,i_{0}} - d_{u} \right)^2
+%    \end{array}
+\end{align}
+</span>
+<p align="center">
+<i>C<span class='LaTeX'>\( \alpha \)</span> optimization potential according to PULCHRA [Rotkiewicz&nbsp;2008]</i>
+
+<p>
+where N is the number of C<span class='LaTeX'>\( \alpha \)</span> atoms, w<sub>1</sub>..w<sub>4</sub>
+are the weights of the corresponding potential terms; 
+d<sub>i</sub>, i+1 is the distance between the ith and i+1<sup>th</sup>
+C<span class='LaTeX'>\( \alpha \)</span> positions, d<sub>0</sub> is the C<span class='LaTeX'>\( \alpha \)</span>-C<span class='LaTeX'>\( \alpha \)</span> equilibrium distance
+(set to 3.80 &Aring;),  <span class='LaTeX'>\( \theta \)</span><sub>i</sub>, i+1, i+2 is the virtual
+bond angle comprised of C<span class='LaTeX'>\( \alpha \)</span> at the i<sup>th</sup>, i+1<sup>th</sup>
+and i+2<sup>th</sup> C<span class='LaTeX'>\( \alpha \)</span> atoms. <span class='LaTeX'>\( \theta \)</span><sub>0</sub> is the
+equilibrium angle set to 70&deg;. All parameters are used as
+specified in the publication.
+
+<p>
+<h3>Coarse C<span class='LaTeX'>\( \alpha \)</span> Geometry Check</h3>
+
+All loop conformations generated by the MOE <i>de novo</i> loop engine
+are subjected to a coarse C<span class='LaTeX'>\( \alpha \)</span> geometry check. At first, a distance check
+is performed removing of all loop candidates with interactions as close
+as 3.0&Aring; or lower. Next, the normalized probability densities
+mentioned above were used as a composite score to evaluate
+proper angle/torsions geometry. The cutoff score value for the composite
+score is set to 0.05. As a third parameter, the distinct C<span class='LaTeX'>\( \alpha \)</span> geometry
+of four consecutive C<span class='LaTeX'>\( \alpha \)</span> positions is calculated and compared with
+unique reference conformations obtained from the PDB as described
+below in detail. Only one conformational outlier per five residues
+is tolerated in this geometric assessment. A violation in any of these
+categories will result in the removal of the loop from the
+generated conformation pool. This geometry check is routinely called in
+all steps of the conformation generation process.
+
+<p>
+<h3>Conformation Enrichment based of C<span class='LaTeX'>\( \alpha \)</span> seed loops using crankshaft
+rotations</h3>
+
+Once a loop has successfully been closed, the advantage in using a reduced
+C<span class='LaTeX'>\( \alpha \)</span> backbone representation becomes particularly apparent. Since C<span class='LaTeX'>\( \alpha \)</span> atoms 
+are not chemically bonded, the flexibility in the angle/torsion space allows
+for introduction of local crankshaft rotations in Cartesian coordinates,
+to rapidly introduce new loop conformations.
+The axis formed by two C<span class='LaTeX'>\( \alpha \)</span> atoms at least two residues apart serves as
+a rotation axis for all C<span class='LaTeX'>\( \alpha \)</span> coordinates in between. New conformations
+are generated by rotation of the inner C<span class='LaTeX'>\( \alpha \)</span> coordinates in 2 degree
+increments followed by a C<span class='LaTeX'>\( \alpha \)</span> geometry check and subsequent filtering.
+All combinations of possible rotation axes are computed, excluding the
+3 flanking C<span class='LaTeX'>\( \alpha \)</span> residues that compose the anchors. 
+Loop candidates with
+unfavorable geometry, clashes with other C<span class='LaTeX'>\( \alpha \)</span> of the loop as well as with
+atoms in the vicinity of the loop are then eliminated.
+
+<p align="center">
+<img src="proloop/denovo_fig4.png"
+alt="De Novo Fig 4"/>
+
+<p align="center">
+<i>Crankshaft rotations employed to generate new loop conformations
+on successfully closed loops</i>
+
+<p>
+<h3>Reconstruction of the protein backbone</h3>
+
+After a pool of C<span class='LaTeX'>\( \alpha \)</span>-trace loops with favorable C<span class='LaTeX'>\( \alpha \)</span> geometries has been
+generated, an algorithm is required to reconstruct the full protein backbone
+from the C<span class='LaTeX'>\( \alpha \)</span> trace. Several methods have been proposed with variations in
+precision and computational efficiency. One particularly efficient method
+was proposed by Gront et al. [Gront&nbsp;2007] and termed BBQ (Backbone Building
+from Quadrilaterals). It is based on local distance geometries
+of four consecutive C<span class='LaTeX'>\( \alpha \)</span> atoms (the inner two comprise the peptide plane).
+The distance vectors r<sub>13</sub>, r<sub>14</sub> and r<sub>24</sub>
+as shown below define a distinct coordinate system used to describe
+a quadrilateral. Using the non-redundant protein database PISCES
+[Wang&nbsp;2003] as a structural repository, all quadrilaterals are
+precomputed and stored in a lookup table at a mesh size of 0.2&Aring;,
+in total 5,148 distinct conformations. For each grid element, average
+positions of the N, C and O backbone atoms are stored [Gront&nbsp;2007].
+In addition to the placements suggested by the BBQ method, the MOE backbone
+packer optimizes for cis/trans flips and performs a coarse grain backbone
+minimization to relieve clashes and strain in the backbone geometry.
+
+<p align="center">
+<img src="proloop/denovo_fig5.png"
+alt="De Novo Fig 5"/>
+
+<p align="center">
+<i>Workflow for compiling quadrilaterals as described in Gront et al.</i>
+
+<p>
+A final geometry check ensures that only loops with favorable
+geometries are collected. Entries with unfavorable bond lengths and
+more than one <span class='LaTeX'>\( \phi \)/\( \psi \)</span> outlier per 5 residues are discarded from the
+collection.
+
+<p>
+Finally, a duplicate check in C<span class='LaTeX'>\( \alpha \)</span> positions ensures that only unique
+conformations are sampled.
+
+
+<a name="OptimizeLoops"></a>
+<h2>Building Model Loops</h2>
+
+<p>
+After selecting a set of backbone loop candidates, addition of side chains,
+energy minimization and final scoring is required prior to final selection
+of an ensemble of  loop conformations. The optimization procedure in general 
+proceeds through 2 steps: 1) addition of side chains and
+repacking of the environment and 2) a multi-stage energy minimization with one
+of a set of 3 pre-defined protocols. 
+
+<p>
+The initial optimization stage uses as input the sequence of the desired loop.
+If non-standard or wild card ("X") residues are used, then these
+will be defined as alanines. This stage then uses the sequence as input for the
+addition of side chains, using the same method as
+described in 
+<a href="../apps/prodesign.htm#Methodology">Protein Design</a>. Additionally,
+as with the Protein Design method, nearby residues (within 4.5&Aring; of the
+rotamer ensemble of the loop) are added to the
+conformational search. 
+
+<p>
+Once the conformation of side chains of the loop and nearby residues have 
+been optimized a multi-stage energy minimization is performed. If the
+loop conformation has severe clashes, then a special refinement protocol
+is used prior to a more conservative protocol which focuses on overall loop
+refinement including the flanking regions. The severe clash refinement
+protocol applies a tether of 300 kcal/&Aring; and a deviation of
+0.25&Aring; to all atoms, while disabling electrostatics. Multiple
+energy minimizations are then performed whilst increasing the van der
+Waals scaling factor from 0.1 to 1. Once severe clashes have been removed,
+five rounds of tethered energy minimization are then applied to relieve
+strained geometry in the candidate model. The loop residues as well as
+flanking residues (3 residues on either side of the loop) are given
+flat-bottom tether restraints applying different radii and weights in
+each round. All other residues are fixed during the refinement procedure.
+For the initial refinement round the loop and flanking regions are minimized 
+in isolation by setting the environment atoms inert. In subsequent rounds
+all atoms in the system are active.
+
+<p>
+<a name="RefinementProtocols">
+The three protocols (Quick, Fine, None)
+turn on and off minimzation and repacking, offering shortcuts to possible
+build scenarios. A "Quick" build enables the addition of sidechains
+while keeping environment residues fixed. This allows for a
+quick estimation of whether there is room for the side chains
+to be added. This offers the ability to pre-screen loop conformations prior to
+using the "Fine" protocol. Additionally, this protocol can be used when repacking
+of the environment is not needed, for example, in the
+case of solvent-exposed loops and linkers.
+The "Fine" protocol adds sidechains and optimizes the conformation of
+environment residues. This protocol takes significantly longer than a "Quick"
+build, but offers the possibility of repacking nearby residues to allow
+a residue to fit where otherwise it might have clashed.
+The "None" protocol is a shortcut to allow for re-scoring of the loop as-is
+or to place the loop into the MOE Window.
+
+<p>
+Once the model has been built, it then undergoes a final scoring. 
+
+
+<a name="Scoring"></a>
+<h2>Scoring Loops</h2>
+
+With a set of loop conformations one must be able to present a reduced list
+of the most likely loop candidates with final selection to be done by an
+expert. The question then arises as to how
+to score the candidates to create the
+reduced list. Within this section three methods will be described:
+enabling selection of a subset of loop candidates based on a backbone-only loop
+structure
+(<a href="#coarseScore">Scoring Initial Backbone</a>);
+an all-atom representation
+(<a href="#finalScore">Scoring Modeled Loops</a>);
+and, lastly, the ability to
+determine how a loop conformation may impact a binding affinity or 
+scoring against an electron density grid
+(<a href="#AffinityScore">Affinity Scoring</a> and
+<a href="#EDScore">Electron Density Scoring</a>).
+
+
+<a name="coarseScore"></a>
+<h3>Scoring Initial Backbone Conformations</h3>
+
+<p> A coarse score is used for the initial conformations returned
+from the engines because they consist of backbone atoms only.
+The initial coarse score is focused on interactions
+of the loop candidate with the environment along with a score to assess the
+quality of the loop's geometry and join region. The coarse scoring function
+has the following form.
+
+<p align="center">
+S<sub>coarse</sub> = <span class='LaTeX'>\( \alpha \)</span> E<sub>vdW</sub> + <span class='LaTeX'>\( \beta \)</span> E<sub>HB</sub>
+- <span class='LaTeX'>\( \gamma \)</span> (kT/N) &sum; log P<sub>i</sub>
++ <span class='LaTeX'>\( \delta \)</span> &sum; log Z<sub>score</sub>
+</p>
+
+<p>
+where <span class='LaTeX'>\( \alpha \), \( \beta \), \( \gamma \), and \( \delta \)</span>
+are fitted terms which have
+been trained on recovering native-like decoy loop conformations from the
+Jacobson Loop Decoy Dataset [Jacobson&nbsp;2004]. It has been shown
+to recover high quality decoys, typically within the top 30, without needing
+the addition of side chains.
+
+<p>
+<center>
+<table border="0" cellpadding="5" width="85%">
+
+<tr>
+<td valign="top"><i>E<sub>vdW</sub></i></td>
+<td valign="top">
+The AMBER van der Waals interaction energy from the
+matrix <i>u</i>.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><i>E<sub>HB</sub></i></td>
+<td valign="top"> A dipole-based hydrogen bond term similar to the one
+used in <a href="../apps/prodesign.htm#Searching">Protein Design</a>,
+</td>
+</tr>
+
+<tr>
+<td valign="top"><nobr><i>- (kT/N) &sum; log P<sub>i</sub></i></nobr></td>
+<td valign="top">Is a measure of the quality of the loop geometry
+based on Ramachandran probabilities. <i>P<sub>i</sub></i> is taken directly
+from the Ramachandram probabilities based on a given <span class='LaTeX'>\( \phi \)</span>, <span class='LaTeX'>\( \psi \)</span> angle. This
+term is scaled by <i>N</i> to allow for longer loops to overcome imperfections
+in Ramachandran space.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><nobr><i>&sum; log [(2*N<sub>outliers</sub>) + 1]</i></nobr>
+</td>
+<td valign="top"> Is a second measure of quality of the loop geometry
+which counts the number of outliers for bond angles, and torsion (except <span class='LaTeX'>\( \phi \)</span>, <span class='LaTeX'>\( \psi \)</span>)
+outliers as defined by a Z<sub>score</sub> greater than 4.0. For more
+information on the definition of outliers see
+<a href="../apps/progeom.htm">Protein Geometry</a>.
+</td>
+</tr>
+
+</table>
+</center>
+
+<a name="finalScore"></a>
+<h3>Scoring Modeled Loops</h3>
+
+<p>
+When using the <a href="#OptimizeLoops">Build...</a> panel, two scores 
+are calculated, the <a href="#coarseScore">coarse score</a> and the
+potential energy of the system using GBVI solvation of the protein divided
+by the number of residues in the system. Normalizing the
+score to the number of residues in the system allows for comparison
+between loops of varying length. As with
+the coarse score, the potential energy of the system using GBVI has been shown
+to be able to recover native-like loop conformations from the Jacobson
+Loop Decoy Dataset [Jacobson&nbsp;2004]. For best results use the Amber10:EHT
+forcefield with <span class='LaTeX'>\( \epsilon \)</span>=1. Reaction Field is the recommended solvation
+method used during the minimization steps.
+
+<a name="AffinityScore"></a>
+<h3>Affinity Scoring</h3>
+Additionally, it is also possible to score loop conformations based on their
+affinity for a ligand or another protein.
+
+When <b>Affinity</b> is enabled, the 
+<a href="../apps/docking.htm#Scoring">GBVI/WSA dG</a> scoring function
+or MM/GBVI is used to calculate the affinity of the
+molecule defined by <i>Atoms</i> with the rest of the system.
+MM/GBVI is used when the molecule defined by <i>Atoms</i> contains
+more than 10 residues. This is because GBVI/WSA dG is appropriate
+only for Protein:Ligand complexes, and not Protein:Protein ones.
+In both cases the units for affinity are kcal/mol.
+
+<a name="EDScore"></a>
+<h3>Electron Density Scoring</h3>
+When <b>Electron Density</b> is enabled, Electron Density Scoring loop conformations are
+scored against an electron density map. The score is the negative 
+sum of the density of the loop conformation and
+electron density map overlaps.
+</p>
+
+<p><center>
+<img src="../apps/proloop/loopbrowser_optimize_ed.png" />
+</center>
+</p>
+
+<p>
+Clicking on the <b>Browse...</b> button causes
+the following panel to appear. The panel is used to
+define the electron density grid that will be used for
+scoring.
+
+<p><center>
+<img src="../apps/proloop/loopbrowser_optimize_ed_prompt.png" />
+</center>
+</p>
+
+<table cellspacing="5">
+
+<tr>
+<td><b><nobr>Structure Factors</nobr></b></td>
+<td>
+Identifies the MTZ or CIF file that contains the electron
+density grid.
+</td>
+</tr>
+
+<tr>
+<td><b>Structure</b></td>
+<td>
+If one of the fields must be simulated, the original PDB file is required
+to be defined. When the <b>Structure Factors</b> file is identified
+and a <b>Structure</b> is required, it will automatically try to locate the
+appropriate PDB file located either in the current directory or in
+$DOWNLOADS.
+</td>
+</tr>
+
+<tr>
+<td><b>Map</b></td>
+<td>
+Specifies the type of the electron density map.
+Values <b>Fo</b>, <b>2Fo-Fc</b>, <b>3Fo-2Fc</b> and special values
+<b>2FOFCWT</b> and <b>FWT</b> correspond to density maps and
+are displayed in one color, which defaults to blue.
+Values <b>Fo-Fc</b> and special values <b>FOFCWT</b> and <b>DELFWT</b>
+correspond to difference maps and are displayed in two colors,
+which default to green for positive and pink for negative.
+
+<p>
+If <b>Map</b> is <b>Fo</b>, or a formula involving <b>Fo</b> and <b>Fc</b>,
+then the MTZ data columns specified by <b>Fo</b> and <b>Fc</b> are used.
+
+<p>
+If <b>Map</b> is the name of a special column, such as <b>2FOFCWT</b>,
+then the <b>Fo</b> and <b>Fc</b> parameters are not used and the <b>Phi</b>
+parameter is set to represent the appropriate corresponding phase, such as
+<b>PH2FOFCWT</b>.
+</td>
+</tr>
+
+<tr>
+<td><b>Phi</b></td>
+<td>
+The name of the MTZ data column that contains the structure
+factor phase information.  Selecting <b>Simulated</b> (the initial default)
+uses calculated phase data.  If <b>Fo</b> or <b>Fc</b> are <b>Simulated</b>,
+then <b>Phi</b> will be also <b>Simulated</b>.
+
+<p>
+If <b>Map</b> specifies a special column, such as <b>2FOFCWT</b>, then
+<b>Phi</b> is set to represent the corresponding phase, such as
+<b>PH2FOFCWT</b>.</td>
+
+<tr>
+<td><b>Fo</b></td>
+<td>
+The name of the MTZ data column that contains the structure
+factor information.  Selecting <b>Simulated</b> (the initial default)
+displays a surface based on atomic position and number.
+<p>
+If <b>Map</b> does not specify <b>Fo</b> or a difference formula that uses
+<b>Fo</b>, then the <b>Fo</b> option is unavailable.</td>
+</td>
+</tr>
+
+<tr>
+<td><b>Fc</b></td>
+<td>
+The name of the MTZ data column that contains the structure
+factor information for a difference map.  Selecting <b>Simulated</b> uses
+calculated information for the map.
+<p>
+If <b>Map</b> does not specify a difference formula that uses <b>Fc</b>,
+then the <b>Fc</b> option is unavailable.
+</td>
+</tr>
+
+</table>
+
+<p>
+The bottom half of the panel is a shortcut to preview the surface.
+The options are similiar to those of the
+<a href="../apps/surfmap.htm#ElectronDensity">Electron Density Map</a> in the
+<a href="../apps/surfmap.htm">Surfaces and Maps</a> panel.
+
+<a name="LoopSearch"></a>
+<h2>Running the Loop/Linker Modeler</h2>
+
+<a name="Preparing_the_Data"></a>
+<h2>Preparing the Data</h2>
+
+<p>
+The Loop/Linker Modeler application can operate on a protein structure loaded
+in MOE.
+
+The structure data under consideration
+are typically crystallographic data read
+from a <a href="../proteins/pdb_mdb.htm#OpeningPDBFiles">PDB file</a>,
+or obtained from the MOE
+<a href="../proteins/pdb_mdb.htm#MOEPDB">protein database</a>
+or directly from the
+<a href="../proteins/pdb_mdb.htm#RCSBDownload">PDB or PSILO</a>.
+The data might also be loaded from a
+<a href="../mdb/db.htm">MOE database</a> or pasted from the
+<a href="../moe/gui/mainwin.htm#Copy">clipboard</a>.
+</p>
+
+<p>Structural data often contains errors.  Some additional preparatory
+steps are commonly required,
+such as capping, completing residues with missing
+atoms and selecting appropriate alternate locations.
+In MOE, structural issues can be automatically corrected
+using the Structure Preparation
+application <span class="nobr">(<span class="menu">MOE | Compute
+| Prepare | Structure Preparation</span></span> or
+<span class="nobr"><span class="menu">MOE | Protein
+| Structure Preparation</span>).</span>
+Once the panel is raised, press <b>Correct</b>.
+This will result in an attempt to correct all issues detected by
+the application.
+For more information on data preparation, please see
+<a href="structprep.htm">Structure Preparation</a>.
+
+</p>
+
+<p>
+Although not required by the Loop/Linker Modeler application,
+it may be desirable to optimize the hydrogen bond network
+<span class="nobr">(<span class="menu">MOE | Compute | Prepare |
+<a href="protonate3d.htm">Protonate&nbsp;3D</a></span>)</span>
+and calculate charges
+<span class="nobr">(<span class="menu">MOE | Compute | Prepare |
+<a href="../moe/pot.htm#Charges">Partial&nbsp;Charges</a></span>)</span>
+as optimal hydrogens positions and charges are necessary 
+if any molecular mechanics
+refinement is to be done on the mutants produced.
+Note: If molecular mechanics refinements are to be performed, an appropriate
+molecular mechanics <a href="../moe/pot.htm">forcefield</a>
+should be selected. For the Loop/Linker Modeler application Amber10:EHT using
+a <span class='LaTeX'>\( \epsilon \)</span>=1 and reaction field solvation is recommended.
+</p>
+
+<p>
+It is also recommended to perform a tethered energy minimization
+prior to using the Loop/Linker Modeler application to relieve bad
+crystallographic contacts or other bad geometries.
+Note that in this case,
+the <a href="../apps/emin.htm">Energy Minimize</a> application
+itself can be used to adjust hydrogens and lone pairs and
+to calculate partial charges.
+Tethering, which prevents receptor atoms from deviating too
+far from their initial coordinates, can be done through the
+Energy Minimize panel.  Alternatively, the
+<span class="menu">MOE | RHS |
+<a href="../apps/ligx.htm#Prepare">LigX</a></span> panel
+can be used to
+add tether restraints to receptor, ligand, and/or solvent atoms
+(<b>Receptor</b>, <b>Ligand</b>, <b>Solvent</b>) and then
+perform energy minimization on the system (enable <b>Refine</b>).
+</p>
+
+<p>An additional step that may be taken is
+to delete extraneous co-factors or unbound water molecules.  Water
+molecules which play structural roles within the protein, such as
+bridging waters, and important cofactors should be retained.
+</p>
+
+<p>
+Finally, the
+<a href="progeom.htm">Protein Geometry</a> application can be used
+to assess the stereochemical quality of the protein.
+</p>
+
+<a name="Using_LoopSearch"></a>
+<h2>Using the Loop/Linker Modeler Panel</h2>
+
+<p>
+To use the Loop Modeler application, select
+<span class="menu">MOE | Protein | Loop Modeler</span>. 
+To use the Linker Modeler application, select
+<span class="menu">MOE | Protein | Linker Modeler</span>. 
+The following panel will appear:
+
+<p align="center">
+<img src="proloop/loopsearch_panel_overview.png" alt="Loop Model Panel" />
+</p>
+
+<p>
+Using the navigation buttons at the top of the panel enables easy 
+switching between Loop and Linker Modeler along with Browsing Results.
+While the Loop and Linker Modeler use the same underlying engines there is
+one fundamental difference. The Loop Modeler models loops and/or outgaps that
+are in the same chain, while the Linker Modeler models loops (linkers) between
+the C and N termini of two difference chains. When using the Linker Modeler
+the chains are automatically reordered (chain with C-terminus followed by chain
+with N-terminus) and joined to make the linker to be modeled a giant loop.
+Currently it is not possible to use this application to link the termini
+of the same chain to create a cyclic peptide.
+
+<a name="InputOptions"></a>
+<h2>Input Options</h2>
+
+The Loop/Linker Modeler application uses the system currently in the
+MOE Window. Before running, ensure the system has
+been <a href="#Preparing_the_Data">prepared properly</a>.
+
+<p align="center">
+<img src="proloop/loopsearch_input.png" alt="Loop Modeler Input Options" />
+
+
+<table cellpadding="5">
+<tr>
+<td valign="top"><b>Loop</b></td>
+<td valign="top">
+The collection of residues which defines the loop/outgap residues. When using
+the Linker Modeler only selection of chain termini is permitted. Anchor
+residues are then automatically defined for loops as being the residues
+on either end of the selection and for outgaps and linkers the residue to the
+left or right of the selection.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Environment</b></td>
+<td valign="top">
+The collection of chains which the Loop/Linker Modeler application will use.
+All chains containing only dummy atoms will be ignored.
+The default is Active Chains.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Anchors in selection</b></td>
+<td valign="top">
+By default anchor residues are defined as being the residues to the left and/or
+right of the selection. When this option is enabled the anchors are defined
+as the first and/or last residue in the selection. This option should be used
+when the loop to be modeled is not in the original structure and therefore
+the anchor residues must be selected to define the loop.
+</td>
+</tr>
+
+</table>
+
+<p>
+When a Loop has been defined, it will appear in the loop list. The loop list
+identifies loops/linkers/outgaps as follows.
+
+<ul>
+<li><b>Query</b>: Is used to identify the anchor residues used to define the
+region to be search. For a loop or linker the following notation is used
+<i>chain_#:rName rUID-chain_#:rName rUID</i> where the left then right
+anchors are defined. In cases of outgaps, a N-terminal outgap would have the
+left anchor replaced with <tt>"|-"</tt> and a C-terminal outgap would
+have the right anchor replaced with <tt>"-|"</tt>.</li>
+<li><b>Length</b>: The desired length of the loop as defined in the Search
+Sequence. In cases where variable length loops are desired a length 
+range will be given.</li>
+<li><b>Search Sequence</b>: The desired loop sequence to be created. By default
+if the defined loop has residues then the Search Sequence will
+be the initial sequence. In case where the define loop does not
+have this information by default it will make search for a 6
+residue loop or a 20 residue linker. The sequence is only used to define
+the allowed backbone geometry for loop residues. The Search Sequence
+can be modified by selecting an item in the list and editing the
+Search Sequence string in the
+<a href="#Defining_a_Loop_Sequence">Loop Sequence Editor</a>.</li>
+</ul>
+
+<a name="Defining_a_Loop_Sequence"></a>
+<h2>Defining a Loop/Linker Sequence</h2>
+
+It is possible to edit to the default Search Sequence of a loop
+by selecting the corresponding loop in the loop list. Doing this will enable
+the Loop Sequence edit box. To define the sequence a modified version
+of the ProSite language is used. To see more in-depth description of the
+language used in MOE see <a href="../moe/fcnref/aselect.htm#PROSITE">PROSITE
+language reference</a>. The simplest example would be entering
+the single letter sequence, so entering "GHAVWY" would correspond to
+a loop with a sequence of "Gly-His-Ala-Val-Trp-Tyr". The language also
+supports <i>X</i> to allow for unknown residues. By default this will
+be converted to Ala after the search is completed. 
+
+It is also possible to use more complicated terms for either short
+hand notation or variable length. For example a 20 residue glycine loop
+can be defined as "G(20)". If there are no geometry restrictions and
+a 15 to 40 residue loop is desired the sequence would be defined as
+"X(15,40)".
+
+<a name="method_options"></a>
+<h2>Loop Methods/Options</h2>
+<p align="center">
+<img src="proloop/loopsearch_options.png" alt="Loop Search Options" />
+
+
+<table cellpadding="5">
+<tr>
+<td  valign="top"><b>Methods</b></td>
+<td valign="top">
+Allows choice in the Loop methods to be used to conduct the loop/linker search.
+For more information of the specific engines see
+<a href="#PDBSearch">PDB Search</a> and 
+<a href="#DeNovoSearch">De Novo Search</a>. The PDB search has some additional
+options which can be configured by using the gear icon adjacent to it in the
+panel.
+</td>
+</tr>
+
+<tr>
+<td  valign="top"><b>PDB Options</b></td>
+<td valign="top">
+<table cellpadding="5">
+    <tr>
+    <td valign="top">
+    <img src="proloop/loopsearch_pdb_options.png"
+    alt="Loop PDB Search Options" />
+    </td>
+    <td valign="top">
+    <ul>
+    <li><b>Maximum Walk</b>: The number of residues with atoms from either end
+    of the selected loop which will be included as loop anchors.
+    </li><li><b>Maximum Anchor Error</b>: Maximum distance difference between
+    anchor C<span class='LaTeX'>\( \alpha \)</span>s in crystal versus loop library. Increasing this distance
+    will increase 
+    the number of structures that will be called a match. For more
+    information on how this option is used see <a href="#pdb_options">PDB
+    Methodology</a>. The default value is 0.2 &Aring;.
+    </li><li><b>Maximum Anchor RMSD</b>: Once the loop has been superposed,
+    the RMSD is calculated between the C<span class='LaTeX'>\( \alpha \)</span>s of the anchor points. If the 
+    RMSD is greater than this value then the conformation will be discarded.
+    Increasing this value will increase the number of structure which will
+    be considered a match. In turn these additional structures may have
+    geometry issues in the join regions of the loop. For more information
+    on how this option is used see <a href="#pdb_options">PDB
+    Methodology</a>.
+
+    </li></ul>
+    </td>
+    </tr>
+</table>
+</td>
+</tr>
+
+<tr>
+<td  valign="top"><b>RMSD Limit</b></td>
+<td valign="top">
+Two conformations are judged equal when the C<span class='LaTeX'>\( \alpha \)</span> RMSD between the
+two conformations is below this tolerance.
+</td>
+</tr>
+
+<tr>
+<td  valign="top"><b>Loop Limit</b></td>
+<td valign="top">
+Search will terminate after the number of the total number of loops return
+reaches this limit unless the search has completed. 
+</td>
+</tr>
+
+<tr>
+<td  valign="top"><b>Energy Window</b></td>
+<td valign="top">
+Conformations with energies relative to the global minimum higher than
+"Energy Window" are discarded.
+</td>
+</tr>
+
+</table>
+
+<a name="batch_file"></a>
+<h2>Using the Batch File</h2>
+
+<p>
+Once you click on <span class="menu">Loop Modeler | Batch ...</span> the
+following panel will appear.
+
+<p align="center">
+<img src="proloop/proloop_batch_file_panel.png" alt="Batch File Panel" />
+</p>
+
+<table cellpadding="5">
+
+<tr>
+<td  valign="top"><b>Batch File</b></td>
+<td valign="top">
+Name of the batch file.
+</td>
+</tr>
+
+<tr>
+<td  valign="top"><b>Number of Runs</b></td>
+<td valign="top">
+Number of multiple runs of the <i>de novo</i> engine. This option is only
+enabled when the <b>De Novo</b> methods has been enabled. Increasing the
+<b>Number of Runs</b> increases the coverage of the space that will be searched
+by the <i>de novo</i> engine. This option can be used in conjuction with
+<a href="../install/smp_inst.htm">MOE/smp</a>.
+</td>
+</tr>
+
+</table>
+
+<p>
+The batch file is an SVL run file. One way to run loop search later
+is to issue the command below at the system command prompt.
+<pre>
+    $MOE/bin/moebatch -run proloop_batch.svl
+</pre>
+
+<p>
+
+The following command line switches can also be used:
+
+<pre>
+moebatch -run proloop_batch.svl -omdb newname.mdb
+moebatch -run proloop_batch.svl -build optimized.mdb
+moebatch -run proloop_batch.svl -build_top 1
+</pre>
+
+<table cellpadding="5">
+
+<tr>
+<td  valign="top"><b>-&nbsp;omdb</b></td>
+<td valign="top">
+Assign a new name to the outputted mdb file. This MDB file will contain
+the result prior to optimization (backbone only loops).
+</td>
+</tr>
+
+<tr>
+<td  valign="top"><b>-&nbsp;build</b></td>
+<td valign="top">
+Using this flag will automatically take the top scoring backbone only loops
+and build sidechains for them. By default the <a href="#Optimizing_loops">
+Fine</a> protocol is used on the top 100 scoring loops. This value
+can be modified by using the <b>-build_top</b> flag.
+</td>
+</tr>
+
+<tr>
+<td  valign="top"><b>-&nbsp;build_top</b></td>
+<td valign="top">
+The number following this flag controls the number of best scoring backbone
+only loops which will proceed through the build protocol.
+</td>
+</tr>
+
+</table>
+
+<a name="LoopBrowser"></a>
+<h2>Running the Loop/Linker Browser</h2>
+
+<p>
+Once the Loop/Linker Model search starts, the application automatically
+switches to the Loop Browser.  The Loop Browser can be started by 
+<span class="menu">DBV | File | Browse</span> from the database written from
+<a href="#Saving_loops">Save...</a> or <a href="#Optimizing_loops">Build...
+</a>
+
+<p align="center">
+<img src="proloop/loopbrowser_panel_overview.png" alt="Loop Browser Panel" />
+</p>
+
+As with the Loop/Linker Modeler it is possible to navigate between the Loop
+Browser and Modelers. When starting the browser from an MDB file
+it will prompt to load the original search structure into MOE. If
+you select "Yes", then an additional set is created <i>LSearch_Loop</i>
+which are the residues which were selected for the initial search.
+Additionally the original search parameters are output to the SVL Commands
+window and can be accesed by 
+<span class="menu">MOE | SVL</span>. 
+
+<a name="Browsing_Loops"></a>
+<h2>Browsing Loops</h2>
+
+Once the Loop Browser has been opened, a summary of the results can be
+located in the Results Summary at the top of the panel. This section will
+indicate the total number of loops in the Results list and how
+many loops are currently selected.
+
+The results list is comprised of the following columns:
+<ul>
+<li><b>Id</b>: Loop Identification number.
+</li><li><b>S</b>: <a href="#coarseLoopScore">Coarse Loop Score</a>
+</li><li><b>Egeom</b>: 
+<a href="#coarseLoopScore">Coarse Loop Geometry Score</a>
+</li><li><b>EvdW</b>: 
+<a href="#coarseLoopScore">Coarse Loop van der Waals Interaction</a>
+</li><li><b>Ehb</b>: 
+<a href="#coarseLoopScore">Coarse Loop Hydrogen Bond Interaction</a>
+</li><li><b>GBVI (<i>Modeled Loops only</i>)</b>: 
+<a href="#finalLoopScore">Final Loop Score, Potential using GBVI</a>
+</li><li><b>dG (<i>when enabled</i>)</b>:
+<a href="#otherScore">Binding affinity using MM/GBVI or GBVI/WSA</a>
+</li><li><b>ED_corr (<i>when enabled</i>)</b>:
+<a href="#otherScore">Electron Density Scoring</a>
+</li><li><b>Length</b>: Loop Length. If searching multiple loops
+simultaneously, then loop lengths are separated by columns.
+</li><li><b>%Seq</b>: The % Sequence Similarity between the input structure
+(N.B. not the search sequence) and the sequence of the source conformation
+when using the PDB search. The field will be empty when using the De Novo
+engine. 
+</li><li><b>Source L<i>N</i></b>: Source of loop conformation. This token
+will start with the method which generated the loop (pdb or de novo) followed
+by an identifier. In the case of the De Novo engine,  this is a 
+conformation number. With the PDB Search the identifier is used to signify the PDB chain
+and residue range for which the loop originated (ie: pdb_3LW9.A:414-421
+signifies the loop originated from residues 414 to 421 of chain A of 3LW9).
+If multiple loops have been searched simultaneously,
+then there will be multiple <b>Source L<i>N</i></b> 
+(ie: Searching three loops simultaneously would yield
+<tt>Source L1; Source L2; Source L3</tt>). 
+</li><li><b>Sequence L<i>N</i></b>: If using the PDB search, this will
+correspond to the sequence of the source conformation. This field is left
+empty when using the De Novo search.
+</ul>
+
+<p>
+Selecting an item in the list will render the loop according to the "Preview"
+settings. NOTE: if many loops are selected then the panel will become 
+desensitized while the structures load. When the structure has been loaded
+two sets are created to allow for easy selection of the loop region.
+<tt>LBrowser_Loop</tt> and <tt>LBrowser_LoopAnc</tt>. The 
+<tt>LBrowser_Loop</tt> set contains the residues of the loop, while
+<tt>LBrowser_LoopAnc</tt> contains the loop residues and the anchor region.
+
+
+<h2>Rendering Loops</h2>
+
+<p align="center">
+<img src="proloop/loopbrowser_preview_opt.png" alt="Loop Preview Options" />
+</p>
+
+<p>
+Rendering of the selected loop can be modified by using the Loop Rendering
+options.
+
+<table cellpadding="5">
+
+<tr>
+<td valign="top"><b>Preview</b></td>
+<td valign="top">
+Render the loop in atom and/or ribbon mode. When none is selected the loop
+will not be built in the MOE window.
+<ul>
+<li><i>None</i>: No atoms or ribbons will be shown in the MOE Window or
+Sequence editor. The loop being browsed is not created. This option is
+useful when wanting to select a large subset of loops to optimize.
+</li><li><i>Atoms</i>: Only heavy atoms and polar hydrogens of the browsed 
+loop are shown in the MOE Window.
+</li><li><i>Ribbon</i>: Only ribbons (no atoms) are shown in the MOE Window
+of the loop being browsed.
+</li><li><i>Atoms+Ribbons</i>: Ribbon and atoms are shown in the MOE window
+of the loop bring browsed.
+</ul>
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Auto-select Loop</nobr></b></td>
+<td valign="top">
+When browsing loops, the loop residues are selected in the sequence editor.
+To select atoms in the MOE Window ensure selection synchronize is enabled in
+<span class="menu"> MOE | Select | Synchronize</span> or
+<span class="menu"> SE | Select | Synchronize</span>.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Isolate Loop</nobr></b></td>
+<td valign="top">
+If <b>Preview</b> is set to <i>Atoms</i> or <i>Atoms+Ribbons</i> then nearby
+residues are also rendered using the rendering style (<i>Atoms</i> or
+<i>Atoms+Ribbons</i>). Nearby residues are defined as those having any atoms
+within the defined SiteView Cutoff. The SiteView Cutoff can be set by 
+<span class="menu"> MOE | Settings | LigX | SiteView Cutoff</span>.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Center Loop</nobr></b></td>
+<td valign="top">
+Will automatically translate and set z-clipping so that all atoms and/or 
+ribbons are viewed in the MOE Window.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Loop Color</nobr></b></td>
+<td valign="top">
+Color used to color loop atoms and ribbons.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Environment Color</nobr></b></td>
+<td valign="top">
+Color used to color environment (non-loop) atoms and ribbons.
+</td>
+</tr>
+
+</table>
+
+<a name="Saving_loops"></a>
+<h2>Saving Loops</h2>
+
+<p>
+Once a search has been completed it is desirable to save your work. If
+<span class="menu"> Loop Browser | Save...</span> is clicked then a file
+prompt will appear to allow the set the name of the database file. If no
+loops are currently selected in the Results List then all loops are saved to
+the file, otherwise only selected items will
+be saved. The output database has the following format.
+
+<ul>
+<li><b>mol</b>: The output loop conformation. The loop plus residues
+defined by the <b>Environment</b> are saved to this field.
+</li><li><b>mseq</b>: The molecule sequence number. A <b>mseq</b> = 0
+signifies that it was the original input structure used for search.
+</li><li><b>S</b>: <a href="#coarseLoopScore">Coarse Loop Score</a>
+</li><li><b>Egeom</b>: 
+<a href="#coarseLoopScore">Coarse Loop Geometry Score</a>
+</li><li><b>EvdW</b>: 
+<a href="#coarseLoopScore">Coarse Loop van der Waals Interaction</a>
+</li><li><b>Ehb</b>: 
+<a href="#coarseLoopScore">Coarse Loop Hydrogen Bond Interaction</a>
+</li><li><b>GBVI (<i>Modeled Loops only</i>)</b>: 
+<a href="#finalLoopScore">Final Loop Score, Potential using GBVI</a>
+</li><li><b>Affinity (<i>when enabled</i>)</b>:
+<a href="#otherScore">Binding affinity using MM/GBVI or GBVI/WSA</a>
+</li><li><b>ED_corr (<i>when enabled</i>)</b>:
+<a href="#otherScore">Electron Density Scoring</a>
+</li><li><b>Length</b>: Loop Length. If searching multiple loops
+simultaneously then loops length are separated by columns.
+</li><li><b>%Seq</b>: The % Sequence Similarity between the input structure
+(N.B. not the search sequence) and the sequence of the source conformation
+when using the PDB search. The field will be empty when using the De Novo
+engine. 
+</li><li><b>Source L<i>N</i></b>: Source of loop conformation. This token
+will start with the method which generated the loop (pdb or de novo) followed
+by an identifier. In the case of the De Novo engine, this is a 
+conformation number. In PDB Search, the identifier is used to signify
+the PDB chain
+and residue range for which the loop originated.  For example,
+<tt>pdb_3LW9.A:414-421</tt>
+signifies that the loop originated from residues 414 to 421 of chain A of 3LW9.
+If multiple loops have been searched simultaneously,
+then there will be multiple <b>Source L<i>N</i></b>; e.g.
+searching three loops simultaneously would yield
+<tt>Source L1; Source L2; Source L3</tt>. 
+</li><li><b>Sequence L<i>N</i></b>: If using the PDB search this will
+correspond to the sequence of the source conformation. This field is left
+empty when using the De Novo search.
+</li>
+</ul>
+
+<a name="Optimizing_loops"></a>
+<h2>Optimizing Loops</h2>
+
+The initial results from the search produces loop conformations with
+backbone atoms only, therefore addition of side chains, refinement and final
+scoring is required prior to a final selection of model or use in an
+ensemble. All loops will be built unless "Selected Items Only"
+is enabled.
+
+<p align="center">
+<img src="proloop/loopbrowser_optimize_panel.png" alt="Loop Build Panel" />
+</p>
+
+<table cellpadding="5">
+
+<tr>
+<td valign="top"><b><nobr>Output</nobr></b></td>
+<td valign="top">
+<table cellpadding="5">
+    <tr>
+    <td valign="top">
+    <img src="proloop/loopbrowser_optimize_output.png"
+    alt="Build Loop Output Options" />
+    </td>
+    <td valign="top">
+    <ul>
+    <li><b>MOE</b>: Build loop models in MOE.
+    </li><li><b>MDB</b>: Build loop models and save in a MOE database.
+	When using this
+    option, it is possible to score models using MM/GBVI or GBVI/WSA or using
+    electron density. The text box adjacent can be used to specify the desired
+    output database. Alternatively, use the Browse button to select a 
+    file through a file browser. 
+    </li></ul>
+    </td>
+    </tr>
+</table>
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Selected Items Only</nobr></b></td>
+<td valign="top">
+If enabled, only the select items will be built.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Open Database Viewer</nobr></b></td>
+<td valign="top">
+If enabled, the output database will be automatically opened upon clicking
+<b>OK</b>. By default this option is enabled when <b>Output</b> is set
+to MDB.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Loop Sequence</nobr></b></td>
+<td valign="top">
+The desired sequence of the loop. This option is available only when
+all loops that will be built have the same length. 
+By default, any non-standard amino acid (<i>X</i>) is
+converted to alanine (A) or to the corresponding
+residue in the original sequence from the
+source conformation when using the PDB search.
+If multiple loops have been selected, each loop sequence must be
+separated by a comma (<tt>","</tt>). If the
+length of the 
+<a href="#Defining_a_Loop_Sequence"> Loop Sequence</a>
+does not correspond to the length of the searched
+loop then the text will turn red to indicate an error. The exact error can be
+read in the bubble help. 
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Refinement</nobr></b></td>
+<td valign="top">
+<table cellpadding="5" valign="top">
+    <tr>
+    <td valign="top" align="center">
+    <img src="proloop/loopbrowser_optimize_protocols.png"
+    alt="Build Protocols" />
+    </td>
+    </tr><tr>
+    <td valign="top">
+    <ul>
+    <li><b><nobr>None</nobr></b>: Uses the loop as-is. Allows for a quick
+    shortcut if rescoring or loading into MOE is desired.
+    </li><li><b><nobr>Quick</nobr></b>: enables the following
+    refinement options: addition of side chains, and minimization
+    of the loop only.
+    </li><li><b><nobr>Fine</nobr></b>: All refinement, addition 
+    of side chains and repacking the environment are enabled.
+    </li><li><b><nobr>Custom</nobr></b>: Allows custom tailoring of
+    build options.
+    </li></ul>
+    </td>
+    </tr>
+</table>
+
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Add Side Chains</nobr></b></td>
+<td valign="top">
+Add side chains to loop candidate. If side chains exist, then 
+they are deleted and replaced.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Cluster</nobr></b></td>
+<td valign="top">
+Change the cluster value of the rotamers. A smaller number increases
+the resolution of the rotamers used, which
+increases the number of rotamers used,
+which consequently increases the overall computational cost.
+</td>
+</tr>
+
+
+<tr>
+<td valign="top"><b><nobr>Repack environment</nobr></b></td>
+<td valign="top">
+When enabled, residues within "Cutoff" of the mutation will be included 
+in the conformational search.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Cutoff</nobr></b></td>
+<td valign="top">
+The distance (&Aring;) used to determine which residues are added to the
+conformational search in addition to the loop residues
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Refine loop</nobr></b></td>
+<td valign="top">
+When enabled, the loops and flanking regions will be refined 
+using the protocol described in
+<a href="#OptimizeLoops">Building Model Loops Methodology</a>.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Refine Environment</nobr></b></td>
+<td valign="top">
+When enabled, nearby residues (defined by <b>Cutoff</b>) will be refined 
+using the protocol described in
+<a href="#OptimizeLoops">Building Model Loops Methodology</a>.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>RMS Gradient</nobr></b></td>
+<td valign="top">
+If "Refine loop" is enabled, the final refinement will be performed until
+the RMS of the gradient of the potential energy is less than a
+specified value.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Electron Density</nobr></b></td>
+<td valign="top">
+When enabled, generates
+a score reflecting the amount of loop atom overlap with
+the electron density. Click <b>Browse</b> to
+start the electron density prompter, so that the specific grid
+can be specified.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Affinity</nobr></b></td>
+<td valign="top">
+When affinity is enabled, the 
+<a href="../apps/docking.htm#Scoring">GBVI/WSA dG</a> scoring function
+or MM/GBVI is used to calculate the affinity of the molecule defined
+by Atoms with the rest of the system. MM/GBVI is used when the molecule
+defined by Atoms contains more than 10 residues. This is because
+GBVI/WSA dG is appropriate only for Protein:Ligand complexes,
+and not Protein:Protein ones. In both cases the units for affinity 
+are kcal/mol.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Atoms</nobr></b></td>
+<td valign="top">
+Used to defined the atoms of binding partner (e.g. a ligand in a
+Protein:Ligand complex or an antigen in an Antibody:Antigen complex).
+</td>
+</tr>
+
+<tr>
+<td valign="top">
+<img src="proloop/loopbrowser_optimize_show.png" alt="?" />
+</td>
+<td valign="top">
+Flash the selection state of the atoms defined by Atoms.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>Forcefield</nobr></b></td>
+<td valign="top">
+A summary of the current Forcefield and solvation parameters.
+</td>
+</tr>
+
+<tr>
+<td valign="top">
+<img src="proloop/loopbrowser_optimize_ff.png" alt="?" />
+</td>
+<td valign="top">
+Launch the <a href="../moe/pot.htm">Potential Setup</a> panel.
+</td>
+</tr>
+
+</table>
+
+<a name="UpdatingLoopLibrary"></a>
+<h2>Updating the Loop Library</h2>
+
+<p>
+The loop library, <tt>$MOE/lib/loop.mdb</tt> is the repository of PDB
+crystallographic loops. The starting point for the library is 
+<a href="../proteins/pdb_mdb.htm#MOEPDB"><tt>$MOE/lib/pdb.mdb</tt></a>.
+This is a database of non-redundant
+protein chains from the Protein Data Bank. Entries consist of single protein
+chains (not full protein molecules). Solvent, ions and ligands are not
+included. Since this is the basis for the loop library when updating
+<tt>pdb.mdb</tt>, <tt>loop.mdb</tt> should be updated also.
+
+<p>
+To update the loop library use the following function in the SVL Commands window:
+
+<pre>
+    pdb_CreateLibrary ['input.mdb', 'output.mdb']
+</pre>
+
+<p>
+Where:
+
+<br>
+<br>
+<tt>'input.mdb'</tt>: is a mdb file with a format similiar to 
+<tt>$MOE/lib/pdb.mdb</tt>.
+
+<br>
+<tt>'output.mdb'</tt>: is the name of the output mdb file
+which should replace <tt>$MOE/lib/loop.mdb</tt>.
+
+<p>
+
+If a custom loop library is used, the default must be changed in
+<span class="menu">MOE | Settings | Protein Defaults</span>.
+
+<!-- Example 1 --> 
+
+<a name="Examples"></a>
+<h2>Examples</h2>
+
+<a name="Example1_Data_Preparation"></a>
+<div class="example">
+<h2>Example 1: Data Preparation for Loop/Linker Modeler</h2>
+
+<p>
+This example demonstrates how to prepare a protein for 
+the Loop or Linker Modeler. It uses the Fv fragment of the
+anti-hen egg white lysozyme antibody D1.3 with it's antigen.
+</p>
+
+<p>
+<ol>
+<p><li>
+<i>Load the structure into MOE.</i>
+
+<blockquote>
+<span class="menu">MOE | File | Open | <tt>$MOE/sample/mol/1vfb.pdb</tt></span>
+</blockquote>
+
+In the Load PDB File panel, press <b>OK</b>. 
+The molecular data comprises the crystallized protein.
+
+</li></p><p><li>
+<i>Delete the solvent chain.</i>
+
+<blockquote>
+<span class="menu">MOE | RHS | Select | Solvent</span>
+<br />
+<span class="menu">MOE | RHS | Delete</span>
+</blockquote>
+
+<div class="floatright">
+<a href="proloop/example1_1vfb_prep.png">
+<img src="proloop/example1_1vfb_prep_thumb.png" alt="Preparation of 1vfb" />
+</a>
+</div>
+
+</li></p><p><li>
+
+<i>Setup the forcefield and assign partial charges.</i>
+
+<blockquote>
+<span class="menu">MOE | Footer | Potential Setup</span>
+</blockquote>
+
+If the currently loaded forcefield is not Amber10:EHT, select it
+from the <b>Load</b> menu. Also set the solvation to <b>R-Field</b>. 
+and press <b>Apply</b>.
+To assign charges to both the protein and the ligand, click on
+<span class="menu">Potential Setup | Fix Charges</span>.
+Close the Potential Setup panel.
+
+</li></p><p><li>
+<i>Correct Structural Issues.</i>
+<br />
+<blockquote>
+<span class="menu">MOE | Compute | Prepare | Structure Preparation</span>
+or 
+<span class="menu">MOE | Protein | Structure Preparation</span>
+</blockquote>
+
+Press <b>Correct</b> in the panel to add hydrogens and correct structural issues
+in the protein-ligand complex.
+
+</li></p><p><li>
+<i>Optimize hydrogen bond network</i>
+<br />
+
+<blockquote>
+<span class="menu">Structure Preparation | Protonate3D</span>
+</blockquote>
+
+Press <b>OK</b> in the Protonate3D panel to optimize the hydrogen
+positions of the protein.
+The calculation may take a moment. Once done, you may close the
+Structure Preparation panel.
+
+</li></p><p><li>
+<i>Annotate Antibody</i>
+<br />
+
+<blockquote>
+<span class="menu">SEQ | Annotate | Antibody | CCG</span>
+</blockquote>
+
+This will highlight the CDR region in the MOE window and sequence editor.
+It will also create sets containing the individual CDR Loops. For more
+information see <a href="../moe/gui/se.htm#AnnotatingMolecularObjects">
+Annotating Molecular Objects</a>.
+
+</li></p><p><li>
+<i>Save current system as MOE file.</i>
+
+<blockquote>
+<span class="menu">MOE | File | Save...| <tt>1vfb_prep.moe</tt></span>
+</blockquote>
+
+Save the current system as 1vfb_prep.moe
+for future use in other examples.
+
+</li></p>
+
+</li></p>
+</ol>
+</p>
+<br clear="all">
+</div>
+
+<!-------------------------- Example 2 ---------------------------------->
+
+<a name="Example2_SingleLoopSearch"></a>
+<div class="example">
+<h2>Example 2: Loop Search of the H3 Loop of 1VFB</h2>
+
+<p>
+<p>
+This example demonstrates the use of Loop Modeler to search the H3 loop
+of 1VFB.
+</p>
+
+<p>
+<ol>
+
+<p><li>
+<i>Load the prepared structure from Example 1, Data Preparation.</i>
+
+<blockquote>
+<span class="menu">MOE | File | Open | <tt>1vfb_prep.moe</tt></span>
+</blockquote>
+
+</li></p><p><li>
+
+<i>Setup the forcefield.</i>
+
+<blockquote>
+<span class="menu">MOE | Footer | Potential Setup</span>
+</blockquote>
+
+If the currently loaded forcefield is not Amber10:EHT, select it
+from the <b>Load</b> menu.  The change is effective immediately.
+To assign charges to both the protein and/or the ligand, click on
+<span class="menu">Potential Setup | Fix Charges</span>
+Close the Potential Setup panel.
+
+</li></p><p><li>
+<i>Isolate CDR_H3 Loop.</i>
+
+<p>
+<p>
+SiteView is used to show only selected loop and nearby residue atoms.
+
+    <ol type="i">
+    <li><i>Select CDR_H3</i>
+
+    <blockquote>
+    <span class="menu">MOE | RHS | Select | Set | <tt>CDR_H3</tt></span>
+    </blockquote>
+
+    <li><i>Isolate selection using SiteView</i>
+
+    <blockquote>
+    <span class="menu">MOE | RHS | SiteView</span>
+    </blockquote>
+
+    </ol>
+
+</li></p><p><li>
+
+<i>Open the Loop Modeler</i>
+
+<blockquote>
+<span class="menu">MOE | Protein | Loop Modeler...</span>
+</blockquote>
+
+<p align="center">
+<img src="proloop/example2_panel.png" alt="Example 2 Panel" />
+</p>
+
+</li></p><p><li>
+<i>Start the Loop Search</i>
+
+<p>
+<p>
+Press <b>Run</b>. The application will automatically switch to the Loop Browser
+page. This page will list the results are they are returned from the loop
+engines. The search progress is reported both in the top right corner of the
+MOE window and the SVL Commands window.
+
+</li></p><p><li>
+<i>Initial browsing of Loop Modeler Results</i>
+
+<p>
+Browsing can occur when the Loop Modeler is still running. For more
+information on browsing, skip to example 3.
+
+</li></p><p><li>
+<i>Save the Loop Modeler Results to an MDB</i>
+
+<p>
+First ensure that nothing is selected in the results list. If an item is
+selected only that item will be saved. When nothing is selected all the results
+are saved to the MDB. 
+
+<p>
+Click on <b>Save...</b> in the Loop Browser panel. A file prompter will appear,
+enter <tt>1vfb_loops.mdb</tt> as the file name.
+</li></p><p><li>
+
+Close the structure in the MOE window using:
+
+    <blockquote>
+    <span class="menu">MOE | RHS | Close</span>
+    </blockquote>
+</li>
+
+<br clear="all">
+</div>
+
+<!-------------------------- Example 3 ---------------------------------->
+
+<a name="Example3"></a>
+<a name="Example3_Browsing"></a>
+<div class="example">
+<h2>Example 3: Browsing and Analysing Loop Search Results</h2>
+
+<p>
+<p>
+<ol>
+
+<p><li>
+<i>Load the previous Loop Modeler Results, <tt>1vfb_loops.mdb</tt></i>
+
+<blockquote>
+<span class="menu">MOE | File | Open | <tt>1vfb_loops.mdb</tt></span>
+</blockquote>
+
+
+</li></p><p><li>
+<i>Browsing the Results</i>
+
+<p> To start the Loop Browser:
+
+<blockquote>
+<span class="menu">DBV | File | Browse</span>
+</blockquote>
+
+<p>
+Click <b>No</b> if prompted to load the original Loop Modeler
+input into MOE.
+
+<p>
+The results list can be navigated by clicking on a
+line, using the arrows at the bottom of the list, or the &uarr; and &darr; arrows
+on a keyboard. Once an item in the results list has been selected the loop
+will be shown in the MOE Window (see image above). 
+
+<p align="center">
+<a href="proloop/example3_1vfb_initial_loop.png">
+<img src="proloop/example3_1vfb_initial_loop_thumb.png"
+alt="Loop Search Problem"/>
+</a>
+</p>
+
+</li></p><p><li>
+<i>Assessing Loop Quality</i>
+
+<p>
+It is also possible to
+assess the quality of the loop and join geometry by using the 
+<a href="../apps/progeom.htm">Protein Geometry</a> Panel.
+
+    <ol type="i">
+    <li><i>Open the Protein Geometry Application</i>
+
+    <blockquote>
+    <span class="menu">MOE | Protein | Geometry | Phi-Psi Plot ...</span>
+    </blockquote>
+
+    <li><i>Set Residues to LBrowser_LoopAnc</i>
+
+    <p>Setting the <b>Residues</b> option to the <tt>LBrowser_LoopAnc</tt> set
+    will force the Protein Geometry Application to show only those residues.
+    This in turn enables the easy identification of geometry outliers within
+    the loop and it's anchors.
+    </ol>
+
+<p align="center">
+<img src="proloop/example3_browsing_results.png"
+alt="Example 2 Browser Results"/>
+</p>
+
+<br clear="all">
+</div>
+
+<!-------------------------- Example 4 ---------------------------------->
+
+<a name="Example4"></a>
+<a name="Example4_Optimizing"></a>
+<div class="example">
+<h2>Example 4: Optimizing Loops</h2>
+
+<p>
+<p>
+<ol>
+
+<p><li>
+<i>Load the previous Loop Modeler Results, <tt>1vfb_loops.mdb</tt></i>
+
+<blockquote>
+<span class="menu">MOE | File | Open | <tt>1vfb_loops.mdb</tt></span>
+</blockquote>
+
+</li></p><p><li>
+<i>Open the Build... Panel</i>
+
+<p> To start the Loop Browser:
+
+<blockquote>
+<span class="menu">DBV | File | Browse</span>
+</blockquote>
+
+<p>Click No when asked to "Load original Loop Search input into MOE".
+
+<p> To bring up the Build panel:
+
+<blockquote>
+<span class="menu">Loop Browser | Build</span>
+</blockquote>
+
+</li></p><p><li>
+
+<i>Building Sidechains</i>
+
+<div class="floatright">
+<a href="proloop/example4_optimize_panel.png">
+<img src="proloop/example4_optimize_panel.png" alt="Build Panel" />
+</a>
+</div>
+
+    <ol type="i">
+    <p>
+    <li><i>Change the name of the Output Database</i>
+
+    <p>Change the name of the <b>Output Database</b> to
+    <tt>proloop_quickbuild.mdb</tt>.</p>
+
+    <li><i>Only refine the top results</i>
+
+    <p>To build side chains for only the top e.g. 25 results,
+	select in the listbox
+    the top 25 backbone loop conformations according to <b>S</b>, a
+    coarse scoring. Then enable <b>Selected Items Only</b> in the Build
+    panel. Now only the items that have been selected will be built.</p>
+
+    <li><i>Set Refinement to Quick Build</i>
+
+    <p>To quickly add side chains, click on <b>Refinement</b> and select
+    <b>Quick</b>. For more information on protocols
+    see <a href="#RefinementProtocols">Building Model Loops</a>.</p>
+
+    <li><i>Set Forcefield to Amber10:EHT using Reaction field solvation</i>
+
+    <p>If the currently loaded forcefield is not Amber10:EHT, select it
+    from the <b>Load</b> menu. Also set the solvation to <b>R-Field</b>
+    and press <b>Apply</b>.</p>
+
+    <li><i>Start Building Sidechains</i>
+
+    <p> Click on <b>OK</b>. This will start the build routine as
+    a separate independent task. In other words if you close the 
+    Loop Browser the optimization will continue. NOTE: The optimization
+    procedure is MPU enabled (parallelized). For more information on running
+    MOE using mpu see the
+    <a href="../install/smp_inst.htm">MOE/smp manual</a>.</p>
+
+    <li><i>Close the Loop Browser</i>
+
+    <p>Click on Close.</p>
+    
+    </p>
+
+    </ol>
+
+</li></p><p><li>
+<i>Browse refined backbone conformations</i>
+
+<p>Once the refinement is finished, it is possible to browse the database
+using the Loop Browser (see Example 4 point 1 and 2, using the
+<tt>proloop_quickbuild.mdb</tt>. To make a selection on which backbones to
+keep see <a href="#Example3">Example 3</a>,
+
+<p align="center">
+<a href="proloop/example4_addsc.png">
+<img src="proloop/example4_addsc_thumb.png" alt="Result" />
+</a>
+
+<br clear="all">
+
+</ol>
+</div>
+
+<!-------------------------- Example 5 ---------------------------------->
+
+<a name="Example5_MultiLoopSearch"></a>
+<div class="example">
+<h2>Example 5: Loop Search of the Heavy Chain Loops of 1VFB</h2>
+
+<p>
+<p>
+This example demonstrates the use of Loop Modeler to search the heavy chain
+loops of 1VFB.
+</p>
+
+<p>
+<ol>
+
+<p><li>
+<i>Load the prepared structure from Example 1, Data Preparation.</i>
+
+<blockquote>
+<span class="menu">MOE | File | Open | <tt>1vfb_prep.moe</tt></span>
+</blockquote>
+
+</li></p><p><li>
+
+<i>Setup the forcefield.</i>
+
+<blockquote>
+<span class="menu">MOE | Footer | Potential Setup</span>
+</blockquote>
+
+If the currently loaded forcefield is not Amber10:EHT, select it
+from the <b>Load</b> menu.  The change is effective immediately.
+To assign charges to both the protein and/or the ligand, click on
+<span class="menu">Potential Setup | Fix Charges</span>
+Close the Potential Setup panel.
+
+</li></p><p><li>
+<i>Isolate and heavy chains loops.</i>
+
+<p>
+<p>
+SiteView is used to show only selected loop and nearby residue atoms.
+
+    <ol type="i">
+    <li><i>Select CDR_H1, CDR_H2 and CDR_H3</i>
+
+    <blockquote>
+    <span class="menu">MOE | RHS | Select | Set | <tt>CDR_H1</tt></span>
+    </blockquote>
+
+    <blockquote>
+    <span class="menu">MOE | RHS | Select | Set | <tt>CDR_H2</tt></span>
+    </blockquote>
+
+    <blockquote>
+    <span class="menu">MOE | RHS | Select | Set | <tt>CDR_H3</tt></span>
+    </blockquote>
+
+    <li><i>Isolate selection using SiteView</i>
+
+    <blockquote>
+    <span class="menu">MOE | RHS | SiteView</span>
+    </blockquote>
+
+    </ol>
+
+</li></p><p><li>
+
+<i>Open the Loop Modeler</i>
+
+<blockquote>
+<span class="menu">MOE | Protein | Loop Modeler...</span>
+</blockquote>
+
+<div class="floatright">
+<img src="proloop/example5_panel.png" alt="Example 5 Panel" />
+</div>
+
+</li></p><p><li>
+<i>Start the Loop Search</i>
+
+<p>
+<p>
+Since the search space is so much larger when searching multiple loops,
+it is suggested to increase <b>Loop Limit</b>. This is because to search
+multiple loops, the Loop Modeler searches each loop independently and then
+builds all combinations. For this example, set <b>Loop Limit</b> to
+<tt>10000</tt> .
+
+<p>
+To start the Loop Modeler click on <b>Run</b>. The application will
+automatically switch to the Loop Browser
+page. This page will list the results as they are returned from the loop
+engines. The search progress is reported both in the top right corner of the
+MOE window and in the SVL Commands window.
+
+</li></p><p><li>
+<i>Initial browsing of Loop Modeler Results</i>
+
+<p>
+Browsing can occur when the Loop Modeler is still running. For more
+information on browsing, skip to example 3.
+
+</li></p><p><li>
+<i>Save the Loop Modeler Results to an MDB</i>
+
+<p>
+First ensure that nothing is selected in the results list. If an item is
+selected only that item will be saved. When nothing is selected all results
+are saved to the MDB. 
+
+<p>
+Click on <b>Save...</b> in the Loop Browser panel. A file prompter will appear,
+enter <tt>1vfb_cdrh_loops.mdb</tt> as the file name.
+
+<p>
+For more information on browsing, analysis and optimizing see 
+<a href="#Example3">Example 3</a> and <a href="#Example4">Example 4</a> .
+
+<br clear="all">
+</div>
+
+<!-------------------------- Example 6 ---------------------------------->
+
+<a name="Example6_LinkerSearch"></a>
+<div class="example">
+<h2>Example 6: Finding a Linker to Create a Single Chain Antibody</h2>
+
+<p>
+<p>
+This example demonstrates the use of Linker Modeler to search for a
+linker between the heavy and light chain of 1VFB.
+</p>
+
+<p>
+<ol>
+
+<p><li>
+<i>Load the prepared structure from Example 1, Data Preparation.</i>
+
+<blockquote>
+<span class="menu">MOE | File | Open | <tt>1vfb_prep.moe</tt></span>
+</blockquote>
+
+</li></p><p><li>
+
+<i>Setup the forcefield.</i>
+
+<blockquote>
+<span class="menu">MOE | Footer | Potential Setup</span>
+</blockquote>
+
+If the currently loaded forcefield is not Amber10:EHT, select it
+from the <b>Load</b> menu.  The change is effective immediately.
+To assign charges to both the protein and/or the ligand, click on
+<span class="menu">Potential Setup | Fix Charges</span> and then
+Close the Potential Setup panel.
+
+</li></p><p><li>
+<i>Delete the antigen.</i>
+
+    <ol type="i">
+    <li><i>Select in the Sequence Editor chain 1VFB.C</i>
+
+    <blockquote>
+    <span class="menu">SEQ | Chain | 1VFB.C</span>
+    </blockquote>
+
+    <li><i>Delete the Antigen</i>
+
+    <blockquote>
+    <span class="menu">SEQ | Chain Pop up | Delete</span>
+    </blockquote>
+
+    </ol>
+
+</li></p><p><li>
+<i>Isolate and select the chain termini.</i>
+
+<p>
+<p>
+SiteView is used to show only selected loop and nearby residue atoms.
+
+    <ol type="i">
+    <li><i>Select 1VFB.B:Gln1 and 1VFB.A:Lys107</i>
+
+    <li><i>Show the only the atoms at the termini</i>
+
+    <blockquote>
+    <span class="menu">SEQ | Residue Pop Up | Atoms | Isolate </span>
+    </blockquote>
+
+    </ol>
+
+</li></p><p><li>
+
+<i>Open the Linker Modeler</i>
+
+<blockquote>
+<span class="menu">MOE | Protein | Linker Modeler...</span>
+</blockquote>
+
+<div class="floatright">
+<img src="proloop/example6_panel.png" alt="Example 6 Panel" />
+</div>
+
+</li></p><p><li>
+<i>Start the Linker Search</i>
+
+<p>
+<p>
+Since we do not know the ideal length of the linker an initial search is
+conducted using the PDB search only and using variable length.
+
+    <ol type="i">
+    <li><i>Disable De Novo Search</i>
+    <li><i>Select item in search list</i>
+    <li><i>Edit search sequence to X(15,60)</i>
+    <p>This will allow the PDB search to look for loops varying in length from
+    15 to 60 residues.
+    </ol>
+
+
+<p>
+To start the Linker Modeler click on <b>Run</b>. The application will
+automatically switch to the Loop Browser
+page. This page will list the results are they are returned from the loop
+engines. The search progress is reported both in the top right corner of the
+MOE window and the SVL Commands window.
+
+</li></p><p><li>
+<i>Initial browsing of Linker Modeler Results</i>
+
+<p>
+Browsing can occur when the Linker Modeler is still running. For more
+information on browsing, see example 3.
+
+</li></p><p><li>
+<i>Save the Linker Modeler Results to an MDB</i>
+
+<p>
+First ensure that nothing is selected in the results list. If an item is
+selected only that item will be saved. When nothing is selected all results
+are saved to the MDB. 
+
+<p>
+Click on <b>Save...</b> in the Loop Browser panel. A file prompter will appear,
+enter <tt>1vfb_linker.mdb</tt> as the file name.
+
+<p>
+For more information on browsing, analysis and optimization see 
+<a href="#Example3">Example 3</a> and <a href="#Example4">Example 4</a>.
+
+
+<p align="center">
+<a href="proloop/example6_linkers.png">
+<img src="proloop/example6_linkers_thumb.png" alt="Example 6 Results" />
+</a>
+
+<br clear="all">
+
+</div>
+
+<a name="References"></a>
+<h2>References</h2>
+
+<table cellpadding="5">
+
+<tbody><tr> <!-- KEEP -->
+<td valign="top">[Go&nbsp;1970]</td>
+<td>Go, N., and Scheraga, H.A; 
+Ring closure and local conformational deformations of chain molecules.
+<i>Macromolecules 3.2</i> (<b>1970</b>) 178-187.
+</td></tr>
+
+<tr> <!-- KEEP -->
+<td valign="top">[Liu&nbsp;2009]</td>
+<td>Liu, P., Zhu, F., Rassokhin, D.N., Agrafiotis, D.K.;
+A self-organizing algorithm for modeling protein loops.
+<i>PLoS Computational Biology, 5(8)</i>, (<b>2009</b>) e1000478. 
+</td></tr>
+
+<tr> <!-- KEEP -->
+<td valign="top">[Coutsias&nbsp;2004]</td>
+<td>Coutsias, E. A., Seok, C., Jacobson, M. P., Dill, K. A.;
+A kinematic view of loop closure. 
+<i>Journal of Computational Chemistry, 25(4)</i> (<b>2004</b>) 510-528.
+</td></tr>
+
+<tr> <!-- KEEP -->
+<td valign="top">[Canutescu&nbsp;2003]</td>
+<td>Canutescu, A.A., Shelenkov, A.A., Dunbrack, R.L. Jr; 
+A graph-theory algorithm for rapid protein side-chain prediction.
+<i>Protein Sci. Sep;12(9)</i> (<b>2003</b>) 2001-14. 
+</td></tr>
+
+<tr> <!-- KEEP -->
+<td valign="top">[Boomsma&nbsp;2005]</td>
+<td>Boomsma, W., Hamelryck, T.;
+Full cyclic coordinate descent: solving the protein loop closure problem 
+in C<span class='LaTeX'>\( \alpha \)</span> space.
+<i>BMC Bioinformatics, 6(1)</i> (<b>2005</b>) 159.
+</td></tr>
+
+<tr> <!-- KEEP -->
+<td valign="top">[Rotkiewicz&nbsp;2008]</td>
+<td>Rotkiewicz, P., Skolnick, J.;
+Fast procedure for reconstruction of full-atom protein models from 
+reduced representations. 
+<i>Journal of Computational Chemistry, 29(9)</i>, (<b>2008</b>) 1460-1465.
+</td></tr>
+
+<tr> <!-- KEEP -->
+<td valign="top">[Gront&nbsp;2007]</td>
+<td>Gront, D., Kmiecik, S., Kolinski, A.;
+Backbone building from quadrilaterals: A fast and accurate algorithm 
+for protein backbone reconstruction from alpha carbon coordinates.
+<i>Journal of Computational Chemistry, 28(9)</i>
+(<b>2007</b>) 1593-1597.
+</td></tr>
+
+<td valign="top">[Wang&nbsp;2003]</td>
+<td>Wang, G., Dunbrack, R. L.;
+PISCES: a protein sequence culling server. 
+<i>Bioinformatics, 19(12)</i> (<b>2003</b>) 1589-1591.
+</td></tr>
+
+<td valign="top">[Jacobson&nbsp;2004]</td>
+<td>Jacobson, M. P., Pincus, D. L., Rapp, C. S., Day, T. J., Honig, B., 
+Shaw, D. E., Friesner, R. A.;
+A hierarchical approach to all-atom protein loop prediction.
+<i>Proteins: Structure, Function, and Bioinformatics, 55(2)</i>, 
+(<b>2004</b>) 351-367.
+</td></tr>
+
+</tbody></table>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

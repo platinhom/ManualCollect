@@ -1,0 +1,1457 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	ph4_query.htm		Pharmacophore query editor
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+<title>The Pharmacophore Query Editor</title>
+<meta panel Pharmacophore Query Editor>
+<meta panel Pharmacophore Consensus>
+<meta panel Pharmacophore Scheme Info popup>
+<meta panel Pharmacophore Feature Rendering popup>
+
+<meta fileformat .ph4>
+
+<meta main_keywords query, scheme, consensus, feature, constraint, volume />
+<meta main_keywords SMARTS, template, custom rendering, group, ungroup />
+<meta main_keywords partial, essential, AtomQ, AtomL, expression syntax />
+<meta main_keywords Don, Acc, Hyd, Cat, union, excluded />
+<meta Ligand Shape, Occupied Volume, H-bond Interaction Energy />
+<meta main_keywords radius />
+
+<meta keywords annotation, match, hit, ligand, receptor, unified />
+<meta keywords dummy, meter, precedence, &, |, !, AND, OR, NOT />
+<meta keywords SMILES />
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Features">Features</a></li>
+<li><a href="#Volumes">Volumes</a></li>
+<li><a href="#Constraints">Constraints</a></li>
+<li><a href="#ConsensusMethod">Pharmacophore Consensus Methodology</a></li>
+<li><a href="#Panel">Running the Pharmacophore Query Editor</a></li>
+<ul>
+<li><a href="#InfoPanel">Pharmacophore Scheme Info Popup</a></li>
+<li><a href="#FeatureSelection">Feature Selection Panel</a></li>
+<li><a href="#VolumeSelection">Volume Selection Panel</a></li>
+<li><a href="#ConstraintSelection">Constraint Selection Panel</a></li>
+<li><a href="#RenderPopup">Feature Rendering Popup</a></li>
+</ul>
+<li><a href="#Consensus">Running Pharmacophore Consensus</a></li>
+<li><a href="#SeeAlso">See Also</a></li>
+</ul>
+
+<p>
+The Pharmacophore Query Editor is used to specify a query
+consisting of a set of constraints on the location and type of ligand
+annotations. This can be used to search for matches in a conformation
+database or act as a filter in various applications.
+The main characteristics of the Pharmacophore Query Editor are:
+
+<ul>
+<li><b>Interactive Modification</b>.
+The positions, radii and other characteristics of the pharmacophore
+query can be interactively adjusted.
+</li>
+
+<li><b>Template Ligand</b>.
+A ligand (possibly in complex with a receptor) can optionally be used as a
+"template" to simplify defining the features of a query.
+</li>
+
+<li><b>Template Receptor</b>.
+A receptor can optionally be used to help identify key interactions
+or as a template to simplify defining excluded volume constraints or
+other shape constraints.
+</li>
+
+<li><b>Custom Rendering</b>.
+The visual characteristics (like color) of the displayed query features and
+volumes can be individually adjusted.
+The annotation points of template molecules can be customized.
+</ul>
+
+In this document we present an overview of the Pharmacophore Query Editor
+and the steps required to construct a 3D Pharmacophore Query.  The following
+terms are used:
+
+<ul>
+<li>A <i>ligand annotation</i>
+is a set of points in space with attached labels that reflect the
+presence or absence of pharmacophore features at those locations.  Each
+ligand conformation in a database is annotated on the fly during the search.
+These annotations are what the Pharmacophore Search procedure
+&quot;sees&quot; during a search.
+</li>
+
+<li>A <i>pharmacophore annotation scheme</i>,
+or more simply a <i>scheme</i>, is an automatic procedure to compute the
+pharmacophore annotation points that make up a ligand annotation.
+MOE contains a number of schemes encoding different methods of ligand
+annotation.
+</li>
+
+<li>A <i>pharmacophore query</i> is a collection of restrictions imposed
+on ligand annotations calculated for the atoms of a molecule.
+The purpose of the query is to select a limited subset from a given set
+of ligand conformations such that all restrictions of the query are satisfied.
+</li>
+
+<li>A <i>match</i> (or <i>hit</i>)
+is the occurrence of a ligand conformation satisfying a query.  A match
+is the successful mapping of the query features to ligand annotation
+points, including the corresponding alignment of the ligand with the
+query such that all restrictions of the query are satisfied.
+In general, there can be many different ways in which a given query
+can match a ligand.
+</li>
+
+<li>The <i>H-bond interaction energy</i> is a measure (in
+kcal/mol) of the interaction between ligand annotation points and their
+associated receptor annotations.  This is used in the <tt>EHT</tt> annotation
+scheme.
+</li>
+</ul>
+
+<p>
+The Pharmacophore Query Editor is used to create and edit pharmacophore
+queries that are based on a particular
+<a href="ph4_annot.htm">Pharmacophore Annotation Scheme</a>.
+The scheme provides the definitions of
+ligand annotations, for example H-bond donor, acceptor and hydrophobe, and
+conditions such as the <a href="ph4_annot.htm#Exposure">Solvent Exposure Test</a>.
+A query consists of <i>features</i>,
+<i>group constraints</i>, and <i>volumes</i>, as described below.  
+Using <a href="#ConsensusMethod">Pharmacophore Consensus</a>,
+a set of aligned molecules can be used to suggest a consensus set
+of pharmacophore query features which can be visually examined and then
+selectively added to a query.
+</p>
+
+<!-- =================== FEATURES, VOLUMES & CONSTRAINTS ================= !-->
+
+<a name="Features">
+<h2>Features</h2>
+
+Features are added to the current query with the Pharmacophore Query
+Editor.
+The new feature is specified as a location in space, a radius, and
+an expression.  The location and radius are depicted in the MOE Window as
+a sphere.  If there are selected atoms, the new feature is automatically
+positioned at their centroid.
+If there are no atoms selected, the new feature is positioned at the center
+of the MOE Window. The sphere determines a volume of space in which the
+center of any "matching" ligand feature must be located.
+There are two different any type features:
+
+<ul>
+<li>
+<b>AtomQ</b>
+for any heavy atom (the default feature type).
+
+<li>
+<b>AtomL</b>
+<td valign="top">
+for any lone pair or hydrogen.
+</ul>
+
+These should be used to match any atom or lone pair.  The any type feature
+<b>Any</b> in MOE versions prior to 2009 is obsolete and treated as an
+<b>AtomQ</b> feature.
+
+<p>
+It is often desirable to design a query that would match
+database ligands that share some pharmacophoric features with
+a given template ligand or ligands.  If such templates
+are present in the system and their annotation points
+are selected, the
+editor will automatically position the new feature at the
+center of the selected annotation points. The associated expression
+will be set to a combination derived from
+the labels attached to the selected annotation points.
+
+<p>
+The pictures below illustrate the use of a ligand template.
+The left picture shows a ligand in the MOE Window with the small spheres
+indicating each of its annotation points.  Assume that the ligand annotation
+point at the center of the aromatic ring is selected when the
+feature is created. The right picture shows a sphere
+representing the query feature that is created.  Observe that its center is
+located at the center of the aromatic ring.
+
+<p align="center">
+<img src="ph4_query/lig2.png" alt="Ligand not annotated" /> &nbsp;
+<img src="ph4_query/lig3.png" alt="Ligand annotated" />
+</p>
+
+When a ligand template is no longer needed it can be deleted.
+
+<p>
+The features of the current query are presented in the list area of the
+Pharmacophore Query Editor.  For example, a feature from a ligand template
+atom selection that includes an H-bond donor, H-bond acceptor and a
+hydrophobe would appear as:
+
+<pre>
+    F1     Don|Acc|Hyd
+</pre>
+
+This defines query feature <tt>F1</tt> (the name is assigned automatically)
+that has a
+feature expression of <tt>Don|Acc|Hyd</tt>.  For a ligand conformation to
+match this query, it must include a ligand annotation point that is
+positioned within the volume of <tt>F1</tt> whose attached labels include
+at least one of Donor, Acceptor or Hydrophobe.  By default, feature spheres
+are rendered in line mode and colored by their annotation type.  This can
+be changed via the GUI as desired.
+
+The editable attributes of a feature include the feature expression,
+essential attribute, color, radius, position and appearance.  Features
+may be set to be ignored during the search or hidden from the display.  Note
+that features and volumes (described below) share common attributes and
+may be modified at the same time by selecting them in the list area.
+In such cases, available attributes will be applied to the selected objects
+where they can be applied.  For example, the <tt>essential</tt> checkbox
+will apply to all selected features leaving the volumes unchanged.
+
+<a name="Volumes">
+<h2>Volumes</h2>
+
+Volumes are added to the current query with the Pharmacophore Query Editor.
+They are spatial constaints imposed on selected atoms of the ligand
+molecule.  The position and shape of a volume is defined by a single sphere
+or a union of several spheres.  The volume's function is determined by
+its expression and type; the expression determine which atoms of the
+ligand are involved and the type indicates how they are constrained.
+
+<p>
+When created, the new volume is added to the list area and given an
+automatically-generated name.  If the volume consists of several spheres,
+a <b>+</b> sign is shown to the left of the volume entry showing it can be
+<i>opened</i> to access the individual spheres.  For example, if the first
+volume is created from three atoms, the following appears in the list area:
+
+<pre>
+    +V1     Excl
+</pre>
+
+Double-clicking on the volume entry in the list area will open the volume:
+
+<pre>
+    V1     Excl
+    :      Sphere 1
+    :      Sphere 2
+    :      Sphere 3
+</pre>
+
+The volume can be closed by double-clicking on the volume entry.
+
+<a name="Constraints">
+<h2>Constraints</h2>
+
+Constraints are added to the current query with the Pharmacophore Query
+Editor.  To create a new group constraint, select one or more query features
+in the list area. Pressing the <b>Constraint</b> button will create a
+constraint that applies to all of the selected features.  A line is added in
+the list area giving the constraint name, its type and the names of the
+features that it affects.  For example, if the first constraint is created
+involving features <tt>F2</tt> and <tt>F3</tt>, the following line appears:
+
+<pre>
+    C1     At Least One   F[2,3]
+</pre>
+
+This defines constraint <tt>C1</tt> (the name is assigned automatically),
+which has a constraint type of "At Least One".  This means that a
+conformation must match at least
+one of query features <tt>F2</tt> and <tt>F3</tt> in order for there to
+be an overall match to the query.
+
+<a name="ConsensusMethod">
+<h2>Pharmacophore Consensus Methodology</h2>
+
+Given a set of aligned molecular conformations, the maximum distance between
+points considered neighbors, <tt>T</tt>, and a minimum consensus score to
+retain a group points, <tt>C</tt>, Pharmacophore Consensus generates a
+set of suggested features.  These have a position, radius and a type
+expression.  For each conformation:
+
+<ol>
+<li>Calculate (or read precomputed) annotation points.<br /><br />
+
+<li>For each annotation point:
+<ul>
+<li>Find all neighbors, annotation points that are within <tt>T</tt> from
+that point.
+<li>Calculate the consensus score for the set consisting of the point and
+its neighbors.
+<li>Eliminate points with a consensus score below the threshold, <tt>C</tt>.
+</ul><br />
+
+<li>Define a graph with the remaining points as its vertices.  The edges
+of the graph connect points that are within <tt>C</tt> of each other.
+<ul>
+<li>Find the connected components (single-linkage clusters) of the graph.
+<li>Calculate the consensus score for each component.
+<li>Eliminate components with the consensus score below <tt>C</tt>.
+</ul><br />
+
+<li>For each remaining component, generate one suggested feature.  The
+consensus score of the component will become the consensus score of the
+suggested feature.  For each suggested feature:
+<ul>
+<li>Set the feature position at the centroid of the component, calculated
+with equal weight for all points of the component.
+<li>Set the feature radius to the distance from the centroid to the farthest
+point of the component, with the addition of a buffer-distance of 0.5
+&Aring;.
+<li>Set the feature expression as appropriate.
+</ul><br />
+
+<li>Sort the features by their consensus score.  Features of equal scores
+are sorted by secondary keys in order: radius, number of molecules, number
+of conformations, length of the expression and alphabetical sequence.
+
+</ol>
+
+Note that the consensus score threshold, <tt>C</tt>, is used <i>twice</i>:
+to eliminate individual annotation points as well as to eliminate 
+components (clusters) of annotation points.  Therefore, increasing the
+value of <tt>C</tt> to a given value <i>x</i> may eliminate even those
+suggested features whose current consensus score is greater than <i>x</i>.
+
+<p>
+The expression for a suggested feature is derived as follows:
+
+<ol>
+<li>Find the labels,
+<i>L</i><sub>0,1</sub>,
+<i>L</i><sub>0,2</sub>,
+...
+<i>L</i><sub>0,<i>N</i><sub>0</sub></sub>,
+that are attached (common) to <i>all</i> points in the set.
+Remove those labels from further consideration.
+Concatenate these labels using the <i>AND</i>
+operator (<tt>&amp;</tt>) as a separator:
+    <p align="center"><nobr>
+    <i>A</i> =
+    <i>L</i><sub>0,1</sub>
+    &amp;
+    <i>L</i><sub>0,2</sub>
+    &amp;
+    ...
+    <i>L</i><sub>0,<i>N</i><sub>0</sub></sub>
+    </nobr></p>
+
+
+<li>
+Iterate for <i>j</i>=1,2...:
+<ul>
+    <li>
+    If the set of remaining labels is empty, go to step 3.
+    </li>
+    <li>
+    Among the remaining labels, find the label,
+
+        <i>L</i><sub><i>j</i></sub><sub>,1</sub>,
+
+    attached to most points in the set.
+    </li>
+    <li>
+    Find the labels,
+
+        <i>L</i><sub><i>j</i></sub><sub>,2</sub>,
+        <i>L</i><sub><i>j</i></sub><sub>,3</sub>,
+        ...
+        <i>L</i><sub><i>j,N<sub>j</sub></i></sub>,
+
+    that are attached to the same points as the label
+
+        <i>L</i><sub><i>j</i></sub><sub>,1</sub>.
+    </li>
+    <li>
+    Concatenate all labels found using the <i>AND</i>
+    operator (<tt>&amp;</tt>) as a separator:
+
+        <p align="center"><nobr>
+        <i>B<sub>j</sub></i> =
+        <i>L</i><sub><i>j</i></sub><sub>,1</sub>
+        &amp;
+        <i>L</i><sub><i>j</i></sub><sub>,2</sub>
+        &amp;
+        ...
+        <i>L</i><sub><i>j,N<sub>j</sub></i></sub>
+        </nobr></p>
+    </li>
+    <li>
+    Remove the labels found from further consideration.
+    </li>
+</ul><br />
+
+<li>
+Concatenate all expressions
+<i>B<sub>j</sub></i> (<i>j</i>=1,2...<i>K</i>)
+created in Step 2 using the <i>OR</i>
+operator (<tt>|</tt>) as a separator:
+
+    <p align="center"><nobr>
+    <i>B</i> =
+    <i>B</i><sub>1</sub>
+    |
+    <i>B</i><sub>2</sub>
+    |
+    ...
+    <i>B<sub>K</sub></i>
+    </nobr></p>
+
+<li>
+Combine expressions <i>A</i> and <i>B</i> created in Step 1 and Step 2:
+<ul>
+    <li>
+    If <i>A</i> is empty, return
+        <nobr>
+        <b>Expression</b> = <i>B</i>.
+        </nobr>
+    </li>
+    <li>
+    If <i>B</i> is empty, return
+        <nobr>
+        <b>Expression</b> = <i>A</i>.
+        </nobr>
+    </li>
+    <li>
+    If neither <i>A</i> nor <i>B</i> is empty,
+    concatenate <i>A</i> and <i>B</i>
+    using the <i>AND</i> operator (<tt>&amp;</tt>) as a separator:
+        <p align="center"><nobr>
+        <b>Expression</b> = <i>A</i> &amp; (<i>B</i>)
+        </nobr></p>
+    </li>
+</ul>
+</ol>
+
+The final expression for each suggested feature is provided in the panel.
+
+<!-- =========================== RUNNING ================================ !-->
+
+<a name="Panel"></a>
+<h2>Running The Pharmacophore Query Editor</h2>
+
+The Pharmacophore Query Editor is used to create and modify pharmacophore
+queries.  A query consists of <i>features, group constraints</i> and
+<i>volumes</i>.  Queries can be saved in files and used later for searching
+databases of ligand conformations using the
+<a href="ph4_search.htm">Pharmacophore Search</a> application.  The
+Pharmacophore Query Editor can be opened using one of the following methods:
+
+<ul>
+<li>From the MOE window, choose
+<span class="menu">MOE | Compute | Pharmacophore | Query Editor</span>.
+
+<li>From the MOE window, choose
+<span class="menu">MOE | File | New | Pharmacophore Query</span>.
+
+<li>Using the
+<a href="../moe/gui/fileopen.htm">Open panel</a>, select an existing
+pharmacophore query file and set <b>Action</b> to
+<span class="nobr"><b>Edit Pharmacophore</b></span>.  By convention,
+such files have the extension <tt>.ph4</tt>.
+
+<li>From the Pharmacophore Search panel, press the <b>Edit</b> button.
+</ul>
+
+If there are atoms present in the system, the editor will calculate and
+display ligand annotation points using the pharmacophore scheme specified
+in the panel.  This is shown in the two pictures below: the left shows a
+molecule without any annotation and the right is annotated by the Unified
+pharmacophore scheme.
+
+<p align="center">
+<img src="ph4_query/ligand.png" alt="Ligand" /> &nbsp;
+<img src="ph4_query/lig2.png" alt="Ligand annotated" />
+</p>
+
+
+Dummy atoms are used in the MOE Window to display ligand annotation points,
+query features and volumes.
+Selections of query features and volumes in the
+Pharmacophore Query Editor and the corresponding dummy atoms in the MOE
+window are synchronized.
+Selecting a feature or volume in the editor automatically selects all
+associated dummy atoms and residues while deselecting all others.  Similarly,
+selecting or deselecting a query feature or volume in the MOE Window
+will select or deselect that feature or volume in the Pharmacophore Query
+Editor.  Selection of other atoms or residues is not
+affected.
+
+A new Pharmacophore Query Editor panel will appear:
+
+<p align="center">
+<img src="ph4_query/querypanel.png" alt="Query Editor Panel" /></p>
+
+<table cellpadding="5">
+<tr>
+<td valign="top">
+<b>Scheme</b>
+<td valign="top">
+A pharmacophore scheme is a set of rules that define the ligand annotation
+points that are to be matched by the query.  The default scheme is
+<tt>Unified</tt>.  See
+<a href="ph4_annot.htm">Pharmacophore Annotation Schemes</a> for
+additional information.
+
+<tr>
+<td valign="top">
+<b>Show</b>
+<td valign="top">
+Pressing this button brings up an information panel that shows the list
+of annotation points supported by the current scheme.  This is described
+<a href="#InfoPanel">below</a>
+
+<tr>
+<td valign="top">
+<b>R</b>
+<td valign="top">
+Select the annotation display for active receptor atoms: none, point or
+point+text.  Successive clicks cycle through the modes.  Click to annotate
+surface cavity atoms only.  SHIFT-click to annotate all surface atoms.
+If there are no active receptor atoms to annotate or if the current scheme
+does not annotate receptors the button is insensitive.
+
+<tr>
+<td valign="top">
+<b>S</b>
+<td valign="top">
+Select the annotation display for active solvent atoms: none, point or
+point+text.  Successive clicks cycle through the modes.
+If there is no solvent to annotate the button is insensitive.
+
+<tr>
+<td valign="top">
+<b>L</b>
+<td valign="top">
+Select the annotation display for active ligand atoms: none, point or
+point+text.  Successive clicks cycle through the modes.
+If there are no active ligands to annotate the button is insensitive.
+
+<tr>
+<td valign="top">
+<b>R-Strength</b>
+<td valign="top">
+Used by the <b>EHT</b> scheme.  Use the receptor strength for matching
+Acc and Don features.  If on, each query features will include a multiplier
+representing the receptor strength.
+
+<tr>
+<td valign="top">
+<b>Title</b>
+<td valign="top">
+Text field available for a brief description of the pharmacophore query
+that will be displayed in the query section of the Pharmacophore Search.
+
+<tr>
+<td valign="top">
+<b>Comment</b>
+<td valign="top">
+Notes or comments can be attached to the query file.  The <b>Comment</b>
+opens a popup where the comments can be edited.
+
+<p align="center">
+<img src="ph4_query/comment.png" alt="Comment Panel" /></p>
+
+<tr>
+<td valign="top">
+<img src="ph4_query/icon1.png" alt="Left Arrow" />
+<td valign="top">
+Undo the latest modification of the query.
+
+<tr>
+<td valign="top">
+<img src="ph4_query/icon2.png" alt="Right Arrow" />
+<td valign="top">
+Redo the last modification of the query.
+
+<tr>
+<td valign="top">
+<b>Feature</b>
+<td valign="top">
+Create one or more new query features.
+These will be created per
+selected atom, annotation point or cluster of atoms/annotation points.
+Pressing <span class="nobr"><b>Shift-Feature</b></span> will create a
+single feature at the centroid of the selected atoms.  If
+none are selected, the feature will be created at the center of the MOE
+Window.
+
+<tr>
+<td valign="top">
+<b>Constraint</b>
+<td valign="top">
+Constrain the currently selected features (only) in the list.  The
+constraint places restrictions either on the number of features to be
+matched or on whether atoms must be shared between features.  A minimum
+of two features must be selected.
+
+<tr>
+<td valign="top">
+<b>Volume</b>
+<td valign="top">
+Create a ligand shape, excluded or occupied volume.
+The volume comprises the union of the spheres positioned at each selected
+atom, annotation point or cluster of atoms/annotation points.  Pressing
+<span class="nobr"><b>Shift-Volume</b></span> generates a single volume
+sphere at the centroid of the selected atoms.
+
+<ul>
+<li><b>Ligand Shape:</b> All matching atoms must be inside.
+<li><b>Excluded Volume:</b> No matching atoms can be inside.
+<li><b>Occupied Volume:</b> At least one matching heavy atom must be inside.
+</ul>
+
+<tr>
+<td valign="top">
+<b>Consensus</b>
+<td valign="top">
+Opens the Pharmacophore Consensus panel.  Pharmacophore
+Consensus creates a list of suggested features from a set
+of aligned conformations, based on specified consensus parameters.
+Suggested features can be converted to query features
+and further modified. For details of the panel see
+<a href="#Consensus">Running Pharmacophore Consensus</a>.
+
+<tr>
+<td valign="top">
+<b>list area</b>
+<td valign="top">
+Created features, constraints and volumes are shown as entries in the list
+area.  These categories are separated into three distinct portions of the
+list.  In each portion, the names of the entries are numbered from 1 to
+<i>n</i>, where <i>n</i> is the number of entries.  For convenience, the
+<img src="ph4_query/icon3.png" alt="Up Arrow" /> and
+<img src="ph4_query/icon4.png" alt="Down Arrow" /> buttons reorder
+the list by moving selected entries up and down within their respective
+categories.  An entry can only move within the portion of the list devoted
+to its category.  For example, a constraint can not be moved higher once it
+has reached the top line of the constraint's portion of the list and can
+not be moved lower than the bottom of the constraint's portion.  When an
+entry is moved, the names of all entries in its category are renumbered
+to reflect the new ordering.
+
+<tr>
+<td valign="top">
+<img src="ph4_query/icon3.png" alt="Up Arrow" />
+<td valign="top">
+Move selected items up the list by one position.  All properties of the item(s)
+are preserved except their relative rank in the list.
+
+<tr>
+<td valign="top">
+<img src="ph4_query/icon4.png" alt="Down Arrow" />
+<td valign="top">
+Move selected items down the list by one position.  All properties of the
+item(s) are preserved except their relative rank in the list.
+
+<tr>
+<td valign="top">
+<img src="ph4_query/icon5.png" alt="Red X" />
+<td valign="top">
+Delete the selected list item(s) from the query.  SHIFT-click will delete
+the selected items without any additional confirmation.
+
+<tr>
+<td valign="top">
+<img src="ph4_query/icon6.png" alt="Distance Meter" />
+<td valign="top">
+Draw distance meters between the features and/or volumes selected in the
+list area and remove all other meters.  The features and volumes must not
+be hidden.
+
+<tr>
+<td valign="top">
+<img src="ph4_query/icon7.png" alt="Hide Features" />
+<td valign="top">
+Show or hide the selected features and/or volumes in the MOE Window.
+Shift-clicking this button shows the selected features.
+The button
+acts on all items when no features and/or volumes are selected in the
+list area.  This has no effect on the search.
+
+<tr>
+<td valign="top">
+<img src="ph4_query/icon8.png" alt="Render Features" />
+<td valign="top">
+Pressing this button brings up the rendering controls for the selected
+features in the list area:
+
+<p align="center">
+<img src="ph4_query/ph4_edit_renderpopup.png" alt="Render Features Panel" /></p>
+
+The selected rendering mode is shown in blue.  In this example, the 
+rendering mode Sphere mode.  This popup is described
+<a href="#RenderPopup">below</a>.
+
+<tr>
+<td valign="top">
+<img src="ph4_query/icon9.png" alt="Labeling Mode" />
+<td valign="top">
+Toggle labeling mode of the selected features and/or volumes in the list
+area.  The button acts on all items when none are selected.  The labeling
+mode cycles between
+<span class="nobr"><font color="gray">no label</font></span>,
+<span class="nobr"><font color="#FDD017">short label</font></span>,
+<span class="nobr"><font color="4CC417">full label</font></span> and
+<span class="nobr"><font color="#306754">full label with
+strengths (if any)</font></span>.  SHIFT-click cycles through
+the modes in the reverse direction.
+
+<tr>
+<td valign="top">
+<img src="ph4_query/icon10.png" alt="Volume Mode" />
+<td valign="top">
+This button cycles between sphere/volume modes.  <b>+V</b> adds spheres
+to volumes while <b>-V</b> removes spheres from volumes.
+
+<tr>
+<td valign="top">
+<b>Partial Match</b>
+<td valign="top">
+A <i>partial match</i> occurs when only a subset of the query features
+matches a ligand.  Essential features, constrants and volumes are
+always required even in a partial match.
+If on, <span class="nobr"><b>Partial Match</b></span> will return solutions
+that meet or exceed the query subset.  The option menu and text field
+to the right of the checkbox becomes active, allowing the user to set
+specify the type and threshold for the partial match.
+
+<ol>
+<li><i>Type of partial match</i>: <b>At Least</b>: the minimum number of
+query features that must be matched.
+<span class="nobr"><b>All But</b>: the maximum number of query features
+that may be unmatched.
+
+<br /><br />
+<li><i>Threshold</i>: Specifies the threshold value.  The shortcut for
+this field is dynamically updated to show the numbers 1 to <i>n</i>,
+where <i>n</i> is the number of features currently in the query.
+</ol>
+
+<tr>
+<td valign="top">
+<b>Open</b>
+<td valign="top">
+Loads an existing query into the Pharmacophore Query Editor.  If the panel
+is linked with a Pharmacophore Search panel, then the query's title is also
+displayed in the search panel.
+
+<tr>
+<td valign="top">
+<b>Save</b>
+<td valign="top">
+Saves the query in a file to be used later in a pharmacophore search,
+possibly as a filter in a different application.  By convention, MOE
+uses the extension <tt>'.ph4'</tt> for pharmacophore query files.
+
+<tr>
+<td valign="top">
+<b>Search</b>
+<td valign="top">
+Opens a Pharmacophore Search panel.  When opened in this fashion the
+two panels are linked together; the search will always use the current
+query in the Pharmacophore Query Editor.
+
+</table>
+
+<a name="FeatureSelection">
+<h3>Feature Selection</h3>
+
+When a feature is selected (or created) in the list area, the panel is
+changed to provide information about the feature.  This allows the user
+to tailor features to their particular environment.
+
+<p align="center">
+<img src="ph4_query/querypanel2.png" alt="Query Editor Panel Feature" /></p>
+
+<table cellpadding="5">
+<tr>
+<td valign="top">
+<b>F<i>n</i></b>
+<td valign="top">
+This is the <i>feature expression</i> of the selected feature.  This feature
+will only match ligand annotation points whose labels satisfy the
+expression appearing in the text field. Press <b>Apply</b> or press
+<tt>Enter</tt> in the text field to have any
+change take effect.  Valid expressions are described below.
+
+<tr>
+<td valign="top">
+<b>Ignore</b>
+<td valign="top">
+When on, an <b>i</b> will appear to the right of the feature name in the list
+area and the feature will be ignored during the search.  Ignoring a
+feature is functionally equivalent to deleting the item.
+
+<tr>
+<td valign="top">
+<b>R</b>
+<td valign="top">
+The average radius, in &Aring;, of the selected features in the list area.
+This specifies both the radius of the displayed sphere in the Pharmacophore
+Query Editor and the distance threshold between a feature and a matched
+ligand annotation point in Pharmacophore Search.  The dial to the right
+can be used to interactively adjust the average radius.
+
+<tr>
+<td valign="top">
+<b>Essential</b>
+<td valign="top">
+Mark the selected features in the list area as essential.  Such features
+must always be matched, even in a partial match query.
+
+<tr>
+<td valign="top">
+<b>S</b>
+<td valign="top">
+The interaction strength threshold for the selected features in the list
+area.  The option menu, if present, allows the user to set the strength for
+individual annotations of a combined feature (such as the <tt>Don</tt>
+of <tt>Don&amp;Acc</tt>).  The first text box specifies the
+<i>receptor strength multiplier</i>, with typical values presented in the
+shortcut.  The second text box specifies the
+<i>H-bond interaction energy threshold</i>
+in (kcal/mol).  The ligand strength of a matching atoms, multiplied
+by the receptor strength multiplier of the query feature must exceed
+this value for the match to succeed.  This is only used in the <b>EHT</b>
+pharmacophore scheme.
+
+</table>
+
+<b>Expression Syntax</b>. The following table describes the syntax of the
+expression language:
+
+<blockquote>
+<pre>
+Expression ::= Term | Term Operator Expression | '!' Expression
+Term       ::= Identifier | '(' Expression ')' | "SMARTS"
+Identifier ::= 'AtomQ' | 'AtomL' | [a label defined by the scheme]
+Operator   ::= '!' | '&amp;' | '|'
+</pre>
+</blockquote>
+
+<tt>::=</tt> means "is defined as" and <tt>|</tt> means "or".
+Note that the operators <tt>'!'</tt> (<i>NOT</i>),
+<tt>'&amp;'</tt> (<i>AND</i>), and <tt>'|'</tt> (<i>OR</i>),
+<tt>'!'</tt> has highest precedence and
+<tt>'|'</tt> has lowest.  In a tie, the
+operator on the left has higher precedence.
+Please see <a href="../moe/molsystems/smiles.htm">SMILES Syntax</a> for
+more information on SMILES and SMARTS.
+
+<p>
+During the search, the feature expressions are evaluated for each attempted
+match.  If any expression evaluates to 0, the match is rejected.
+To evaluate the expression for a given mapping between the query
+features
+
+<span class="nobr"> { <i>F<sub>i</sub></i></i> | <i>i</i>=1,2... }</span>
+
+and the annotation points
+
+<span class="nobr">{ <i>L<sub>j</sub></i></i> | <i>j</i>=1,2... },</span>
+
+the following steps are applied:
+
+<ol>
+<li>
+Substitute all identifiers or SMARTS patterns in the feature expression
+<i>F<sub>i</sub></i>
+that refer to labels attached to ligand point <i>L<sub>j</sub></i> with 1.
+The identifiers <tt>AtomQ/AtomL</tt> are always substituted with 1.
+
+<li>
+Substitute all identifiers or SMARTS patterns in the feature expression
+<i>F<sub>i</sub></i> that refer to labels <i>not</i> attached to ligand
+point <i>L<sub>j</sub></i> with 0.
+
+<li>
+Evaluate the expression as a logic expression with
+the operators <tt>'|'</tt>, <tt>'&amp;'</tt> and <tt>'!'</tt> standing
+for logical operations <i>OR</i>, <i>AND</i> and <i>AND-NOT</i>, respectively:
+
+<p><center>
+<table class="titlebar">
+
+<tr>
+<th width="20"><i>A</i></th>
+<th width="20"><i>B</i></th>
+<th width="50"><i>A</i>&nbsp;|&nbsp;<i>B</i></th>
+<th width="50"><i>A</i>&nbsp;&amp;&nbsp;<i>B</i></th>
+<th width="50"><i>A</i>&nbsp;!&nbsp;<i>B</i></th>
+<th width="50">!<i>A</i></th>
+</tr>
+
+<tr>
+<td style="text-align: center">1
+<td style="text-align: center">1
+<td style="text-align: center">1
+<td style="text-align: center">1
+<td style="text-align: center">0
+<td style="text-align: center">0
+
+<tr>
+<td style="text-align: center">1
+<td style="text-align: center">0
+<td style="text-align: center">1
+<td style="text-align: center">0
+<td style="text-align: center">1
+<td style="text-align: center">0
+
+<tr>
+<td style="text-align: center">0
+<td style="text-align: center">1
+<td style="text-align: center">1
+<td style="text-align: center">0
+<td style="text-align: center">0
+<td style="text-align: center">1
+
+<tr>
+<td style="text-align: center">0
+<td style="text-align: center">0
+<td style="text-align: center">0
+<td style="text-align: center">0
+<td style="text-align: center">0
+<td style="text-align: center">1
+
+</table>
+</center>
+
+</ol>
+
+For example, consider an annotation point,
+
+<i>L<sub>j</sub></i> ,
+
+with attached labels <nobr>"Don &amp; Acc"</nobr> and a
+query feature,
+
+<i>F<sub>i</sub></i>,
+
+with associated expression
+"(Don&nbsp;|&nbsp;Hyd)&nbsp;!&nbsp;Cat".  To determine whether
+
+<i>L<sub>j</sub></i> and
+<i>F<sub>i</sub></i>
+
+can be matched, we apply the evaluation steps above:
+<ol>
+
+<li>
+
+Substitute label <i>Don</i> in the expression with 1.
+The expression becomes
+
+<nobr>"(1 | Hyd) ! Cat".</nobr>
+
+<li>
+
+Substitute labels <i>Hyd</i> and <i>Cat</i> in the expression with 0.
+The expression becomes
+
+<nobr>"(1 | 0) ! 0".</nobr>
+
+<li>
+
+Evaluate the logical expression
+
+<nobr>"(1 | 0) ! 0",</nobr>
+
+yielding result 1.
+Thus, the ligand point <i>L<sub>j</sub></i> and
+the query feature <i>F<sub>i</sub></i> can be matched.
+
+</ol>
+
+The expressions are interpreted as follows.
+
+<p><center>
+<blockquote>
+<table class="titlebar" border=1 cellpadding=5>
+
+<tr>
+<th>Label</th>
+<th>Interpretation</th>
+
+<tr>
+<td align="center">
+<i>A</i>
+<td>
+Label <i>A</i> must be attached to any annotation
+point that matches the feature.
+
+<tr>
+<td align="center">
+!<i>A</i>
+<td>
+Label <i>A</i> must <i>not</i> be attached to any annotation
+point that matches the feature.
+
+<tr>
+<td align="center">
+AtomQ<br /> AtomL
+<td>
+Any label can be attached.
+
+<tr>
+<td align="center">
+<nobr><i>A</i> &amp; <i>B</i></nobr>
+<td>
+Both labels, label <i>A</i> <i>and</i> label <i>B</i>, must be attached.
+
+<tr>
+<td align="center">
+<nobr><i>A</i> | <i>B</i></nobr>
+<td>
+At least one of label <i>A</i> <i>or</i> label <i>B</i> must be attached.
+
+<tr>
+<td align="center">
+<nobr><i>A</i> ! <i>B</i></nobr>
+<td>
+Label <i>A</i> must be attached while label
+<i>B</i> must <i>not</i> be attached.
+
+</table>
+</blockquote>
+</center>
+
+</blockquote>
+
+<a name="VolumeSelection">
+<h3>Volume Selection</h3>
+
+When a volume is selected (or created) in the list area, the panel is
+changed to provide information about the feature.  This allows the user
+to tailor volumes to their particular environment.  Only the changed
+panel entries are described below.
+
+<p align="center">
+<img src="ph4_query/querypanel3.png" alt="Query Editor Panel Volume" /></p>
+
+<table cellpadding="5">
+<tr>
+<td valign="top">
+<b>V<i>n</i></b>
+<td valign="top">
+This is the <i>feature expression</i> of the selected volume.  Any
+valid SMARTS pattern can be used, and a match will limited to those
+atoms matching the pattern.  For
+example, <tt>"C(=O)[O-]"</tt> will restrict the match to carboxylate atoms.
+Press <b>Apply</b> or press <tt>Enter</tt> in the text field to have any
+change take effect.
+
+<tr>
+<td valign="top">
+<b>Volume Type</b>
+<td valign="top">
+This menu specifies the volume type, and thus the relationship between
+the volume and the matching atoms): <br /><br />
+
+<table>
+<tr>
+<td valign="top">
+<b>Ligand Shape:</b>
+<td valign="top">
+All matching atoms must be inside.
+<tr>
+<td valign="top">
+<b>Excluded Volume:</b>
+<td valign="top">
+No matching atoms can be inside.<br />
+<tr>
+<td valign="top">
+<b>Occupied Volume:</b>
+<td valign="top">
+At least one matching heavy atom must be inside.
+</table>
+
+<tr>
+<td valign="top">
+<b>Boundary Distance</b>
+<td valign="top">
+This shows the distance between the boundary layer of the selected volume
+and the atoms matched by the volume's SMART expression.  Atoms that are
+not annotated are ignored.  A positive value indicates that there is no
+overlap for an excluded volume and/or there is an overlap for an included
+volume.  A negative value indicates that there is a conflict and that the
+query will not match the annotated atoms.
+
+</table>
+
+<a name="ConstraintSelection">
+<h3>Constraint Selection</h3>
+
+When a constraint is selected (or created) in the list area, the panel is
+changed to provide information about the feature.  This allows the user
+to tailor constraints to their particular environment.  Only the changed
+panel entries are described below.
+
+<p align="center">
+<img src="ph4_query/querypanel4.png" alt="Query Editor Panel Constraint" /></p>
+
+<table cellpadding="5">
+<tr>
+<td valign="top">
+<b>Constrain</b>
+<td valign="top">
+This menu indicates whether the constraint is based on a number of features
+or the relationship between the several atoms.  When
+<span class="nobr"><b>Number of Features</b></span> is pressed, the
+menu to the right becomes active.  This specifies the minimum or maximum
+number of features that must be satisfied.  This includes
+<span class="nobr"><b>All or None</b></span>, which requires all features
+or no features to match for success.  When
+<span class="nobr"><b>Atoms / Projections</b></span> is pressed, the
+menu to the right becomes active.  This specifies whether the features
+in the constraint must originate from the same atom(s) or merely have
+an atom in common.
+
+<tr>
+<td valign="top">
+<b>Select</b>
+<td valign="top">
+When pressed, this button selects the features belonging to the constraint
+selected in the list area.  These features can also be selected by
+double-clicking on an individual constraint.
+
+<tr>
+<td valign="top">
+<b>Replace</b>
+<td valign="top">
+When pressed, this button replaces the features belonging to the constraint
+with those selected in the list area.  A minimum of two features must
+be selected in addition to an individual constraint.
+
+</table>
+
+<a name="InfoPanel">
+<h3>Pharmacophore Scheme Info Popup</h3>
+
+A pharmacophore scheme is a set of rules that define the ligand annotation
+points that can be used by pharmacophore queries.  The default scheme is
+<tt>Unified</tt>.  Pressing the <b>Show</b> button brings up details of
+the current scheme:
+
+<dl>
+<div class="floatright">
+<img src="ph4_query/ph4_unified_info.png" alt="Unified Info Panel" />
+</div>
+
+<dt><b>Show</b>
+<dd>
+These buttons are a fast way of displaying <b>All</b> annotations, restoring
+the <b>Default</b> set or displaying no annotations (with <b>None</b>).
+The <b>Query</b> button displays only those annotation feature types that
+are needed to evaluate the query features of the current query.
+
+<br /><br />
+<dt><b>Memory</b>
+<dd>
+This text field allows the currently displayed annotations to be saved.
+Select the desired annotations, enter a name in the <b>Memory</b> field
+and press <b>Store</b> to save the current settings (a <i>memory</i>).
+Enter a name and press <b>Load</b> or use the shortcut
+menu to retrieve previously saved memory.  Press <b>Erase</b> to delete
+the named memory.  In this way, subsets of any scheme can be saved,
+providing a means of simplifying complex schemes like <tt>Unified</tt>.
+
+<br /><br />
+<dt><b>Annotations</b>
+<dd>
+The information panel shows the list of annotation points supported by the
+current scheme.  Each annotation type is listed along with its default
+color and a brief description of the type.  The checkboxes to the left
+of each annotation type determine whether the Pharmacophore Query Editor
+will display that type.  If on, the the annotation will be displayed
+otherwise the annotation will be hidden.
+
+<br /><br />
+<dt><b>Projecting Vectors</b>
+<dd>
+If on, all projecting vectors will be shown as lines.
+
+<br /><br />
+<dt><b>Entire Receptor Surface</b>
+<dd>
+If on, all atoms of the receptor surface will be annotated.  Otherwise,
+only the atoms in the receptor surface cavities will be annotated.
+
+<br /><br />
+<dt><b><tt>EHT</tt> Scheme</b>
+<dd>
+This scheme introduces the concept of <i>H-bond interaction energies</i>
+which are used in pharmacophore search:
+
+<p align="center">
+<img src="ph4_query/ph4_eht_delta.png" alt="EHT Scheme Delta" /></p>
+
+<b>Acc&nbsp;&gt;</b> specifies the minimum strength of <tt>Acc/Acc2</tt>
+annotation points that will be displayed.<br />
+<b>Don&nbsp;&gt;</b> specifies
+the minimum strength of <tt>Don/Don2</tt> annotation points that will
+be displayed.<br />
+<img src="ph4_query/ph4_eht_reset.png" alt="EHT Scheme Reset" />
+resets the minimum strength of the appropriate pair to its default value.
+
+</dl>
+
+<a name="RenderPopup">
+<h3>Feature Rendering Popup</h3>
+
+This popup contains the rendering controls for the selected features, allowing
+the user to change how they are rendered in the MOE Window:
+
+<p align="center">
+<img src="ph4_query/ph4_edit_renderpopup.png" alt="Rendering Popup" /></p>
+
+<table cellpadding="5">
+<tr>
+<td valign="top">
+<b>Sphere Rendering</b>
+<td valign="top">
+Specify the rendering style for the selected features and volumes:<br />
+<b>Dot</b>&nbsp;<img src="ph4_query/iconr1.png">,
+<b>Line</b>&nbsp;<img src="ph4_query/iconr2.png">,
+<b>Sphere</b>&nbsp;<img src="ph4_query/iconr3.png">,
+<b>Contour</b>&nbsp;<img src="ph4_query/iconr4.png">,
+<b>None</b>&nbsp;<img src="ph4_query/iconr5.png"><br />
+If nothing is selected the style for all objects is changed.
+
+<tr>
+<td valign="top">
+<img src="ph4_query/iconr6.png">
+<td valign="top">
+Specify the transparency for the selected features and volumes.
+If the selected objects have different transparencies, the slider shows and
+adjusts their average value.  If nothing is selected the transparency
+for all objects is changed.
+
+<tr>
+<td valign="top">
+<img src="ph4_query/iconr7.png">
+<td valign="top">
+Specify the color for the selected features and volumes.  If the
+selected objects are the same color it is shown in the popup otherwise the
+background color is used.  If nothing is selected the color for all objects
+is changed.
+
+<tr>
+<td valign="top">
+<img src="ph4_query/iconr9.png">
+<td valign="top">
+Specify the material type for the selected features and volumes.
+If the selected objects have different material types, the widget is
+drawn in dark pink otherwise the default blue color is used.  If nothing
+is selected, the material type for all objects is changed.
+
+<tr>
+<td valign="top">
+<img src="ph4_query/iconr8.png">
+<td valign="top">
+Reset the properties of the selected features and volumes to their default
+values.  If nothing is selected, the propeties for all objects is reset.
+
+</table>
+
+<a name="Consensus">
+<h2>Running Pharmacophore Consensus</h2>
+
+Pharmacophore Consensus is used to generate suggested features for a
+pharmacophore query from a set of aligned structures.  These features
+can be converted into query features as desired.  Pressing <b>Consensus</b>
+in the Pharmacophore Query Editor panel brings up the following panel:
+
+<p align="center">
+<img src="ph4_query/consensus.png" alt="Pharmacophore Consensus Panel" /></p>
+
+<table cellpadding="5">
+<tr>
+<td valign="top">
+<b>Input</b>
+<td valign="top">
+Conformations used by the consensus calculation can be drawn from structures
+in the MOE Window and a specified database.
+
+<tr>
+<td valign="top">
+<b>Active</b>
+<td valign="top">
+The set of atoms or chains considered active by the consensus calculation.
+Choose one of
+<span class="nobr"><b>Visible Atoms</b></span>, 
+<span class="nobr"><b>Selected Chains</b></span> or
+<span class="nobr"><b>Unselected Chains</b></span>.
+The set of atoms or chains considered inactive by the consensus calculation.
+
+<tr>
+<td valign="top">
+<b>Inactive</b>
+<td valign="top">
+Choose one of
+<span class="nobr"><b>None</b></span>,
+<span class="nobr"><b>Invisible Atoms</b></span>, 
+<span class="nobr"><b>Selected Chains</b></span> or
+<span class="nobr"><b>Unselected Chains</b></span>.
+If a structure is present in both <b>Active</b> and <b>Inactive</b> sets
+it will be considered inactive.
+
+<tr>
+<td valign="top">
+<b>Database</b>
+<td valign="top">
+The name of the input database (if used).  The input database can be
+selected by pressing <b>Browse...</b>.  Pressing <b>Open...</b> opens
+the specified database in the Database Viewer.
+
+<tr>
+<td valign="top">
+<b>Selected Entries Only</b>
+<td valign="top">
+Use only the selected entries in the input database.  If the Database
+Viewer is not opened, this checkbox is ignored.
+
+<tr>
+<td valign="top">
+<b>Molecule</b>
+<td valign="top">
+The name of the molecule field of the input database to use in the
+calculation.
+
+<tr>
+<td valign="top">
+<b>Sequence</b>
+<td valign="top">
+The name of the molecule sequence field to use in the calculation.
+Conformations of the same molecule share the same sequence number.  If the
+value is set to <b>None</b> the sequence will be calculated from the
+molecule field.
+
+<tr>
+<td valign="top">
+<b>Activity</b>
+<td valign="top">
+The name of the <i>activity field</i> in the input database.
+
+<tr>
+<td valign="top">
+<b>Threshold</b>
+<td valign="top">
+The <i>activity threshold</i> for the calculation.  Database entries with
+an activity greater than the threshold are considered active while those with
+an activity less than or equal to the threshold are considered inactive.
+
+<tr>
+<td valign="top">
+<b>Tolerance</b>
+<td valign="top">
+The neighborhood distance threshold.  Annotation points closer than this
+distance are considered neighbors.  Neighborhoods determine the regions
+where the consensus score will be calculated.
+
+<tr>
+<td valign="top">
+<b>Threshold</b>
+<td valign="top">
+The consensus score threshold.  This score measures the level of consensus
+among all input conformations in a region of space.  The regions are
+defined by annotation point neighborhoods, determined by the tolerance
+threshold.  A group of annotation points will become a suggested features
+only if: (1) It is composed of overlapping annotation point neighborhoods,
+(2) the consensus score of each neighborhood exceeds the score threshold
+and (3) the consensus score of the entire group exceeds the score threshold.
+The consensus score of the groups of points defining each suggested feature
+is displayed in the <tt>Score</tt> column below.
+
+<tr>
+<td valign="top">
+<b>Consensus Score</b>
+<td valign="top">
+The consensus score method.  The score is a measure of the proportion of
+conformations represented in a set of annotation points.  Three methods
+are available:
+<span class="nobr"><b>First Conformation Per Molecule</b></span>
+counts the number of distinct structures,
+<span class="nobr"><b>Unweighted Conformations</b></span>
+counts the number of distinct conformations and
+<span class="nobr"><b>Weighted Conformations</b></span>
+accumulates the weighted sum of distinct conformations.  The weights
+are the inverse of the number of conformations per structure.
+
+</table>
+
+Press <b>Calculate</b> to start the Pharmacophore Consensus calculation.
+Once the calculation completes, the list of suggested features is provided
+in the panel:
+
+<p align="center">
+<img src="ph4_query/consensus_bot.png"></p>
+
+Each suggested features is given a name of the form <b>G<i>n</i></b>,
+where <i>n</i> is the feature index, to identify the feature in the
+MOE Window.  Selecting a list entry will display that feature in the
+MOE Window, where they can be compared with features already present
+in the query.  If desired, a suggested feature can be added to the query
+by selecting it in the list and pressing the
+<span class="nobr"><b>Load Selected</b></span> button.  All selected
+features will be added to the query.
+
+<!-- ============================ REFERENCES ============================= !-->
+
+<h2><a name="SeeAlso"></a>See Also</h2>
+<p>
+<a href="ph4_guide.htm">Introduction to Pharmacophores in MOE</a><br />
+<a href="ph4_annot.htm">Pharmacophore Annotation Schemes</a><br />
+<a href="ph4_elu.htm">Pharmacophore Query Elucidator</a><br />
+<a href="ph4_search.htm">Pharmacophore Search</a><br />
+<a href="confgui.htm">High Throughput Conformation Generation</a><br />
+<a href="../mdb/db.htm">MOE Molecular Database</a><br />
+<a href="../moe/molsystems/smiles.htm">SMILES Syntax</a>
+
+
+
+</font>
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

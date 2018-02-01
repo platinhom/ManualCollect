@@ -1,0 +1,1416 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<!--
+!!	smiles.htm	SMILES and SMARTS manual chapter
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<title>Molecule Input Language</title>
+
+<meta keywords smiles, smarts />
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+  <li><a href="#SMILES_Syntax">MOE SMILES Syntax</a>
+    <ul>
+      <li><a href="#Atoms">Atoms</a></li>
+      <li><a href="#Bonds">Bonds</a></li>
+      <li><a href="#Branches">Branches</a></li>
+      <li><a href="#Cross-ConnectionsRings">Cross-Connections and Rings</a></li>
+      <li><a href="#Chirality">Chirality</a></li>
+    </ul>
+  </li>
+  <li><a href="#Substructure_Matching">Substructure Matching</a>
+    <ul>
+      <li><a href="#MatchAtoms">Atoms</a></li>
+      <li><a href="#MatchBonds">Bonds</a></li>
+      <li><a href="#NotOperator">Logical Operators</a></li>
+      <li><a href="#AtomEnvironments">Atom Environments</a></li>
+      <li><a href="#SMARTS_Tables">SMARTS Tables</a></li>
+    </ul>
+  </li>
+  <li><a href="#SVLCommands">SVL Commands</a></li>
+  <li><a href="#References">References</a></li>
+</ul>
+
+<p>The MOE molecule input language is an implementation of SMILES,
+the Simplified Molecular Input Line Entry System proposed by Dave
+Weininger [Weininger&nbsp;1988].
+SMILES is a language for specifying molecules or molecular fragments. The
+molecular descriptions are called SMILES strings, and in MOE, SVL routines
+exist to build molecules from such strings,
+and to substitute and add molecular fragments to
+an existing molecule. Molecule building and fragment substitution using
+SMILES strings is also
+part of the <a href="build.htm">Builder</a>.</p>
+
+<p>MOE also provides SVL routines for extracting SMILES
+descriptions of molecules and for verifying the syntactic correctness of
+SMILES strings.</p>
+
+<p>MOE uses a subset of SMARTS [James&nbsp;1997], which is
+essentially an extension of SMILES, for matching molecules and molecular
+fragments.</p>
+
+<h2><a name="SMILES_Syntax">MOE SMILES Syntax</a></h2>
+
+<p>In MOE, a SMILES expression is supplied as a token
+and referred to as a SMILES string; for example,
+acetylsalicylic acid is represented as:</p>
+
+<pre>
+    'c1(C(=O)O)ccccc1OC(=O)C'
+</pre>
+
+<p>A SMILES string is composed of atom specifications arranged
+sequentially according to connectivity in the molecular graph.  Branches
+are indicated by parentheses, and can be nested to any degree.
+Cross-branch connections and ring closures are expressed using paired
+number labels. There are facilities for specifying aromatic elements,
+chirality, multiple bonds, and charges.  A given molecule usually
+has more than one possible SMILES representation; i.e.
+SMILES strings are generally not unique.</p>
+
+<p>
+The syntax of a SMILES string can be checked using the SVL functions
+<a class="svl" href="../fcnref/sm_build.htm">sm_BuildSyntax</a> and
+<a class="svl" href="../fcnref/sm_build.htm">sm_BuildSyntaxError</a>.
+</p>
+
+<p>
+<ul class="help">
+<li class="help" style="padding-left: 25px">
+For more details on SMILES strings and syntax checking, please see
+<a href="../fcnref/smartsfcn.htm">SMILES Functions</a>.
+</li>
+</ul>
+</p>
+
+<h3><a name="Atoms">Atoms</a></h3>
+
+<p>Atoms are represented by their one- or two-character atomic symbols,
+enclosed in square brackets.  For example,</p>
+
+<pre>
+    '[Au]'
+</pre>
+
+<p>There is one notable exception -
+atoms belonging to the &quot;organic subset&quot; may be written without
+brackets.
+
+The &quot;organic subset&quot; comprises the elements B, C, N, O, P, S,
+F, Cl, Br and I. These may be written without brackets provided
+that the number of attached hydrogens satisfies the lowest normal
+valence consistent with explicit bonds.  Brackets are necessary if this is
+not the case.</p>
+
+<p>
+The first character of an atomic symbol is in upper case, and the second,
+if any, is in lower case.  An exception is atoms that can participate in
+aromatic rings, namely, atoms belonging to the organic subset except
+column VII, and elements in rows 3, 4, and 5 of columns IV, V and VI of
+the periodic table.  When found in aromatic rings, these atoms can be
+denoted with lower case letters: b, c, n, o, p, s, si, ge, sn, as, sb, se,
+te.</p>
+
+<p>The bracket notation is an "exact atom" specification - it makes
+explicit the specification of formal charge and number of hydrogens.
+The number of hydrogens is expressed as a capital H, followed by
+a digit. In the case of a single hydrogen, the digit 1 is optional.
+Absence of the H specification indicates that zero hydrogens are
+attached.  Formal charge is given as a <tt>+</tt> or <tt>-</tt> symbol,
+optionally followed by a digit.  For multiple charges, the digit can be
+replaced by multiples of the charge symbol. Absence of any charge symbol
+specifies a neutral atom.</p>
+
+<p><b>Note:</b> You must specify formal charges in order to guarantee that
+the correct molecule gets built.  Note also that when building a molecule
+from a SMILES string, heavy atoms are automatically populated with
+hydrogens.</p>
+
+<p><i>Differences from original SMILES</i>: Isotope specification is
+currently ignored.</p>
+
+<p>In the following syntax angle brackets implies an optional
+parameter and is not explicitly typed in to the string.</p>
+
+<p>The exact atom specification (bracket notation) allows the following
+atom specifiers: </p>
+
+<table border="0" cellpadding="3">
+  <tr>
+    <td valign="baseline"><tt><em>element</em></tt></td>
+    <td valign="baseline">1- or 2-letter atomic symbol</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>#<em>atomic-number</em></tt></td>
+    <td valign="baseline">Use #0 for lone pair pseudo atoms</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>H&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline">Number of attached hydrogen atoms, 
+<tt>n</tt> is optional (default 1); if the H specification is absent, 
+<tt>n</tt> is the number of hydrogens needed to satisfy complete
+valence requirements</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>charge</tt></td>
+    <td valign="baseline">The <tt>+</tt> or <tt>-</tt> sign, optionally followed
+    by a number or by another charge symbol; this is the ionization</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>@&lt;@&gt;&lt;class&gt;</tt></td>
+    <td valign="baseline"><a href="#Chirality">Chirality</a> indicator, 
+context sensitive</td>
+  </tr>
+</table>
+
+<p>Here are some examples: </p>
+
+<blockquote>
+<table border="0">
+  <tr>
+    <td valign="baseline"><tt>'C'</tt></td>
+    <td valign="baseline">methane CH<sub>4</sub> </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'O'</tt></td>
+    <td valign="baseline">water H<sub>2</sub>O </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[H]'</tt></td>
+    <td valign="baseline">H<sub>2</sub> </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[Fe+2]'</tt></td>
+    <td valign="baseline">iron(II) cation </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[Fe++]'</tt></td>
+    <td valign="baseline">equivalent form of iron(II) </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[OH-]'</tt></td>
+    <td valign="baseline">hydroxyl anion</td>
+  </tr>
+</table>
+</blockquote>
+
+<h3><a name="Bonds">Bonds</a></h3>
+
+<p>Single and aromatic bonds can be, and usually are, omitted. The SMILES
+reader recognizes them from the context.  If no bond symbol is present, two bonded aromatic
+atoms are linked by default by an aromatic bond.  In the same manner, an aromatic bond between two
+atoms implies that both atoms are aromatic.</p>
+
+<center>
+<table class="titlebar" border="1" cellpadding="2" cellspacing="2">
+  <tr>
+    <th>Description</th>
+    <th>Bond Symbol</th>
+  </tr>
+  <tr align="center">
+    <td>single</td>
+    <td>-</td>
+  </tr>
+  <tr align="center">
+    <td>double</td>
+    <td>=</td>
+  </tr>
+  <tr align="center">
+    <td>triple</td>
+    <td>#</td>
+  </tr>
+  <tr align="center">
+    <td>aromatic</td>
+    <td>:</td>
+  </tr>
+  <tr align="center">
+    <td>no bond</td>
+    <td>.</td>
+  </tr>
+  <tr align="center">
+    <td>single "down"</td>
+    <td>\</td>
+  </tr>
+  <tr align="center">
+    <td>single "up"</td>
+    <td>/</td>
+  </tr>
+</table>
+</center>
+
+<p>The "up" and "down" bonds are used for specifying <i>cis</i>/<i>trans</i>
+relationships across double bonds, and are meaningful only in the context
+of a double bond system.  The symbols are mnemonics suggestive of the
+relative positioning of bonds (with respect to the double bond) when the
+atoms involved are viewed as being in the plane of the page.  For example,
+a <i>cis</i> relationship can be specified as either</p>
+
+<ul>
+<li><tt>C(/F)=C/F</tt> or <tt>F\C=C/F</tt>,
+with both fluoride groups "above" the bond, or</li>
+<li><tt>C(\F)=C\F</tt> or <tt>F/C=C\F</tt>,
+with both fluoride groups "below" the bond.</li>
+</ul>
+
+<p>Here are some examples:</p>
+
+<blockquote>
+<table border="0">
+  <tr>
+    <td valign="baseline"><tt>'CC'</tt></td>
+    <td valign="baseline">ethane C<sub>2</sub>H<sub>6</sub> </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'C=C'</tt></td>
+    <td valign="baseline">ethylene C<sub>2</sub>H<sub>4</sub> </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'C#C'</tt></td>
+    <td valign="baseline">acetylene C<sub>2</sub>H<sub>2</sub> </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[H][H]'</tt></td>
+    <td valign="baseline">H<sub>2</sub></td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'F/C=C/F'</tt></td>
+    <td valign="baseline">Z-difluoroethene</td>
+  </tr>
+</table>
+</blockquote>
+
+<p><i>Extension:</i> In MOE, a bond symbol at the start of a SMILES string
+is permitted when substituting or adding onto a molecule; it
+is, however, ignored when building a new molecule.</p>
+
+<h3><a name="Branches">Branches</a></h3>
+
+<p>Atoms belonging to a branch are enclosed in parentheses. The last
+branch attached to an atom, however, need not be thus enclosed. In MOE, a
+branch (i.e. a parenthesized expression) may not begin a SMILES
+string. Here are some examples:</p>
+
+<table border="0" cellpadding="2">
+  <tr>
+    <td valign="baseline"><tt>'CC(=O)O'</tt></td>
+    <td valign="baseline">acetic acid CH<sub>3</sub>COOH </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'CCCC(C(C)C)CCC'</tt></td>
+    <td valign="baseline">4-isopropylheptane:</td>
+  </tr>
+</table>
+
+<pre><tt>                CH<sub>3</sub>
+                |
+                CHCH<sub>3</sub>
+                | 
+        CH<sub>3</sub>CH<sub>2</sub>CH<sub>2</sub>CHCH<sub>2</sub>CH<sub>2</sub>CH<sub>3</sub>
+</tt></pre>
+
+<p><i>Differences from original SMILES</i>: A branch may not
+begin a SMILES string.</p>
+
+<h3><a name="Cross-ConnectionsRings">Cross-Connections and Rings </a></h3>
+
+<p>Cyclic structures and cross-branch connections are expressed in the
+linear SMILES notation by breaking them and then labeling the now
+disconnected ends with matching numbers.  A single atom can bear more than
+one label.  Labels comprising more than one digit must be
+preceded by a percent <tt>%</tt> symbol.  If several labels on an atom
+are listed consecutively, once a <tt>%</tt>-preceded label
+appears, all subsequent consecutive labels must each also be
+preceded by <tt>%</tt>.  Label numbers need not be used in consecutive order.</p>
+
+<p>Connections may be broken
+across multiple bonds, in which case a bond symbol may be applied before
+the resulting labels. If an atom has several labels, each label may be
+preceded by its own bond symbol. Note that if a bond symbol appears before
+a label, the matching label must either have no bond symbol or be preceded by
+exactly the same bond symbol. </p>
+
+<p>Labels may appear anywhere that a branch (parenthesized expression)
+appears; i.e. labels do not have to immediately follow the atom
+with which they are associated.</p>
+
+<p>Here are some examples:</p>
+
+<blockquote>
+<table border="0">
+  <tr>
+    <td valign="baseline"><tt>'c1ccccc1'</tt></td>
+    <td valign="baseline">benzene</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[nH]2cccc2'</tt></td>
+    <td valign="baseline">1H-pyrrole</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'c%11%1ccccc%11cccc1'</tt></td>
+    <td valign="baseline">naphthalene</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'c1(ccccc%11cccc1)%11'</tt></td>
+    <td valign="baseline">naphthalene</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'c1(cccc2)c2[nH]cc1C[C@](C(=O)[O-])[NH3+]'</tt></td>
+    <td valign="baseline">TRP</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'C=1.C1'</tt></td>
+    <td valign="baseline">ethylene C<sub>2</sub>H<sub>2</sub></td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'c(O)1ccccc1'</tt></td>
+    <td valign="baseline">phenol</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'C(\F)=C\F'</tt></td>
+    <td valign="baseline">E-difluoroethene</td>
+  </tr>
+</table>
+</blockquote>
+
+<p>When a label matching an earlier label is encountered, the same label
+may be subsequently reused for specifying another connection.  For example,
+bi-phenyl:</p>
+
+<pre>
+    'c1ccccc1c1ccccc1'
+</pre>
+
+<h3><a name="Chirality">Chirality</a></h3>
+
+<p>SMILES permits specification of several kinds of "chirality." The use
+of the word chirality here is not the same as when describing
+R/S chiralities that are assigned according
+to atom CIP priority. Here, chirality refers to the order in which
+neighbors are placed about an atom.</p>
+
+<p>The SMILES chirality classes and values supported in MOE are as follows:</p>
+
+<center>
+<table class="titlebar" border="1">
+  <tr>
+    <th>Class</th>
+    <th>Notation</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td valign="baseline">Tetrahedral (TH) </td>
+    <td valign="baseline"><tt>TH1 or @<br />
+    TH2 or @@ or @2</tt></td>
+    <td valign="baseline">CCW<br />
+    CW</td>
+  </tr>
+  <tr>
+    <td valign="baseline">Square-planar (SP)</td>
+    <td valign="baseline"><tt>SP1<br />
+    SP2<br />
+    SP3</tt></td>
+    <td valign="baseline">U-shape<br />
+    4-shape <br />
+    Z-shape</td>
+  </tr>
+  <tr>
+    <td valign="baseline">Trigonal-bipyramidal (TB)</td>
+    <td valign="baseline"><tt>TB1 or @<br />
+    TB2 or @@ or @2</tt></td>
+    <td valign="baseline">CCW<br />
+    CW</td>
+  </tr>
+  <tr>
+    <td valign="baseline">Octahedral (OH)</td>
+    <td valign="baseline"><tt>OH1 or @<br />
+    OH2 or @@ or @2</tt></td>
+    <td valign="baseline">CCW <br />
+    CW</td>
+  </tr>
+</table>
+</center>
+
+<p><i>Differences from original SMILES</i>: 
+Class <tt>AL</tt>, &quot;allene-like&quot;, is currently
+unsupported by MOE.  Do not use this specification. Furthermore, the
+original SMILES allows for 20 chirality values for the
+trigonal-bipyramidal class, and 30 for the octahedral class. MOE only
+recognizes the clockwise and counter-clockwise specifications.</p>
+
+<div align="center"><center>
+
+<table class="titlebar" border="1">
+  <tr>
+    <th>Symbol</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>@</tt></td>
+    <td valign="baseline">counter-clockwise chirality, default class</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>@@</tt></td>
+    <td valign="baseline">clockwise chirality, default class </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>@&lt;n&gt;</tt></td>
+    <td valign="baseline">chirality value <tt>n</tt> of default class</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>@&lt;c&gt;&lt;n&gt;</tt></td>
+    <td valign="baseline">chirality value <tt>n</tt> of class <tt>c</tt></td>
+  </tr>
+</table>
+</center></div>
+
+<p>The chirality class may be specified only in the exact atom
+specification (bracket notation). The two-letter class code is preceded by
+the symbol <tt>@</tt>, and is optionally followed by a number that
+indicates a particular neighbor configuration in that class. </p>
+
+<p>For all except the square-planar class, chirality can be represented in
+shorthand by a number of <tt>@</tt> symbols. For example, <tt>TH2</tt> can
+be represented by <tt>@@</tt>.  This can be further abbreviated using the
+notation <tt>@&lt;n&gt;</tt>, where <tt>n</tt> is an optional
+specification of the number of <tt>@</tt> symbols (default 1), similarly
+to the way charges are specified. When chirality is denoted in shorthand,
+the default class, ascertained from the context, is used. </p>
+
+<p>For the first two chirality values of the tetrahedral,
+trigonal-bipyramidal and octahedral classes, the <tt>@</tt> symbol is a
+visual mnemonic, resembling a counter-clockwise spiral (spiral from
+the center outward). Thus, two such
+symbols represent a clockwise (counter-counter-clockwise) arrangement.
+</p>
+
+<p>The chirality specification places the neighbors of the central
+(chiral) atom according to the exact order in which they appear in the SMILES
+string. If there is a neighbor atom immediately to the left of the central
+atom in the SMILES string, the bond from this atom (the &quot;from&quot;
+atom) to the central atom is the &quot;axis&quot; about which the central
+atom's neighbors are arranged. For example,</p>
+
+<pre>
+    'N[C@](C)(F)C(=O)O'
+</pre>
+
+<p>will result in a tetrahedral class, counter-clockwise arrangement of atoms.
+The N-C bond is the axis about which to view the molecule for placing the
+rest of the neighbors.  The N atom is the &quot;from&quot; atom, before
+which the viewer's eye is positioned.  The groups CH<sub>3</sub>, F, and
+COOH are then arranged counter-clockwise around the carbon.</p>
+
+<p>If the central atom has an implicit
+hydrogen, this hydrogen becomes the first of the neighbors to be placed
+about the &quot;axis.&quot;  Thus,</p>
+
+<pre>
+    'N[C@H](C)F'
+</pre>
+
+<p>results in the groups H, CH<sub>3</sub>, and F being arranged counter-clockwise
+about the axis defined by N-C.</p>
+
+<p>If the central atom is the root (very first)
+atom of the SMILES string, then it <b>must</b> have an implicit hydrogen; the
+bond from this hydrogen (the &quot;from&quot; atom) to the central atom is
+then used as the axis.</p>
+
+<pre>
+    '[C@H](N)(C)F'
+</pre>
+
+<p>will result in N, CH<sub>3</sub>, and F being arranged in a counter-clockwise
+fashion with respect to the H-C axis.</p>
+
+<p>A ring-closure or other connection bond indicated by a label number is
+placed according to the order that the label number appears in the SMILES
+string.</p>
+
+<pre>
+    'O1CCCC[C@@]1(N)C'
+</pre>
+
+<p>produces a ring in which N, O, and the methyl group (trailing C in the SMILES
+string) are arranged clockwise about the axis formed between the carbon atom
+immediately preceding the chiral carbon in the SMILES string and the chiral
+atom itself.</p>
+
+<p>In the trigonal-bipyramidal and octahedral classes, there is once again
+the notion of an "axis" which specifies the placement of the rest of the
+atoms about the chiral center.  For example,</p>
+
+<pre>
+    'S[As@@](F)(Cl)(Br)C=O'
+</pre>
+
+<p>puts S, As, and the carbonyl C on a single axis, and arranges F, Cl, and
+Br in a clockwise manner with respect to this axis.</p>
+
+<p>In the square-planar class, there is no such axis.</p>
+
+<pre>
+    'F[Po@SP3H0](Cl)(I)Br'
+</pre>
+
+<p>arranges F, Cl, I, and Br in a "Z" shape around Po.</p>
+
+<a name="SMARTS"></a>
+<h2><a name="Substructure_Matching">Substructure Matching</a></h2>
+
+<p>Molecular substructure matching is performed in MOE using a subset of
+SMARTS, which is essentially an extension of SMILES. The basic
+matching syntax is the same as that for building, with the addition
+of wildcards and recursive match definitions.  The substructure to
+match, expressed as a string, is passed to the matching function.  The
+matcher searches the current molecular system for instances of that
+substructure starting from a set of root atoms. All atoms in the system
+are included in the search.</p>
+
+<p><b>Note:</b> Properties unspecified in the match string are not checked;
+i.e. they are treated as &quot;don't care.&quot; For
+instance, if the number of attached hydrogens is not specified, the
+searched for atom may have any number of attached hydrogens.</p>
+
+<p>The syntax of SMARTS strings can be verified using the SVL
+functions
+<a class="svl" href="../fcnref/smartsfcn.htm">sm_MatchSyntax</a>,
+<a class="svl" href="../fcnref/smartsfcn.htm">sm_MatchSyntaxError</a>, and
+<a class="svl" href="../fcnref/smartsfcn.htm">SMARTS</a>.
+</p>
+
+<p>
+<ul class="help">
+<li class="help" style="padding-left: 25px">
+For more details on SMARTS matching and syntax checking, please see
+<a href="../fcnref/smartsfcn.htm">SMARTS Functions</a>.
+</li>
+</ul>
+</p>
+
+<h3><a name="MatchAtoms">Atoms</a></h3>
+
+<p>The following wildcards may be used outside of the exact atom
+specification (i.e. no brackets needed): </p>
+
+<table border="0" cellpadding="3">
+  <tr>
+    <td valign="baseline">*</td>
+    <td valign="baseline">The asterisk is a wildcard used to represent 
+any element; no aromaticity check is performed.</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>a&nbsp; </tt></td>
+    <td valign="baseline">The symbol <tt>a</tt> is a wildcard used to 
+represent any aromatic element. </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>A&nbsp; </tt></td>
+    <td valign="baseline">The symbol <tt>A</tt> is a wildcard used to 
+represent any aliphatic (non-aromatic) element. In MOE, <tt>A</tt>
+matches heavy atoms (non-hydrogen, non-lone pair) atoms only.</td>
+  </tr>
+</table>
+
+<p>Within the exact atom specification, the following wildcard expressions
+can be used. None of these specify aromaticity.  Placing the
+wildcard <tt>a</tt> or <tt>A</tt> at the beginning of the bracketed
+specification will force aromaticity to be taken into account:</p>
+
+<table border="0" cellpadding="3">
+  <tr>
+    <td valign="baseline"><tt>#<i>n</i></tt></td>
+    <td valign="baseline">Element of atomic element number <i>n</i>; use
+<i>n</i>=0 to match the lone pair pseudo-element.</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>#G<i>n</i></tt></td>
+    <td valign="baseline">Element belonging to group <i>n</i> [1..8] of the
+    periodic table; if <i>n</i> is omitted, then any non-transition element.
+    </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>#O&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline">Organic subset element belonging to group <i>n</i> of
+    the periodic table; if <i>n</i> is omitted, then any organic subset
+    element.</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>#M&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline">Metal element in group A column <i>n</i> [1..8];
+    if <i>n</i> is omitted, then <i>any</i> metal (including transition
+    metals, but not semi-metals).</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>#T&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline">Transition metal element in group B column <i>n</i>
+    [1..8]; if <i>n</i> is omitted, then <i>any</i> transition metal
+    (including lanthanides and actinides).</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>#S&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline">Semi-metal (metalloid) element in group A column
+    <i>n</i> [1..8]; if <i>n</i> is omitted, then <i>any</i> semi-metal
+    (B,&nbsp;Si,&nbsp;Ge,&nbsp;As,&nbsp;Sb,&nbsp;Te).</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>#R<i>n</i></tt></td>
+    <td valign="baseline">Element in periodic table row number <i>n</i> [1..7].</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>#N</tt></td>
+    <td valign="baseline">Electronegative element (O, N, F, Cl, Br).</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>#Q</tt></td>
+    <td valign="baseline">Heavy element (non-hydrogen, non-lone pair).</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>#X</tt></td>
+    <td valign="baseline">Non-carbon non-hydrogen element (including
+	lone pairs).</td>
+  </tr>
+</table>
+
+<p><b>Note:</b> Exact atom specification of elemental hydrogen can be done
+only using <tt>[#1]</tt>.</p>
+
+<p><i>Extensions to original SMARTS</i>:
+the <tt>#G</tt>, <tt>#O</tt>, <tt>#M</tt>, <tt>#T</tt>, <tt>#S</tt>,
+<tt>#R</tt>, and <tt>#N</tt> group specifiers,
+and the <tt>#X</tt> and <tt>#Q</tt> heavy element specifiers.</p>
+
+<p>Other match specifiers that can appear
+in an exact atom specification are as follows:</p>
+
+<table border="0" cellpadding="3">
+  <tr>
+    <td valign="baseline" height="21"><tt><i>element</i></tt></td>
+    <td valign="baseline" height="21">One- or two- character atomic symbol
+(exactly as in molecule building, except for H).</td>
+  </tr>
+  <tr>
+    <td valign="baseline" height="21"><tt>H&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline" height="21">Total number of hydrogens, including 
+both implicit (assumed) and explicit hydrogens.  
+If <i>n</i> is omitted, the value will default to 1.</td>
+  </tr>
+  <tr>
+    <td valign="baseline" height="21"><tt>h&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline" height="21">Number of implicit hydrogens 
+    (for hydrogen-stripped molecules).
+    If <i>n</i> is omitted, the value will default to 1.
+    </td>
+</tr>
+<tr>
+    <td valign="baseline" height="21"><tt>Lp&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline" height="21">Total number of lone pairs, both 
+    explicit and implicit.
+    If <i>n</i> is omitted, the value will default to 1.
+</td>
+</tr>
+<tr>
+    <td valign="baseline" height="21"><tt>X&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline" height="21">Total number of bonds, including 
+those to implicit hydrogens.
+    If <i>n</i> is omitted, the value will default to 1.
+</td>
+  </tr>
+  <tr>
+    <td valign="baseline" height="21"><tt>D&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline" height="21">Total number of explicit bonds.
+    If <i>n</i> is omitted, the value will default to 1.
+</td>
+  </tr>
+  <tr>
+    <td valign="baseline" height="21"><tt>Q&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline" height="21">Total number of bonds to heavy atoms only.
+    If <i>n</i> is omitted, the value will default to 1.
+</td>
+
+  </tr>
+  <tr>
+    <td valign="baseline" height="21"><tt>q&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline" height="21">Ring degree (number of ring bonds).
+    If <i>n</i> is omitted, the value will default to 1.
+</td>
+  </tr>
+  <tr>
+    <td valign="baseline" height="21"><tt>r&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline" height="21">Ring-size membership (<i>i</i> in
+    [0,3-<i>n</i>]; 0&nbsp;=&nbsp;not in ring).
+    If <i>n</i> is omitted, then membership in any size ring.
+</td>
+  </tr>
+  <tr>
+    <td valign="baseline" height="20"><tt>v&lt;<i>n</i>&gt;</tt></td>
+    <td valign="baseline" height="20">Sum of explicit bond orders.
+    If <i>n</i> is omitted, the value will default to 1.
+</td>
+  </tr>
+  <tr>
+    <td valign="baseline" height="20"><tt>i</tt></td>
+    <td valign="baseline" height="20">Has pi-bonding orbital.</td>
+  </tr>
+  <tr>
+    <td valign="baseline" height="20"><tt>i<i>n</i></tt></td>
+    <td valign="baseline" height="20">Total number of pi electrons contributed
+to an aromatic system; <i>n</i> must be 0, 1, or 2.</td>
+  </tr>
+  <tr>
+    <td valign="baseline">-*, +*</td>
+    <td valign="baseline">Negative or positive formal charge.</td>
+  </tr>
+  <tr>
+    <td valign="baseline">-<tt><i>n</i></tt>, +<tt><i>n</i></tt></td>
+    <td valign="baseline">Formal charge.</td>
+  </tr>
+
+
+  <tr>
+    <td valign="baseline"><tt>;</tt></td>
+    <td valign="baseline">Separator character (logical AND operator),
+	for disambiguation (e.g. <tt>si</tt>
+from <tt>s;i</tt>).</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>,</tt></td>
+    <td valign="baseline">logical OR operator</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>!</tt></td>
+    <td valign="baseline">logical NOT operator</td>
+  </tr>
+</table>
+
+<p><b>Extensions to original SMARTS</b>: <tt>Q</tt> heavy atom bond specifier,
+<tt>Lp</tt> lone pair specifier, <tt>+*</tt> cation and <tt>-*</tt>
+anion specifiers, <tt>q</tt> ring degree specifier, <tt>i</tt>
+pi-bonding orbital specifier, and <tt>i<i>n</i></tt> aromatic pi-electron
+specifier.</p>
+
+<p><b>Differences from original SMARTS</b>: MOE currently does not support
+the <tt>R</tt> ring membership specifier. This functionality is partly
+taken up by <tt>aInRing</tt> and related SVL functions.  Currently,
+chirality is not supported.</p>
+
+<p>The following are some example match strings:</p>
+
+<table border="0">
+  <tr>
+    <td><tt>'C'</tt></td>
+    <td>Non-aromatic carbon</td>
+  </tr>
+  <tr>
+    <td><tt>'c'</tt></td>
+    <td>Aromatic carbon</td>
+  </tr>
+  <tr>
+    <td><tt>'[#6]'</tt></td>
+    <td>Any carbon</td>
+  </tr>
+  <tr>
+    <td><tt>'[a#6]'</tt></td>
+    <td>Aromatic carbon</td>
+  </tr>
+  <tr>
+    <td><tt>'[#QX3]'</tt></td>
+    <td>Heavy atom with exactly 3 bonds, including implicit hydrogens</td>
+  </tr>
+  <tr>
+    <td><tt>'[#G4Hr5]'</tt></td>
+    <td>Group IV atom with exactly 1 hydrogen, in a 5-ring</td>
+  </tr>
+  <tr>
+    <td><tt>'[q3+0]'</tt></td>
+    <td>Neutral atom with 3-ring bonds</td>
+  </tr>
+  <tr>
+    <td><tt>'[#O6v4i]'</tt></td>
+    <td>Organic group VI atom with pi-bonding orbital, and explicit bond
+orders summing to 4</td>
+  </tr>
+</table>
+
+<h3><a name="MatchBonds">Bonds</a></h3>
+
+<p>The following are the bond specifiers permitted in match strings:</p>
+
+<center>
+<table class="titlebar" border="1" cellpadding="2">
+  <tr>
+    <th>Description</th>
+    <th>Bond Symbol</th>
+  </tr>
+  <tr align="center">
+    <td>single</td>
+    <td>-</td>
+  </tr>
+  <tr align="center">
+    <td>double</td>
+    <td>=</td>
+  </tr>
+  <tr align="center">
+    <td>triple</td>
+    <td>#</td>
+  </tr>
+  <tr align="center">
+    <td>aromatic</td>
+    <td>:</td>
+  </tr>
+  <tr align="center">
+    <td>any ring bond</td>
+    <td>@</td>
+  </tr>
+  <tr align="center">
+    <td>any bond</td>
+    <td>~</td>
+  </tr>
+  <tr align="center">
+    <td>single "down"<sup><b>*</b></sup></td>
+    <td>\</td>
+  </tr>
+  <tr align="center">
+    <td>single "up"<sup><b>*</b></sup></td>
+    <td>/</td>
+  </tr>
+  <tr align="center">
+    <td>default bond (single or aromatic)</td>
+    <td>&lt;none&gt;</td>
+  </tr>
+</table>
+</center>
+
+<p><sup><b>*</b></sup> The "up" and "down" bonds are permitted but not
+supported.  They are treated the same as "single bond".</p>
+
+<p>The <tt>@</tt> ring bond specifier may be combined with any other bond
+specifier.  As in building, bond specifiers are permitted in front of labels.
+It is, however, an error to begin a match string with a bond symbol.</p>
+
+<p><b>Note:</b> In matching, like in building, the
+default bond specification (absence of a bond symbol)
+on a label is ignored if a bond specifier appears on the matching label.
+If both labels are missing bond specifiers, then "single or aromatic bond"
+is implied.  If both labels have bond specifiers, a logical AND of the
+specifications is implied.</p>
+
+<p>The following are some example match strings:</p>
+
+<table border="0">
+  <tr>
+    <td valign="baseline"><tt>'*=O'</tt></td>
+    <td valign="baseline">Any atom double-bonded to oxygen</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'a:1:a:a:a:a:a1'</tt></td>
+    <td valign="baseline">Aromatic 6-ring, any elements</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'C=1~*~*~*~*1'</tt></td>
+    <td valign="baseline">Aliphatic carbon in a 5-ring, double-bonded
+to an atom in the ring</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'aa'</tt></td>
+    <td valign="baseline">Aromatic atom bonded to another aromatic atom by
+either a single or an aromatic bond</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'a-a'</tt></td>
+    <td valign="baseline">Aromatic atom bonded to another aromatic atom
+by a single bond</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[CH]=O'</tt></td>
+    <td valign="baseline">Aldehyde group</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'C(=O)[NH]'</tt></td>
+    <td valign="baseline">Peptide-bond carbon</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'*@*'</tt></td>
+    <td valign="baseline">Atom connected to another atom by a ring bond</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'*@=*'</tt></td>
+    <td valign="baseline">Atom connected to another atom by a ring double bond</td>
+  </tr>
+</table>
+
+<p><i>Differences from original SMARTS</i>:
+Zero-level parentheses (single-component specifiers) are not
+supported, nor is the dot (disconnected components) operator.  The
+<tt>\</tt> and <tt>/</tt> bond symbols are permitted
+but not supported.  They are treated as single bonds.
+Ring closure bonds need not be compatible.  Conflicting bond specifiers
+will merely result in a failed match (e.g. <tt>'C=1CCCCC#1'</tt>
+will never succeed).</p>
+
+<h3><a name="NotOperator">Logical Operators</a></h3>
+
+<p>The logical operations AND, OR, and NOT are represented
+by &quot;<tt>;</tt>&quot;, 
+&quot;<tt>,</tt>&quot;, 
+and
+&quot;<tt>!</tt>&quot;, respectively.
+If no symbol is used, then AND is implied.
+The NOT operator has highest precedence, and
+AND the lowest, meaning that NOT operations are
+performed first, followed by OR, followed by AND.
+For example,
+</p>
+
+<pre>
+    '[!X4;C,O]'
+</pre>
+
+<p>
+would be interpreted as carbons or oxygens with a total
+number of bonds not equal to 4.
+</p>
+
+<p>
+The NOT operator can be applied to both atom and bond specifications, 
+while the AND and OR operators can be applied only to atoms.
+When applied to an atom, the exact atom specification <b>must</b> be
+used.  A NOT operator found outside an exact atom specification will
+be applied to a bond instead.</p>
+
+<h4>Logical NOT</h4>
+
+<p>The logical NOT <tt>'!'</tt> operator is used to specify the conditions
+for an <i>unsuccessful</i> match.  The operator binds to the match
+specification immediately to its right.  In other words, it has higher
+precedence than the default logical AND operation that is implied when using
+multiple specifiers within exact atom specifications and when using
+multiple bond specifications.  (For example, the specification
+[CH3] implies carbon AND 3 attached hydrogens; the specification
+<tt>'*@=*'</tt> implies ring bond AND double bond.)  This implies that
+you cannot NOT an AND'ed expression (you can, however, apply NOT
+to an <a href="#AtomEnvironments">atom environment</a>).
+The following can be used if NOT AND is desired:</p>
+
+<blockquote>
+    NOT (A AND B) === NOT A OR NOT B
+</blockquote>
+
+<p>For example,</p>
+
+<pre>
+    '[!#7,!X3]'
+</pre>
+
+<p>would match an atom that either is not a nitrogen or
+does not have a total of 3 bonds; i.e. would fail only for
+nitrogens that do have a total of 3 bonds.
+Using the atom environment notation, this could
+also be expressed as:
+</p>
+
+<pre>
+    '[!$([#7X3])]'
+</pre>
+
+<p>Note that the expression</p>
+
+<pre>
+    '[!#7!X3]'
+</pre>
+
+<p>would match atoms only if they are not nitrogen and
+do not have a total
+of 3 bonds; this would fail, for example, for carbons with 3 neighbours.
+</p>
+
+
+<p>Atom matching is successful if a match is made to an atom that has
+specifications other than those negated by the NOT symbol.  When NOT is
+applied to a bond (including the default bond), matching is successful
+only if the bonded atoms are not joined by a bond of the specified bond
+type.</p>
+
+<p>The following shows some example match strings:</p>
+
+<table border="0">
+  <tr>
+    <td valign="baseline"><tt>'*!*'</tt></td>
+    <td valign="baseline">Atom bonded to another atom by a bond that is
+neither single nor aromatic</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'*[!#6]'</tt></td>
+    <td valign="baseline">Atom bonded to a non-carbon atom</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[!-*]'</tt></td>
+    <td valign="baseline">Atom with zero or positive formal charge</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[N!H]'</tt></td>
+    <td valign="baseline">Aliphatic nitrogen with either zero or more than one
+attached hydrogen, including implicit hydrogens</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'*!=1~*~*~*~*1'</tt></td>
+    <td valign="baseline">Any atom in any 5-ring bonded to a neighbor in the
+ring by anything other than a double bond</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[!a#6]'</tt></td>
+    <td valign="baseline">Non-aromatic carbon</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'a!@a'</tt></td>
+    <td valign="baseline">Aromatic atom bonded to another aromatic atom not in the
+same ring</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[!#O5!D2!+]'</tt></td>
+    <td valign="baseline">Non-organic-group V atom with number of explicit
+bonds not equal to 2 and with formal charge not equal to +1</td>
+  </tr>
+</table>
+
+<h3><a name="AtomEnvironments">Atom Environments</a></h3>
+
+<p>The recursive matching syntax</p>
+
+<pre>
+    $(submatch_string)
+</pre>
+
+<p>is used for defining a "sub"-match environment.  The molecular fragment
+specified in the sub-match is matched independently of the rest of the
+(outer) match string. This sub-match, or <i>atom environment</i>, is
+treated as any other atomic primitive, and can be specified either inside
+or outside the
+bracket (exact atom) notation. Atom environments may be nested.</p>
+
+<p>Given the following molecule (2-ketobutyric acid) to search:</p>
+
+<pre>
+    'CCC(=O)C(=O)[OH]'
+</pre>
+
+then:
+
+<table border="0">
+  <tr>
+    <td valign="baseline"><tt>'C[$(C(C)(C=O))]'</tt></td>
+    <td valign="baseline">matches successfully</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'O=[$(C(C=O))]'</tt></td>
+    <td valign="baseline">matches successfully</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[C!$(C=O)]C'</tt></td>
+    <td valign="baseline">matches successfully (carbon
+not doubled-bonded to an oxygen, single-bonded to carbon)</td>
+  </tr>
+</table>
+
+<h3><a name="SMARTS_Tables">SMARTS Tables</a></h3>
+
+<p>
+Although the atom environment syntax allows for performing
+recursive substructure searches, i.e. successive searches in
+which each search progressively restricts the search space of
+that which follows, the syntax becomes unwieldy (and unreadable)
+for all but the simplest cases.
+In MOE, matching can be done against a table of SMARTS strings.
+A SMARTS table contains a list or possibly nested lists of
+SMARTS expressions, along with return values that are to
+be assigned on success.  Here, return values are no
+longer restricted to 0 or 1, so that more sophisticated
+interpretation of the match state can be performed.
+The table is processed in order.
+</p>
+
+<p>Each entry of the SMARTS table is one of the following possibilities:
+
+<p>
+<center>
+<table class="titlebar" width="90%">
+
+<tr>
+<th>Entry</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td>
+<i>number</i>
+</td>
+<td>
+The value that will be returned (rounded to the nearest integer)
+for any subsequent successful match.  The initial default return
+value is 1.  As the table is processed, each number that is encountered
+changes the table's return value.  If, during a match operation, the
+end of the table is reached and the last table entry is
+a number, that value (rounded to the nearest integer) is returned.
+
+<p>For example, in the following,
+</p>
+
+<pre>
+    sm_Match [ [0, '[X0]', 1], Atoms[] ]
+</pre>
+
+<p>the SMARTS table is:
+</p>
+
+<pre>
+    [
+	0, '[X0]',
+	1
+    ]
+</pre>
+
+The first entry in the table, <tt>0</tt>, changes the table
+return value to zero.  Thus, if the second entry <tt>'[X0]'</tt>
+(matches isolated atoms, i.e. having no bonds and no implicit
+hydrogens)
+matches successfully,
+0 will be returned.  Otherwise, processing of the table continues.
+In this case, the last entry of the table is reached.  It is
+a number, <tt>1</tt>, which is then the value that is returned.
+
+</td>
+</tr>
+
+<tr>
+<td>
+<i>SMARTS string</i>
+</td>
+<td>
+If the SMARTS string matches successfully, the current table
+return value is returned, and the matching operation ends.
+If unsuccessful, table processing continues with the next
+table entry.
+</td>
+</tr>
+
+<a name="example_partial"></a>
+<tr>
+<td>
+<span class="nobr">[ <i>SMARTS string</i>, <i>SMARTS subtable</i> ]</span>
+</td>
+<td>
+A SMARTS table entry may comprise a SMARTS string&ndash;SMARTS subtable
+pair.  The SMARTS string restricts the processing of the subtable
+to those atoms that successfully match the string.  For those
+atoms that do not match the SMARTS string, processing continues
+with the next table entry.  For those that do, the subtable is
+processed according to the same rules as the parent SMARTS table except
+that the initial (default) return value of the subtable is the
+current return value of the parent table.
+
+<p>Here is an example of subtable processing:</p>
+
+<pre>
+    sm_Match [ [0, '[X0]', [ '[i]', [ 1, '*#*', '*(=*)=*', 2 ] ], Atoms [] ]
+</pre>
+
+<p>Here, the SMARTS string is <tt>'[i]'</tt> (matches atoms with
+a pi bond), and the SMARTS subtable is:
+</p>
+
+<pre>
+    [
+	1, '*#*', '*(=*)=*',
+	2
+    ]
+</pre>
+
+<p>If an atom matches <tt>'[X0]'</tt>, 0 is returned, and the SMARTS string
+and subtable entry are never reached.
+</p>
+
+<p>If an atom does not match <tt>'[X0]'</tt> but does match <tt>'[i]'</tt>,
+then processing of the subtable ensues.
+The subtable returns 1 for <i>sp</i>-hybridized atoms, 2 otherwise.
+The default return value upon entering the subtable is 0,
+as established by the first entry in the parent table.  This return
+value is changed to 1 by the first entry in the subtable.
+</p>
+
+<p>If the atom under examination has a triple bond
+(<tt>'*#*'</tt>) or is allenic (<tt>'*(=*)=*'</tt>), then 1 is returned.
+Otherwise, 2 (given at the end of the subtable)
+is returned, and the match operation ends.  Note that once
+a subtable is entered, the match operation will end somewhere in or at
+the end of the subtable; processing will never return to the parent table.
+</p>
+
+If an atom matches neither <tt>'[X0]'</tt> nor <tt>'[i]'</tt>, then
+the processing of the parent table continues.  In this case,
+the end of the parent table is reached, and 0 is returned.
+
+</td>
+</tr>
+
+</table>
+</center>
+</p>
+
+<p>
+Note that a single match string is a special case of a SMARTS table.
+</p>
+
+<div class="example">
+<h3>Example</h3>
+
+<p>Here is the complete example of a SMARTS table for
+assigning hydridization to atoms:
+</p>
+
+<pre>
+[
+    0, '[X0]',
+    [ '[i]', [ 1, '*#*', '*(=*)=*', 2 ] ],
+    3, '[!X3!X2!X1]',
+    2, '*[i]', '*[+*]~-[-*]',
+    3
+]
+</pre>
+
+<p>The first two lines of the table as displayed here were discussed
+<a href="#example_partial">above</a>.  The next line,
+</p>
+
+<pre>
+    3, '[!X3!X2!X1]'
+</pre>
+
+<p>changes the table return value to 3, which is returned if
+the string <tt>'[!X3!X2!X1]'</tt> (atom has at least 4 bonded
+neighbours) matches successfully.  If the match fails, the
+subsequent line,
+</p>
+
+<pre>
+    2, '*[i]', '*[+*]~-[-*]'
+</pre>
+
+<p>returns the value 2 if either of the next two SMARTS
+strings match successfully.  <tt>'*[i]'</tt> will match
+an atom bonded to an atom having a pi bond, and
+<tt>'*[+*]~-[-*]'</tt>, an atom adjacent to
+a charge-separated pair (conjugated system).  If neither
+of these matches, then the last entry in the table,
+</p>
+
+<pre>
+    3
+</pre>
+
+<p>
+stipulates that 3 will be returned.
+</p>
+</div>
+
+<p>
+The syntax of the SMARTS strings in a SMARTS table can be
+checked using the SVL function
+<a class="svl" href="../fcnref/smartsfcn.htm">SMARTS_TABLE</a>.
+</p>
+
+<p>
+<ul class="help">
+<li class="help" style="padding-left: 25px">
+For more details on SMARTS tables, please see
+<a href="../fcnref/smartsfcn.htm">SMARTS Functions</a>.
+</li>
+</ul>
+</p>
+
+<p>
+<b>Note:</b> SMARTS tables can only be used with those
+SVL matching functions that return numeric values,
+i.e. <tt>sm_Match</tt> and <tt>sm_Indexof</tt>; they
+cannot be used with those that return atoms keys,
+i.e. <tt>sm_MatchAtoms</tt> and <tt>sm_MatchAll</tt>.
+</p>
+
+<h2><a name="SVLCommands">SVL Commands</a></h2>
+
+<a href="../fcnref/introsm.htm">Molecule Input Language Functions</a>
+
+<h2>See Also</h2>
+
+<a href="../fcnref/sm_build.htm">SMILES Conversion Functions</a><br>
+<a href="../fcnref/smartsfcn.htm">SMARTS Matching Functions</a>
+
+<h2><a name="References">References</a></h2>
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="top">[Anderson&nbsp;1987]</td>
+<td valign="top">
+Anderson, E., Veith, F., Weininger, D.;
+SMILES: A Line Notation and Computerized Interpreter for Chemical
+Structures; <i>Environmental Protection Agency Report EPA-600/M-87-021</i>
+(1987). (Also available from the library of the EPA lab in Duluth, MN.)
+</td></tr>
+
+<tr>
+<td valign="top">[James&nbsp;1997]</td>
+<td valign="top">
+James, C.A., Weininger, D., Delany, J.;
+<i>Daylight Theory Manual, Daylight 4.51</i>; Version 11,
+Chapter 4, (February 1997).
+</td></tr>
+
+<tr>
+<td valign="top">[Weininger&nbsp;1988]</td>
+<td valign="top">
+Weininger, D.;
+SMILES: A Chemical Language and Information
+System. 1. Introduction to Methodology and Encoding Rules;
+<i>J. Chem. Inf. Comput. Sci. 28</i> (<b>1988</b>) 31&ndash;36.
+</td></tr>
+</table>
+
+
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

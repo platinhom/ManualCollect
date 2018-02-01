@@ -1,0 +1,283 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	genop.htm		API Tree Traversals
+!!	15-jan-99 (ms) created
+!!-->
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+
+<meta functions svlUnopFcn>
+<meta functions svlBinopFcn>
+<meta functions svl_BinopHintUseArg1>
+<meta functions svl_UnaryOp>
+<meta functions svl_BinaryOp>
+<meta functions svl_FoldlBinaryOp>
+
+<title>API Tree Traversal</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<p><pre>
+    typedef svl_error (svlUnopFcn)(svl_var v, void *data);
+    typedef svl_error (svlBinopFcn)(svl_var v1, svl_var v2, void *data);
+
+    int <a class="fcnlink" href="#svl_BinopHintUseArg1">svl_BinopHintUseArg1</a>(svl_var v1, svl_var v2);
+
+    svl_error <a class="fcnlink" href="#svl_UnaryOp">svl_UnaryOp</a>(svl_var v, svlUnopFcn fcn, void *data);
+
+    svl_error <a class="fcnlink" href="#svl_BinaryOp">svl_BinaryOp</a>(
+	svl_var v, 
+	svl_var v2, 
+	<a class="fcnlink" href="#svlBinopFcn">svlBinopFcn</a> fcn, 
+	void *data
+    );
+
+    svl_error <a class="fcnlink" href="#svl_FoldlBinaryOp">svl_FoldlBinaryOp</a>(
+	svl_var v,
+	<a class="fcnlink" href="#svlUnopFcn">svlUnopFcn</a> fcn1, 
+	<a class="fcnlink" href="#svlBinopFcn">svlBinopFcn</a> fcn2, 
+	void *data
+    );
+</pre>
+
+<h2>Description</h2>
+
+<p>API tree-traversal utilities are used to generalize scalar operations
+to SVL vectors using the same principles as built-in
+SVL operators such as <tt>sqrt</tt> or <tt>mul</tt>.
+
+<p>The API user must provide a callback function of type <tt>svlUnopFcn</tt>
+or <tt>svlBinopFcn</tt> that calculates the desired result of the
+operation applied to a flat vector of scalars.  The tree-traversal
+routines
+<tt>svl_UnaryOp()</tt>,
+<tt>svl_BinaryOp()</tt>, or
+<tt>svl_FoldlBinaryOp()</tt>
+traverse the structure of the SVL variable and successively
+call the callback function with leaf-level data until the entire
+variable is processed.
+
+<p>For example, the following callback defines unit-extended
+operation <tt>sinh</tt>:
+
+<pre>
+    svl_error sinhCB(svl_var v, void *data)
+    {
+	svl_error e = NULL;
+	svlReal *x = NULL;
+	int n = 1;
+
+	E_(svl_PullRwVector_R_(v, 0, &x, &n));
+	while (--n >= 0) x[n] = sinh(x[n]);
+	E_(svl_PushVector_R_(v, 0, &x));
+X_:
+	svl_FreeVector_R_(x);
+	return e;
+    }
+</pre>
+
+To be executed, the callback function must be passed as an argument
+to function <tt>svl_UnaryOp</tt>:
+
+<pre>
+    svl_error my_sinh(svl_task task)
+    {
+	svl_error e = NULL;
+	svl_var v = svl_TaskVar(task);
+
+	E_(svl_UnaryOp(v, sinhCB, NULL));
+X_:
+	return e;
+	
+    }
+</pre>
+
+<p><b>Callbacks</b>
+
+<p>The callback function is of type <tt>svlUnopFcn</tt> or <tt>svlBinop</tt>:
+
+<pre>
+    typedef svl_error (svlUnopFcn)(svl_var v, void *data);
+    typedef svl_error (svlBinopFcn)(svl_var v1, svl_var v2, void *data);
+</pre>
+
+<p>The unary callback function must get its argument
+from variable <tt>v</tt> and put the result back to <tt>v</tt>.
+The argument will be a non-empty flat vector of scalars;
+the result must be a flat vector of scalars of the same length
+(but not necessarily of the same type).
+
+<p>The binary callback function must get its argument
+from variables <tt>v1</tt> and <tt>v2</tt> and
+put the result back to <tt>v1</tt>.  (The contents of variable
+<tt>v2</tt> will be discarded.)
+The arguments will be a non-empty flat vector of scalars
+that unit-extend to the same length;
+the result must be a flat vector of scalars of the same length.
+
+<p>The argument <tt>data</tt> can be used to store private information
+of the callback function.
+
+<p>The callback functions must not use long jumps (i.e. throw-catch
+style of control flow).  However, to terminate the traversal of the
+SVL variable prematurely, the callback may return a special error code,
+given by <tt>svl_svl_ErrorOK()</tt>.  The calling routine will then
+catch the thrown exception condition by checking explicitly for that error code.
+
+<a name="svl_BinopHintUseArg1"></a>
+<p><tt><span class="fcndef">svl_BinopHintUseArg1</a>()</tt>
+provides an opportunity
+to achieve greater efficiency by switching the arguments of a binary
+operation. Given two choices of implementation of a binary callback,
+Code_A and Code_B, the function returns non-zero if Code_A is
+the preferable choice:
+
+<p><b>Code_A:</b>
+<pre>
+    E_(svl_PullRwVector_..(v1, 0, &x,...));
+    E_(svl_PullRoVector_..(v2, 0, &y,...));
+	...
+    E_(svl_PutVector_..(v1, 0, &x));
+</pre>
+
+<p><b>Code_B:</b>
+<pre>
+    E_(svl_PullRoVector_..(v1, 0, &x,...));
+    E_(svl_PullRwVector_..(v2, 0, &y,...));
+	...
+    E_(svl_PutVector_..(v1, 0, &y));
+</pre>
+
+<a name="svl_UnaryOp"></a>
+<a name="svl_BinaryOp"></a>
+<a name="svl_FoldlBinaryOp"></a>
+
+<p><b>Traversals</b>
+
+<p>The <tt>svl_XxxOp()</tt> functions generalize the behavior of scalar
+operators.  The behavior on flat vectors of scalars is defined
+by the user in the callback functions.  The <tt>svl_XxxOp()</tt>
+functions then generalize the behavior to SVL variables of
+arbitrary shape by traversing the tree of nested vectors comprising
+each SVL variable.
+
+<p><tt><span class="fcndef">svl_UnaryOp</span>(v,fcn,data)</tt>
+generalizes the behavior
+of a unary operation defined by the callback function <tt>fcn</tt>
+to an arbitrary SVL variable.
+
+<p>A unary function in SVL is generalized by its element-wise applications
+to all scalars present in the SVL variable.  The callback function <tt>fcn</tt>
+is responsible for implementing this behavior for flat vectors of
+scalars.
+By calling <tt>svl_UnaryOp(v,fcn,data)</tt> this behavior is generalized to
+the contents of the SVL variable <tt>v</tt>, which can be of arbitrary shape.
+
+<tt><span class="fcndef">svl_BinaryOp</a>(v1,v2,fcn,data)</tt>
+generalizes the behavior
+of a binary operation defined by the callback function <tt>fcn</tt>
+to a pair of arbitrary SVL variables.
+
+<p>A binary function applied to a pair of SVL variables is generalized
+by its element-wise applications to all pairs of corresponding scalars
+present in the SVL variables.  The variables must be unit-extendible
+to the same shape.  The callback function <tt>fcn</tt>
+is responsible for implementing this behavior for flat vectors of
+scalars.
+By calling <tt>svl_BinaryOp(v1,v2,fcn,data)</tt>,
+this behavior is generalized to
+the contents of the pair of SVL variables <tt>v1</tt>, <tt>v2</tt>.
+
+<p>An associative binary function applied to an SVL variable of length N
+is generalized by top-level reduction of the operation.
+If symbol "&curren;" is the infix notation for an associative binary
+operation "<b>op</b>"
+
+(i.e. <span class="nobr"><b>op</b> [a,b] == a &curren; b</span>),
+
+then
+
+<span class="nobr">
+    <b>op</b>
+    [a<sub>1</sub>,a<sub>2</sub>,a<sub>3</sub>...] ==
+    a<sub>1</sub> &curren;
+    a<sub>2</sub> &curren;
+    a<sub>3</sub> ...
+</span>.
+
+<p><tt><span class="fcndef">svl_FoldlBinaryOp</a>(v,fcn1,fcn2,data)</tt>
+implements this behavior.
+There are two callback arguments: <tt>fcn1</tt> and <tt>fcn2</tt>.
+The callback function <tt>fcn2</tt> is identical to the callback argument
+<tt>fcn</tt> of the function <tt>svl_BinaryOp()</tt>: it defines
+the binary operation on a pair of flat vectors of scalars.
+This argument is compulsory: function <tt>fcn2</tt> must always be defined.
+
+<tt>fcn1</tt> defines the result of a reduction of a single
+element.  For example, <span class="nobr"><tt>norm [x] == abs [x]</tt></span>.
+This argument is optional:
+if <tt>fcn1</tt> is <tt>NULL</tt>,
+the reduction of a unit vector is undefined.
+
+<p>For convenience in programming certain classes of operators, 
+the function guarantees that the reduction will be "fold-left"
+reduction, i.e. the elements will be processed from left
+to right:
+
+<ul>
+    <b>op</b>
+	[a<sub>1</sub>,a<sub>2</sub>,a<sub>3</sub>,a<sub>4</sub>] ==
+    <b>op</b> [<b>op</b> [<b>op</b>
+	[a<sub>1</sub>,a<sub>2</sub>],a<sub>3</sub>],a<sub>4</sub>]
+</ul>
+
+Note, however, that <tt>svl_FoldlBinaryOp()</tt> should be used
+only to define reductions of associative binary operations.
+
+
+<h2>See Also</h2>
+<a class="svl" href="genop2.htm#svl_UnaryOp_R_R_">svl_UnaryOp_R_R</a><br />
+<a class="svl" href="genop2.htm#svl_BinaryOp_R_RR_">svl_BinaryOp_R_RR_</a><br />
+<a href="apivec.htm">API Vectors</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

@@ -1,0 +1,553 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	motifsearch.htm			Domain Motif Searching
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<meta panel Domain Motif Search>
+
+<title>Domain Motif Searching</title>
+
+<meta keywords domain, motif, secondary structure />
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h6 class="h-two">Contents</h6>
+<div id="toc-list"><script>var gman_OrderedListTOC=false; </script></div>
+
+<p>The Domain Motif Search searches through a database of
+protein structures for entries with secondary structural motifs similar
+to those of the query.  It is
+recommended that the search be run on a database of
+non-redundant structures to speed up the process.
+When run on a <a href="../install/smp_inst.htm">MOE/smp</a>
+multi-processor, Domain Motif Search will automatically execute
+in multi-processor mode.
+</p>
+
+<a name="Background"></a>
+<h2>Background</h2>
+
+<p>Secondary structure is often well conserved, especially near the active
+site of a protein, even when sequence is not.  Hence it is useful to be able
+to search for similar structural motifs, disregarding sequence completely.
+In more general terms, this requires solving the problem of structural
+alignment of distantly related or unrelated proteins.</p>
+
+<p>Many methods already exist for this purpose, using geometric hashing,
+dynamic programming, graph theory, or distance matrices.  Some of the more
+well known include DALI [Holm 1993], CE [Shindyalov 1998] and VAST
+[Gibrat 1996].  The limiting factor in recent years has become the PDB itself.
+With over 80,000 structures, comprising nearly 30,000 non-redundant chains
+(clustered at 90% sequence identity), searching the entire PDB has become
+computationally intractable for most algorithms
+unless large clusters are employed.
+</p>
+
+<a name="Methodology"></a>
+<h2>Methodology</h2>
+
+<p>The solution chosen was to make use of a reduced representation, replacing
+each structure by a set of secondary structure vectors.  Kinked helices are
+detected and split into multiple vectors.  Even with this
+simplification, it is still a slow, difficult problem to search the PDB.</p>
+
+<p align="center">
+<img src="motifsearch/ssvect.png" alt="Secondary Structure Vectors" />
+</p>
+
+<p>Since search time can grow exponentially with number of vectors in the query,
+a further attempt to minimize search time was made by splitting all structures
+into their respective domains.  The same was done with all the structures
+in the search database.  This not only speeds up searching, but also has the
+benefit of finding partial matches more easily, since domains represent the
+modular components of protein architecture.</p>
+
+<p>A fast method [Feldman 2012] for
+detecting domains was developed for this purpose.  It works by clustering
+buried &alpha;-carbons, and has been shown to have up to 81% agreement
+with CATH or SCOP domain assignments.</p>
+
+<p>Given the vector representation of two domains to be compared, first each
+vector is classified as either &alpha; (helix) or &beta; (strand).  Then each
+vector is replaced by a set of points &ndash;
+one at each end, and several along
+the axis spaced 12&Aring; apart.  These points are classified as either
+<i>start</i>, <i>end</i>, or <i>middle</i> depending on their position on the
+original vector.</p> 
+
+<p align="center">
+<img src="motifsearch/sspt.png" alt="Secondary Structure Points" />
+</p>
+
+<p>Next, pairwise comparison is carried out by an exhaustive 3D superposition
+search of all possible pairs of points.  Superposed points must be of the same
+type (&alpha;/&beta;), and a <i>start</i> point may not superpose on an
+<i>end</i>.  Also points must superpose within a certain distance
+tolerance (e.g. 2&Aring;),
+with the corresponding vectors having less than a maximum crossing angle
+&theta;, as illustrated in the above figure.  If enough
+points match according to these criteria
+(in the current implementation, this number is normally
+between 6 and 12 inclusive and also depends
+on the size of the query),
+the superposition is considered successful.
+All records in the database successfully superposing onto the query
+are recorded as hits to the search.</p>
+
+<a name="Score"></a>
+<p>For a given superposition, a score is computed to indicate the level
+of similarity.  It has been empirically determined,
+through superposing points randomly
+a large number of times, that the distribution of distances <b>d</b> between
+superposed pairs fits well to the Extreme Value, or Gumbel, distribution.
+Thus, in a given superposition:</p>
+
+<p align="center">
+<img src="motifsearch/ssscore.png" alt="Domain Motif Score" />
+</p>
+
+<p>for some &mu; and &beta;.</p>
+
+<p>Although not mathematically rigorous, we incorporate the crossing angle,
+&theta;, by simply dividing the probability by one plus its value in radians.
+Thus small crossing angles are favored.
+If we make the further simplifying assumption that the distance between each
+superposed pair of points is independent, then the total probability of a
+given superposition occurring by chance is simply the product of the
+individual probabilities.  Taking the negative log of the
+probability to get an energy-like term we arrive at the scoring function:
+</p>
+
+<p align="center">
+<img src="motifsearch/ssscore2.png" alt="Domain Motif Score" />
+</p>
+
+<p>where:
+
+<ul><li><i>p</i> is the set of superposed pairs of points</li>
+<li><i>d<sub>i</sub></i> is the distance, in &Aring;, between the <i>i</i>th
+pair of superposed points</li>
+<li><i>&theta;<sub>i</sub></i> is the smallest crossing angle (in the
+superposition) between the two secondary structure vectors to which the
+<i>i</i>th pair of superposed points belong, expressed in radians</li>
+<li><i>&mu;</i> = 2&Aring;</li>
+<li><i>&beta;</i> = 1&Aring;</li>
+<li><i>A</i> = e<sup>-&mu;/&beta;</sup> = 0.1353 (a scale factor)</li>
+</ul>
+</p>
+
+<p>In actuality, &mu; and &beta; will vary somewhat with the query, but they
+are approximated with the constant values given above. 
+The score has <b>not</b> been rigourously validated and is empirically
+derived, so it should only be used as a guideline, with higher scores generally
+indicating more similar structures.  The score will also be roughly
+proportional to the number of points that were superposed.  The algorithm may
+also exit early with a suboptimal superposition (and thus score) for speed.</p>
+
+<p>Lastly, a sequence alignment is inferred from the structural superpositon,
+and the fraction of residues aligned, percent identity, and RMSD are computed.
+Due to the nature of the search, it is quite common for weaker hits to be
+unalignable in sequence space, because aligned subunits may appear in
+different orders in sequence space in each of the superposed structures.  In
+such cases, an attempt is still made to align as many segments as
+possible in the sequences.</p>
+ 
+<a name="Running"></a>
+<h2>Running Domain Motif Search</h2>
+
+<p>The Domain Motif Search panel can be opened by choosing:
+</p>
+
+<blockquote>
+<b style="white-space:nowrap">MOE | Protein | Search | Domain Motif</b>
+</blockquote>
+
+<p align="center">
+<img src="motifsearch/sspanel.png" alt="Domain Motif Search Panel" />
+</p>
+
+<p>The query is defined by the <b>Query</b> area of the panel.  An
+output database must be specified in the <b>Output</b> field
+to store the results of the search.
+Press the <b>Search</b> button to begin the search.
+A progress bar appears
+at the bottom of the panel.
+Note that the search is parallelized &ndash;
+if you are running <a href="../install/smp_inst.htm">MOE/smp</a>,
+the search will
+take full advantage of all available CPUs.  Some larger queries may take
+many hours if run on a single CPU.
+</p>
+
+<p>The query atoms are converted into secondary structure vectors, and then
+superposed on each entry in the <b>Search</b> database in turn, as described
+above.  As matches are found, they will be added to the result list.
+</p>
+
+<p>The search can be stopped at any time by pressing <b>Stop</b>,
+which replaces the <b>Search</b> button
+while the search is in progress.
+If the search is interrupted, any results which have
+been found so far will remain displayed in the list.
+</p>
+
+<a name="LoadingResults"></a>
+<h2>Browsing Results in MOE</h2>
+
+<p>To view a result, click on the entry in the result list in the panel.
+This will load the hit into MOE,
+along with a copy of the query, and display their
+superposition in the MOE Window.  Where possible, their sequences will
+also be aligned in the Sequence Editor.  Alternatively, the <b>Output</b>
+database which was created during the search may be opened and browsed
+like any standard MOE database file.  When browsing the output database,
+the alignment and superposition will still be shown in the Sequence Editor
+and MOE Window, respectively.  See
+<a href="../mdb/dbbrowse.htm">Database Browser</a> for details.
+</p>
+
+<a name="PanelReference"></a>
+<h2>Domain Motif Search Panel Reference</h2>
+
+<table width="100%" cellspacing="5" cellpadding="5" border="0">
+
+<tr>
+<td valign="top"><b>Query</b></td>
+<td valign="top">
+Specify the query structure.  In addition to standard
+sets such as <i>Selected Atoms</i> and <i>Receptor Atoms</i>, a list of
+domains detected in the current system will be available.  Usually, choosing
+one of these as the query will achieve the best result.  If <b>Visible Only</b>
+is on, only atoms that are currently visible will be included in the query.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Show Query Vectors</b></td>
+<td valign="top">If on, the secondary structure vectors for the current
+query, as specified in <b>Query</b>, will be displayed as a series of
+arrows in the MOE Window.  Helices are pink while strands are orange.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Match Selected Residues</b></td>
+<td valign="top">If on, any residues selected in the Sequence Editor when
+the search is started must superpose onto a residue of the same amino acid
+type in each hit, or the hit will be discarded.  This acts as a further
+filter on the results.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Match Vector Direction</b></td>
+<td valign="top">If on, the direction of secondary structure elements 
+(i.e. N-to-C terminus) must match in the superposition.  This extra constraint
+can greatly speed up the search, but may miss some very distant hits where
+sense is not preserved.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Search</b></td>
+<td valign="top">Specify the MOE database containing the structures to be
+searched or click <b>Browse</b> to select a file.
+This <b>must</b> include a column called <b>chain</b>, giving a
+unique identifier for each entry, as well as a field of type
+<tt>'molecule'</tt>.
+If more than one molecule field exists in the file, only the first one
+will be searched.  If a column called <b>compnd</b> is found, this will be
+used as a description of each molecule in the result list.  It is strongly
+recommended that a non-redundant structure database, such as
+<tt>$MOE/lib/pdb.mdb</tt>, be used to avoid unnecessary
+searching.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Output</b></td>
+<td valign="top">Specify the MOE database to which results will be written
+or click <b>Browse</b> to select a file.
+The file specified must be writeable, and any previous contents will be
+destroyed.  It will always contain the orignal query as the first entry,
+and the hits, if any, as subsequent rows.  The fields are:
+
+<p>
+<table class="titlebar" width="95%">
+<tr>
+<th>Field Name</th>
+<th>Description</th>
+</tr>
+<tr>
+<td>
+<b>mol</b>
+</td><td>
+The hit, transformed to be superposed onto the query.
+</td>
+</tr><tr>
+<td><b>chain</b>
+</td><td>
+The chain code of the hit,
+obtained from the <b>chain</b> field
+in the <b>Search</b> database,
+</td>
+</tr><tr>
+<td><b>title</b>
+</td><td>
+A brief description of the hit, if available, from the
+<b>compnd</b> field of the <b>Search</b> database.
+</td>
+</tr><tr>
+<td><b>domains</b>
+</td><td>
+A comma-separated list of domains from PFAM, from the <b>pfaminfo</b> field of
+the <b>Search</b> database.  Only domains which overlap the aligned portions
+of the hit are displayed.  The E-values shown in parentheses indicate the
+confidence in the domain assignment.
+</td>
+</tr><tr>
+<td><b>score</b>
+</td><td>
+The <a href="#Score">score</a> associated with this hit;
+higher is better.
+</td>
+</tr><tr>
+<td><b>aligned</b>
+</td><td>
+The fraction of aligned residues,
+expressed as x/y, where x is the number of residues in the
+hit which could be superposed onto the query, and y is the total number of
+residues in the query.  Note that sequence alignment might appear to align
+less residues, due to the non-sequential nature of the structural alignment.
+</td>
+</tr><tr>
+<td><b>percent_identity</b>
+</td><td>
+Percentage of the aligned residues which are
+the same amino acid.
+</td>
+</tr><tr>
+<td><b>rmsd</b>
+</td><td>
+Root Mean Square Deviation, in &Aring;, of the C&alpha;
+atoms of aligned residues.
+</td>
+</tr><tr>
+<td><b>suboptimal</b>
+</td><td>
+Suboptimal hits are solutions which timed out during
+the search process.  Lower RMSD and/or better scoring superpositions may exist
+for these.
+</td>
+</tr><tr>
+<td><b>R</b>, <b>T</b>
+</td><td>
+The rotation matrix and translation vector, respectively,
+that were applied to the crystallographic coordinates of the structure to
+obtain the superposed orientation in the <b>mol</b> column.
+</td>
+</tr>
+</tr><tr>
+</table>
+</p>
+
+<p>The remaining columns are reserved for use by the panel and possibly
+future applications which make use of the output database.
+</p>
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Tolerance</b></td>
+<td valign="top">Specifies the distance, in &Aring;, within which superposed
+points must lie.  Making this larger will slow down the search, but allow
+discovery of more distant hits, more distorted relative to the query.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Max. Crossing Angle</b></td>
+<td valign="top">Specifies the maximum angle, in degrees, at
+which two secondary
+structure vectors may intersect and still be considered superposed.  Any
+vectors exceeding this threshhold are discarded and not considered a match,
+even if the points superpose well.  Making this larger will slow down the
+search, but allow discovery of more distant hits, more distorted relative to
+the query.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Similarity Cutoff</b></td>
+<td valign="top">This value determines what fraction of the query must match
+in a target structure for it to be considered a hit.  Setting this very small
+will find more distantly related structures, but also take much longer.  A
+value of 1 will return only matches which match ALL the secondary structure
+elements in the query, in most cases.  For very large queries, this setting is
+ignored and any target matching a significant portion of the query is counted
+as a hit.  More specifically, the number of points that must be superposed
+to be considered a hit is 2 * N * f, where N is the number of secondary
+structure vectors in the query, and f is the <b>Similarity Cutoff</b>.
+However, an absolute minimum of six points must be superposed, and if the
+above product is greater than 12, it is clipped to 12.  Thus, very large
+queries will require a minimum of 12 points to be matched.  An exception to
+this is if the query itself is only two vectors, then only 4 points need be
+superposed to find a match (or else nothing would usually match).
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Result List</b></td>
+<td valign="top">Results of the search appear in the list occupying the
+bottom half of the panel.  For each hit, the code, score, aligned residues,
+percent identity, RMSD and structure title are given.  See <b>Output</b>
+above for detailed descriptions of these fields.  You may sort
+by any field by clicking on the field name.  Just below the result list is a
+status line which reports the number of hits found.  This is also where the
+progress bar appears during a search, as well as other status messages.
+Clicking on any entry in the list will load it into MOE,
+superposed onto a copy of the query, with the aligned regions indicated by
+thicker ribbons.  Clicking again in the list, even on the same entry (which
+will deselect that entry),  will unload the current structure.
+Entries marked by a &gt;
+are suboptimal solutions which timed out during the search.  Lower RMSD
+and/or better scoring superpositions may exist for these.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Arrows</b></td>
+<td valign="top">Use the arrow buttons to browse through the result list.  The
+inner arrows move the selection along one row at a time up or down.  The far
+left arrow moves the selection to the first item in the list, and the far right
+arrow moves the selection to the last item in the list.  Pressing the arrow
+is equivalent to clicking directly on the associated item in the result list.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Color By</b></td>
+<td valign="top">After clicking on an entry in the result list to load the
+entry into MOE, this toggle may be used to adjust
+the backbone coloring.  If set to <i>Chain</i>, the ribbons will be one
+color for the query and another for the hit.  The colors can be specified
+by the color selector boxes.  Otherwise if <i>Segment</i>, the ribbons
+will be colored such that aligned segments in the two structures are given
+the same color.  The residues in the Sequence Editor will be colored by
+aligned segment regardless of which setting is chosen. 
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Search</b></td>
+<td valign="top">Starts the search.   Once the search begins,
+this button is converted to <b>Stop</b> which can be used
+to interrupt the search.  Note that for large queries there
+may be a brief delay before the search actually stops.
+If using MOE/cluster (MOE/smp), the search will make use of all
+available CPUs.  Hits will appear in the result list as they are found, and
+may be inspected immediately.  If the search progress is slow, consider using
+a smaller query with fewer secondary structure vectors.  Use <b>Show Query
+Vectors</b> to view the current query vectors.  In general, queries with fewer
+than ten vectors should complete in a few minutes on a single 3 GHz CPU.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Optimize MDB...</b></td>
+<td valign="top">The search can be sped up by precalculating domain splitting
+and secondary structure vectors, for each entry in the database.  Otherwise,
+these operations must be performed on the fly for every search.  Using this
+button will create a special column in the <b>Search</b> database containing
+this precomputed information, in a column called <b>mol:SSINFO</b> (where
+<b>mol</b> is the name of the molecule field in the database).  In order to
+do this, the database must be writeable.  The <tt>pdb.mdb</tt> supplied with
+MOE 2012 and newer already contains this extra column.  The
+<b>Optimize MDB...</b> will be greyed out if the column already exists in the
+specified <b>Search</b> database.
+It will take approximately one minute per thousand structures in the database,
+on a 3 GHz CPU, to perform this optimization, and it only needs to be done
+once on a given database so it is strongly recommended that this be done if
+using a custom search database.
+</td>
+</tr>
+</table>
+
+<a name="SVLCommands"></a>
+<h2>SVL Commands</h2>
+
+<a class="svl" href="fcnref/pro_motifalign.htm">pro_MotifAlign</a><br />
+<a href="fcnref/intropro.htm">Protein Functions</a>
+</p>
+
+<a name="References"></a>
+<h2>References</h2>
+
+<table width="100%" cellpadding="5" border="0">
+
+<tr>
+<td valign="top">[Feldman&nbsp;2012]</td>
+<td valign="top">
+Feldman, H.J.;
+Identifying Structural Domains of Proteins using Clustering;
+<i>submitted to BMC Bioinformatics</i>, (<b>2012</b>).
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Gibrat&nbsp;1996]</td>
+<td valign="top">
+Gibrat, J-F., Madej, T., Bryant, S.H.;
+Surprising Similarities in Structure Comparison;
+<i>Curr. Op. Struc. Biol. 6</i> (<b>1996</b>) 377&ndash;385.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Holm&nbsp;1993]</td>
+<td valign="top">
+Holm, L., Sander, C.;
+Protein Structure Comparison by Alignment of Distance Matrices;
+<i>J. Mol. Biol. 233</i> (<b>1993</b>) 123&ndash;138.
+</td></tr>
+
+<tr>
+<td valign="top">[Shindyalov&nbsp;1998]</td>
+<td valign="top">Shindyalov, I.N., Bourne, P.E.;
+Protein Structure alignment by Incremental Combinatorial Extension (CE) of the
+Optimal Path;
+<i>Prot. Eng. 11(9)</i> (<b>1998</b>) 739&ndash;747.
+</td></tr>
+
+</table>
+
+<h2>See Also</h2>
+<a href="../moe/molsystems/molrep.htm">Representation of Molecular Systems in MOE</a><br />
+<a href="align.htm">Sequence and Structure Alignment</a><br />
+<a href="../mdb/dbbrowse.htm">Database Browser</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

@@ -1,0 +1,1680 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--	web_inst.htm
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Installing and Running MOE/web</title>
+
+<meta keywords moewebservice, daemon, web server />
+<meta keywords SOAP, moeweb, startup />
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Overview">Overview</a></li>
+<li><a href="#ServerA">Preparing the Web Server</a>
+    <ul>
+    <li><a href="#InstallA">Install MOE</a></li>
+    <li><a href="#LicenseA">Validate the License File</a></li>
+    <li><a href="#StartA">Start the Web Server</a></li>
+    <li><a href="#TestA">Test the Installation</a></li>
+    <li><a href="#Stopping">Stopping the Web Server</a></li>
+    <li><a href="#Configuring">Command Line Switches</a></li>
+    <li><a href="#AfterStartup">Startup Information</a></li>
+    <li><a href="#ServiceWin">Running as a Windows Service</a></li>
+    <li><a href="#ConfigureService">Configuring the Windows Service</a></li>
+    <li><a href="#ServiceUNIX">Running as a UNIX Daemon</a></li>
+    </ul>
+</li>
+<li><a href="#OpeningPage">Main Server Pages</a></li>
+<li><a href="#DataStorage">Data Storage</a></li>
+<li><a href="#Publish">Creating a Web Application</a>
+    <ul>
+    <li> <a href="#Header">Headers and Footers</a></li>
+    <li> <a href="#Dir">Creating the Application Directory</a></li>
+    <li> <a href="#Form">Designing an HTML Input Form</a></li>
+    <li> <a href="#Access">Accessing the HTML Form Content in SVL</a></li>
+    <li> <a href="#Result">Generating a Result HTML Page</a></li>
+    <li> <a href="#Update">Migrating MOE/web 2009.10 and Earlier Applications</a></li>
+    </ul>
+</li>
+<li><a href="#SOAP">SOAP Service</a></li>
+    <ul>
+	<li> <a href="#SOAPPage">SOAP Function Directory Page</a></li>
+	<li> <a href="#WSDLPage">WSDL page</a></li>
+	<li> <a href="#SOAPTest">SOAP Test Page</a></li>
+	<li> <a href="#SOAPScripts">Calling SOAP with a Program/Script</a></li>
+	<li> <a href="#Stateful">Stateful SOAP Service</a></li>
+	<li> <a href="#SOAPService">Creating a SOAP Web Service</a></li>
+    </ul>
+</li>
+<li> <a href="#StatsPage">Statistics Page</a></li>
+<li> <a href="#LinkManual">Creating Links to the MOE Manuals</a></li>
+<li> <a href="#Slisten">MOE Socket Listener</a></li>
+<li><a href="#SeeAlso">See Also</a>
+</ul>
+
+<a name="Overview"></a>
+<h2>Overview</h2>
+<p>
+MOE/web is a web interface to the batch version of MOE. Its purpose is to
+allow widespread access to MOE built-in applications or custom SVL programs via
+a web browser.
+</p>
+
+<p>The MOE/web server is also a webservice provider introduced with
+MOE 2009.10. It offers a framework for building lightweight
+browser-based <a href="#Publish">web applications</a> and
+<a href="#SOAP">function calls</a> via the Simple Object Access Protocol
+(<a href="http://www.w3.org/TR/soap12-part1">SOAP</a>).
+This protocol can be used to interface MOE to third party software, such as
+KNIME and Pipeline Pilot.
+</p>
+
+<p>Running the MOE/web server has no external dependencies, besides
+<a href="install.htm#Java">Java</a> and MOE. The amount of configuration
+required is minimal, and is done using command line options. The functionality
+hosted by the server is implemented in SVL (for SOAP functions). Web
+applications may also make use of static support files, such as CSS, JavaScript,
+etc.
+</p>
+
+<p>
+The following materials are required for the installation of
+MOE/web:
+</p>
+
+<ul>
+    <li> A MOE installation
+    <li> A software key issued by CCG
+</ul>
+
+
+<p>For a brief description of the web applications included as part of
+the MOE distribution, please see
+<a href="../moe/moeweb_intro.htm">MOE/web Applications</a>.
+</p>
+
+<a name="ServerA"></a>
+<h2>Preparing the Web Server</h2>
+
+<a name="InstallA"></a>
+<h3>Install MOE</h3>
+
+For security reasons we recommend installing a copy of MOE on the
+computer that will be the web server.  Follow the standard
+<a href="install.htm">MOE installation</a>
+instructions to copy the distribution files from the MOE downloaded
+archive into the directory of your choice. The <tt>MOE</tt> environment
+variable should either not be set or set to the path to which MOE was
+just copied.
+
+
+<a name="LicenseA"></a>
+<h3>Validate the License File</h3>
+
+Follow the instructions on how to install the MOE software keys for either
+<a href="install.htm#KeyWindows">Windows</a>,
+<a href="install.htm#KeyUnix">Linux</a>,
+or <a href="install.htm#KeyMacOSX">Mac OSX</a>. If you
+already have a functioning MOE installation, you can copy the existing
+<tt>license.dat</tt> file to the newly copied MOE directory.
+
+<a name="StartA"></a>
+<h3>Start the Web Server</h3>
+
+
+<p>The server can be started from a command line shell, or via a shell or batch
+script.
+</p>
+<p>At the Unix (or Linux or Mac OS X) command line, the simplest way to start
+the server is:
+</p>
+<pre>
+    user% <b>/usr/local/moe/bin/moeweb</b>
+</pre>
+
+<p>if MOE was installed in the directory <tt>/usr/local/moe</tt>, or:
+
+</p>
+<pre>
+    user% <b>$MOE/bin/moeweb</b>
+</pre>
+
+<p>if the environment variable <tt>MOE</tt> has been set to the MOE
+installation directory.
+</p>
+<p>On Windows, the command line syntax would be:
+</p>
+<pre>
+    C:\> <b>C:\moe\bin\moeweb</b>
+
+</pre>
+
+<p>if MOE was installed in the folder <tt>C:\moe</tt>.
+</p>
+<p>The file <tt>moeweb</tt> (Unix) or <tt>moeweb.bat</tt> (Windows) is a script.
+When run without arguments, the server will start using all default parameters,
+which are often sufficient for exploratory use.
+</p>
+<p>The server itself is implemented in Java, and requires the
+Oracle (Sun) Java Runtime
+1.5 or later. Other versions of Java, such as Gnu Java, distributed by default
+with some versions of Linux, may not work correctly. The Java archive
+file which contains the server application is
+<tt>$MOE/web/MOEWebServer.jar</tt>.
+
+<a name="TestA"></a>
+<h3>Test the Installation</h3>
+
+Assuming you have started the server with the default settings, open a
+browser and visit the web page <tt>http://SERVER:8888/</tt> where
+<tt>SERVER</tt> is the hostname of the machine on which the web server is
+running.  A page with various sample
+<a href="../moe/moeweb_intro.htm">MOE/web applications</a>
+distributed with MOE will be shown.
+</p>
+
+<a name="Stopping"></a>
+<h3>Stopping the Web Server</h3>
+
+<p>The server responds gracefully to operating system kill messages. On Unix,
+the <tt>kill</tt> command can be used, from a different session. On Windows, the
+task manager can achieve the same effect. On any platform, if the server is
+being run from the command line, pressing <tt>Ctrl+C</tt> will send the kill
+signal, which will initiate server shutdown.
+</p>
+<p>When the kill signal is received, the server will close its connections,
+release its MOE tokens, delete any temporary files and close the log file.
+</p>
+
+<h3><a name="Configuring">Command Line Switches</a></h3>
+
+<p>The list of command line options can be obtained by using the <tt>-help</tt>
+argument, e.g.:
+</p>
+<pre>
+    user% <b>$MOE/bin/moeweb -help</b>
+</pre>
+
+<table class="titlebar">
+
+<tr>
+<th>Switch</th>
+
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="top"><tt>-verbose</tt></td>
+<td valign="top">
+When set, extra information is output to the log.  This can be useful for
+debugging purposes.
+
+</td></tr>
+
+<tr>
+<td valign="top"><tt>-work</tt>&nbsp;<i>#</i></td>
+<td valign="top">
+
+The maximum number of tokens to use. The default is 1. The server uses one MOE
+token per simultaneous task. More tokens means that more tasks can be serviced
+simultaneously. Increasing the number of tokens allows more users to be
+serviced at any given time. Also, each token uses a single thread, so a CPU
+with multiple cores can be expected to perform better under heavy loads as
+additional tokens are added.
+</td></tr>
+<tr>
+<td valign="top">
+<tt>&#8209;idlework</tt>&nbsp;<i>#</i><br />
+</td>
+<td valign="top">
+
+The minimum number of tokens to use. The default is 1.
+By default, each of the threads specified by the <tt>-work</tt> argument uses a
+token for as long as the server is running. When the <tt>-idlework</tt>
+argument is set to a lower number than <tt>-work</tt>, tokens will be released
+during periods of inactivity. A value of 0 means that all tokens will be
+released, 1 means that at least one will always be available, etc.
+</td></tr>
+
+<tr>
+<td valign="top">
+<tt>&#8209;idlewait</tt>&nbsp;<i>#</i>
+</td>
+<td valign="top">
+The length of time, in minutes, for which the server must be idle before
+tokens are released. Default is 5 minutes. Specifying low values helps to
+minimize token usage, but it increases the likelihood that a user will be
+delayed by the time needed to restart MOE.
+</td></tr>
+
+<tr>
+<td valign="top"><tt>&#8209;cors</tt>&nbsp;<i>name</i></td>
+<td valign="top">
+The cross-origin resource sharing option specifies what host should be returned
+by the server in the Access-Control-Allow-Origin HTTP header.  This is used
+when making XMLHttpRequest calls in JavaScript from web pages in a domain
+different from that of the domain of the server.  By default, the value of
+<b>*</b> is used, which permits all such cross-domain requests.  When the value
+is <b>*</b>, the Access-Control-Allow-Origin header will return the Origin header
+value from the initial request.  Using the keyword <b>disabled</b> here turns off
+the feature completely, preventing cross-domain requests. Cross-origin resource
+sharing is described in detail at
+<a href="http://www.w3.org/TR/cors/" target="_blank"><tt>
+www.w3.org/TR/cors</tt></a>.
+</td></tr>
+<tr>
+<td valign="top"><tt>-host</tt>&nbsp;<i>name</i></td>
+<td valign="top">
+
+The return-name of the server may be specified. The default name of the host
+server will be used as the default, but depending on the network topology, it
+may be desirable to specify it explicitly.
+
+</td></tr>
+<tr>
+<td valign="top"><tt>-port</tt>&nbsp;<i>#</i></td>
+<td valign="top">
+
+The TCP/IP port upon which the server will listen may be specified explicitly.
+If not, port 8888 is used.
+</td></tr>
+<tr>
+<td valign="top"><tt>-load</tt>&nbsp;<i>fn</i></td>
+<td valign="top">
+
+The functionality of the server is provided by SVL functions, which are made
+available by loading them into each MOE session (moebatch worker). Use this
+argument to add additional custom functions to the server.
+
+The argument should be repeated for each file to be loaded, e.g.
+<span class="nobr">"<tt>-load file1.svl -load file2.svl</tt>"</span>.
+A directory can also be provided and all SVL files in it will be added to the server.
+Non-absolute paths are considered to be relative to the current working
+directory where the MOEWeb startup command is issued.
+</td></tr>
+
+<tr>
+<td valign="top"><tt>-add</tt>&nbsp;<i>fn</i></td>
+<td valign="top">
+This option is similar to <tt>-load</tt> except that the file is loaded only
+when a SOAP function defined in that file is actually being executed.
+Additionally, the file is only loaded on the MOE session (moebatch worker) that
+is executing the function; other workers will not have the file loaded.
+<br>
+For example, if file x1.svl defines function soap_F1[] and G1[], and file x2.svl
+defines function soap_F2[] and G2[], and MOE/Web is started with
+"-load x1.svl -add x2.svl", then:<br>
+1) both F1 and F2 are available as <a href="#SOAPService">SOAP services</a>.<br>
+2) when F1 is running, it can only call G1 but not G2.<br>
+3) when F2 is running, it can call G2 and also G1.
+<br>
+By default, all SVL files in the $MOE/lib/svl/soap directory are registered to
+MOE/Web server with <tt>-add</tt>.
+</td></tr>
+
+<tr>
+<td valign="top"><tt>-app</tt>&nbsp;<i>dir</i></td>
+<td valign="top">
+Non-SOAP style applications - those supported by versions of MOE/web prior
+to 2009.10 - are loaded using this option.  Simply provide the path to each
+application.  The argument should be repeated for each application to be loaded,
+e.g. <span class="nobr">"<tt>-app prog1 -app prog2</tt>"</span>. Non-absolute
+paths are considered to be relative to the current working directory
+(same as <tt>-load</tt>).
+If multiple applications are stored in a single parent directory, you may give
+that parent directory and all applications found in it will be loaded.  If
+no paths are specified, the system will default to whatever is in $MOE/web.
+</td></tr>
+
+<tr>
+<td valign="top"><tt>-root</tt>&nbsp;<i>dir</i></td>
+<td valign="top">
+
+The base location for MOE files may be specified explicitly. By default it is
+derived from the location of the original executable.
+</td></tr>
+<tr>
+<td valign="top"><tt>-arch</tt>&nbsp;<i>code</i></td>
+<td valign="top">
+
+The operating system architecture code may be specified explicitly. By default
+it is derived automatically.
+</td></tr>
+
+<tr>
+<td valign="top"><tt>-lic</tt>&nbsp;<i>fn</i></td>
+<td valign="top">
+
+The location of the MOE license file.
+</td></tr>
+<tr>
+<td valign="top"><tt>-boot</tt>&nbsp;<i>boot</i></td>
+<td valign="top">
+
+The MOE SVL boot script may be specified explicitly. By default, it is
+<tt>$MOE/web/boot_web.svl</tt>.
+
+</td></tr>
+<tr>
+<td valign="top"><tt><a name="webTmp"></a>-tmp</tt>&nbsp;<i>dir</i></td>
+<td valign="top">
+
+The location for writing temporary files may be specified explicitly. By
+default, it is obtained from the operating system.
+</td></tr>
+<tr>
+<td valign="top"><tt>-home</tt>&nbsp;<i>dir</i></td>
+<td valign="top">
+
+This option is used to specify the HOME directory, which supersedes the defaults
+in the MOE session.
+</td></tr>
+<tr>
+<td valign="top"><tt>-webDir</tt>&nbsp;<i>dir</i></td>
+<td valign="top">
+
+The parent location for saving files generated by the server.
+By default, $HOME/moefiles/moeweb will be used and
+missing subdirectories will be created automatically when the server starts.
+</td></tr>
+<tr>
+<td valign="top"><tt><a name="webPerm"></a>-webPerm</tt>&nbsp;<i>dir</i></td>
+<td valign="top">
+
+The location for writing semi-permanent files. If not specified, ~webDir/perm
+will be used and the 'perm' subdirectory is created automatically when missing.
+</td></tr>
+<tr>
+<td valign="top"><tt>-webPermExpiry</tt>&nbsp;<i>#</i></td>
+<td valign="top">
+
+The expiration time (in days) for semi-permanent data. Default is 365 days.
+Files will be cleaned up by the server after they expire.
+</td></tr>
+<tr>
+<td valign="top"><tt>-webPermLimit</tt>&nbsp;<i>#</i></td>
+<td valign="top">
+
+The number of storage sessions for the semi-permanent data of 
+each client (identified through their HTTP cookie). By default, 1000 sessions is
+allowed.
+</td></tr>
+<tr>
+<td valign="top"><tt><a name="webCache"></a>-webCache</tt>&nbsp;<i>dir</i></td>
+<td valign="top">
+
+The location for writing cache files which often expire after a relatively short
+period of time. If not specified, ~webDir/cache will be used and the 'cache'
+subdirectory is created automatically when missing.
+</td></tr>
+<tr>
+<td valign="top"><tt>-webCacheExpiry</tt>&nbsp;<i>#</i></td>
+<td valign="top">
+
+The expiration time(in days) for cache data. Default is 30 days.
+Files will be cleaned up by server after they expire.
+</td></tr>
+<tr>
+<td valign="top"><tt>-webCacheLimit</tt>&nbsp;<i>#</i></td>
+<td valign="top">
+
+The maximum number of storage sessions for cache data per client. Default is
+1000.
+</td></tr>
+
+<tr>
+<td valign="top"><tt>-log</tt>&nbsp;<i>fn</i></td>
+<td valign="top">
+
+The server writes a log file for its activity. By default it is directed to the
+standard output console, which is equivalent to <tt>-log&nbsp;-</tt>.
+Use <tt>-log&nbsp;.</tt> to disable log messages.
+Specifying an explicit filename will write log messages to the indicated file.
+</td></tr>
+
+<tr>
+<td valign="top"><tt>-charset</tt>&nbsp;<i>c</i></td>
+<td valign="top">
+
+The character encoding to use when reading the <tt>app_desc.txt</tt> application
+descriptions (see <a href="#Dir">below</a>). By default they are assumed to be
+in UTF-8 or standard ASCII.  If not, specify the desired encoding here when
+starting the server.
+</td></tr>
+
+
+<tr>
+<td valign="top"><tt>@<i>fn</i></td>
+
+<td valign="top">
+
+Rather than specifying all options on the command line, this syntax can be used
+to direct the command line parser to read its arguments from a text file.
+Non-absolute path names are considered to be relative to the current directory.
+
+The argument file uses any kind of whitespace to separate individual arguments.
+Lines which begin with the <tt>#</tt> character are ignored. Content embedded
+between quotation marks (") is considered to be a single argument.
+</td></tr>
+</table>
+
+<a name="Examples"></a>
+<h4>Command Line Examples</h4>
+
+<a name="Examples"></a>
+<h3>Examples</h3>
+
+<div class="example">
+<h5>Example 1</h5>
+
+<pre>
+
+    user% <b>$MOE/bin/moeweb -work 2 -idlework 1 -idlewait 10</b>
+</pre>
+
+<p>All default parameters are used, except that the maximum number of
+threads/tokens is 2. After the server has been idle for 10 minutes or longer,
+the number of threads/tokens is dropped to 1.
+</p>
+</div>
+
+<div class="example">
+<h5>Example 2</h5>
+
+<pre>
+    user% <b>$MOE/bin/moeweb -host foo.bar.com -port 8001</b>
+
+</pre>
+
+<p>The network name and port are specified. In this case, the base URL for
+accessing web service features would be <tt>http://foo.bar.com:8001</tt>.
+</p>
+</div>
+
+<div class="example">
+<h5>Example 3</h5>
+
+<pre>
+    user% <b>$MOE/bin/moeweb -lic /usr/local/moe/license.dat \
+        -log /usr/local/log/moeweb_log.txt \
+        -load customfunc1.svl \
+        -load customfunc2.svl \
+        -load customfunc3.svl </b>
+</pre>
+
+<p>A license file and a log file are specified explicitly. Also, 3 additional
+SVL files, located in the current directory, are loaded, in order to provide
+additional functionality to the server.
+
+</p>
+</div>
+
+<div class="example">
+<h5>Example 4</h5>
+
+<pre>
+    user% <b>$MOE/bin/moeweb @/usr/local/web/loadfiles.txt</b>
+</pre>
+
+<p>where the file <tt>/usr/local/web/loadfiles.txt</tt> contains:
+
+</p>
+<pre><b>
+    # files to load
+    -load /usr/local/web/loadfiles/customfunc1.svl
+    -load /usr/local/web/loadfiles/customfunc2.svl
+    -load /usr/local/web/loadfiles/customfunc3.svl
+    -load "/home/somebody/extra functions.svl"
+</b></pre>
+
+<p>In this case all the arguments are default, except for the extra source
+file, which directs the server to load 4 additional SVL files. Note that the
+last filename contains a space, so it is surrounded by quotes.
+</p>
+</div>
+
+
+<h3><a name="AfterStartup">Startup Information</a></h3>
+
+<p>If the log option is enabled, the server will display a summary of the
+effective command line options, followed by a variety of diagnostic information
+during startup. At least one instance of MOE/batch will be launched, and the
+list of SOAP functions will be obtained and displayed.
+</p>
+<p>The following output is a sample output example when
+<tt>$MOE/bin/moeweb</tt> is run without additional parameters:
+</p>
+
+<table cellpadding="10">
+<tr>
+<td width="100"></td>
+<td style="background-color: #E8E8E8;">
+<pre>
+-- MOE/web Server (2014.09)
+-- Copyright (c) 2009-2015 Chemical Computing Group, Inc.
+-- All rights reserved.
+--
+-- Effective configuration:
+--     -work 1
+--     -cors *
+--     -host example.com
+--     -port 8888
+--     -root /opt/moe
+--     -arch lnux
+--     -boot /opt/moe/web/boot_web.svl
+--     -home /home/www/moefiles/moeweb
+--     -webDir /home/www/moefiles/moeweb
+--     -webCache /home/www/moefiles/moeweb/cache
+--     -webCacheExpiry 30.0
+--     -webCacheLimit 1000
+--     -webPerm /home/www/moefiles/moeweb/perm
+--     -webPermExpiry 365.0
+--     -webPermLimit 1000
+--     -log -
+--     -charset UTF-8
+--
+-- [#1] Command execution of MOE:
+-- [#1]  /opt/moe/bin-lnux/moebatch -root /opt/moe -std -boot\
+-- [#1]  /opt/moe/web/boot_web.svl
+-- [#1] LOG: license file    : '/opt/moe/license.dat'
+-- [#1] LOG: license expires : 31-dec-2014
+-- [#1] LOG: MOE version     : 2014.09
+-- [#1] LOG: MOE arch        : lnux
+-- [#1] LOG: MOE root        : '/opt/moe'
+-- [#1] LOG: MOE tmp         : '/tmp/moewebtmp/t_9601099913'
+-- [#1] LOG: start cd        : '/tmp/moewebtmp/t_9601099913'
+-- [#1] LOG: MOE/web (SVL) started successfully
+--
+-- YellowPages results now available:
+--        (1): [soap] Ph4List
+--        (2): [soap] Ph4Search
+--        (3): [soap] AntibodyModeler
+--        (4): [soap] DepictionLayout
+--        (5): [soap] MedChemProps
+--        (6): [soap] MolToSMILES
+--        (7): [soap] SMILESToMol
+--        (8): [soap] HomologyModeler
+--        (9): [soap] _ProjectCreate
+--       (10): [soap] _proj_CheckPaths
+--       (11): [soap] Mogul
+--       (12): [soap] DataTypes
+--       (13): [soap] Version
+-- Beginning session monitor thread
+-- Loading all data storage directories
+-- Finished loading directories: size = 76
+--
+-- HOME: http://example.com:8888
+-- SOAP: http://example.com:8888/soap.html
+-- WSDL: http://example.com:8888/MOEWebServer.wsdl
+-- Waiting on socket
+-- Hosting on example.com[127.0.0.1]:8888
+</pre></td></tr></table>
+
+<p>Whenever problems are encountered setting up the server, the initial output
+from the server application should be analyzed. Any customer support inquiries
+should be accompanied by a copy of the initial log output.
+</p>
+
+<!-- ............................. Service ................................ -->
+
+<h3><a name="ServiceWin">Running as a Windows Service</a></h3>
+
+<p>On Windows XP and higher operating systems, the MOE/web application server
+may be run as a Windows Service.  When installed as a service, the MOE/web
+server will start automatically when the system is booted, and stay running
+until it is explicitly stopped from the Service Control Panel,
+which can be opened by launching
+&quot;Services&quot; from
+
+<span class="nobr">Windows Control Panel | Administrative Tools</span>.
+</p>
+
+<a name="InstallService"></a>
+<p>To install the service, administrative privileges are required.
+At a command line prompt, the following command will perform the installation
+(replace <tt><b>C:\moe</b></tt> with the path to your MOE installation):
+
+<pre>
+    C:\> <b>C:\moe\web\moewebservice /install</b>
+</pre>
+
+<p>You will
+be told whether installation succeeded or an error occurred.  If successful,
+the service will appear in the Service Control Panel
+which lists all
+installed services on your computer. Henceforth, the server
+will start automatically on reboot.
+Errors starting or stopping the service will be written to the
+system Event Log (viewable from
+
+<span class="nobr">Control Panel | Administrative Tools</span>).</p>
+
+<p>To remove the service, simply type the following at a command line prompt:</p>
+
+<pre>
+    C:\> <b>C:\moe\web\moewebservice /remove</b>
+</pre>
+
+<p>Again, in the above command,
+replace <tt><b>C:\moe</b></tt> with the path to your MOE installation.
+Before removal,
+the service will automatically be stopped if it is running.
+You can verify that the service has been removed
+by looking in the Services panel (Control Panel | Administrative Tools | Services);
+the MOE/web service will now be absent from the list.
+
+</p>
+
+<p><b>Note:</b> Installing and removing MOE/web from the Services list
+requires the <i>Microsoft Visual C++ 2005 Redistributable Package (x86)</i>
+which can be freely downloaded from
+<a href="http://www.microsoft.com/download/en/details.aspx?id=3387"
+target="_blank">www.microsoft.com</a>.
+</p>
+
+<a name="ConfigureService">
+<h3>Configuring the Windows Service</h3></a>
+
+<p>When the service is executed, the current directory is set to the path
+where the installed
+<tt>moewebservice</tt> binary executable resides.
+In the standard MOE distribution, the executable is located in
+the <tt>web</tt> subdirectory of the MOE installation directory, i.e.
+<tt>$MOE/web</tt>
+(<span class="nobr"><tt>C:\moe\web</tt></span> in
+the above example).
+This directory contains all MOE/web files.
+</p>
+
+<p>
+To use the <a href="#Configuring">switches</a> described above (<tt>-root</tt>,
+<tt>-log</tt>, etc.), enter them in a file
+named <tt>moewebservice.cfg</tt>, which must reside in the
+<span class="nobr"><tt>$MOE/web</tt></span> directory.
+An example of this file can be found
+in the <tt>$MOE/web</tt> directory.
+The switches must be entered one per line.  Non-absolute
+path names are considered to be relative to the current directory,
+and quotation marks may be used to enclose
+paths containing spaces.</p>
+
+<h3><a name="ServiceUNIX">Running as a UNIX Daemon</a></h3>
+
+<p>On UNIX operating systems, it may be desirable to run MOE/web as a daemon,
+which is executed upon system startup.  To achieve this, use the
+<tt>$MOE/web/moewebservice</tt> script.  The startup command sequence,
+similarly to other UNIX daemons, is simply:</p>
+<pre>
+    $MOE/web/moewebservice start
+</pre>
+<p>at a shell prompt or from within a script.  To stop the daemon:</p>
+<pre>
+    $MOE/web/moewebservice stop
+</pre>
+<p>By default, the configuration file <tt>moewebservice.cfg</tt> found in the
+<tt>$MOE/web</tt> directory will be used, however a different file may be
+specified as follows:</p>
+<pre>
+    $MOE/web/moewebservice start @/opt/mymoeweb.cfg
+</pre>
+<p>The file should list arguments one per line.  Non-absolute path names are
+considered to be relative to the current directory and quotation marks may be
+used to enclose paths containing spaces.  There is a <tt>restart</tt> option
+to the script as well, which forces re-reading of the configuration file.</p>
+<p>In order to start MOE/web on system startup, follow the usual procedure for
+your operating system.  Normally, this requires <tt>root</tt> access, and
+typically involves calling it directly from within the <tt>/etc/rc.local</tt>
+startup script. <span class="note">NOTE:</span> Do not just copy the 
+<tt>moewebservice</tt> script to a
+directory such as <tt>/etc/init.d</tt> or <tt>/etc/rc.d/rc5.d</tt>, or link
+to the script from those directories, because <tt>moewebservice</tt> requires
+MOE's location to start properly.
+
+<h2><a name="OpeningPage">Main Server Pages</a></h2>
+
+<p>When the server is running, it will respond to requests on a particular
+TCP/IP port. With default parameters, it will usually be possible to access the
+server from the same computer by opening a web browser, and entering the URL:
+</p>
+<pre>
+    http://localhost:8888
+</pre>
+
+<p>For general use, however, it is advisable to use the computer's
+host name, rather than using <i>localhost</i>. The host name may have been derived
+automatically, or it may have been set explicitly as a parameter. The host name
+that is being used by the server is displayed at the end of the server
+<a href="#AfterStartup">boot output</a>.
+</p>
+<p>The table below shows several page URLs which are important to investigate
+when administering MOE/Web server:
+</p>
+
+<center>
+<table class="titlebar">
+
+<tr>
+<th>URL</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="top"><tt>http://{host}:{port}</tt></td>
+<td valign="top">Web application directory page (also the server home page)</td>
+</tr>
+<tr>
+<td valign="top"><tt>http://{host}:{port}/soap.html</tt></td>
+<td valign="top">SOAP function directory page</td>
+</tr>
+<tr>
+<td valign="top"><tt>http://{host}:{port}/MOEWebServer.wsdl</tt></td>
+<td valign="top">Web Services Description Language (WSDL) document</td>
+</tr>
+<tr>
+<td valign="top"><tt>http://{host}:{port}/stats.html</tt></td>
+<td valign="top">Statistics page</td>
+</tr>
+</table>
+</center>
+
+<h2><a name="DataStorage">Data Storage</a></h2>
+<p>
+The MOE/Web server provides different levels of data storage: temporary, cache, and
+semi-permanent. The <a href="#webTmp">temporary</a> work space is used for
+holding intermediate files that will be deleted when the job ends. The
+<a href="#webCache">cache</a> directory is used for saving persistent data that
+expires after a relatively short period of time. The <a href="#webPerm">
+semi-permanent</a> directory is for data that persists for a long time, such as
+a year. The location and expiry time for these directories can be controlled by
+by MOE/web <a href="#Configuring">command line switches</a>.
+
+<a name="Publish"></a>
+<h2>Creating a Web Application</h2>
+
+<p>The creation of a <a href="../moe/moeweb_intro.htm">MOE/web application</a>
+begins by designing the HTML form
+used by the client to initiate the computation. When the form is completed
+its contents are transmitted to MOE/batch for processing. Special
+variables are at the disposal of the SVL programmer to access the
+form content. Once the processing is completed, the SVL application
+outputs an HTML document that is transmitted back to the client,
+thus completing the MOE/web transaction.</p>
+
+<a name="Header"></a>
+<h3>Headers and Footers</h3>
+
+<p>Standard header and footer files for MOE/web pages are provided in the
+$MOE/web directory, in the files <tt>header.htm</tt> and <tt>footer.htm</tt>,
+respectively.  These may be customized, and are standard HTML documents except
+that the header contains a few special tags which are substituted when
+sent out by the web server as follows:
+</p>
+
+<center>
+
+<table class="titlebar">
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+<tr><td valign="top"><tt>&lt;PAGETITLE&gt;</tt></td>
+<td valign="top">
+This tag will be substituted with the name of the application.
+</td></tr>
+<tr><td valign="top"><tt>&lt;EXTRACSS&gt;</tt></td>
+<td valign="top">
+If a CSS file with the same filename and in the same directory as the HTML
+file is found, this tag will be replaced with a link to the style sheet.  For
+example when accessing the page <tt>sdfilter/sdfilter.htm</tt>, the system
+will check for <tt>sdfilter/sdfilter.css</tt> and include it in the header
+if found.  This allows you to provide custom CSS for each application you
+create.  For pages generated by SVL scripts, the CSS file indicated by
+
+<tt>moe_web_style</tt> (see <a href="#Form">below</a>) will be substituted.
+</td></tr>
+<tr><td valign="top"><tt>&lt;EXTRAJS&gt;</tt></td>
+<td valign="top">
+If a JavaScript file with the same filename and in the same directory as the
+HTML file is found, this tag will be replaced with a link to it.  For
+example when accessing the page <tt>sdfilter/sdfilter.htm</tt>, the system
+will check for <tt>sdfilter/sdfilter.js</tt> and include it in the header
+if found.  This allows you to provide custom JavaScript for each application
+you create.  JavaScript may also be included in the document body in the
+normal way.
+</td></tr>
+</table>
+
+</center>
+
+<p>Pages generated by SVL scripts will automatically include
+<tt>header.htm</tt> and <tt>footer.htm</tt>, however static HTML files will
+not.  You may provide your own headers and footers for these, or to maintain a
+uniform look, include <tt>header.htm</tt> and
+<tt>footer.htm</tt>.  To do so, include the following lines, exactly as
+shown, at the position you would like them to be included (normally the very
+start and end of the HTML).
+</p>
+<p>For the header:</p>
+<code>&lt;!--#header TITLE|mycss.css|myjs.js--&gt;</code>
+
+<p>and for the footer:</p>
+<code>&lt;!--#footer--&gt;</code>
+
+<p>Here <tt>TITLE</tt> is the title of the application to be displayed.  To
+provide a custom CSS file to be substituted for <tt>&lt;EXTRACSS&gt;</tt> in
+the header, follow the title with a pipe (|) symbol and the name of the
+CSS file, which must be in the same directory.  To also include a JavaScript
+file to substitute for <tt>&lt;EXTRAJS&gt;</tt>, add a second pipe symbol,
+and the name of the .js file.  Note that providing these extra CSS and
+JavaScript files is optional, and only required if the filenames are
+different from the name of the HTML file, since the CSS and JavaScript files
+will automatically be included when the names match the HTML file.</p>
+
+<a name="Dir"></a>
+<h3>Creating the Application Directory</h3>
+
+All MOE/web applications should reside in a subdirectory of
+<tt>$MOE/web</tt> in order to be automatically detected at server startup.
+
+<p>
+The MOE/web Applications page is a dynamically generated document that scans
+every subdirectory of <tt>$MOE/web</tt> (or those paths specified when
+starting the server) to display installed MOE/web applications. Information
+about applications are stored in an application descriptor file named
+<tt>app_desc.txt</tt> located in the application directory.  If this file is
+encoded in any character set other than ASCII or UTF-8, the encoding must
+be specified with the <tt>-charset</tt> option when starting the server,
+as described above.
+<p>
+
+A descriptor file can contain the following tags:
+<p>
+<center>
+<table class="titlebar">
+
+<tr>
+<th>Name</th>
+<th>Description</th>
+
+<tr>
+<td valign="top"><tt>Title</tt>
+<td valign="top">
+Specifies a short name for the application.
+
+<tr>
+
+<td valign="top"><tt>Description</tt>
+<td valign="top">
+A few lines of text explaining the purpose of the application.
+
+<tr>
+<td valign="top"><tt>Icon</tt>
+<td valign="top">
+Specifies an image to display beside the application description. The
+recommended image size is 64x64 pixels.
+
+<tr>
+<td valign="top"><tt>Link</tt>
+<td valign="top">
+The HTML document to display when the application is launched.
+</table>
+</center>
+
+<p>
+The following example is taken from the SD Filter application:
+<pre>
+&lt;title&gt;
+SD Filter
+&lt;/title&gt;
+
+&lt;icon&gt;
+icon.png
+&lt;/icon&gt;
+
+&lt;description&gt;
+
+Adjust molecular data stored in SD files and screen records according
+to rules such as Lipinski rule-of-five or the presence of
+reactive groups.
+&lt;/description&gt;
+
+&lt;link&gt;
+sdfilter.htm
+&lt;/link&gt;
+</pre>
+
+<a name="Form"></a>
+<h3>Designing an HTML Input Form</h3>
+
+A form definition must specify at least two special attributes which provide
+the name of the form's processing server and the method by which the
+parameters are to be sent to the server. The form processing server is
+specified using the <tt>action</tt> attribute. MOE/web uses the path
+
+<tt>cgi-bin/moe_cgi.pl</tt> of the MOE installation directory as the form
+processing server for backwards compatibility, but this file no longer
+actually exists and is redirected automatically to the new equivalent.
+The second required attribute is
+named <tt>method</tt> and sets the method by which the browser transmits the
+form's contents to the server. MOE/web is designed to use the POST method. If
+we assume that MOE was installed in the root directory of your web server
+then the proper HTML form declaration to be used with MOE/web would be:
+
+<pre>
+    &lt;form action=&quot;../../cgi-bin/moe_cgi.pl&quot; method=&quot;post&quot;&gt;
+</pre>
+
+<p>An extra attribute specifying the form data encoding need only
+be included when the MOE/web form includes one or more file upload elements.
+MOE/web expects file uploads to be encoded using the multipart format. In this
+case, the form declaration to be used is:
+
+
+<pre>
+    &lt;form action=&quot;../../cgi-bin/moe_cgi.pl&quot;
+          method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;
+</pre>
+
+<p>Forms allow for a variety of data input fields, buttons, boxes
+and lists.  One of these types is
+a <tt>hidden</tt> type which can be used to manage user/server interactions.
+MOE/web is sensitive to the following hidden data fields:
+
+
+<p>
+<center>
+<table class="titlebar">
+
+<tr>
+<th>Name</th>
+<th>Description</th>
+
+<tr>
+<td valign="top"><tt>moe_web_runfile</tt>
+<td valign="top">
+Specifies the name of the SVL program to be run.  The path should be relative
+to the parent of the application directory.  For example if there were an
+application in a directory called <tt>myapp</tt>, you might set this to
+
+<tt>myapp/myapp.svl</tt>.
+
+<tr>
+<td valign="top"><tt>moe_web_title</tt>
+<td valign="top">
+Specifies the name of the application for display purposes.
+
+<tr>
+<td valign="top"><tt>moe_web_load</tt>
+<td valign="top">
+The list of SVL files or directories of SVL files to be loaded in
+addition to "lib/svl/{sys,stdlib,msys}".
+
+<tr>
+<td valign="top"><tt>moe_web_style</tt>
+<td valign="top">
+Specifies the name of a CSS style sheet to be included in the
+output HTML document.  The path should be relative to the parent of the
+application directory.  For example if there were an application in a directory
+called <tt>myapp</tt>, you might set this to <tt>myapp/myapp.css</tt>.
+
+</table>
+</center>
+
+<p>
+The <tt>moe_web_runfile</tt> hidden element, specifying the
+SVL program to be run, is mandatory.
+For example, the following form instructs
+MOE/web to run the program <tt>my_app.svl</tt> stored in
+directory <tt>web_dev</tt> of the MOE root directory:
+
+<pre>
+    &lt;form action=&quot;../../cgi-bin/moe_cgi.pl&quot; method=&quot;post&quot;&gt;
+
+        &lt;input type=&quot;hidden&quot; name=&quot;moe_web_runfile&quot; value=&quot;web_dev/my_app.svl&quot;&gt;
+        &lt;input type=&quot;hidden&quot; name=&quot;moe_web_title&quot; value=&quot;My App&quot;&gt;
+
+	    .... Other form elements ....
+
+    &lt;/form&gt;
+</pre>
+
+<a name="Access"></a>
+<h3>Accessing the HTML Form Content in SVL</h3>
+
+Any SVL application launched by MOE/web can access the following global
+variables:
+
+<p>
+<center>
+<table class="titlebar">
+
+<tr>
+<th>Name</th>
+
+<th>Description</th>
+
+<tr>
+<td valign="top"><tt>web_cgi</tt>
+<td valign="top">
+Tagged vector of the values of the HTML form.
+
+<tr>
+<td valign="top"><tt>web_title</tt>
+<td valign="top">
+The name of the application for display purpose.
+
+<tr>
+<td valign="top"><tt>web_tmp_fnum</tt>
+<td valign="top">
+
+HTML temporary output file.
+
+<tr>
+<td valign="top"><tt>web_root_url</tt>
+<td valign="top">
+URL of the MOE root directory.
+
+</table>
+</center>
+
+<p>
+Of these variables, <tt>web_cgi</tt> is the most important. It contains
+the value of each field in the input form. <tt>web_cgi</tt> is organized
+as a tagged vector where each field name is used as a tag name for the
+corresponding field value. For example, form
+
+
+<pre>
+    &lt;form action=&quot;../../cgi-bin/moe_cgi.pl&quot;
+          method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;
+    &gt;
+         &lt;input type=&quot;hidden&quot; name=&quot;moe_web_runfile&quot; value=&quot;web_dev/my_app.svl&quot;&gt;
+
+         &lt;input type=&quot;hidden&quot; name=&quot;moe_web_title&quot; value=&quot;My App&quot;&gt;
+	 &lt;input type=&quot;text&quot; size=&quot;50&quot; name=&quot;arg1&quot;&gt;
+
+	 &lt;input type=&quot;text&quot; size=&quot;50&quot; name=&quot;arg2&quot;&gt;
+	 &lt;input type=&quot;file&quot; size=&quot;50&quot; name=&quot;arg3&quot;&gt;
+
+    &lt;/form&gt;
+</pre>
+
+would produce the following <tt>web_cgi</tt> variable for the SVL application
+in file <tt>my_app.svl</tt>:
+<pre>
+    [arg1: &quot;some data1&quot;, arg2: &quot;some data2&quot;, arg3: ['filename', filenum]]
+
+</pre>
+
+Note that the value for arg3 is a vector of two elements, the first
+being the name of the file uploaded and the second a file handle used to
+read the content of the file.
+<p>
+To convert existing code to MOE/web only requires extracting the input data
+from the <tt>web_cgi</tt> variable.
+
+<a name="Result"></a>
+<h3>Generating a Result HTML Page</h3>
+
+Once the processing is completed, the output HTML page must be created
+and sent back to the client. For this purpose,
+the variable <tt>web_tmp_fnum</tt>
+is a pre-opened file handle to the output page. The output page is
+automatically formatted with appropriate headers and footers, so only
+the body of the page should be written to <tt>web_tmp_fnum</tt>.
+
+<p>
+<b>Note:</b> To avoid sending partially completed documents to the client, the
+file represented by <tt>web_tmp_fnum</tt> is transmitted only when the SVL
+application terminates. It is therefore safe to write to <tt>web_tmp_fnum</tt>
+before or during long calculations.
+
+<a name="Update"></a>
+<h3>Migrating MOE/web 2009.10 and Earlier Applications</h3>
+
+<p>The handling of headers and footers in MOE/web applications has been
+centralized, as described above, in the <tt>header.htm</tt> and
+
+<tt>footer.htm</tt> files.  As a result, applications written for MOE/web
+2009.10 or earlier require minor changes to function properly.  In most cases,
+all that will need to be done is to modify all <i>static</i> HTML files which
+are part of the application to:</p>
+<ul>
+<li>Remove all headers and footers including the <b>&lt;html&gt;</b> and
+<b>&lt;body&gt;</b> tags, <b>&lt;head&gt;</b> block, and anything else not
+part of the actual page content.</li>
+
+<li>Add <tt>&lt;!--#header TITLE--&gt;</tt> to the beginning of the file,
+and <tt>&lt;!--#footer--&gt;</tt> to the end, where TITLE is the title of
+the page to be displayed.</li>
+
+<li>If any external CSS or JavaScript files are required by the HTML page,
+either rename them to the same name as the HTML file (but with appropriate
+extension), or include them in the <tt>&lt;!--#header--&gt;</tt> line as
+described <a href="#Header">above</a>.</li>
+
+<li>If the form contains the variable <tt>moe_web_style</tt>, make sure
+the path given to the CSS file is relative to the parent of the application
+directory.  For example if there were an application in a directory called
+<tt>myapp</tt>, you might set this to <tt>myapp/myapp.css</tt>.
+</li>
+
+<li>Any references in SVL code to files in the same path as the application
+should not use $MOE/web/appname to refer to the application path, but rather
+<tt>fpath (modenv[]).filename</tt> which gives the absolute path to the
+currently executing SVL script, and is guaranteed to always be correct
+regardless of where the application is running from.
+</li>
+</ul>
+
+<a name="SOAP"></a>
+<h2>SOAP Service</h2>
+
+<p>
+The MOE/web server can be used as a webservice provider. It offers a 
+framework for building lightweight browser-based web applications,
+and function calls via the Simple Object Access Protocol 
+(<a href="http://www.w3.org/TR/soap12-part1">SOAP</a>). This protocol can 
+be used to interface MOE to third party software, such as KNIME and Pipeline
+Pilot.
+</p>
+<p>Data can be transferred in the form of either a stream or a URL. This is
+useful when dealing with big data or in a workflow environment such as KNIME
+and Pipeline Pilot. Data can be stored on the server side, and a unique URL
+to it can then be used in communication. See the <tt>url</tt> types and the 
+example in 
+<a class="svl" href="../svl/fcnref/soapfcn.htm#url">SOAP Interface Functions</a>
+for details.
+
+<h3><a name="SOAPPage">SOAP Function Directory Page</a></h3>
+
+<p>The <tt>http://{host}:{port}/soap.html</tt> URL produces a directory page
+which has a list of SOAP functions currently being hosted by the server. When a
+web browser is directed to the function list page for a minimally configured
+server, the resulting page will resemble the following snapshot:
+</p>
+<div align="center">
+<img src="web_inst/funcdir.png"
+ style="border-style: solid; border-width: 1px; border-color: #C0C0C0;"
+ alt="functions" />
+</div>
+
+
+<a name="WSDLPage"></a>
+<h3>WSDL Page</h3>
+
+<p>The <tt>http://{host}:{port}/MOEWebServer.wsdl</tt> URL produces an XML
+document, which conforms to the Web Services Description Language (<a
+href="http://www.w3.org/TR/wsdl">WSDL</a>) specification. Providing this URL
+allows third party software, such as KNIME and Pipeline Pilot, to download the
+interface specifications for all of the SOAP functions hosted on the server.
+</p>
+<p>The WSDL page is produced when the MOE/Web server starts. Each SOAP function
+that is loaded by the server has its own section in the WSDL page. The page also
+contains sections of the generic SOAP functions used for the
+<a href="#Stateful">stateful service</a>.
+
+<h3><a name="SOAPTest">SOAP Test Page</a></h3>
+
+<p>Each of the SOAP functions will have a built-in test page on MOE/Web that is
+linked from the SOAP function directory page.
+For example, the
+<tt>Version</tt> function, which is included by default, has a test page at URL:
+</p>
+<pre>
+    http://{host}:{port}/soap/html/Version
+</pre>
+
+<p>The test page shows a description of the function's arguments and return
+values. It allows the user to enter values for the arguments, preview the XML
+document that will be sent as the SOAP request, and to execute the function and
+view the results.
+</p>
+<p>Using the SOAP test page is the easiest way to verify that a
+particular function is working properly, and to debug new functions. However,
+it has some limitations. For example, the array type of data cannot be passed or
+returned properly. Thus, for complex data or for more complicated usage
+of SOAP functions, extra testing is needed.
+</p>
+
+<h3><a name="SOAPScripts">Calling SOAP with a Program/Script</a></h3>
+
+<p>There are many programs that can make use of WSDL+SOAP, such as the
+<tt>wsimport</tt> program, which is distributed as part of the
+<a href="http://java.sun.com/">Java Development Kit</a>. The following
+syntax
+<pre>
+    wsimport -d src_wsdl -keep http://{host}:{port}/MOEWebServer.wsdl
+</pre>
+
+will instruct the <tt>wsimport</tt> program to download the WSDL page for the
+MOE/web SOAP functions, and generate a Java source file for each function,
+which allows the SOAP function to be accessed conveniently from
+within the Java program.
+
+<p>
+Below are example scripts that can be used to call SOAP functions; most
+of them require the installation of a SOAP library/module before use. Please
+refer to the comments at the top of the scripts for details.
+<ul>
+    <li><a href="web_inst/soap_client.java.txt">Java</a></li>
+    <li><a href="web_inst/soap_client.php.txt">PHP</a></li>
+    <li><a href="web_inst/soap_client.py.txt">Python</a></li>
+    <li><a href="web_inst/soap_client.pl.txt">Perl</a></li>
+</ul>
+<p>
+</p>
+
+<h3><a name="Stateful">Stateful SOAP Service</a></h3>
+
+<p>
+For SOAP service that is expected to take a long time to run, it is desirable
+to release the HTTP connection to the web server in order to not consume
+resources unnecessarily while waiting. Also, when a connection is broken due to
+some network issue, a SOAP job can still be kept running on the server without
+interruption and its results can be retrieved at a later time.
+<p> Therefore, rather than sending the request and obtaining the results all
+within the same communication, the send and receive steps can be done separately.
+The MOE/Web server provides several generic SOAP functions that can be used
+for this purpose, which makes the web service stateful.
+A general description of these generic SOAP functions is below. They are
+added automatically to the <a href="#WSDLPage">WSDL Page</a> by MOE/Web.
+<ul>
+<li>jobid = _JobStart input</li>
+<li>[progress, status, message] = _JobStatus jobid
+    <ul>
+	<li>progress:
+	    <ul>
+	    <li>-1: job is still in the server queue</li>
+	    <li>0:  job has been picked up by a moebatch worker</li>
+	    <li>1:  job is finished</li>
+	    </ul>
+	</li>
+	<li>status: value of <tt>cancel</tt>, <tt>error</tt>, or <tt>normal</tt></li>
+	<li>message: additional information about the job progress</li>
+    </ul>
+</li>
+<li>output = _JobResult jobid</li>
+<li>errmsg = _JobError jobid</li>
+<li>void = _JobCancel jobid</li>
+</ul>
+
+The information returned by _JobStatus also depends on the SOAP web service
+implementation that is used to report progress. Please see
+<a class="svl" href="../svl/fcnref/soapfcn.htm#ReportProgress">
+SOAP Interface Functions</a> for more details.
+</p>
+
+<h4><a name="StatefulExample">Example</a></h4>
+Below is an example written in PHP which calls a SOAP service in a stateful
+way and does not require a persistent HTTP connection.
+
+<pre>
+    ini_set('soap.wsdl_cache_enabled',  '0');	// this is optional
+
+    $options  = array(
+	'trace'        => 1,
+	'exceptions'   => 1
+    );
+
+    // Initiate connection to server and query WSDL.
+
+    $soap = new SoapClient("http://localhost:8888/MOEWebServer.wsdl", $options);
+
+    // IMPORTANT: setting the cookie make sure all following requests will be within
+    // the same session in order to consume a stateful webservice. Otherwise, error
+    // will be returned showing eg. 'invalid job id'.
+
+    $soap->__setCookie("ClientID", get_current_user());
+
+    try {
+
+	    // Submit SOAP request and obtain job id information.
+
+	$job = $soap->_JobStart(array(
+	    SMILESToMolInputType => array(
+		smiles => "C(=O)C",
+		v3000 =>  false
+	    )
+	));
+	echo "Submit job " . $job->id . "\n";
+
+	    // Loop until job has finished, progress = "1".
+	    // A delay is added to the status enquiry by MOE/Web server.
+	    // By default, _JobStatus will only return when 3 seconds has
+	    // passed or there is some progress update to the job.
+
+	do {
+	    $s = $soap->_JobStatus(array(id => $job->id));
+	    // echo "status message: ".$s->message."\n";
+	} while ($s->progress != "1");
+
+	    // Check the status to see if job has completed successfully.
+	    // Possible status values are: 'normal', 'error' or 'cancel'
+
+	if ($s->status != 'normal') {
+
+	    // Obtain job error information.
+
+	    $error = $soap->_JobError(array(id => $job->id));
+	    echo $error->message."\n";
+	    exit();
+	}
+
+	    // Reponse XML is parsed into an PHP object for
+	    // easy access of individual return item.
+
+	$result = $soap->_JobResult(array(id => $job->id));
+	echo "Result:\n" . $result->SMILESToMolOutputType->molecule . "\n";
+
+    } catch (SoapFault $ex) {
+
+	    // Report error information.
+
+	echo "SOAP fault: " . $ex->getMessage() . "\n";
+	echo "RESPONSE:\n" . $soap->__getLastResponse() . "\n";
+    }
+</pre>
+
+<h3><a name="SOAPService">Creating a SOAP Web Service</a></h3>
+
+<p>
+A web service is created by loading an SVL function following a specific naming
+convention. For more details please see
+<a class="svl" href="../svl/fcnref/soapfcn.htm">SOAP Interface Functions</a>.
+<p>
+Below is an example of a simple web service <tt>MolToRsynth</tt> to calculate 
+the rsynth descriptor (explanation follows):
+</p>
+
+<ol>
+<li> Create a file called, say, <tt>'mysoap.svl'</tt>.
+<li> Launch MOE/web, loading the file, with <tt>$MOE/bin/moeweb -load mysoap.svl.</tt>
+</ol>
+
+<p>Inside mysoap.svl:
+<pre>
+    #svl
+    function DescriptorCalcOpen, DescriptorCalcMOL, DescriptorCalcClose;
+
+    global function soap_spec_MolToRsynth [] = [[
+
+	    // ARGVALS: only one argument, a molecule.
+
+	mol: [
+	    type: 'string',
+	    description: 'The subject molecule, as an MDL MOL file.'
+	]
+
+    ],[
+
+	    // RETVALS: returns a number as the result.
+
+	result: [
+	    type: 'real',
+	    description: 'The rsynth result.'
+	]
+    ],[
+
+	    // OPTION: title and description of the function.
+
+	title: 'Rsynth descriptor ',
+	description: 'Computes a MOL rsynth descriptor from MOE.'
+    ]];
+
+    global function soap_MolToRsynth [arg, opt]
+
+	    // Extract the molecule part.
+
+	local mdlmol = sreadb [arg.mol, 'line', INT_MAX];
+	const HEADER_SIZE = 3;
+	local ctab = mdl_ParseCTAB [drop [mdlmol, HEADER_SIZE], 1];
+
+	    // Convert CTAB to MDB MOL.
+
+	local mol = first mol_ExtractFromCTAB ctab;
+
+	    // Do the calculation.
+
+	local key = DescriptorCalcOpen [];
+	local result = DescriptorCalcMOL [key, mol, 'rsynth'];
+	DescriptorCalcClose key;
+
+	    // Return the result.
+
+	return [result: result];
+    endfunction
+</pre>
+
+<p>
+The above functions <tt>soap_spec_MolToRsynth</tt> and <tt>soap_MolToRsynth</tt> are
+intended to show how a descriptor calculation could be performed using a web
+service. This example uses the rsynth descriptor, which calculates a molecule's
+(MDL Mol) synthetic feasibility with a range between 0 and 1 in increasing
+probability of synthetic feasibility.
+</p>
+
+<p>
+Function <tt>soap_spec_MolToRsynth</tt> defines the specification for the SOAP
+function <tt>MolToRsynth</tt> and registers it as a web service. Its return 
+value is set as <tt>[ARGVALS, RETVALS, OPTION]</tt>, which represents a description of the
+input, output, and a general description of the function.
+Function <tt>soap_MolToRsynth</tt> handles the execution of this web service.
+Since the input is of MDL Mol format, the molecular data is extracted and
+converted to a MOE MDB (dbmol) format. It is then submitted to the descriptor
+engine for calculation. The result is returned as a tagged vector with a
+matching tag as defined by <tt>RETVAL</tt>.
+</p>
+
+<a name="StatsPage"></a>
+<h2>Statistics Page</h2>
+
+<p>The <tt>http://{host}:{port}/stats.html</tt> URL generates a page which provides
+histograms of server activity. One graph is produced for each day, back as far
+as 7 days, or when the server was most recently restarted.
+
+</p>
+<p>Each bar represents a unit of time, and its height is proportional to the
+amount of MOE token usage during that time. For example, if 2 tokens are
+dedicated to the server, and for the entire time one token was in use and one
+was idle, the height of the bar will be 50% of the Y-axis. If the bar is at 100%
+of the Y-axis, it means that server usage was saturated for the entire duration,
+and the number of tokens available to service all the requests was equal to or
+less than the number required.
+</p>
+<p>The color of the bars is used to indicate excess demand, which is based on
+accumulating the length of time each incoming request is kept waiting because a
+token is not available. Bars are colored green when there is essentially no lag
+time caused by lack of tokens. If the total amount of time spent by requests
+waiting for tokens approaches the duration of the time slice being represented,
+the color transitions through yellow to red. Beyond this time limit, the color
+darkens to black. Red bars indicate significant loss of responsiveness due to
+lack of tokens, while black bars indicate a very serious shortage.
+</p>
+<p>Consider the following example:
+</p>
+<div align="center">
+<img src="web_inst/statsnap.png" alt="stats" />
+</div>
+
+<p>In this case, the server has been configured to use 2 tokens. At the
+beginning and end of the day, usage is minimal. The green bars, for which the
+height is less than 1 token, indicate that the server is idle most of them time,
+and there is seldom any excess demand. Between 9am and 4pm, the height of the
+bars increase, and the yellow-red-black coloration indicates that there is heavy
+contention for limited resources, and many requests are forced to wait in the
+queue. The red portions of the graph show where approximately one extra token
+would be required to minimize queue time, while the black portions, around noon,
+would require at least two extra tokens.
+</p>
+
+<a name="LinkManual"></a>
+<h2>Creating Links to the MOE Manuals</h2>
+
+<p>In some cases it may be desirable to place a link to a particular
+page of the MOE manuals within a MOE/web application.  To do so, simply
+use an URL in the following special form: 
+<tt>http://{host}:{port}/moemanuals/{path_to_page_in_manual}</tt>.
+For example, to reach the current page, the link to use would be:
+<tt>http://{host}:{port}/moemanuals/install/web_inst.htm</tt>.
+</p>
+<!-- Note: using 'moemanuals' in the paths above is correct for MOE/web. -->
+
+<a name="Slisten"></a>
+<h2>MOE Socket Listener</h2>
+
+<p>MOE provides an alternative method for executing functions remotely on a
+running instance of MOE.
+The set of functions accessible externally are not part of MOE and
+must be specially written.  These special functions must follow a
+naming convention in which each name is
+prefixed by the string <tt>listen_</tt>.  Furthermore, each such function
+is permitted only a single argument in the form of a tagged vector.
+It is the responsibility of the function author to validate the
+number and type of arguments, and any other constraints.  The function
+should simply <tt>exit</tt> with an error if called with invalid
+arguments.  Here is an example function:
+</p>
+
+<p><pre>
+    global function listen_test arg
+	write 'Arguments:\n';
+
+	local t;
+	for t in tags arg loop
+	    write ['{}: {}\n', t, arg.(t)];
+	endloop
+
+	print arg;
+    endfunction
+</pre></p>
+
+<p>The <tt>listen_XXX</tt> functions must be loaded into MOE using the
+SVL <tt>load</tt> command before
+they can be called.
+To make use of these functions, the listener (i.e. server) must first
+be started.  This is accomplished using
+the SVL <tt>listen_port</tt> command.  For example,
+
+<pre>
+    svl> listen_port 8989
+</pre>
+
+will initiate listening on port 8989 (provided the port is not in use).
+</p>
+
+<p>
+Next, open a web browser and enter a URL of the following construction:
+
+<pre>
+    http://&lt;HOSTNAME&gt;:&lt;PORT&gt;/exec/&lt;FNNAME&gt;?&lt;ARGNAME1&gt;=&lt;VALUE1&gt;&amp;&lt;ARGNAME2&gt;=&lt;VALUE2&gt;...
+</pre>
+
+where:</p>
+
+<ul>
+<li><b>HOSTNAME</b> is the name of the machine where MOE is running.</li>
+<li><b>PORT</b> is the port specified in the <tt>listen_port</tt> command.</li>
+<li><b>FNNAME</b> is the name of the SVL function to be called,
+<i>without</i> the
+<tt>listen_</tt> prefix; e.g. if the function name is
+<tt>listen_test</tt>, then <tt>test</tt> is used as the <tt>FNNAME</tt>.
+</li>
+<li><b>ARGNAME<i>n</i></b> is the name of the nth argument to the function.  To
+pass multiple values (a vector of values), suffix the argument
+name with <tt>[]</tt>, such as <tt>arg[]=3</tt>, and
+specify it multiple times as if it were multiple arguments, once for each
+value (an example follows).
+These names will end up as tags in the tagged vector ultimately
+passed as the argument to the SVL function being called.</li>
+<li><b>VALUE<i>n</i></b> is the value to assign to the corresponding argument.
+It will always be provided to the function as an SVL token;
+e.g. <tt>id=54</tt> results in the token (not number) <tt>'54'</tt>
+being passed.</li>
+</ul>
+
+<p>For example, with the above function <tt>listen_test</tt> loaded,
+if MOE had been started on
+localhost and <tt>listen_port 9999</tt> executed, the following URL
+
+<blockquote>
+    <tt>http://localhost:9999/exec/test?fnam[]=text.txt&amp;id=54&amp;fnam[]=test.htm</tt>
+</blockquote>
+
+would result in the following being printed to the SVL Commands window:</p>
+
+<pre>
+    Arguments:
+    fnam: text.txt test.htm
+    id: 54
+    [ fnam:['text.txt','test.htm'], id:'54' ]
+</pre>
+
+<p>Alternatively, instead of manually constructing a URL,
+a POST request through a FORM may be used.  This has the
+added advantage of permitting entire files to be uploaded, MIME-encoded.  In
+such cases, the function argument will contain a file pointer
+to the uploaded file.
+These file pointers can be assumed to be rewindable.
+It is recommended that any files opened by
+a <tt>listen_XXX</tt> function be closed by that function
+once all file operations
+are complete.
+</p>
+
+<p>Any HTTP client may be used to make the requests, e.g.
+a web browser, wget, or even
+a custom application.  MOE will respond with <tt>HTTP/1.0 200 OK</tt>
+followed by the text <tt>OK</tt> if the request was processed and understood,
+or an error if the request was malformed or invalid.  If the request was valid
+but the URL was not in the form described above (for example no <tt>exec</tt>)
+or the function itself <tt>exit</tt>s with an error, an error window will pop
+up within MOE; note that in such cases,
+<tt>OK</tt> will still be returned to the HTTP client.
+</p>
+
+<a name="SeeAlso"></a>
+<h2>See Also</h2>
+
+<a href="../moe/moeweb_intro.htm">MOE/web Applications</a><br>
+<a href="../moe/moesoap.htm">MOE/web SOAP Service and Functions</a><br />
+<a class="svl" href="../svl/fcnref/soapfcn.htm">SOAP Interface Functions</a>
+
+</font>
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

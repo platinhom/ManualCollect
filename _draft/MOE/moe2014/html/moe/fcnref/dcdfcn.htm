@@ -1,0 +1,518 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	dcdfcn.htm			dynamics function reference
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<title>Molecular Dynamics Trajectory File I/O</title>
+<meta functions dcd_Open, dcd_Key, dcd_Info, dcd_Close, dcd_Read>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    key  = <a class="fcnlink" href="#dcd_Open">dcd_Open</a>  filename
+    key  = <a class="fcnlink" href="#dcd_Open">dcd_Open</a>  key
+           <a class="fcnlink" href="#dcd_Close">dcd_Close</a> keys
+
+    keys = <a class="fcnlink" href="#dcd_Key">dcd_Key</a>   keys
+
+    info = <a class="fcnlink" href="#dcd_Info">dcd_Info</a>  key_or_filename
+	   <a class="fcnlink" href="#dcd_Info">dcd_Info</a>  key_or_filename
+
+    [step,pos,cell] = <a class="fcnlink" href="#dcd_Read">dcd_Read</a> key
+</pre>
+
+<h2>Description</h2>
+
+<p>
+The dynamics coordinate data (DCD)
+trajectory file is a binary file produced by molecular dynamics
+and crystallography programs such as NAMD, CHARMM and XPLOR with minor
+variations.  There is no clear specification of the file format other
+than the lore in source code of the molecular dynamics community.
+The file consists of a squence of blocks; the first block is the header
+and the subsequent blocks are the trajectory information: either position and
+optional periodic cell data or velocity and optional periodic cell data.
+The file is typically written in native binary, so it is up
+to file readers to guess the endianness (architecture-dependent
+byte ordering within data words); otherwise
+conversion is required when
+transporting DCD files between big-endian (most workstations) and
+little-endian (Intel) architectures.
+</p>
+
+<p>
+The fundamental unit of information in a DCD file is a block.  The format
+of a block is
+</p>
+
+<blockquote>
+<table class="titlebar">
+<tr>
+<th>Offset</th>
+<th>Type</th>
+<th>Value</th>
+<th>Description</th>
+</tr><tr>
+<td align="right">0
+<td><tt>int*4</tt>
+<td align="center"><i>n</i>
+<td>Number of bytes in block
+</tr><tr>
+<td align="right">4
+<td>&nbsp;
+<td align="center">&nbsp;
+<td>Data portion of block (<i>n</i> bytes)
+</tr><tr>
+<td align="right"><i>n</i>&nbsp;+&nbsp;4
+<td><tt>int*4</tt>
+<td align="center"><i>n</i>
+<td>Number of bytes in block
+</tr>
+</table>
+</blockquote>
+
+<p>
+The first block in the file is the header block.  Although not specified,
+it is of length 84 and has the following data items:
+
+<blockquote>
+<table class="titlebar">
+<tr>
+<th>Offset</th>
+<th>Type</th>
+<th>Value</th>
+<th>Description</th>
+</tr><tr>
+<td align="right">0
+<td align="center"><tt>char*4</tt>
+<td align="center"><tt>CORD</tt>
+<td>Magic string of 4 bytes used to identify the file as a DCD file.
+</tr><tr>
+<td align="right">4
+<td align="center"><tt>int*4</tt>
+<td align="center"><i>N</i>
+<td>Number of coordinate frames in the file.
+</tr><tr>
+<td align="right">8
+<td align="center"><tt>int*4</tt>
+<td align="center"><i>F</i>
+<td>Simulation step number of the first coordinate frame (non-zero).
+</tr><tr>
+<td align="right">12
+<td align="center"><tt>int*4</tt>
+<td align="center"><i>f</i>
+<td>Number of simulation steps between coordinate frames.
+<i>F</i> + <i>f</i> (<i>n</i>&ndash;1) is the step number of coordinate frame
+<i>n</i>.
+</tr><tr>
+<td align="right">16
+<td align="center"><tt>int*4</tt>
+<td align="center"><i>S</i>
+<td>Number of simulation steps represented in the file.
+</tr><tr>
+<td align="right">20
+<td align="center"><tt>int*4</tt>
+<td align="center">0
+<td>&nbsp;
+</tr><tr>
+<td align="right">24
+<td align="center"><tt>int*4</tt>
+<td align="center">0
+<td>&nbsp;
+</tr><tr>
+<td align="right">28
+<td align="center"><tt>int*4</tt>
+<td align="center">0
+<td>&nbsp;
+</tr><tr>
+<td align="right">32
+<td align="center"><tt>int*4</tt>
+<td align="center">0
+<td>&nbsp;
+</tr><tr>
+<td align="right">36
+<td align="center"><tt>int*4</tt>
+<td align="center"><i>x</i>
+<td>Number of fixed atoms (written by CHARMM and NAMD).
+</tr><tr>
+<td align="right">40<br>44
+<td align="left"><tt>real*4&nbsp;real*8</tt><br><tt>int*4</tt>
+<td align="center">&nbsp;
+<td>
+The unit of time (apparently 0.0204548 is equal to 1&nbsp;ps).
+XPLOR stores this value in a double precision <tt>real*8</tt> taking up
+offsets 40 and 44.  NAMD and CHARMM store this value as single precision
+<tt>real*4</tt> at offset 40 and use offset 44 as an <tt>int*4</tt> flag
+indicating whether or not unit periodic cell information is present in the
+file along with the coordinate data (see below).  Thus, XPLOR files
+cannot have periodic cell information.
+</tr><tr>
+<td align="right">48
+<td align="center"><tt>int*4</tt>
+<td align="center">&nbsp;
+<td>Flag indicating that the coordinate data has four dimensions.
+This field is not written by XPLOR (set to zero).
+</tr><tr>
+<td align="right">52
+<td align="center"><tt>int*4</tt>
+<td align="center">0
+<td>&nbsp;
+</tr><tr>
+<td align="right">56
+<td align="center"><tt>int*4</tt>
+<td align="center">0
+<td>&nbsp;
+</tr><tr>
+<td align="right">60
+<td align="center"><tt>int*4</tt>
+<td align="center">0
+<td>&nbsp;
+</tr><tr>
+<td align="right">64
+<td align="center"><tt>int*4</tt>
+<td align="center">0
+<td>&nbsp;
+</tr><tr>
+<td align="right">68
+<td align="center"><tt>int*4</tt>
+<td align="center">0
+<td>&nbsp;
+</tr><tr>
+<td align="right">72
+<td align="center"><tt>int*4</tt>
+<td align="center">0
+<td>&nbsp;
+</tr><tr>
+<td align="right">76
+<td align="center"><tt>int*4</tt>
+<td align="center">0
+<td>&nbsp;
+</tr><tr>
+<td align="right">80
+<td align="center"><tt>int*4</tt>
+<td align="center"><i>v</i>
+<td>CHARMM version number (typically 24); NAMD pretends to be CHARMM.
+XPLOR writes zero.
+</tr>
+</table>
+</blockquote>
+
+<p>
+After the header, there is a title block containing comment or title
+information related to the DCD file.
+
+<blockquote>
+<table class="titlebar">
+<tr>
+<th>Offset</th>
+<th>Type</th>
+<th>Value</th>
+<th>Description</th>
+</tr><tr>
+<td align="right">0
+<td align="center"><tt>int*4</tt>
+<td align="center"><i>t</i>
+<td>Number of 80 character lines of text (to follow).
+</tr><tr>
+<td align="right">4
+<td align="center"><tt>char*80</tt>
+<td align="center">&nbsp;
+<td>Text consisting of <i>t</i> lines of 80 characters each.  It is safest
+to first read the block and split the actual number of bytes in the block
+into 80 character lines (effectively ignoring <i>t</i>).
+</tr>
+</table>
+</blockquote>
+
+<p>
+The next block contains the number of atoms
+
+<blockquote>
+<table class="titlebar">
+<tr>
+<th>Offset</th>
+<th>Type</th>
+<th>Value</th>
+<th>Description</th>
+</tr><tr>
+<td align="right">0
+<td align="center"><tt>int*4</tt>
+<td align="center"><i>A</i>
+<td>The number of atoms in the system.  If there are no fixed atoms then
+there will be 3<i>A</i> values in each coordinate frame (4<i>A</i> if the
+data is four-dimensional &ndash; indicated by a non-zero value in offset 48 of
+the header).
+</tr>
+</table>
+</blockquote>
+
+<p>
+If the <i>x</i> value is non-zero in the header (header offset 36 in CHARMM or
+NAMD files) then the next block will contain a list of indices of all
+of the non-fixed atoms in the system. 
+<span class="tip">Warning!</span> This block is not written if
+<i>x</i> is zero.
+
+<blockquote>
+<table class="titlebar">
+<tr>
+<th>Offset</th>
+<th>Type</th>
+<th>Value</th>
+<th>Description</th>
+</tr><tr>
+<td align="right">0
+<td align="center"><tt>int*4</tt>
+<td align="center"><i>A</i>&ndash;<i>x</i>
+<td>The number of indices (to follow) of free atoms in the system.
+</tr><tr>
+<td align="right">4
+<td align="center"><tt>int*4</tt>
+<td align="center">&nbsp;
+<td><i>A</i>&ndash;<i>x</i> indices of free atoms;
+the first atom in the system has index 1.
+</tr>
+</table>
+</blockquote>
+
+<p>
+The remainder of the DCD file will contain the coordinate frames,
+each of which comprises
+a number of sequential blocks <span class="nobr">{C}[X][Y][Z]{W}</span>
+where C and W are optional.
+If the periodic cell flag (header offset 44) is zero then block C will not
+be present.  If the four-dimension flag (header offset 48) is zero then
+W will not be present.  The periodic cell block, if present, will contain
+the crystal cell basis vectors encoded in six numbers
+<i>a<sub>x</sub></i>,
+<i>b<sub>x</sub></i>,
+<i>b<sub>y</sub></i>,
+<i>c<sub>x</sub></i>,
+<i>c<sub>y</sub></i>,
+<i>c<sub>z</sub></i>.
+The periodicity data will be either 6 <tt>real*4</tt> single precision
+values or 6 <tt>real*8</tt> double precision values, depending on the
+particular program that wrote the file.  The block size may be used to
+determine the basis vector precision.  The coordinate data is encoded
+in <tt>real*4</tt> single precision values.
+The first coordinate frame will always contain 3<i>A</i> (or 4<i>A</i>)
+coordinate values corresponding to all of the atoms without regard to
+any fixed atoms.  Subsequent coordinate frames will only contain data
+for the non-fixed, or free, atoms of the system
+(3<i>A</i>&ndash;3<i>x</i> or 4<i>A</i>&ndash;4<i>x</i> values).
+
+<p><a name="dcd_Key"></a></p>
+<p><a name="dcd_Close"></a></p>
+<p><a name="dcd_Open"></a></p>
+<p><hr noshade="noshade"></p>
+<pre>
+key  = <span class="fcndef">dcd_Open</span>  filename
+key  = <span class="fcndef">dcd_Open</span>  key
+       <span class="fcndef">dcd_Close</span> keys
+keys = <span class="fcndef">dcd_Key</span>   keys
+</pre>
+
+<p>
+The <tt>dcd_Open</tt> function is used to open a DCD file for reading.
+If a filename token is given, the file will be opened and a key returned
+for further access.
+If a key is given, the DCD file is considered
+&quot;re-opened&quot;.
+The <tt>dcd_Close</tt> function is used to close a previously opened DCD
+file.  A <tt>dcd_Close</tt> call must be issued for
+each <tt>dcd_Open</tt> call.  For example,
+
+<blockquote><pre>
+local key = dcd_Open 'filename';
+...
+    dcd_Open key;
+...
+    dcd_Close key;
+...
+dcd_Close key;
+</pre></blockquote>
+
+<p>
+The <tt>dcd_Key</tt> function tests the validity of given keys, returning
+the key if it refers to a valid DCD file key and zero otherwise.
+
+<p><a name="dcd_Info"></a></p>
+<p><hr noshade="noshade"></p>
+<pre>
+info = <span class="fcndef">dcd_Info</span> key_or_filename
+       <span class="fcndef">dcd_Info</span> key_or_filename
+</pre>
+
+<p>
+The <tt>dcd_Info</tt> function returns information related to the contents
+of a DCD file.  If a filename token is given, the information is
+returned as though the file were already opened.  If the return value
+of <tt>dcd_Info</tt> is neither stored in a variable nor used in an expression
+then the information will be printed to the SVL Commands window.
+The returned information is a tagged vector:
+
+<blockquote><dl>
+<dt><tt>cell :</tt> <i>flag</i>
+<dd>
+A flag indicating the presence of periodicity information in the file.
+A value of 1 indicates that the crystal cell data block will be
+present in each coordinate frame, 0 otherwise.
+<p>
+<dt><tt>compatible :</tt> <i>vector</i>
+<dd>
+A set of data to be used for testing whether two DCD files are compatible.
+If <tt>info1.compatible&nbsp;===&nbsp;info2.compatible</tt> then the
+two files have matching coordinate frames and can be read together.
+This is useful, for example, for determining correspondence between
+position and velocity DCD files.
+<p>
+<dt><tt>dim :</tt> <i>number</i>
+<dd>
+The number of coordinate dimensions in the file: 3 for three-dimensional
+data and 4 for four-dimensional data.
+<p>
+<dt><tt>dt :</tt> <i>number</i>
+<dd>
+The unit of time in the file, in picoseconds.
+<p>
+<dt><tt>filename :</tt> <i>token</i>
+<dd>
+The name of the underlying DCD file (as returned by
+<a class="svl" href="../../svl/fcnref/flistetc.htm">fname</a>).
+<p>
+<dt><tt>istart :</tt> <i>number</i>
+<dd>
+The simulation step number, <i>F</i>, of the first coordinate frame
+in the file.
+<p>
+<dt><tt>natoms :</tt> <i>number</i>
+<dd>
+The total number of atoms, <i>A</i>, in the system.
+<p>
+<dt><tt>nfixed :</tt> <i>number</i>
+<dd>
+The number of fixed atoms, <i>x</i>, in the system.
+<p>
+<dt><tt>nframe :</tt> <i>number</i>
+<dd>
+The number of coordinate frames, <i>N</i>, contained in the file.
+<p>
+<dt><tt>nsavec :</tt> <i>number</i>
+<dd>
+The number of simulation steps, <i>f</i>, between coordinate frames.
+<p>
+<dt><tt>nsteps :</tt> <i>number</i>
+<dd>
+The number of simulation steps, <i>S</i>, represented in the file.
+<p>
+<dt><tt>title :</tt> <i>strings</i>
+<dd>
+A vector of strings, one for each line, of the title block of the DCD
+file; <tt>info.title(i)</tt> is a string containing line <tt>i</tt>.
+Trailing blanks are stripped from each line.
+<p>
+</dl></blockquote>
+
+<p><a name="dcd_Read"></a></p>
+<p><hr noshade="noshade"></p>
+<pre>
+[step,pos,cell] = <span class="fcndef">dcd_Read</span> key
+</pre>
+
+<p>
+The <tt>dcd_Read</tt> function reads a coordinate frame from a previously
+opened DCD file.  Successive calls to <tt>dcd_Read</tt>
+will read frames sequentially from
+the file until the number of coordinate frames <i>N</i> is exhausted
+(i.e. a maximum of <i>N</i> frames will be read).
+The return value <tt>step</tt> will be the simulation step number
+<i>F</i> + <i>f</i> (<i>n</i>&ndash;1); zero is returned when all coordinate
+frames have been read.
+The return value <tt>pos</tt> will be a laminated
+vector of coordinates &ndash; length 3 for three-dimensional data and length 4
+for four-dimensional data.
+The return value <tt>cell</tt> will contain the crystal
+parameters for periodic data.  If the DCD file is aperiodic then <tt>cell</tt>
+will be <tt>['',[0,0,0],[0,0,0]]</tt> otherwise <tt>cell</tt> will
+contain data in the format returned by
+<a class="svl" href="cellfcn.htm">CellParameters</a>.
+
+<p>
+The following code can be used to read all coordinate frames in a DCD file:
+
+<blockquote><pre>
+local key = dcd_Open 'dcd_filename';
+local step, pos, cell;
+
+while first ([step, pos, cell] = dcd_Read key) loop
+    ...
+endloop
+
+dcd_Close key;
+</pre></blockquote>
+
+<p>
+The following code can be used to read position and velocity data in tandem:
+
+<blockquote><pre>
+local pkey = dcd_Open 'pos_dcd_filename';
+local vkey = dcd_Open 'vel_dcd_filename';
+local step, pos, vel, cell;
+
+if not ((dcd_Info pkey).compatible === (dcd_Info vkey).compatible) then
+    exit 'Position and velocity DCD files are not compatible.';
+endif
+
+while first ([step, pos, cell] = dcd_Read pkey) loop
+    vel = second dcd_Read vkey;
+    ...
+endloop
+
+dcd_Close pkey;
+dcd_Close vkey;
+</pre></blockquote>
+
+<h2>See Also</h2>
+
+<a class="svl" href="cellfcn.htm">CellParameters</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+
+
+

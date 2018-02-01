@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:MadCap="http://www.madcapsoftware.com/Schemas/MadCap.xsd" lang="en-US" xml:lang="en-US" data-mc-search-type="Stem" data-mc-help-system-file-name="Documentation.xml" data-mc-path-to-help-system="../" data-mc-target-type="WebHelp2" data-mc-runtime-file-type="Topic" data-mc-preload-images="false" data-mc-in-preview-mode="false" data-mc-toc-path="Command References|Covalent Docking Command Reference|Covalent Docking Command Line Use|Custom Chemistry Definitions for Covalent Docking">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link href="../Skins/Default/Stylesheets/Slideshow.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/TextEffects.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Topic.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Components/Styles.css" rel="stylesheet" type="text/css" data-mc-generated="True" /><title>Defining a Custom Reaction for Covalent Docking</title>
+        <link href="../Resources/Stylesheets/docs.css" rel="stylesheet" />
+        <script src="../Resources/Scripts/custom.modernizr.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/jquery.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.config.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/foundation.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/plugins.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/MadCapAll.js" type="text/javascript">
+        </script>
+    </head>
+    <body><a name="aanchor7367"></a>
+        <MadCap:concept term="Command Reference" /><a name="aanchor7368"></a>
+        <MadCap:concept term="Covalent Docking" /><a name="covalent_docking_command_2543637908_754751"></a>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="covdock_custom_chem_groups.htm" xrefformat="{paratext}">Defining Custom Reactive Groups for Covalent Docking</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="covalent_docking_command_referenceTOC.htm" xrefformat="{paratext}">Covalent Docking Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="covdock_custom_chem_saving.htm" xrefformat="{paratext}">Saving and Using the Custom Chemistry for Covalent Docking</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+        <h1 class="Title">Defining a Custom Reaction for Covalent Docking</h1>
+        <p>With the receptor and ligand reactive groups defined, the next stage is to define the reaction. This involves specifying the changes in the bonding and charges that have to be made to create the covalently bound complex from the receptor and the ligand, and can be viewed as a sequence of steps. </p>
+        <p>Each step is defined by a <code>CUSTOM_CHEMISTRY</code> keyword, and the steps are combined in the order in which they are specified to produce a reaction. The steps do not have to match the actual reaction pathway, they only need to produce the correct product. There is no need to adjust hydrogens, as they will be added and removed as necessary.</p>
+        <p>The formation of the covalent bond is done with one or more of the following operations:</p>
+        <ul class="ListCompact">
+            <li value="1">set the formal charge of any atom
+    </li>
+            <li value="2">add, remove or change the bond order of any bond
+    </li>
+            <li value="3">remove atoms (leaving groups)
+    </li>
+            <li value="4">change the chirality of any chiral center
+    </li>
+        </ul>
+        <p>Atoms are selected with SMARTS patterns with a few additions: </p>
+        <ul>
+            <li value="1">
+                <p class="ListPara"><code>&lt;1&gt;</code> matches the receptor attachment atom. This is the atom specified by its index in the <code>RECEPTOR_SMARTS_PATTERN </code>keyword. For example, <code>&lt;1&gt;-[O]</code> matches the receptor attachment atom bound to an oxygen. </p>
+            </li>
+            <li value="2">
+                <p class="ListPara"><code>&lt;2&gt;</code> matches the ligand attachment atom. This is the atom specified by its index in the <code>LIGAND_SMARTS_PATTERN </code>keyword. For example, <code>&lt;2&gt;(C)O</code> matches the ligand attachment atom bound to a carbon and an oxygen.</p>
+            </li>
+            <li value="3">
+                <p class="ListPara"><code>|</code> means that the pattern spans two molecules. For example, <code>&lt;1&gt;|&lt;2&gt;</code> matches the ligand attachment atom and the receptor attachment atom when they are not connected.</p>
+            </li>
+        </ul>
+        <p>The general syntax of the <code>CUSTOM_CHEMISTRY</code> keyword is</p><pre>
+CUSTOM_CHEMISTRY (<i class="UserReplace">pattern</i>,("<i class="UserReplace">keyword</i>",[<i class="UserReplace">value</i>,]<i class="UserReplace">indices</i>))
+</pre>
+        <p>where <i class="UserReplace">pattern</i> is an augmented SMARTS pattern as described above, <i class="UserReplace">keyword</i> is one of those listed below, <i class="UserReplace">value</i> is the desired value if a value is required, and <i class="UserReplace">indices</i> is the atom index or list of atom indices in the SMARTS pattern that define which atoms to apply the operation to. If the syntax requires more than one index, the indices should be enclosed in parentheses and separated by commas. </p>
+        <p>There are four keywords: <code>charge</code>, <code>bond</code>, <code>delete</code>, and <code>chiral</code>. Each of these is described below with examples. </p>
+        <p class="Task_LeadIn">To set the formal charge on an atom:</p><pre>
+CUSTOM_CHEMISTRY (<i class="UserReplace">pattern</i>,("charge",<i class="UserReplace">formal-charge</i>,<i class="UserReplace">indices</i>))
+</pre>
+        <p>For example, to set the formal charge on the receptor attachment atom to zero:</p><pre>
+CUSTOM_CHEMISTRY ("&lt;1&gt;",("charge",0,1))
+</pre>
+        <p>The receptor atom has the index 1 in the pattern <code>"&lt;1&gt;"</code>, and the charge is set to 0. </p>
+        <p class="Task_LeadIn">To set the bond order between two atoms:</p><pre>
+CUSTOM_CHEMISTRY (<i class="UserReplace">pattern</i>,("bond",<i class="UserReplace">bond-order</i>,<i class="UserReplace">indices</i>))
+</pre>
+        <p>Here, bond-order is a positive integer. For example, to set the bond order between the receptor attachment atom and the ligand attachment atom to 1, i.e. to create a bond:</p><pre>
+CUSTOM_CHEMISTRY ("&lt;1&gt;|&lt;2&gt;",("bond",1,(1,2)))
+</pre>
+        <p class="Task_LeadIn">To delete a bond:</p><pre>
+CUSTOM_CHEMISTRY (<i class="UserReplace">pattern</i>,("bond",-1,<i class="UserReplace">indices</i>))
+</pre>
+        <p>Setting the bond order to a negative value means “delete the bond”. For example, to delete a C–O bond in an epoxide opening on the ligand:</p><pre>
+CUSTOM_CHEMISTRY ("&lt;2&gt;[O;r3][C;r3]",("bond",-1,(1,2)))
+</pre>
+        <p>Here, the bond is broken between atoms 1 and 2 in the SMARTS pattern, which are the ligand attachment atom, <code>&lt;2&gt;</code>, and the ring oxygen, <code>[O;r3]</code>.</p>
+        <p class="Task_LeadIn">To delete heavy atoms:</p><pre>
+CUSTOM_CHEMISTRY (<i class="UserReplace">pattern</i>,("delete",<i class="UserReplace">indices</i>))
+</pre>
+        <p>No value is needed here as the atoms are simply removed. For example, to delete a hydroxyl group adjacent to the ligand attachment atom:</p><pre>
+CUSTOM_CHEMISTRY ("&lt;2&gt;-[O;H1,-1]",("delete",2))
+</pre>
+        <p class="Task_LeadIn">To set the stereochemistry of chiral centers:</p><pre>
+CUSTOM_CHEMISTRY (<i class="UserReplace">pattern</i>,("chiral",R|S,<i class="UserReplace">indices</i>))
+</pre>
+        <p>For example, change the receptor attachment atom chirality to R:</p><pre>
+CUSTOM_CHEMISTRY ("&lt;1&gt;",("chiral","R",1)) 
+</pre>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="covdock_custom_chem_groups.htm" xrefformat="{paratext}">Defining Custom Reactive Groups for Covalent Docking</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="covalent_docking_command_referenceTOC.htm" xrefformat="{paratext}">Covalent Docking Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="covdock_custom_chem_saving.htm" xrefformat="{paratext}">Saving and Using the Custom Chemistry for Covalent Docking</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

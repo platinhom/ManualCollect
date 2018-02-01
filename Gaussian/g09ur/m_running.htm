@@ -1,0 +1,164 @@
+<html><head><title>Running Gaussian (Unix-based)</title></head><body>
+
+<h1>Running Gaussian</h1>
+<p>This section describes the operating system commands required to execute Gaussian on Unix-based computer systems. See the additional instructions accompanying the program for the equivalent information for other operating systems. This discussion assumes that the program has already been installed.</p>
+<p>Running Gaussian involves the following activities:</p>
+<ul>
+<li>
+Creating Gaussian input describing the desired calculation.
+</li>
+<li>
+Specifying the locations of the various scratch files.
+</li>
+<li>
+Specifying resource requirements.
+</li>
+<li>
+Initiating program execution, in either interactive or batch mode.
+</li></ul>
+<p>In this section, we will assume that a basic Gaussian input file has been created, and our discussion will examine the remaining three items on the list.</p>
+<h2>Specifying Scratch File Handling and Location</h2>
+<p>Gaussian uses several scratch files in the course of its computation. They include:</p>
+<ul>
+<li>The Checkpoint file: <font face="Times New Roman, Times, serif" size="3"><i>name</i></font>.<font color="#009933">chk</font></li>
+<li>
+  The Read-Write file: <font face="Times New Roman, Times, serif" size="3"><i>name</i></font>.<font color="#009933">rwf</font>
+</li>
+<li>
+The Two-Electron Integral file: <font face="Times New Roman, Times, serif" size="3"><i>name</i></font>.<font color="#009933">int</font> (empty by default)
+</li>
+<li>
+The Two-Electron Integral Derivative file: <font face="Times New Roman, Times, serif" size="3"><i>name</i></font>.<font color="#009933">d2e</font> (empty by default)
+</li>
+<li>The  scratch file: <font face="Times New Roman, Times, serif" size="3"><i>name</i></font>.<font color="#009933">skr</font></li>
+</ul>
+<p>By default, these files are given a name generated from the process ID of the Gaussian process, and they are stored in the scratch directory, designated by the <font color="#009933">GAUSS_SCRDIR</font> environment variable (UNIX). You may also see files of the form <font face="Times New Roman, Times, serif" size="3"><i>name</i></font>.<font color="#009933">inp</font> in this directory. These are the internal input files used by the program. If the environment variable is unset, the location defaults to the current working directory of the Gaussian process.</p>
+<p>By default, these files are deleted at the end of a successful run. However, you may wish to save the checkpoint file for later use in another Gaussian job, for use by a visualization program, to restart a failed job, and so on. This may be accomplished by <font face="Times New Roman, Times, serif" size="3"><i>naming</i></font> the checkpoint file, providing an explicit name and/or location for it, via a <b><font color="#0000FF">%Chk</font></b> command within the Gaussian input file. Here is an example:</p>
+<pre>%Chk=water</pre>
+<p>This command, which is placed at the beginning of the input file (before the route section)
+gives the checkpoint file the name <font color="#009933">water.chk</font>, overriding the usual generated name and causing the file to be saved at job conclusion. In this case, the file will reside in the current directory. However, a command like this one will specify an alternate directory location as well as filename:</p>
+<pre>%Chk=/chem/scratch2/water</pre>
+<p>If disk space in the scratch directory is limited, but space is available elsewhere on the system, you may want to split the scratch files among several disk locations. The following commands allow you to specify the names and locations of the other scratch files:</p>
+<table border="0">
+<tr valign="top"><td align="left"><b><font color="#0000FF">%RWF</font></b>=<font face="Times New Roman, Times, serif" size="3"><i>path</i></font></td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></td><td align="left"><font face="Times New Roman, Times, serif" size="3"><i>Read-Write file</i></font></td></tr>
+<tr valign="top"><td align="left"><b><font color="#0000FF">%Int</font></b>=<font face="Times New Roman, Times, serif" size="3"><i>path</i></font></td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></td><td align="left"><font face="Times New Roman, Times, serif" size="3"><i>Integral file</i></font></td></tr>
+<tr valign="top"><td align="left"><b><font color="#0000FF">%D2E</font></b>=<font face="Times New Roman, Times, serif" size="3"><i>path</i></font></td><td><font face="Times New Roman, Times, serif" color="#CC0000"><i><font face="Courier New, Courier, monospace" size="-1">&nbsp;&nbsp;&nbsp;&nbsp;</font></i></font></td><td align="left"><font face="Times New Roman, Times, serif" size="3"><i>Integral Derivative file</i></font></td></tr>
+</table>
+<p>In general, the read-write file is by far the largest, and so it is the one for which an alternate location is most often specified.</p>
+<h3>Splitting Scratch Files Across Disks</h3>
+<p>Gaussian 09 can address single scratch files of up to 16 GB on 32-bit operating systems such as Windows and IA32 Linux. There is no need to split scratch files into 2 GB files. The 16 GB total scratch space limit is inherent in 32-bit integers, however, and splitting the scratch file will <font face="Times New Roman, Times, serif" size="3"><i>not</i></font> overcome it.</p>
+<p>An alternate syntax is provided for splitting the read-write file, the Integral file, and/or the Integral Derivative file among two or more disks (or file systems). Here is the syntax for the <b><font color="#0000FF">%RWF</font></b> command:</p>
+<p><b><font color="#0000FF">%RWF</font></b>=<font face="Times New Roman, Times, serif" size="3"><i>loc</i></font>1,<font face="Times New Roman, Times, serif" size="3"><i>size</i></font>1,<font face="Times New Roman, Times, serif" size="3"><i>loc</i></font>2,<font face="Times New Roman, Times, serif" size="3"><i>size</i></font>2, &hellip;</p>
+<p>where each <font face="Times New Roman, Times, serif" size="3"><i>loc</i></font> is a directory location or a file pathname, and each <font face="Times New Roman, Times, serif" size="3"><i>size</i></font> is the maximum size for the file segment at that location. Gaussian will automatically generate unique filenames for any <font face="Times New Roman, Times, serif" size="3"><i>loc</i></font> which specifies a directory only. On UNIX systems, directory specifications (without filenames) must include a terminal slash.</p>
+<p>By default, the sizes are in units of 8-byte words. This value may also be followed by <b><font color="#0000FF">KB</font></b>, <b><font color="#0000FF">MB</font></b>, <b><font color="#0000FF">GB</font></b>, <b><font color="#0000FF">TB</font></b>, <b><font color="#0000FF">KW</font></b>, <b><font color="#0000FF">MW</font></b>, <b><font color="#0000FF">GW</font></b><strong> </strong> or <b><font color="#0000FF">TW</font></b> (without intervening spaces) to specify units of kilo-, mega-, giga- or tera-bytes or words. Note that 1 MB = 1024<sup>2</sup> bytes = 1,048,576 bytes (not 1,000,000 bytes).</p>
+<p>A value of <b><font color="#0000FF">-1</font></b> for any size parameter indicates that any and all available space may be used, and a value of <b><font color="#0000FF">0</font></b> says to use the current size of an existing segment. <b><font color="#0000FF">-1</font></b> is useful only for the last file specified, for which it is the default.</p>
+<p>For example, the following directive splits the read-write file across three disks:</p>
+<pre>%RWF=/dalton/s0/,4GB,/scratch/,3GB,/temp/s0/my_job,-1</pre>
+<p>The maximum sizes for the file segments are 4 GB, 3 GB, and unlimited, respectively. Gaussian will generate names for the first two segments, and the third will be given the name <b><font color="#0000FF">my_job</font></b>. Note that the directory specifications include terminal slashes.</p>
+<p>Due to limitations in current UNIX implementations, <b><font color="#0000FF">-1</font></b> should be used with caution, as it will attempt to extend a file segment beyond all remaining disk capacity on these systems; using it will also have the side effect of keeping any additional file segments included in the list from ever being used.</p>
+<h3>Saving and Deleting Scratch Files</h3>
+<p>By default, unnamed scratch files are deleted at the end of the Gaussian run, and named files are saved. The <b><font color="#0000FF">%NoSave</font></b> command may be used to change this default behavior. When this directive is included in an input file, named scratch files whose directives appear in the input file <font face="Times New Roman, Times, serif" size="3"><i>before</i></font> <b><font color="#0000FF">%NoSave</font></b> will be deleted at the end of a run (as well as all unnamed scratch files). However, if the <b><font color="#0000FF">%</font></b> directive naming the file appears <font face="Times New Roman, Times, serif" size="3"><i>after</i></font> the <b><font color="#0000FF">%NoSave</font></b> directive, the file will be retained. For example, these commands specify a name for the checkpoint file, and an alternate name and directory location for the read-write file, and cause only the checkpoint file to be saved at the conclusion of the Gaussian job:</p>
+<pre>
+%RWF=/chem/scratch2/water &nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Files to be deleted go here.</i></font></font>
+%NoSave
+%Chk=water &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Files to be saved go here.</i></font></font>
+</pre>
+<p> Note that all files are saved when a job terminates abnormally.</p>
+<h3>Initialization Files</h3>
+<p>The Gaussian system includes initialization files to set up the user environment for running the program. These files are:</p>
+<pre>
+$g09root/g09/bsd/g09.login &nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>C shell</i></font></font>
+$g09root/g09/bsd/g09.profile <font face="Times New Roman, Times, serif" color="#CC0000"><i>Bourne shell</i></font></font>
+</pre>
+<p>Note that the <font color="#009933">g09root</font> environment variable must be set up by the user. Thus, it is customary to include lines like the following within the <font color="#009933">.login</font> or <font color="#009933">.profile</font> file for Gaussian users:</p>
+<pre>
+<font face="Times New Roman, Times, serif" color="#CC0000"><i>.login files:</i></font></font>
+setenv g09root <font face="Times New Roman, Times, serif" size="3"><i>location</i></font>
+source $g09root/g09/bsd/g09.login
+
+<font face="Times New Roman, Times, serif" color="#CC0000"><i>.profile files:</i></font></font>
+g09root=<font face="Times New Roman, Times, serif" size="3"><i>location</i></font>
+export g09root
+. $g09root/g09/bsd/g09.profile
+</pre>
+<p>Once things are set up correctly, the <b><font color="#0000FF">g09</font></b> command is used to execute Gaussian 09 (see below).</p>
+<h2>Controlling Memory Usage</h2>
+<p>The <b><font color="#0000FF">%Mem</font></b> command controls the amount of dynamic memory to be used by Gaussian. By default, 256 MB (32MW) are used. This can be changed to <font face="Times New Roman, Times, serif" size="3"><i>n</i></font> double-precision words by specifying:</p>
+<pre>%Mem=<font face="Times New Roman, Times, serif" size="3"><i>n</i></font></pre>
+<p>For example, the following command sets memory use to 320 million bytes:</p>
+<pre>%Mem=40000000</pre>
+<p>This value may also be followed by <b><font color="#0000FF">KB</font></b>, <b><font color="#0000FF">MB</font></b>, <b><font color="#0000FF">GB</font></b>, <b><font color="#0000FF">TB</font></b>, <b><font color="#0000FF">KW</font></b>, <b><font color="#0000FF">MW</font></b>, <b><font color="#0000FF">GW</font></b><strong> </strong> or <b><font color="#0000FF">TW</font></b> (without intervening spaces) to specify units of kilo-, mega-, giga- or tera-bytes or words. For example, the following command also sets the amount of dynamic memory to 1 GB:</p>
+<pre>%Mem=1GB</pre>
+<p>Even larger allocations may be needed for very large direct SCF calculations, at least 3<font face="Times New Roman, Times, serif" size="3"><i>N</i></font><sup>2</sup> words, where <font face="Times New Roman, Times, serif" size="3"><i>N</i></font> is the number of basis functions.</p>
+<p><font face="Times New Roman, Times, serif" size="3"><i>Warning: Requesting more memory than the amount of physical memory actually available on a computer system will lead to very poor performance.</i></font></p>
+<p>If Gaussian is being used on a machine with limited physical memory, so that the default of 256 MB is not available, the default algorithms as well as the default memory allocation should be set appropriately during installation. </p>
+<h2>Running Gaussian on UNIX Systems</h2>
+<p>Once all input and resource specifications are prepared, you are ready to run the program. Gaussian 09 may be run interactively using one of two command styles:</p>
+<pre><b>g09</b> <font face="Times New Roman, Times, serif" size="3"><i>job-name</i></font>
+<b>g09</b> <font face="Times New Roman, Times, serif" size="3"><i>&lt;input-file &gt;output-file</i></font></pre>
+<p>In the first form, the program reads input from <font face="Times New Roman, Times, serif" size="3"><i>job-name</i></font>.<font color="#009933">com</font> and writes its output to <font face="Times New Roman, Times, serif" size="3"><i>job-name</i></font><font color="#009933">.log</font>. When <font face="Times New Roman, Times, serif" size="3"><i>job-name</i></font> is not specified, the program reads from standard input and writes to standard output, and these can be redirected or piped in the usual UNIX fashion. Either form of command can be forced in the background in the same manner as any shell command using the ampersand.</p>
+<h3>Scripts and Gaussian</h3>
+<p>Scripts designed to run Gaussian 09 may also be created in several ways (we will use the C shell in these examples). First, <b><font color="#0000FF">g09</font></b> commands like those above may be included in a shell script. Secondly, actual Gaussian input may be included in the script using the <b><font color="#0000FF">&lt;&lt;</font></b> construct:</p>
+<pre>#!/bin/csh
+g09 &lt;&lt;END &gt;water.log
+%Chk=water
+#RHF/6-31G(d)
+ 
+water energy
+ 
+0  1
+O
+H  1  1.0
+H  1  1.0  2  120.0
+ 
+END
+echo &quot;Job done. &quot;</pre>
+<p>All lines preceding the string following the <b><font color="#0000FF">&lt;&lt;</font></b> symbols are taken as input to the <b><font color="#0000FF">g09</font></b> command.</p>
+<p>Finally, loops may be created to run several Gaussian jobs in succession. For example, the following script runs all of the Gaussian input files specified as its command line arguments, and it maintains a log of its activities in the file <font color="#009933">Status</font>:</p>
+<pre>#!/bin/csh
+echo &amp;quot;Current Job Status:&quot;&nbsp;&gt; Status
+foreach file ($argv)
+   echo &quot;Starting file $file at `date`&quot;&nbsp;&gt;&gt; Status
+   g09 &lt; $file &gt; $file:r.log
+   echo &quot;$file Done with status $status&quot;&nbsp;&gt;&gt; Status
+end
+echo &quot;All Done.&quot;&nbsp;&gt;&gt; Status</pre>
+<p>The following more complex script creates Gaussian input files on-the-fly from the partial input in the files given as the script&rsquo;s command line arguments. The latter are lacking full route sections; their route sections consist of simply a <b><font color="#0000FF">#</font></b> sign or a <b><font color="#0000FF">#</font></b> line containing special keywords needed for that molecular system, but no method, basis set, or calculation type.</p>
+<p>The script creates a two-step job for each partial input file&mdash;a Hartree-Fock optimization followed by an MP2 single point energy calculation&mdash;consisting of both the literal commands included in the script and the contents of each file specified at script execution time. It includes the latter by exploiting the Gaussian 09 <b><font color="#0000FF">@</font></b> include file mechanism:</p>
+<pre>#!/bin/csh
+echo &quot;Current Job Status:&quot;&nbsp;&gt; Status
+foreach file ($argv)
+echo &quot;Starting file $file at `date`&quot;&nbsp;&gt;&gt; Status
+g09 &lt;&lt;END&gt; $file:r.log
+%Chk=$file:r
+# HF/6-31G(d) FOpt
+@$file/N
+ 
+--Link1--
+%Chk=$file:r
+%NoSave
+# MP2/6-31+G(d,p) SP Guess=Read Geom=AllCheck
+END
+echo &quot;$file Done with status $status&quot;&nbsp;&gt;&gt; Status
+end # end of foreach
+echo &quot;All Done.&quot;&nbsp;&gt;&gt; Status</pre>
+<h3>Batch Execution with NQS</h3>
+<p>Gaussian may be run using the NQS batch facility on those UNIX systems that support it. The <b><font color="#0000FF">subg09</font></b> command, defined in the initialization files, submits an input file to a batch queue. It has the following syntax:</p>
+<pre><b>subg09</b> <font face="Times New Roman, Times, serif" size="3"><i>queue-name  job-name</i></font> [<b>-scrdir</b> <font face="Times New Roman, Times, serif" size="3"><i>dir1</i></font>]&nbsp;[<b>-exedir</b> <font face="Times New Roman, Times, serif" size="3"><i>dir2</i></font>]&nbsp;[<b>-p</b> <font face="Times New Roman, Times, serif" size="3"><i>n</i></font>]</pre>
+<p>The two required parameters are the queue and job names. Input is taken from <font face="Times New Roman, Times, serif" size="3"><i>job-name</i></font><font color="#009933">.com</font> and output goes to <font face="Times New Roman, Times, serif" size="3"><i>job-name</i></font><font color="#009933">.log</font>, just as for interactive runs. The NQS log file is sent to <font face="Times New Roman, Times, serif" size="3"><i>job-name</i></font><font color="#009933">.batch-log</font>. The optional parameters <b><font color="#0000FF">-scrdir</font></b> and <b><font color="#0000FF">-exedir</font></b> are used to override the default scratch and executable directories, respectively. Any other parameters are taken to be NQS options. In particular, <b><font color="#0000FF">-p</font></b> <font face="Times New Roman, Times, serif" size="3"><i>n</i></font> can be used to set the priority within the queue to <font face="Times New Roman, Times, serif" size="3"><i>n</i></font>. This is priority for initiation (1 being lowest), and does not affect the run-time priority.</p>
+<p>To submit an NQS job from an interactive session, a file like the following should be created (with filename <font face="Times New Roman, Times, serif" size="3"><i>name</i></font><font color="#009933">.job</font>):</p>
+<pre>
+# QSUB -r <font face="Times New Roman, Times, serif"><i>name</i></font></font> -o <font face="Times New Roman, Times, serif"><i>name</i></font></font>.out -eo
+# QSUB -lt 2000 -lT 2100
+# QSUB -lm 34mw -lM 34mw
+g09 &lt;<font face="Times New Roman, Times, serif"><i>name</i></font></font>.com
+</pre>
+<p>where <font face="Times New Roman, Times, serif" size="3"><i>name</i></font> should be replaced with a name that is appropriate to your calculation. The first line names the running job, names the output file, and causes errors to be included in the output file. The time parameters are different to allow addition of job control for cleanup, (for example, archiving the checkpoint file in the event that the job exceeds its time limit). The memory parameters are used both for initial scheduling of your job for execution and by the program to determine dynamic memory use.</p>
+<p>This job would then be submitted by issuing the command,</p>
+<pre>$ <b>qsub</b> <font face="Times New Roman, Times, serif" size="3"><i>name</i></font><b>.job</b></pre>
+<p>and the output would be placed in your current working directory.</p>
+<p>&nbsp;</p>
+<hr />
+<p class="upd">Last update: 26 June 2013</p>  
+
+</body></html>

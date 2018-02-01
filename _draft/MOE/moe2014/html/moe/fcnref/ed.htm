@@ -1,0 +1,240 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	ed.htm		Electron Density Functions
+!!	moe/fcnref
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions diff_GaussElectronDensityParam>
+<meta functions crys_ElectronDensity>
+<meta functions mtz_ElectronDensity>
+<meta functions diff_CalcStructureFactorsCIF>
+<meta functions diff_CalcStructureFactorsFFT>
+<meta functions diff_CalcStructureFactorsSum>
+
+<title>Electron Density Functions</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+<pre>
+[Z, sigma] = <a class="fcnlink" href="#diff_GaussElectronDensityParam">diff_GaussElectronDensityParam</a> [pos, element, biso, occ, uaniso]
+
+[data, shape] = <a class="fcnlink" href="#crys_ElectronDensity">crys_ElectronDensity</a>[[Z, sigma], pos, shape, cell, opt]
+
+[data, shape] = <a class="fcnlink" href="#mtz_ElectronDensity">mtz_ElectronDensity</a> [sfinfo, shape, cols, mapcoeff]
+
+[F, phase, hkl] = <a class="fcnlink" href="#diff_CalcStructureFactorsCIF">diff_CalcStructureFactorsCIF</a> [cif, opt]
+[F, phase, hkl] = <a class="fcnlink" href="#diff_CalcStructureFactorsFFT">diff_CalcStructureFactorsFFT</a> [pos, element, biso, occ, uaniso, cell, opt]
+[F, phase, hkl] = <a class="fcnlink" href="#diff_CalcStructureFactorsSum">diff_CalcStructureFactorsSum</a> [pos, element, biso, occ, uaniso, cell, opt]
+</pre>
+
+
+<h2>Description</h2>
+
+<p>These functions provide a means for converting back and forth between atomic
+coordinates, structure factors, and electron density.  Given any two of
+these (or in some cases just one) it should be possible to then compute the
+third, with some minimal additional information such as unit cell dimensions,
+space group, and resolution range of the experiment.</p>
+
+<p><a name="diff_GaussElectronDensityParam"></a></p>
+<hr noshade>
+
+<pre>
+[Z, sigma] = <span class="fcndef">diff_GaussElectronDensityParam</span> [pos, element, biso, occ, uaniso]
+</pre>
+
+<p>Compute the electron density around a set of atoms with positions
+<tt>pos</tt> using a two-Gaussian approximation based on the
+method described in [Agarwal&nbsp;1978].  For atom types not covered
+by that reference, the three-Gaussian model of [Eyck&nbsp;1977] is used.
+Note that isotropic B factors <tt>biso</tt> are necessary to accurately
+reproduce the density using this method.  Alternatively, anisotropic
+displacement factors (U) can be provided and will be used instead of
+B factors.  These must be given as a laminated vector with 6 elements:
+<i>[u11, u12, u13, u22, u23, u33]</i>.  Note that these are related to
+B factors since <tt>B = 8&pi;<sup>2</sup>U</tt>.  <tt>element</tt> specifies
+the atomic element symbols of the corresponding atoms, and <tt>occ</tt>,
+their occupancies.  The function returns two elements, the weights on
+the Gaussians <tt>Z</tt>, and the covariance matrix <tt>sigma</tt>, about
+each point in <tt>pos</tt>.  The lengths of <tt>Z</tt> and <tt>sigma</tt>
+will be three, the number of Gaussians in the model.  (For 2-Gaussian atoms
+the third weight will always be zero).  For each Gaussian, <tt>sigma</tt>
+will contain a laminated vector of length 6 representing the symmetric
+covariance matrix <i>D</i> at each atom with elements <i>[D11, D12, D13, D22,
+D23, D33]</i>.  <i>D</i> can be thought of as the inverse of the effective
+B factor.  The electron density contribution at a given position <i>r</i>
+from an atom is thus given by:
+
+<pre>
+&rho;(r) = &Sigma;<sub>i</sub> Z<sub>i</sub>|4&pi;D<sub>i</sub>|<sup>1/2</sup> exp(-4&pi;<sup>2</sup>r<sup>T</sup>D<sub>i</sub>r)
+</pre>
+
+where the sum is over the <i>i</i> Gaussians and || is the determinant
+operation.
+
+</p>
+
+<p><a name="crys_ElectronDensity"></a></p>
+<hr noshade>
+
+<pre>
+[data, shape] = <span class="fcndef">crys_ElectronDensity</span>[[Z, sigma], pos, shape, cell, opt]
+</pre>
+
+<p>Given a set of Gaussian parameters such as those returned from
+<tt>diff_GaussElectronDensityParam</tt>, this function builds a grid and
+computes the actual electron density using the Gaussian model.  <tt>cell</tt>
+specifies the unit cell parameters of the crystal and <tt>pos</tt> the
+positions of the atoms.  <tt>opt</tt> is a tagged vector of options. 
+Currently, only one option is available, <tt>gridspac</tt>, the
+spacing desired in the electron density grid, in angstroms.
+If <tt>shape</tt> is null, an attempt will be made
+to honor the requested spacing, however the maximum grid size is limited
+to 128 x 128 x 128, and additionally the grid is always a power of 2 in
+each dimension so this will be approximate at best.  If <tt>shape</tt>
+is given, it will be used to determine the grid size and spacing.
+</p>
+
+<p><a name="mtz_ElectronDensity"></a></p>
+<hr noshade>
+
+<pre>
+[data, shape] = <span class="fcndef">mtz_ElectronDensity</span> [sfinfo, shape, cols, mapcoeff]
+</pre>
+
+<p>Given a complete set of structure factors, including phases, this
+computes the electron density map.  <tt>sfinfo</tt> is a tagged vector as
+described in
+<a href="edio.htm#sfinfo">Electron Density I/O Functions</a>,
+containing structure factor data and related information.
+It may also be a filename (token), in which case the file will be assumed
+to be an MTZ file, and read in before continuing.  <tt>shape</tt> is
+optional and specifies the shape of the grid to be returned in fractional
+coordinates.  By default one unit cell is returned, which is equivalent
+to using a <tt>shape</tt> with corners at <tt>[[0, 0, 0], [1, 1, 1]]</tt>.
+<tt>cols</tt> is also optional.  When provided, it should contain two
+tokens, giving the names of the columns in the sfinfo structure to use
+for magnitude (or intensity) and phase information, respectively.  If not
+provided, or if the named columns are not found, common column names will
+be tried until two appropriate ones are found.  To compute a difference
+map, use <tt>mapcoeff</tt> and provide a third column in <tt>cols</tt> for
+the Fc data.  Set <tt>mapcoeff</tt> to <tt>[2, 1]</tt> for a 2Fo-Fc map,
+<tt>[1, 1]</tt> for a Fo-Fc map, and so on.</p>
+
+<p>If suitable columns are not found, null is returned, otherwise the
+calculated electron density map, in fractional space with boundaries
+defined by <tt>shape</tt> is returned.</p>
+
+<p><a name="diff_CalcStructureFactorsSum"></a></p>
+<p><a name="diff_CalcStructureFactorsFFT"></a></p>
+<p><a name="diff_CalcStructureFactorsCIF"></a></p>
+<hr noshade>
+
+<pre>
+[F, phase, hkl] = <span class="fcndef">diff_CalcStructureFactorsCIF</span> [cif, opt]
+[F, phase, hkl] = <span class="fcndef">diff_CalcStructureFactorsFFT</span> [pos, element, biso, occ, uaniso, cell, opt]
+[F, phase, hkl] = <span class="fcndef">diff_CalcStructureFactorsSum</span> [pos, element, biso, occ, uaniso, cell, opt]
+</pre>
+
+<p>
+This set of functions calculates structure factors for a given
+molecular structure, effectively simulating a diffraction experiment.
+The first is simply a wrapper for the others and takes a parsed cif object.
+</p>
+
+<p>For <tt>diff_CalcStructureFactorsCIF</tt>,
+<tt>opt</tt> has only one option, <tt>mode</tt>, which must be <tt>'fft'</tt>
+or <tt>'sum'</tt>, and specifies which of the other functions should be
+called.  Note that <tt>opt</tt>
+is passed to the subsequent function being called, so <tt>opt</tt>
+should include any options needed by that function.
+</p>
+
+<p>The latter two functions take a set of atom keys, the cell parameters
+(<tt>cell</tt>), and <tt>opt</tt>, which is a tagged vector of options.  When
+passing in anisotropic displacements, <tt>uaniso</tt> must
+be provided as a laminated
+vector of length 6 with the following values: <i>[u11, u12, u13, u22, u23,
+u33]</i>.
+</p>
+
+<p>For <tt>diff_CalcStructureFactorsFFT</tt> there is only
+one possible option (in <tt>opt</tt>), the grid spacing,
+specified using the tag <tt>gridspac</tt>.
+For <tt>diff_CalcStructureFactorsSum</tt>,
+there is also only one option, the wavelength specified by
+the tag <tt>lambda</tt>, from which grid spacing is determined.
+</p>
+
+<p>All of these functions return a grid of complex structure factors,
+with grid points specified by the <tt>hkl</tt> indices,
+and the value at each point, the magnitude <tt>F</tt> and phase
+<tt>phase</tt>, given separately.
+The <tt>hkl</tt> indices will be fully expanded and cover all
+8 octants of reciprocal space.
+</p>
+
+<p>
+<h2>See Also</h2>
+
+<a href="edio.htm">Electron Density I/O Functions</a>
+
+<p>
+<h2>References</h2>
+
+<table cellpadding="5" width="100%">
+
+<tr><td valign="top">[Agarwal&nbsp;1978]</td>
+<td valign="top">Agarwal, R.C.;  A New Least-Squares Refinement Technique
+Based on the Fast
+Fourier Transform Algorithm;  <i>Acta Cryst. A34</i> (<b>1978</b>) 791-809.
+</td></tr>
+
+<tr><td valign="top">[Eyck&nbsp;1977]</td>
+<td valign="top">Eyck, L.F.T.;  Efficient Structure-Factor Calculation for
+Large Molecules by the
+Fast Fourier Transform;  <i>Acta Cryst. A33</i> (<b>1977</b>) 486-492.
+</td></tr>
+
+</table>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

@@ -1,0 +1,518 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	dockfcn.htm			docking functions
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<title>Docking Functions</title>
+<meta functions dock_LigandOpen, dock_LigandClose>
+<meta functions dock_ReceptorOpen, dock_ReceptorClose, dock_InsideSite>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+<h2>Syntax</h2>
+<pre>
+    lig = <a class="fcnlink" href="#dock_LigandOpen">dock_LigandOpen</a> [atoms]
+    lig = <a class="fcnlink" href="#dock_LigandOpen">dock_LigandOpen</a> [mol]
+    <a class="fcnlink" href="#dock_LigandClose">dock_LigandClose</a> lig
+
+    rec = <a class="fcnlink" href="#dock_ReceptorOpen">dock_ReceptorOpen</a> [recatoms, sitectx, wall, ph4_query]
+    <a class="fcnlink" href="#dock_ReceptorClose">dock_ReceptorClose</a> rec
+    mask = <a class="fcnlink" href="#dock_InsideSite">dock_InsideSite</a> [rec, pos]
+
+    ret = <a class="fcnlink" href="#dock_score_*">dock_score_*</a> [cmd, arg, pot]
+</pre>
+
+<h2>Description</h2>
+
+<p>
+The docking functions (prefixed with <tt>dock_</tt>) are part of the
+docking applications in MOE.  The functions contained in this document
+are intended to show how to add a scoring function plug-in to the docking
+application.  Not all of the docking functions are described; just the
+set required to implement a scoring function.
+<p>
+A new scoring function should be written in a separate file.  Minimally,
+this file will contain a global function that implements the scoring
+function and user interface elements.  In order to plug in to the docking
+application, the scoring function requires knowledge of docking data
+structures, notably, the ligand and receptor data structures and the
+sequence in which the docking function is called by the docking application.
+
+<!-- LIGAND !-->
+
+<p><a name="dock_LigandClose"></a></p>
+<p><a name="dock_LigandOpen"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+lig = <span class="fcndef">dock_LigandOpen</span> [atoms]
+lig = <span class="fcndef">dock_LigandOpen</span> [mol]
+<span class="fcndef">dock_LigandClose</span> lig
+</pre>
+
+<p>
+The <tt>dock_LigandOpen</tt> creates a data structure describing a ligand
+molecule.  The input can be either a set of atom keys (<tt>atoms</tt>) of
+all atoms of a single connected molecule,
+or a MOE MDB format structure (<tt>mol</tt>) such as that returned by
+the function <a class="svl" href="extract.htm">mol_Extract</a>.
+The returned
+value is a key to a dynamic variable containing a tagged vector (the fields
+of the <tt>lig</tt> dynamic variable are accessed with
+<tt>*lig.</tt><i>field</i>).  The fields of <tt>lig</tt> contain information
+about the ligand:
+
+<blockquote><dl>
+<dt><tt>dim</tt>
+<dd>A vector containing a the dimension/hybridization/geometry for each atom.
+The values are 1 for <i>sp</i> systems, 2 for planar atoms and 3 for
+other atoms.
+<p>
+<dt><tt>fc</tt>
+<dd>A vector containing the formal charge of each atom (as returned
+by <tt>aFCharge</tt>.
+<p>
+<dt><tt>mol</tt>
+<dd>A mol structure as returned by <tt>mol_Extract atoms</tt>.  This can
+be used to recreate the molecule in MOE if more properties are required.
+<p>
+<dt><tt>prioZQH</tt>
+<dd>A vector containing the ZQH priorities (equivalence classes) of the
+atoms (as returned by <tt>aPrioZQH</tt>) used for symmetry detection.
+<p>
+<dt><tt>Qindex</tt>
+<dd>A vector of the indices into the ligand atoms of the heavy elements
+(non Hydrogen and non Lone Pair).
+<p>
+<dt><tt>Qmask</tt>
+<dd>A mask containing a flag for each atom which is 1 if the atom is
+not a Hydrogen or Lone Pair and 0 otherwise.
+<p>
+<dt><tt>radius</tt>
+<dd>A vector of contact radii for the ligand atoms.
+</dl></blockquote>
+
+<p>
+<b>Warning!</b> There are other fields in the <tt>lig</tt> structure used
+by the docking application.  These must not be modified.  It is permitted
+to add new fields to the <tt>lig</tt> structure; however, it is strongly
+recommended that complex field names be used to avoid field name collisions
+with other applications.
+
+<p>
+<b>Warning!</b> The function <tt>dock_LigandClose</tt> must be called to
+release the resources associated with the <tt>lig</tt> structure.
+
+<!-- RECEPTOR !-->
+
+<p><a name="dock_InsideSite"></a></p>
+<p><a name="dock_ReceptorClose"></a></p>
+<p><a name="dock_ReceptorOpen"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>rec = <span class="fcndef">dock_ReceptorOpen</span> [recatoms, sitectx, wall, ph4_query]
+<span class="fcndef">dock_ReceptorClose</span> rec
+mask = <span class="fcndef">dock_InsideSite</span> [rec, pos]
+</pre>
+
+<p>
+The <tt>dock_ReceptorOpen</tt> creates a data structure describing a ligand
+molecule.  The <tt>recatoms</tt> argument is assumed to be a set of atom keys
+of the receptor.
+<tt>sitectx</tt> is of the form <tt>[sitepos, siterad]</tt>. The docking
+active site corresponds to the collection of spheres of radii <tt>siterad</tt>
+centred at positions <tt>sitepos</tt>.  For convenience, one can define the
+site using a group of atoms. If <tt>siteatoms</tt> are the keys of these
+atoms, one can simply assign
+<tt>aPos siteatoms</tt> to <tt>sitepos</tt>,
+and leave <tt>siterad</tt> as <tt>null</tt> so that the default radii
+value of 5 &Aring; is used.
+The <tt>wall</tt> argument is a wall potential parameterization 
+(e.g. as returned by <tt>pot_WallParameters</tt>)
+used to localize the docking active site.  <tt>ph4_query</tt> is the
+name of a pharmacophore query file used to constrain the poses of docked
+ligands.  The <tt>sitectx</tt>, <tt>wall</tt> and <tt>ph4</tt> arguments
+together determine a bounding region for the active site; if these are
+all null then the entire collection of <tt>recatoms</tt> is considered to
+be the active site.
+<p>
+The returned value is a key to a dynamic variable containing
+a tagged vector (the fields of the <tt>rec</tt> dynamic variable are accessed
+with <tt>*rec.</tt><i>field</i>).
+The fields of <tt>rec</tt> contain information about the receptor:
+
+<blockquote><dl>
+<dt><tt>fc</tt>
+<dd>A vector containing the formal charge of each receptor atom (as returned
+by <tt>aFCharge</tt>.
+<p>
+<dt><tt>mol</tt>
+<dd>A mol structure as returned by <tt>mol_Extract recatoms</tt>.  This can
+be used to recreate the molecule in MOE if more properties are required.
+<p>
+<dt><tt>ph4_query</tt>
+<dd>
+The name of a pharmacophore query file used to filter
+ligand conformations.
+<p>
+<dt><tt>Qindex</tt>
+<dd>A vector of the indices into the receptor atoms of the heavy elements
+(non Hydrogen and non Lone Pair).
+<p>
+<dt><tt>Qmask</tt>
+<dd>A mask containing a flag for each receptor atom which is 1 if the atom is
+not a Hydrogen or Lone Pair and 0 otherwise.
+<p>
+<dt><tt>radius</tt>
+<dd>A vector of contact radii for the receptor atoms.
+<p>
+<dt><tt>sitefpos</tt>
+<dd>
+A collection of coordinates, <tt>[x,y,z]</tt> containing the locations of
+feature points in the active site.  These points are determined by clustering
+alpha spheres.
+<p>
+<dt><tt>sitemin</tt>
+<dd>The lower corner coordinate of the bounding box that defines the
+active site.
+<p>
+<dt><tt>sitemin</tt>
+<dd>The upper corner coordinate of the bounding box that defines the
+active site.
+<p>
+<dt><tt>solvent</tt>
+<dd>A vector containing a flag for each receptor atom which is 1 if the atom
+is considered part of a solvent molecule.
+<p>
+<dt><tt>wall</tt>
+<dd>
+The supplied <tt>wall</tt> argument with zero dimensions converted to
+<tt>REAL_MAX</tt> (unbounded).  This argument can be used for testing
+whether or not points are inside the implied wall region.
+</dl></blockquote>
+
+<p>
+<b>Warning!</b> There are other fields in the <tt>rec</tt> structure used
+by the docking application.  These must not be modified.  It is permitted
+to add new fields to the <tt>rec</tt> structure; however, it is strongly
+recommended that complex field names be used to avoid field name collisions
+with other applications.
+
+<p>
+<b>Warning!</b> The function <tt>dock_ReceptorClose</tt> must be called to
+release the resources associated with the <tt>rec</tt> structure.
+
+<p>
+The <tt>dock_InsideSite</tt> function returns a mask
+indicating whether the points in <tt>pos = [x,y,z]</tt> are considered
+to be inside or outside of the active site.
+A value of 1 is returned if a point is inside
+and 0 otherwise.  A point is inside the site if it
+is inside the <tt>wall</tt> region near the <tt>recatoms</tt>
+and lies
+within any of the spheres defined by <tt>sitepos</tt> and <tt>siterad</tt>.
+
+<!-- SCORING !-->
+
+<p><a name="dock_score_*"></a>
+<p><hr noshade="noshade" />
+
+<pre>ret = <span class="fcndef">dock_score_*</span> [cmd, arg, opt]
+</pre>
+
+<p>
+Global functions that have the prefix <tt>dock_score_</tt> are considered
+scoring functions for the docking application.  Such functions are
+plug-ins for the final scoring of candidate poses.  These functions
+must perform a variety of functions as indicated by the <tt>cmd</tt>
+token argument; <tt>arg</tt> is an argument for the <tt>cmd</tt>
+and varies according to the particular <tt>cmd</tt>; <tt>opt</tt> is
+a tagged vector of options particular to the scoring function.
+<p>
+The <tt>cmd</tt> argument may be one of:
+
+<blockquote><dl>
+
+<dt><tt>'ID'</tt>
+<dd>
+The <tt>arg</tt> and <tt>opt</tt> arguments are null.
+This function should return a token containing the unique identifying name of
+the scoring function.  This name will appear in the docking application
+user interface.
+
+<p>
+<dt><tt>'configpanelwidgets'</tt>
+<dd>
+The <tt>arg</tt> and <tt>opt</tt> arguments are null.
+This function should return a collection of user interface panel widgets
+that will appear in the scoring configuration panel of the dock application
+user interface.  If there are no user-configurable parameters then
+<tt>[]</tt> should be returned.
+
+<p>
+<dt><tt>'configpanelevent'</tt>
+<dd>
+The <tt>arg</tt> is the vector <tt>[val,trig]</tt> (as returned by
+<tt>WindowWait</tt> and the <tt>opt</tt> argument is null.
+This function is called by the scoring configuration
+panel of the dock user interface whenever <tt>WindowWait</tt> returns.
+The <tt>'configpanelevent'</tt> function must service user interface
+events only for those widgets returned by <tt>'configpanelwidgets'</tt>
+and return 1 if the event was processed and 0 otherwise.  For simple
+panels, 0 can always be returned (indicating that the <tt>WindowWait</tt>
+event must be processed by the docking application).
+
+<p>
+<dt><tt>'configvalues'</tt>
+<dd>
+The <tt>opt</tt> argument is null.  The <tt>arg</tt> argument contains
+a tagged vector containing an initial set of scoring function options.
+At a minimum, the function should add in default values, strip out
+any unknown tags and return a complete set of options.  The options
+that appear in the <tt>'configpanelwidgets'</tt> will be used to populate
+the scoring configuration panel.
+
+<blockquote><pre>if cmd == 'configvalues' then
+    arg = tagcat [arg, DEFAULTS];
+    return arg | indexof [tags arg, tags DEFAULTS];
+...
+</pre></blockquote>
+
+<p>
+<dt><tt>'openReceptor'</tt>
+<dd>
+The <tt>arg</tt> argument is a receptor structure as returned by
+<tt>dock_ReceptorOpen</tt> and <tt>opt</tt> is a tagged vector of
+scoring function options.
+This function is called by the docking application to give the scoring
+function an opportunity initialize the receptor structure with any quantities
+it may need in future scoring.
+One or more new tags may be added to the receptor structure; however,
+complex names should be used to avoid collisions with other docking
+routines.
+This function should return <tt>[]</tt>.
+
+<p>
+<dt><tt>'closeReceptor'</tt>
+<dd>
+The <tt>arg</tt> argument is a receptor structure as returned by
+<tt>dock_ReceptorOpen</tt> and <tt>opt</tt> is a tagged vector of
+scoring function options.
+This function should perform clean-up of any fields added to the
+receptor structure added by <tt>'openReceptor'</tt>; that is, resources
+should be freed and fields set to <tt>[]</tt>.
+Thus function should return <tt>[]</tt>.
+
+<p>
+<dt><tt>'openLigand'</tt>
+<dd><p>
+The <tt>arg</tt> argument is a ligand structure as returned by
+<tt>dock_LigandOpen</tt> and <tt>opt</tt> is a tagged vector of
+scoring function options.
+This function is called by the docking application to give the scoring
+function an opportunity initialize the ligand structure with any quantities
+it may need in future scoring.
+One or more new tags may be added to the ligand structure; however,
+complex names should be used to avoid collisions with other docking
+routines.
+This function should return <tt>[]</tt>.
+
+<p>
+<dt><tt>'closeLigand'</tt>
+<dd>
+The <tt>arg</tt> argument is a ligand structure as returned by
+<tt>dock_LigandOpen</tt> and <tt>opt</tt> is a tagged vector of
+scoring function options.
+This function should perform clean-up of any fields added to the
+ligand structure added by <tt>'openLigand'</tt>; that is, resources
+should be freed and fields set to <tt>[]</tt>.
+This function should return <tt>[]</tt>.
+
+<p>
+<dt><tt>'score'</tt>
+<dd>
+The <tt>arg</tt> argument is a vector <tt>[pos,lig,rec]</tt> where
+<tt>pos</tt> is a 3-vector of ligand pose coordinates <tt>[x,y,z]</tt>,
+<tt>lig</tt> is a ligand structure (as returned by
+<tt>dock_LigandOpen</tt>)
+<tt>rec</tt> is a receptor structure (as returned by
+<tt>dock_ReceptorOpen</tt>); <tt>opt</tt> is a tagged vector of receptor
+options.
+This function should return a single number which is the score of the pose.
+
+</dl></blockquote>
+
+<p>
+Other values of <tt>cmd</tt> should be ignored with <tt>[]</tt> returned.
+A particular scoring function <tt>dock_score_X</tt> will be used at various
+points in the docking application.  Firstly, the interface will use the
+following sequence:
+
+<blockquote><pre>local ID = dock_score_X ['ID', [], []];
+...
+local panel = [
+    ...
+    Group : dock_score_X ['configpanelwidgets', [], []];
+    ...
+];
+...
+local opt = dock_score_X ['configvalues', [], []];
+...
+loop
+    local [val, trig] = WindowWait wkey;
+    ...
+    if dock_score_X ['configpanelevent', [val,trig], []] the
+        continue;
+    endif
+    ...
+endloop
+</pre></blockquote>
+
+<p>
+Secondly, the scoring function is used in the main body of the docking
+application with a calling sequence similar to:
+
+<blockquote><pre>local rec = dock_ReceptorOpen [recatoms,sitectx,wall,ph4];
+local lig = dock_LigandOpen [ligatoms];
+...
+opt = dock_score_X ['configvalues', opt, []];
+..
+dock_score_X ['openReceptor', rec, opt];
+dock_score_X ['openLigand', lig, opt];
+...
+loop
+    ...
+    local pose = [x,y,z];
+    local score = dock_score_X ['score', [pos,lig,rec], opt];
+    ...
+endloop
+...
+dock_score_X ['closeLigand', lig, opt];
+dock_score_X ['closeReceptor', rec, opt];
+...
+dock_LigandClose lig;
+dock_ReceptorClose rec;
+</pre></blockquote>
+
+<p>
+The following code is an example of a scoring function that calculates
+a pose score by determining the number of C-C contacts between the
+ligand and the receptor.
+
+<blockquote><pre>
+global function dock_score_ContactCC [cmd, arg, opt]
+    local rec, lig, ligpos;
+
+    const DEFAULTS = [
+        weight: -0.01          // coefficient per contact in kcal/mol
+    ];
+
+    if cmd == 'ID' then
+        return 'Carbon-Carbon Contacts';
+
+    elseif cmd == 'configpanelwidgets' then
+        return [ Vbox : [
+            Text : [
+                name: 'weight', type: 'real',
+                title: 'C-C Contact Weight:', len: 10, 
+                bubbleHelp:
+                    'The carbon-carbon contact coefficient in kcal/mol.'
+            ]
+        ]];
+
+    elseif cmd == 'configpanelevent' then       // arg = [val,trig]
+        return 0;
+
+    elseif cmd == 'configvalues' then           // arg = val
+	arg = tagcat [arg, DEFAULTS];
+	return arg | indexof [tags arg, tags DEFAULTS];
+
+    elseif cmd == 'openReceptor' then           // arg = rec
+        local rec = arg;
+	dock_score_ContactCC ['closeReceptor',rec,opt];    // just in case...
+
+	    // Prepare prox key for near neighbor evaluations
+	    // and store it in the receptor structure
+
+        local rec_cpos = mol_aPos mol || [*rec.mol(4)(MOL_ATOM_EL) == 'C'];
+	*rec.ContactCC_prox = prox_open [4.5, rec_cpos, 4.5];
+	return;
+
+    elseif cmd == 'closeReceptor' then          // arg = rec
+	rec = arg;
+        prox_close *rec.ContactCC_prox;         // clean up opened prox
+        return;
+
+    elseif cmd == 'openLigand' then             // arg = lig
+        lig = arg;
+        dock_score_ContactCC ['closeLigand',lig,opt];
+        *lig.ContactCC_Cindex = x_pack (*lig.mol(4)(MOL_ATOM_EL) == 'C');
+        return;
+
+    elseif cmd == 'closeLigand' then            // arg = lig
+        lig = arg;
+        *lig.ContactCC_Cindex = [];
+        return;
+
+    elseif not (cmd == 'score') then
+        return;
+
+    endif
+
+        // The rest of the code is when cmd == 'score'
+
+    [ligpos, lig, rec] = arg;
+
+    local Cpos = apt get [ligpos, [*lig.ContactCC_Cindex]];
+    local [seg, idx, r2] = prox_find [*rec.prox, Cpos, 0];
+
+    return opt.weight * add seg;
+endfunction
+</pre></blockquote>
+
+<h2>See Also</h2>
+<a href="mol.htm">MOE Molecule Functions</a><br />
+<a href="potfcn.htm">Potential Energy Functions</a><br />
+<a href="../../svl/fcnref/dvaretc.htm">Dynamic Variables</a>
+
+<!--
+<a href="../../svl/fcnref/proxetc.htm">Proximity Search Functions</a><br />
+-->
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body.
+</html>

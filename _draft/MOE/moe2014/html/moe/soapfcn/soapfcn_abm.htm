@@ -1,0 +1,342 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--	soapfcn_abm.htm
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+<meta keywords soap>
+<meta keywords antibody>
+<meta keywords homology>
+<meta functions soapfcn_AntibodyModeler>
+<meta functions soap_spec_AntibodyModeler>
+<meta functions soap_AntibodyModeler>
+
+<title>AntibodyModeler SOAP Function</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<p>The automated SOAP antibody modeler creates an all-atom 3-D
+antibody homology model from an input antibody residue sequence.</p>
+<pre>
+    <a class="fcnlink" href="#AntibodyModeler">AntibodyModeler</a>
+</pre>
+
+<hr noshade="noshade">
+
+<a name="AntibodyModeler"></a>
+<h2>AntibodyModeler</h2>
+
+<h3>Parameters</h3>
+
+
+    <dl>
+    <dt><tt>seqFasta: </tt> <i>file</i></dt>
+
+    <dd>
+    
+    The input antibody VL and VH sequences, in FASTA
+    <tt>(.fst)</tt> format, supplied as a file. It is also possible to
+    specify bi-specific antibodies by including all four chain sequences.
+    This argument is not required if the <tt>seqVL</tt> 
+    and <tt>seqVH</tt> arguments are supplied; however, bi-specific
+    antibodies are only supported through seqFasta. The content type for the file
+	is specified in the <tt>seqFastaContent</tt> parameter.
+    </dd>
+    <br/>
+
+    <dt><tt>seqVL: </tt> <i>string</i></dt>
+
+    <dd>
+    
+    The input sequence of the antibody VL chain, supplied as a string of
+    single letter amino acid codes.
+    This argument is ignored if the <tt>seqFasta</tt> 
+    argument is supplied.
+    </dd>
+    <br/>
+
+    <dt><tt>seqVH: </tt> <i>string</i></dt>
+
+    <dd>
+    
+    The input sequence of the antibody VH chain, supplied as a string of
+    single letter amino acid codes.
+    This argument is ignored if the <tt>seqFasta</tt> 
+    argument is supplied.
+    </dd>
+    <br/>
+
+    <dt><tt>template: </tt> <i>file</i></dt>
+
+    <dd>
+    
+    The antibody template model as a PDB-formatted file. The content type for the file
+	is specified in the <tt>templateContent</tt> parameter.
+    </dd>
+    <br/>
+
+    <dt><tt>fragment: </tt> <i>string</i> (default: <tt>seq</tt>)</dt>
+
+    <dd>
+    The type of fragment model that should be returned. The default option, 
+	<tt>seq</tt>,
+    will restrict the returned model to the input sequence.  All other modes
+    will return a model which will be restricted to the specified region.  The
+    input sequence will be truncated or C-terminus padded, using the template as
+    a source, as appropriate. <tt>[seq, Fv, Fab, Fab2, rIg, Ig]</tt>.
+    </dd>
+    <br/>
+
+    <dt><tt>protocol: </tt> <i>string</i> (default: <tt>standard</tt>)</dt>
+
+    <dd>
+    The level of effort to expend during model creation. This proceeds from
+    fast (<tt>coarse</tt>) to precise (<tt>fine</tt>), with <tt>standard</tt>
+	as the default. <tt>[coarse, standard, fine]</tt>.
+    </dd>
+    <br/>
+	
+	<dt><tt>seqFastaContent: </tt> <i>string</i> (default: <tt>text</tt>)</dt>
+
+	<dd>
+    The content type of the file passed as the <tt>seqFasta</tt> parameter.
+	<tt>[text, base64, url]</tt>.
+	</dd>
+	<br/>
+	
+	<dt><tt>templateContent: </tt> <i>string</i> (default: <tt>text</tt>)</dt>
+
+	<dd>
+    The content type of the file passed as the <tt>template</tt> parameter.
+	<tt>[text, base64, url]</tt>.
+	</dd>
+	<br/>
+	
+	<dt><tt>modelContent: </tt> <i>string</i> (default: <tt>text</tt>)</dt>
+
+	<dd>
+    The content type of the file passed as the <tt>model</tt> return value.
+	<tt>[text, base64, url]</tt>.
+	</dd>
+	<br/>
+
+    </dl>
+
+<h3>Return Values</h3>
+    <dl>
+    <dt><tt>model: </tt> <i>file</i></dt>
+    <dd>
+    
+    The antibody model, in a PDB-formatted file. Model
+    contents will vary depending on the setting of <tt>fragment</tt>.
+	The content type for the file is specified in the 
+	<tt>modelContent</tt> parameter.
+    </dd>
+    <br/>
+    </dl>
+    
+<h3>Description</h3>
+
+<p>The automated SOAP antibody modeler application creates an all-atom
+3D antibody model of the input residue (VL+VH) sequence.  It can model
+just the antigen binding site (Fab) or return a model of the whole
+antibody.  The application has been designed to automate various steps
+involved in the building phase of modeling. This includes template
+selection for the framework and for the respective CDR (complementarity
+determining region) loops as well as grafting of the F<sub>V</sub>
+(variable region VL-VH framework) templates.  For modeling the Fab, the
+application generates ten antigen binding site models.  The final Fab
+model is a consensus model based on the structure pool of these ten
+models.  The Fab modeling methodology is described in greater detail
+below.
+</p>
+    
+<p>The automated modeler specifies the type of antibody model returned through 
+the use of <tt>fragment</tt>.  For generating the
+full antibody model, <tt>fragment</tt> is <tt>Ig</tt>, and the specified
+<tt>template</tt> is used as a template for both sequence and structure.  In cases
+where the template is of insufficient length, 
+1IGT will be used to pad the specified template. If a template has not been 
+specified, 1IGT will be used as the template.</p>
+
+<p>An interim homology model template for the full antibody is first
+constructed by joining the modeled sequence to the constant region taken from
+the template.  The model is duplicated to create both arms of the
+full antibody, and the residues flanking the grafted regions are energy
+minimized to relax any strain resulting from the graft.  The input query
+sequence is then completed to provide a full antibody sequence &ndash;
+missing residues are filled in using residues taken from the template
+sequence (if the input sequence is complete, this step is skipped).  The
+final antibody model is generated by running the MOE homology modeling
+protocol on the completed antibody sequence using the constructed
+homology model template.</p>
+
+<p>This procedure is the same for <tt>Fab2</tt> models
+or for <tt>seq</tt> models that have a sequence length greater than or equal
+to Fab2.  For all other fragment types, only the dimer will be generated and,
+hence, the subunit duplication step is skipped.</p>
+
+<p><tt>fragment</tt> can be specified as one of 5 modes:
+<ol>
+<p><li><tt><b>seq</b></tt>
+The specified sequence is used unmodified.  The model returned will contain all
+input residues.
+<p><li><tt><b>Fv</b></tt>
+The constructed model will consist of a single VL+VH dimer forming the variable
+region.
+<p><li><tt><b>Fab</b></tt>
+The constructed model will consist of a single VL+VH and will include CL and CH1
+regions.
+<p><li><tt><b>Fab2</b></tt>
+The constructed model will consist of a pair of Fab linked through disulfides in
+a portion of the retained Fc region. 
+<p><li><tt><b>rIg</b></tt>
+The model will construct a reduced Ig, or half-Ig, which consists of a dimer 
+containing the Fab as well as the full Fc regions.
+<p><li><tt><b>Ig</b></tt>
+The complete Ig tetramer will be constructed.
+</ol>
+
+<h2>Methodology</h2>
+
+<p>MOE's antibody homology modeling protocol for creating antigen
+binding site (Fab) models proceeds in five steps as follows, and employs a
+knowledge-based approach that features a database of antibody structures
+currently available in the Protein Data Bank (PDB). </p>
+
+<ol>
+<p><li><b>Template Search</b>.
+
+The first task in antibody modeling is to find a suitable F<sub>V</sub>,
+the variable region VL-VH framework template, that will form the
+structural core of the antigen binding site model.  Two separate
+searches are required to find template candidates for each of the heavy
+and light chains.  These candidates are ranked according to appropriate
+scoring techniques.  Once candidates for F<sub>V</sub> have been found,
+the CDR loop regions are assigned using either a canonical structure
+prediction method or a knowledge-based method predicated on an antibody
+loop database.
+
+</li></p><p><li>
+
+<b>Loop Grafting</b>.
+
+Once the framework and CDR loop candidates are specified, the
+F<sub>V</sub> dimer templates are generated by grafting the respective
+CDR loops onto the VL and VH framework, followed by a gradient-based
+energy minimization in the transition area of the CDR and framework, to
+relax strained geometries.
+
+</li></p><p><li>
+
+<b>Modeling Procedure</b>.
+
+With the template completed, the antigen binding models are generated
+using MOE's homology modeling protocol, applying the standard homology
+settings.  Ten models are built.  In most cases, the modeling
+step is reduced to performing just the necessary sidechain mutations and
+placements because the complete backbone trace will be available.  In
+rare cases, a CDR loop must be modeled using the built-in loop generation
+procedure of the homology modeler.
+
+</li></p><p><li>
+
+<b>Structure Refinement</b>.
+
+A structure refinement protocol is applied after the modeling procedure
+is complete.  First, proper charge settings and hydrogen placement are
+ensured by applying Protonate3D [Labute&nbsp;2009].  The antibody
+refinement protocol accounts for the particular structural composition
+of an antigen binding site, and is then conducted as a tethered minimization
+scheme in which specified forcefield parameters are applied in order to
+relieve strained geometry and/or atom clashes within the model while
+keeping the specific CDR loop conformations as well preserved as
+possible. 
+
+</li></p><p><li>
+
+<b>Consensus Model</b>.
+
+From the collection of ten F<sub>V</sub> dimer models generated by the
+automated modeling procedure, a consensus model is then built.  The
+model with the lowest binding energy is used to provide the framework of
+the consensus F<sub>V</sub> model [Narayanan&nbsp;2009].  For each of
+the CDR loops, a single-linkage clustering algorithm is applied in order
+to determine the conformational spread within the ten models. Loop
+candidates within the most populated cluster are selected as the
+candidates for the respective CDR subdomains. The consensus model is
+then grafted, modeled, and refined as in steps 2, 3, and 4 above.
+
+</li></p>
+</ol>
+    
+<h2>References</h2>
+
+<table border="0" cellpadding="3">
+<tr>
+<td valign="top"><span class="nobr">[Narayanan&nbsp;2009]</span></td>
+<td valign="top">
+
+Narayanan, A., Sellers, B. D., Jacobson, M. P.; Energy-based analysis
+and prediction of the orientation between light- and heavy-chain
+antibody variable domains.; <i>J Mol Biol 388</i> (<b>2009</b>)
+941&ndash;953.
+
+</td>
+</tr>
+
+<tr>
+<td valign="top"><span class="nobr">[Labute&nbsp;2009]</span></td>
+<td valign="top">
+
+Labute, P.; Protonate3D: assignment of ionization states and hydrogen
+coordinates to macromolecular structures; <i>Proteins 75</i>
+(<b>2009</b>) 187&ndash;205.
+
+</td>
+</tr>
+</table>
+
+<h2>See Also</h2>
+
+    <a href="../../moe/moeweb_intro.htm">MOE/web Applications</a><br />
+    <a href="../../moe/moesoap.htm">MOE/web SOAP Service and Functions</a><br />
+	<a class="svl" href="../../svl/fcnref/soapfcn.htm">SOAP Interface Functions</a>
+	<br /><br />
+    <a href="../../proteins/antibody.htm">Antibody Modeler</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

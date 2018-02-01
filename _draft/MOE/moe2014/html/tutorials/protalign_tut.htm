@@ -1,0 +1,1153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	protalign_tut.htm Protein Alignment Tutorial
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+
+<title>Protein Alignment and Superposition Tutorial</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Introduction</h2>
+
+<p>
+3D protein alignment can be challenging due to small molecules associated
+with the protein chain, movements of loops and domains unrelated to
+binding, low sequence similarity and existence of multimers.
+Alignment/superposition tools in MOE can take advantage of additional
+information to address these issues, as listed here:
+</p>
+
+<p>
+<b>Molecules associated with main protein chains</b>.
+It is often desirable to move these molecules along with the master protein
+chain during superposition.
+(In MOE, this can be done by assigning associated chains
+a unique <i>Protein Unit</i> <i>Chain Tag</i>.)
+</p>
+
+<p>
+<b>Pocket Superposition</b>.
+If ligand structures are present, the superposition can be
+limited to pocket residues to improve the results, and to allow a close
+comparison of ligand-active site interactions among peer complexes.</p>
+
+
+<p>
+<b>Reducing the effect of mobile regions on superposition</b>.
+These areas can be located and excluded from alignment and superposition.
+</p>
+
+<p>
+<b>Enhancing the similarity signal</b>.
+When the similarity between protein structures is low, the sequence
+and structural data of an internal database of pre-aligned protein families
+may be used to enhance the similarity signal and improve the alignment
+results.</p>
+
+
+<p>The following is a brief list of MOE applications that are helpful for such
+alignment studies:</p>
+
+<table cellpadding="3" width="75%" style="margin-left:3em;">
+	<tr>
+	<td valign="top"><u>Application</u></td>
+	<td valign="top"><u>Functions</u></td>
+	</tr>
+	<tr>
+	<td valign="top">Protein-Align</td>
+	<td valign="top">Sequence and 3D alignment.</td>
+	</tr>
+	<tr>
+	<td valign="top">Protein-Superpose</td>
+	<td valign="top">3D Superposition panel.</td>
+	</tr>
+	<tr>
+	<td valign="top">Protein-Consensus</td>
+	<td valign="top">Find/Analyze conserved regions of 3D superposed chains.</td>
+	</tr>
+	<tr>
+	<td valign="top">MOE-PDB Search</td>
+	<td valign="top">Search pre-aligned protein family database that
+	are homologues to a query.</td>
+	</tr>
+</table>
+
+<p>
+This tutorial will demonstrate how to handle these issues using four exercises:</p>
+
+<ol>
+	<li style="margin-bottom:1em;">
+	In the <a href="#Exercise1">first exercise</a>, we define <i>protein units</i>
+	to allow simple alignment of a molecular system containing miscellaneous chains
+	associated with the main protein chain. This will be done by editing the
+	<i>chain tags</i> in the <b>Protein-Superpose</b> application.
+	</li>
+	<li style="margin-bottom:1em;">
+	In the <a href="#Exercise2">second exercise</a>, to exclude the effect
+	of protein movements that are unrelated to binding site on the alignment
+	results, we limit the superposition to pocket residues using the
+	<b>Protein-Superpose</b> application.
+	</li>
+	<li style="margin-bottom:1em;">
+	In the <a href="#Exercise3">third exercise</a>, we use other related
+	proteins to enhance the similarity signal and improve the alignment. This
+	is done using the <b>PDB-Search</b> application and the internal protein
+	family database (<tt>pdb.fam</tt>).
+	</li>
+	<li>
+	In the <a href="#Exercise4">fourth exercise</a>, we define a consensus
+	from structurally conserved regions of the proteins. Then, we limit the
+	alignment/superposition to this consensus. This will improve the results
+	and will highlight the differences.  This will be done using the <b>Protein
+	Consensus</b> panel.
+	</li>
+</ol>
+
+
+
+
+
+<h3>Terminology</h3>
+
+<p>This tutorial makes use of the following terms:
+</p>
+
+<table class="titlebar"  width="80%" style="margin:0 auto 0 auto;">
+ <tr>
+  <th>Term </th>
+  <th>Domain </th>
+  <th> Definition </th>
+ </tr>
+
+
+ <tr>
+  <td><i>Protein&nbsp;Unit</i></td>
+  <td>This tutorial</td>
+
+  <td>A distinct protein complex including a single copy of a master protein
+  chain and the associated molecules (if present). These may include ligand,
+  solvent, and even the interacting peptides and secondary proteins.</td>
+
+ </tr>
+
+
+ <tr>
+  <td><i>PDB ID</i></td>
+  <td>General</td>
+  <td>The four letter code identifying a Protein Data Bank entry.</td>
+ </tr>
+
+ <tr>
+  <td><i>Chain&nbsp;Name</i></td>
+  <td>General</td>
+
+  <td>A single letter code used to refer to individual chains within a
+  PDB file.  Often when multiple <i>protein units</i> are present in the
+  PDB file, they are designated with a unique <i>chain name</i>.</td>
+ </tr>
+
+ <tr>
+  <td><i>Chain Tag</i></td>
+  <td>MOE</td>
+
+  <td>An alphanumeric string used in MOE to tag individual chains. When
+  opening a PDB file, by default the PDB-ID is copied to the <i>chain
+  tags</i> of <b>all</b> the chains. Some MOE applications, including the
+  <b>Protein-Superpose</b> application, use unique <i>chain tags</i> to define
+  <i>protein units</i>, thus there might be the need to manually edit the <i>chain
+  tags</i> as will be demonstrated in this tutorial.</td>
+
+ </tr>
+</table>
+
+<h3>Conventions Used in this Tutorial</h3>
+
+<table cellpadding="3">
+<tr>
+<td valign="top" bgcolor="#cccccc">MOE</td>
+<td valign="top">MOE Window</td>
+</tr>
+<tr>
+<td valign="top" bgcolor="#cccccc">SE</td>
+<td valign="top">Sequence Editor</td>
+</tr>
+<tr>
+<td valign="top" bgcolor="#cccccc">MOE | RHS</td>
+<td valign="top">The right hand side button bar</td>
+</tr>
+<tr>
+<td valign="top" bgcolor="#cccccc">MOE | Footer</td>
+<td valign="top">The MOE footer button bar</td>
+</tr>
+<tr>
+<td valign="top" bgcolor="#cccccc">SE | Footer</td>
+<td valign="top">The SE footer button bar</td>
+</tr>
+</table>
+
+
+
+<a name="Exercise1"></a>
+<h2>Exercise 1: Designating <i>Protein Units</i>
+Using <i>Chain Tags</i>
+</h2>
+
+<p>When trying to superpose protein chains, if
+there are other corresponding structures present (ligands, water molecules, etc.)
+it is desirable to move them along with their associated protein
+chain. Along with superposing the master proteins, MOE can move the
+associated structures simultaneously, if they are designated as a <i>protein
+unit</i>. In MOE, <i>chain tags</i> are used designate <i>protein units</i>.
+The first part of this example shows how we can designate <i>protein
+units</i> within a crystal structure containing multiple instances of the
+protein.</p>
+
+<p>In this example, we use the
+structure of polypeptide deformylase from two different bacterial species:
+<b>2AI8</b>
+is from <i>E.Coli</i>, and <b>2AIE</b> is from <i>Streptococcus pneumonia</i>.
+</p>
+
+
+<p>Clear the molecular data in MOE with <b>RHS | Close</b> and ensure that there
+are no running tasks (use the Cancel menu in the MOE window).</p>
+
+
+<ol><li>
+
+<i>Load and examine the structure of the E.Coli protein.</i>
+
+<blockquote><span class="menu">
+MOE | RHS | Open | <tt>$MOE/sample/mol/2ai8.pdb</tt>
+</span></blockquote>
+
+
+<p>This will bring up the <b>Load PDB File</b> panel. Keep the default options
+and press <b>OK</b>.</p>
+
+<p>
+Examine the contents using the <b>Sequence Editor</b> (<b>MOE | SEQ</b>);
+this file contains three copies of the protein (chains 1&ndash;3)
+followed by three
+chains that each contain a ligand <tt>SB7</tt> and a nickel ion. The last three
+chains are water molecules.
+</p>
+
+<p>
+The <i>chain names</i> will be displayed as shown below. The first unit
+(<tt>unit A</tt>) includes chains <tt>1,4,7,</tt> thus their <i>chain
+names</i> are labeled as <tt>2AI8.A</tt>.  Similarly, the second unit
+is composed of chains <tt>2,5,8</tt> which are labeled <tt>2AI8.B</tt>
+and finally the third unit includes chains <tt>3,6,9</tt> which are
+labeled <tt>2AI8.C</tt>.
+</p>
+
+<p style="text-align:center">
+<img src="protalign_tut/apat_image001.png" alt="MOE-Protalign" />
+</p>
+
+<p><b>Note:</b> Sometimes the <i>chain names</i> are not designated
+properly in the original PDB file. In such cases, the corresponding chains
+could be identified through visual inspection. For this example, 
+however, the chain names properly correspond to protein units, and will be
+used to create <i>chain tags</i>.</p>
+
+</li>
+<li>
+
+<i>Load the structure of the second protein.</i>
+
+<blockquote><span class="menu">
+MOE | RHS | Open | <tt>$MOE/sample/mol/2aie.pdb</tt>
+</span></blockquote>
+
+<p>
+This will bring up the <b>Load PDB File</b> panel. Keep the default
+options and press <b>OK</b>.
+</p>
+
+<p>This file contains only one copy of the receptor and a different
+non-peptide inhibitor <tt> SB9</tt>.  At this point, you should have a
+total of 12 chains loaded in the system. Use the <b>Sequence Editor</b>
+to verify this.
+</p>
+
+</li>
+
+<li>
+<i>Designate the first protein unit.</i>
+
+<p>First, sort the chains according to their <i>Chain Name</i>.  This will sort 
+all the chains from the A group together, etc.</p>
+
+<blockquote><span class="menu">
+SE | Edit | Order Chains | By Name
+</span></blockquote>
+
+Select all the chains
+labeled as <tt>2AI8.A</tt> from the list (which are now in the first three 
+chains of the sequence editor) by clicking on chain 1, then holding down the 
+<tt>Shift</tt> key and clicking on chain 3.  Now right click on the list of 
+chains to raise the <span class="menu">Selected Chains popup</span>:
+
+<p style="text-align:center">
+<img src="protalign_tut/selchpopup.png" alt="Selected Chains popup" />
+</p>
+<p>From the popup, choose:</p>
+<blockquote><span class="menu">
+SE | Chains popup | Rename
+</span></blockquote>
+
+<p>Choose <b>Tag</b> from the list, then enter a new and unique
+<i>chain tag</i> for this unit in the textbox (for example,
+<b><tt>2AI8_1</tt></b>) and press <b>OK</b>.
+</p>
+
+<p style="text-align:center">
+<img src="protalign_tut/setchaintag.png" alt="Set Chain Tag in SE" />
+</p>
+<p>The list of chain tags in the 
+sequence editor will update:</p>
+
+<p style="text-align:center">
+<img src="protalign_tut/newtag1.png" alt="Set a new chain tag" />
+</p>
+
+</li>
+<p><li><i>Designate the second protein unit.</i></p>
+
+<p>There are still two <i>protein units</i> remaining from 2AI8 which
+have the same <b>chain tag</b> (2AI8) and hence will be treated 
+as one <i>protein unit</i> if an alignment is performed at this point. To
+separate the two, one of these units needs to be designated with a unique tag,
+in the same way as for the first protein unit.  To do this, select
+all the chains labeled as <b><tt>2AI8.B</tt></b> from the list (these would 
+be chains 4, 5, 6), then use the Selected Chains popup as above and choose 
+<span class="menu">Rename</span>.
+As above, change the menu to <b>Tag</b>, then enter a new and unique 
+<i>chain tag</i> for this unit in the textbox (for example, <b><tt>2AI8_2</tt></b>) 
+and press <b>OK</b>. 
+Notice that we do not need to repeat this for the two remaining <i>protein
+units</i>, as their chain tags are now unique (2AI8 and 2AIE). 
+</p>
+
+<p>
+To help clarify the view in the sequence editor, color the chains by their tag. 
+First, select all chains:</p>
+<blockquote>
+<span class="menu">
+SE | Select | Chains | All
+</span>
+</blockquote>
+<p>Alternatively, simply click on the word <b>Chain</b> in the Sequence 
+Editor ruler.  Then right-click on the list of chains to raise the <span 
+class="menu">Selected Chains popup</span> as before, and choose:</p>
+<blockquote>
+<span class="menu">
+SE | Chains popup | Color | T
+</span>
+</blockquote>
+
+<p>
+Now that we have four unique <i>protein units</i>, we are ready to proceed
+with the alignment and superposition.
+</li></p>
+
+<p><li><i>Perform the superposition.</i></p>
+
+<p>Open the <b>Protein Superpose</b> panel with</p>
+
+<blockquote><span class="menu">
+SE | Alignment | Superpose
+</span></blockquote>
+
+<p>
+or from the <b>Main MOE window</b> using
+</p>
+
+<blockquote><span class="menu">
+MOE | Protein | Superpose
+</span></blockquote>
+
+<p style="text-align:center">
+<img src="protalign_tut/prosup_panel.png" alt="Protein Superpose panel" />
+</p>
+
+<p>
+The panel will list all the chains in the system. The <b>Group
+By Chain</b> option is selected by default, which will treat all chains with 
+the same tag as a single unit.  Non protein chains are shown with brackets 
+around them.  Chain selection in the sequence editor is synchronized with 
+the Protein Superpose panel.  Selected chains form the basis of the
+superposition calculation; to use all chains, clear the selection:</p>
+
+<blockquote><span class="menu">
+SE | Select | Clear
+</span></blockquote>
+
+<p>Press <b>Superpose</b> to run the superposition. You will
+be asked to realign the protein sequences before superposition. Click <b>Yes</b>
+to proceed.</p>
+
+<p>By default, the superposition algorithm starts with alignment of
+the sequences using a modified version of Needleman and Wunsch algorithm
+[Needleman&nbsp;1970]. Briefly, the alignment begins with building up
+the initial pairwise similarity matrix using either a progressive
+or a tree-based method. Then a round-robin realignment is performed,
+followed by a randomized iterative refinement. Finally, a structure based
+realignment is performed using the existing or predicted protein secondary
+element information. After this, 3D superposition will be done on
+the best aligned model. For more details about the method, please see the
+chapter on <a href="../proteins/align.htm">Multiple
+Sequence and Structure Alignment</a>.</li></p>
+<li>
+
+<i>Read the superposition RMSD.</i>
+
+<p>Notice the superposition RMSD is
+displayed on the top-right corner of the panel (4.8&Aring;).
+</p>
+
+</li>
+
+<p><li><i>Inspect the superposition results.</i></p>
+
+<p>To visualize the resulting superposition in 3D, perform the following
+operations:
+</p>
+
+<ul>
+	<li>
+	Center the aligned structures in the MOE Window by
+	<blockquote><span class="menu">
+	MOE | RHS | Center
+	</span></blockquote>
+	</li>
+	
+	<li>
+	Draw the backbones and color them based on chain using the <b>Footer</b>:
+	<blockquote>
+	<span class="menu">
+	MOE | Footer | Ribbon | Color: Chain</span></blockquote>
+	</li>
+	
+	<li>
+	Hide the atomic structures using the following commands:
+	<blockquote><span class="menu">
+	MOE | RHS | Hide | All Atoms
+	</span></blockquote>
+	</li>
+</ul>
+
+<p>The result as shown here reveals that one <i>protein unit</i> shown in
+pink is considerably different from the others. This is the protein
+unit from 2AIE.
+</p>
+
+<p style="text-align:center">
+<img src="protalign_tut/sup_proteins.png" alt="Superposed protein structures" />
+</p>
+<p class="caption">
+The 2AIE chain (pink) has considerable differences vs. the other three chains, 
+indicated by arrows.
+</li></p>
+
+<p><li><i>Compare the superposed sequences</i></p>
+<p>The information shown in the MOE window can also be visualized in the 
+Sequence Editor.  First, hide the solvent and ligand chains by clicking the 
+<b>-</b> button on the left of the Sequence Editor ruler:</p>
+
+<p style="text-align:center">
+<img src="protalign_tut/hidelschains.png" alt="Hide the non-protein chains" />
+</p>
+
+<p>The overall &alpha;-carbon RMSD can be plotted in the Sequence Editor, 
+and residues can be colored by RMSD.</p>
+
+<ul>
+	<li>Plot the overall RMSD:
+	<blockquote>
+	<span class="menu">
+	SE | Footer | 
+	<img src="protalign_tut/consensus_button.png" style="vertical-align: bottom" 
+	alt="Consensus button" /></span>
+	<br />
+	Choose <span class="menu">Plot: RMSD</span>
+	</blockquote>
+	</li>
+	<li>
+	Color the residues by RMSD:
+	<blockquote>
+	<span class="menu">
+	SE | Footer | Residues
+	</span>
+	<br />
+	Choose <span class="menu">Color: RMSD</span>
+	</blockquote>
+	</li>
+	<li>
+	Display the sequences in single-letter mode:
+	<blockquote>
+	<span class="menu">
+	SE | Footer | 
+	<img src="protalign_tut/singleletter.png" style="vertical-align: bottom" 
+	alt="Single/Three letter display button" /></span>
+	</blockquote>
+	</li>
+	<li>
+	Change to vertical scrolling mode in the Sequence Editor:
+	<blockquote>
+	<span class="menu">
+	SE | Footer | 
+	<img src="protalign_tut/scrollmode.png" style="vertical-align: bottom" 
+	alt="Change the SE scrolling mode" /></span>
+	</blockquote>
+	</li>
+	</ul>
+
+<p style="text-align:center">
+<img src="protalign_tut/aligned_seq.png" alt="Sequences colored by RMSD" />
+</p>
+<p>
+Residue coloring ranges from green (low RMSD) to red (high RMSD). 
+Move the mouse pointer over the plot to see the RMSD values in the 
+<span class="menu">SE | Footer</span>.</p>
+<p>Notice the regions of the sequence which have high overall RMSD in the plot. 
+By examining the residue coloring, it is clear that the regions of poor 
+alignment are in the 2AIE chain.
+</p>
+<p>The alignment quality can also be examined using the <b>Protein Similarity Monitor</b>. 
+</p>
+	<blockquote><span class="menu">
+	SE | Alignment | Similarity
+	</span></blockquote>
+<p>Choose <span class="menu">RMSD Matrix</span> from the options at the top of the panel to 
+show the all-against-all &alpha;C RMSD matrix.</p>
+<p style="text-align:center">
+<img src="protalign_tut/rmsdmatrix.png" alt="Protein Similarity Monitor" />
+</li></p>
+
+<p><li><i>Compare the superposed ligands.</i></p>
+<p>
+To further investigate the superposition results, display the ligands by:
+</p>
+
+<blockquote><span class="menu">
+MOE | RHS | Show | Ligand
+</span></blockquote>
+
+<p>To color the ligands by chain:</p>
+
+<blockquote><span class="menu">
+MOE | Footer | Atoms
+</span></blockquote>
+
+<p>Choose <b>Color: Chain</b></p>
+
+<p>Render the ligand using the ball&amp;stick model by:</p>
+<blockquote><span class="menu">
+MOE | Footer | Atoms |
+<img src="protalign_tut/apat_image010.png" alt="atom style" 
+style="vertical-align: bottom;" /></span>
+</blockquote>
+
+
+<p>Then hide the ribbons by: </p>
+<blockquote> <span class="menu">
+MOE | Footer | Ribbon | Style |
+<img src="protalign_tut/apat_image011.png" alt="ribbon style" 
+style="vertical-align: bottom;" /></span>
+</blockquote>
+
+<p>Center the ligands in the view with</p>
+
+<blockquote><span class="menu">
+MOE | RHS | Center
+</span>
+</blockquote>
+
+<p>The result, shown below, demonstrates that the three ligands from the
+three units of 2AI8 are aligned properly (cyan, magenta, orange),
+but the fourth ligand from the 2AIE crystal structure (pink) shows poor
+alignment. This is due to the movement of secondary elements in 2AIE
+which are unrelated to ligand binding. In order to compare corresponding non-bonded interactions
+among related <i>protein units</i>, the RMSD should preferably be below
+1&Aring;. Thus, for the current system, a more sophisticated superposition is
+required which will be performed in the next exercise.</p>
+
+<p style="text-align:center">
+<img src="protalign_tut/sup_ligands.png" alt="Superposed ligands" />
+</li></p>
+</ol>
+<a name="Exercise2"></a>
+<h2>Exercise 2: Pocket Superposition</h2>
+
+<p>
+When proteins or enzymes bind to similar ligands and substrates, the similarity
+between their pocket residues (in sequence and 3D conformation) is often higher
+than in areas that are unrelated to binding. MOE can take
+advantage of this and improve the superposition results by restricting the
+superposition to consider only the active site residues.</p>
+
+<ol>
+<p><li><i>Limit the superpose to pocket residues.</i></p>
+<p>
+Continuing with the results from previous exercise, we will now improve the
+superposition by limiting the superposition to the pocket residues.
+This can be done
+using the <b>Protein Superpose</b> panel.</p>
+
+<blockquote><span class="menu">
+MOE | Protein | Superpose
+</span></blockquote>
+
+or<br />
+<blockquote><span class="menu">
+SE | Alignment | Superpose
+</span></blockquote>
+
+<p>Under <b>Options</b>, change
+the default (<b>All Residues</b>) to <b>Pocket Residues</b>.</p>
+
+<p>
+Perform the superposition by pressing <b>Superpose</b> and choosing
+<b>Yes</b> when prompted to realign the chains. Examine the improved
+superposition via the improved RMSD printed on the top-right box (0.9&Aring;).</li></p>
+<li>
+<i>Examine the improved ligand superposition.</i>
+
+<p>Center the ligands in the view.</p>
+<blockquote><span class="menu">
+MOE | RHS | Center
+</span></blockquote>
+
+
+<p>As shown below, all four ligands from different
+protein units show a good overlap now that the high similarity of
+the corresponding binding pockets is used to improve the superposition.</p>
+
+
+<p style="text-align:center"><img src="protalign_tut/sup_ligands2.png" 
+alt="Ligands superposed based on pocket residues" /></p>
+
+
+</li><p><li><i>Compare the superposed pockets.</i> </p>
+<blockquote>
+<span class="menu">
+MOE | Footer | Ribbon |
+<img src="protalign_tut/apat_image007.png"  alt="ribbon style" 
+style="vertical-align: bottom;" />
+</span>
+<br />
+<span class="menu">
+MOE | RHS | SiteView
+</span></blockquote>
+
+<p>This will render the ligands, active site residues (including the backbone
+cartoons) and water molecules from all four protein units as shown below.</p>
+<p style="text-align:center">
+<img src="protalign_tut/sup_pocket.png" alt="MOE-Protalign" />
+</li></p>
+<p><li><i>Visualize superposition in the Sequence Editor</i></p>
+<p>The improved RMSD can be visualized in the Sequence Editor, using the 
+RMSD coloring and plot.  As an example, see the region between Sequence 
+Editor ruler positions 115 and 140.</p>
+<p style="text-align:center">
+<img src="protalign_tut/improved_alignment.png" alt="MOE-Protalign" />
+</p>
+<p class="caption">Residues colored by RMSD for the global alignment (top) 
+and pocket alignment (bottom).</p>
+<p>Residues in the pocket can be selected by enabling <span class="menu">
+MOE | Select | Synchronize</span>, then <span class="menu">MOE | Select | 
+Pocket</span>.
+</li></p>
+</ol>
+
+<a name="Exercise3"></a>
+<h2>Exercise 3: Enhancing the Similarity Signal Using Related
+Sequences</h2>
+<p>Continuing with the results from previous exercise, remove two of the 
+protein units from 2AI8 and compare the alignment of the remaining protein 
+unit with the 2AIE structure.</p>
+<ol>
+<li>
+<i>Delete the B and C protein units from 2AI8</i>
+<ul>
+<li>
+Bring up the <b>System Manager</b> using
+<blockquote><span class="menu">
+MOE | RHS | System
+</span></blockquote>
+</li>
+<p><li>Click on the red X at the end of the 2AI8_2 and 2AI8 rows, clicking 
+<b>OK</b> to confirm the deletion each time.</p>
+
+<p style="text-align:center"><img src="protalign_tut/sysman.png" 
+alt="Deleting tag groups via the system manager" /></li></p>
+</ul>
+
+</li>
+<li>
+<i>Perform a raw alignment.</i>
+<blockquote><span class="menu">
+SE | Alignment | Superpose
+</span></blockquote>
+
+<p>Under <b>Options</b>, choose <b>All Residues</b>, then press 
+<b>Superpose</b>. When prompted
+to allow realigning the chains select <b>Yes</b>. You will see in the
+MOE Window that the two proteins are superposed. Also the <b>Sequence
+Editor</b> shows that they are aligned.  However, due to low sequence
+identity (about 20%) , the RMSD shown on the <b>Protein-Superpose</b>
+panel is high (6.8&Aring;).</p>
+
+</li>
+
+<p><li><i>Inspect the results.</i></p>
+
+<p>To help analyze the alignment in the Sequence Editor, color the residues by 
+sequence identity:</p>
+<blockquote>
+<span class="menu">SE | Footer | Residues</span>
+<br />
+Choose <span class="menu">Color: Identity</span>
+</blockquote>
+
+<p>Columns of identical residues are colored green, non-identical residues 
+are colored red. Use the <span class="menu">SE | Footer | Zoom wheel</span> 
+if necessary so that the sequences can easily be viewed on screen.</p>
+
+<p style="text-align:center">
+<img src="protalign_tut/seq_zoomed.png" 
+alt="A global sequence alignment produces poor pocket and ligand alignment" />
+</p>
+
+<p>Residues can also be colored by <b>Similarity</b> score, and the similarity 
+and percentage identity for each column can be plotted using the
+<b>Consensus</b> control in  
+<span class="menu">SE | Footer | <img src="protalign_tut/consensus_button.png" 
+style="vertical-align: bottom" alt="Consensus button" /></span>.
+</p>
+<p>Hide all atoms by using:</p>
+<blockquote><span class="menu">
+MOE | RHS | Hide | All Atoms
+</span></blockquote>
+<p>Then hide the ribbons by: </p>
+<blockquote><span class="menu">
+MOE | Footer | Ribbon | Style |
+<img src="protalign_tut/apat_image011.png" alt="ribbon style"
+style="vertical-align: bottom;" /></span>
+</blockquote>
+<p>Then show the ligands by using:</p>
+<blockquote> <span class="menu">
+MOE | RHS | Show | Ligand
+</span></blockquote>
+
+<p>Press <b>Center</b> to see the superposed ligands. The result (shown
+below) demonstrates poor superposition of the two ligands.</p>
+
+<p style="text-align:center">
+<img src="protalign_tut/misaligned_ligs.png" alt="A global sequence alignment produces poor pocket and ligand alignment" />
+</p>
+
+<p>To see the protein backbones use</p>
+<blockquote> <span class="menu">
+MOE | Footer | Ribbon |
+<img src="protalign_tut/apat_image007.png" alt="ribbon style"
+style="vertical-align: bottom;" />
+</span>
+<br />
+Choose <b>Color: Residue</b>
+</blockquote>
+
+<p>Press <b>Center</b> to see the entire protein chains.  Because the Ribbon is 
+colored as per the corresponding residue color in the Sequence Editor, the 
+regions where the sequences of the two protein differ are shown in red.  It is clear
+that the poor sequence similarity has resulted in poor alignment and
+superposition.</p>
+
+<p style="text-align:center">
+<img src="protalign_tut/misaligned_prot.png" alt="Poor protein alignment" />
+</li></p>
+
+<p><li><i>Search the PDB for structurally related proteins.</i></p>
+
+<p> In this step, we attempt to search the internal protein-family
+database for sequences homologous to the first chain in the system
+(i.e. <tt>2AI8</tt>). First, bring up the <b>Search-PDB</b> panel: </p>
+
+<blockquote> <span class="menu">
+SE | Protein | Search | PDB
+</span></blockquote>
+
+<p>To use the sequence of chain 1 as a query, select it from the
+<b>Load&nbsp;Chains</b> option menu at the upper right of the panel.
+To run the search press <b>Search</b>. This will search the internal
+<tt>pdb.fam</tt> database which is a pre-aligned database of protein
+families. The result of this search will contain protein families that have
+members with high sequence similarity to that of the query.  These families
+will be listed under <b>Results</b>, sorted based on <i>E score</i> (the 
+probability that the alignment between the query sequence and the clustered 
+family could have arisen by chance) as shown below.  </p>
+
+<p style="text-align:center">
+<img src="protalign_tut/apat_image019.png" alt="PDB Search results" />
+</li></p>
+
+<p><li><i>Inspect the search results.</i></p>
+
+<p>To view the members of a family, double click on the corresponding item
+listed under <b>Results</b>. For this exercise, double-click on the first 
+family (PDB_1XEO.A).  This will bring up the <b>Load Alignment</b> panel as
+shown below. Here you can see the pre-aligned sequences of the selected protein
+family.  You can select some or all entries and load
+them in MOE, optionally including the aligned query sequence.  
+</p>
+<ul>
+<li>Load all the sequences: press <b>Load All</b>. This will
+load 24 proteins into MOE.
+
+<p style="text-align:center">
+<img src="protalign_tut/apat_image020.png" alt="Load Alignment panel" /></li></p>
+<li>Close the <b>MOE-SearchPDB</b> panel by pressing <b>Close</b>.</li>
+</ul>
+<br />
+</li>
+<li>
+<i>Align the query chains to new chains.</i>
+
+<p>
+Use <b>MOE-Align</b> to align the query protein chains (<tt>2AI8, 2AIE</tt>)
+to the pre-aligned sequences. To do this, bring up the <b>MOE-Align</b>
+panel with
+</p>
+
+<blockquote>
+<span class="menu"> SE | Alignment | Align</span>
+</blockquote>
+
+<p>To avoid altering the alignment of the pre-aligned family, select these chains
+from the list by clicking on the first chain (1XEO.A, chain number 7), then
+scrolling down to the bottom
+of the list, and, with <tt>Shift</tt> held down, selecting the last chain
+by clicking on it. Now press <b>Freeze</b> in the Protein Align panel.  You 
+will notice that the
+first column for these chains changes from <b>*</b> (which means use any alignment group)
+to A. This assigns all the extra chains to a single group (group A)
+and freezes their alignment. 
+Turn off <b>Superpose Chains</b> and press <b>Apply</b>. Close the <b>Protein
+Align</b> panel by pressing <b>Close</b>.</p>
+</li>
+
+<li>
+<i>Repeat the 3D superposition using new alignment.</i>
+
+<p>
+First, bring up the <b>Protein Superpose</b> panel with</p>
+
+<blockquote><span class="menu">
+SE | Alignment | Superpose
+</span></blockquote>
+
+<p> To avoid re-alignment of the chains, select
+<span class="menu">Sequence Alignment | Use Current Alignment</span>.</p>
+
+<p>
+Check <b>Print RMSD Table to CLI</b> to print the matrix of RMSDs to the 
+commands window.</p>
+<p>Check <b>Accent Secondary Structural Matches</b>, which helps
+improve the superposition by increasing the weight of residues with matching
+secondary structures.
+</p>
+
+<p>Press <b>Selection Hint</b> to add the original chains to the selection.
+Press <b>Superpose</b>.</p>
+
+<p> The superposition will be performed and the overall RMSD that is
+printed on the <b>Protein Superpose</b> panel (1.2&Aring;) denotes an
+improvement in comparison with previous result (6.8&Aring;).</p>
+</li>
+
+<p><li><i>Read the detailed RMSD results</i></p>
+
+<p> Open the SVL window (<b>MOE | SVL</b>) and find the corresponding RMSD
+for the first two chains i.e. 2AI8.A and 2AIE.P (<tt>1.5</tt>&Aring;).  </li></p><p><li><i>Inspect the detailed RMSD results.</i></p>
+
+<p>To see more details press <b>Report RMSD</b>. This will bring up the
+<b>Protein Superpose RMSD</b> panel as shown below. There are two graphs on
+this panel, the upper one is a heat-map style display of the RMSD matrix
+and the one below is a histogram of the RMSD-by-residue comparison of two
+chains that can be selected using the lists.</p>
+
+<p style="text-align:center">
+<img src="protalign_tut/apat_image021.png" alt="Protein Superpose RMSD matrix" />
+</p>
+<p class="caption">The RMSD matrix and per-residue RMSD histogram.</p>
+
+<p>A more detailed report of the superposition results can be obtained by
+pressing <b>Report</b>.</p>
+<p>Finally, <b>Close</b> the Protein Superpose panel.</li></p>
+
+<li>
+<i>Inspect the improved results.</i>
+
+<p>First delete the added chains. These chains were only added to assist us
+during the alignment operation and are not needed anymore. To delete these
+chains, select the added chains in the <b>Sequence Editor</b> by clicking on
+the chain number of the first added chain (chain number <tt>7</tt>),
+then hold the <tt>Shift</tt> key on the keyboard, scroll down and click on
+the last chain (number <tt>30</tt>).</p>
+
+
+<p>
+Delete the selected chains by:
+</p>
+
+<blockquote><span class="menu">
+SE | Edit | Delete
+</span></blockquote>
+
+<p>
+Click <b>OK</b> to confirm the deletion.  To see the protein backbones use
+</p>
+
+<blockquote> <span class="menu">
+MOE | Footer | Ribbon |
+<img src="protalign_tut/apat_image007.png" alt="ribbon style"
+style="vertical-align: bottom;" />
+</span></blockquote>
+
+<p>Notice that the overall alignment of structures is much improved.  Change 
+the residue coloring in the sequence editor to RMSD:</p>
+
+<blockquote> <span class="menu">
+SE | Footer | Residues
+</span>
+<br />
+Choose <b>Color: RMSD</b>
+</blockquote>
+
+<p>Notice that the ribbon coloring in the 3D window automatically updates to 
+match the sequence editor display. It is obvious that the majority of the 
+backbone is well aligned (green color). To see the alignment of the active 
+sites, click </p>
+<blockquote> <span class="menu">
+MOE | RHS | SiteView
+</span></blockquote>
+
+<p style="text-align:center">
+<img src="protalign_tut/aligned_sites.png" alt="The aligned active sites" /></p>
+</li>
+</ol>
+
+<a name="Exercise4"></a>
+<h2>Exercise 4: Alignment of Related Proteins on Conserved Regions</h2>
+
+<h3>Introduction</h3>
+
+<p>Proteins with high sequence similarity may be straightforward to align
+by sequence, but the resulting 3D superposition may be less than optimal
+if the structures are sufficiently dissimilar. In many cases, the structural
+dissimilarity between two related proteins is confined to mobile
+regions such as surface loops, with the core remaining
+conserved. Initial alignments of such systems are typically poor
+because all of the residues in the aligned sequences are given equal weight in
+the superposition, and the dissimilar regions guide the superposition away
+from the conserved core. These alignments can be improved by superposing
+and realigning the system based only on the conserved core.</p>
+
+<p>In this example, two holo forms of the EGFR tyrosine kinase domain
+(PDB codes <tt>1M17</tt> and <tt>1XKK</tt> ) are aligned. Although
+there is very high sequence similarity between the structures, there are
+significant structural differences that arise from activation loop motion
+and a hinge-like displacement of the N-terminal lobe. As a result, the
+initial alignment of these structures needs to be improved by focusing
+the alignment on the structurally conserved regions.</p>
+
+<p>Clear the molecular data in MOE with 
+<span class="menu">MOE | RHS | Close</span> and ensure that there are no
+running tasks (use the <b>Cancel</b> menu in the MOE Window).</p>
+
+<ol>
+<p><li><i> Load the two protein structures.</i></p>
+<blockquote><span class="menu">
+MOE | RHS | Open
+</span></blockquote>
+
+<p> Then browse to the samples folder <tt>$MOE/sample/mol</tt> and select
+the two pdb files by holding <tt>Ctrl</tt> on the keyboard and clicking
+on the two files: <tt>1m17.pdb</tt> and <tt>1xkk.pdb</tt>.
+</p>
+
+<p>Press <b>OK</b>. This
+will bring the Load PDB File panel. Turn on <b>Ignore: Waters</b> and
+press <b>OK</b>.</li></p><li>
+<i>Perform a simple alignment and superposition.</i>
+
+<p>
+First bring up the <b>Protein-Superpose</b> panel by</p>
+
+<blockquote><span class="menu">
+MOE | Protein | Superpose
+</span></blockquote>
+
+<p>Then press <b>Superpose</b> and choose <b>Yes</b> when asked to allow
+the alignment of the two chains.</p>
+
+<p>When the alignment/superposition is performed, the RMSD will be
+displayed on the <b>Protein-Superpose</b> Panel (10.9&Aring;).</p>
+
+</li>
+<li>
+<i>Visualize the results.</i>
+
+<p>
+To see the alignment of the ligands, hide all atoms by using</p>
+
+<blockquote><span class="menu">
+MOE | RHS | Hide | All Atoms
+</span></blockquote>
+
+<p>Then show the ligands by using</p>
+<blockquote><span class="menu">
+RHS | Show | Ligand
+</span></blockquote>
+
+<p> To see the alignment of the protein backbones using the MOE footer
+controls, display the ribbons using</p>
+<blockquote> <span class="menu">
+MOE | Footer | Ribbon |
+<img src="protalign_tut/apat_image007.png" alt="ribbon style"
+style="vertical-align: bottom;" />
+</span>
+<br />
+In the Ribbon popup, choose <b>Color: Tag</b>
+</blockquote>
+
+<p>Press <b>Center</b> to see the superposed structures. This will show the 
+ribbon model of the two proteins as below. From the
+pictures it is clear that even though corresponding secondary
+structural elements are in proximity, lack of close superposition has
+resulted in high RMSD.</p>
+
+<p style="text-align:center">
+<img src="protalign_tut/egfr_badalign.png" alt="EGFR kinases global alignment" /></p>
+<p class="caption">The global alignment of the EGFR kinases.</p>
+
+</li>
+
+<li>
+<i>Limit the alignment/superposition to structurally conserved regions.</i>
+
+<p>First bring up the <b>Protein Consensus</b> panel using</p>
+
+<blockquote><span class="menu">
+SE | Alignment | Consensus
+</span></blockquote>
+
+<p>Then press <b>Calculate</b>. This enables many controls in the <b>Protein
+Consensus Definition</b> section.</p>
+
+<p> To define the consensus as areas of the proteins with high structural
+similarity, check <b>Mainchain RMSD</b>, and move the corresponding
+<b>Max</b> slider to change the maximum from 10 to 3&Aring;. Press
+<b>Superpose</b> to repeat the superposition on this consensus set of residues. 
+The protein backbone and ligand structures
+in the main MOE window show a much improved superposition, as displayed
+below.</p>
+
+<p style="text-align:center">
+<img src="protalign_tut/egfr_betteralign.png" alt="EGFR kinases aligned on conserved core" />
+</p>
+
+</li>
+<p><li><i>Read the text report of the alignment.</i></p>
+<p>Press <b>Report</b> in the Protein Consensus panel.
+In the text report find the line for <b>RMSD
+of Gapless Consensus Set</b> (1.5&Aring;). This low RMSD along with the
+visual results confirms that there is a conserved core shared by the two 
+proteins. Inspect the 3D structure to see the areas that have
+moved significantly between the two conformations. These are areas
+that were excluded in defining the consensus sets.</li></p>
+<li>
+<p><i>Visualize the consensus set.</i></p>
+<p>Click on the <b>Visualize</b> button in the Protein Consensus panel.  Choose 
+<span class="menu">Backbone: Render: Tube</span> and check the 
+<span class="menu">Backbone: Auto</span> box, then <b>Close</b> the 
+Visualization panel.  In the 3D window, notice that the backbone of the 
+non-conserved core is now hidden.  Use the <b>Mainchain RMSD: Max</b> slider to 
+reduce the maximum allowed RMSD.  Notice that the amount of visible ribbon 
+reduces along with the maximum RMSD.  Click <b>Superpose</b> with the 
+maximum at a lower value to re-superpose the proteins onto this reduced 
+consensus set; the improved alignment can bring adjacent regions into the 
+consensus.</p> 
+</li>
+</ol>
+
+
+<h2>References</h2>
+
+<table width="100%" cellpadding="5">
+
+<tr>
+<td valign="top">[Needleman&nbsp;1970]</td>
+<td valign="top">
+Needleman, S. B.; Wunsch, C. D.; A General Method Applicable to
+the Search for Similarities in the Amino Acid Sequences of Two Proteins; 
+<i>Journal of Molecular Biology 48 </i> (<b>1970</b>) 443&ndash;453.
+</td>
+</tr>
+</table>
+
+
+
+
+<h2> See Also</h2>
+<a href="../proteins/prosup.htm">Protein Structure Superposition panel</a><br />
+<a href="../proteins/procore.htm">Analysis of Structurally Conserved Core</a><br />
+<a href="../proteins/align.htm">Multiple Sequence and Structure Alignment</a><br />
+
+
+<h2>SVL Commands</h2>
+<a class="svl" href="../proteins/fcnref/pro_sup.htm">pro_Superpose</a><br />
+<a class="svl" href="../proteins/fcnref/pro_alig.htm">pro_Align</a><br />
+<a class="svl" href="../moe/fcnref/superpos.htm">Superpose</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

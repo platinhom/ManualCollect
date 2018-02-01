@@ -1,0 +1,620 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	protdes_tut.htm	Protein Design Tutorial
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Protein Design Tutorial</title>
+
+<style type="text/css">
+.cntr { text-align: center; }
+h2 { counter-reset: mainsec; }
+
+ol {
+	counter-reset: subsec;
+	list-style: none outside none;
+}
+
+ol > li {counter-increment: mainsec;}
+
+ol > li:before { 
+	content: counter(mainsec) ". "; 
+    margin-left: -1.5em;
+	padding-right: 0.1em;
+}
+
+ol ol {
+	list-style: none outside none;
+}
+
+ol ol > li {counter-increment: subsec;}
+
+ol ol > li:before { 
+	content: counter(subsec, lower-alpha) ". "; 
+}
+</style>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h6 class="h-two">Introduction</h6>
+
+<p>This tutorial will guide you in performing 
+a Residue Scan to investigate mutations among residues in a system.</p>
+
+<p>Protein design allows you to use different visualization methods to 
+prioritize and identify mutation sites, identify the best mutation candidates
+at those sites, and build a mutant library for use with similar complexes.</p>
+
+<p>As an example, we will use CNTO607,
+which is an anti-IL-13 monoclonal antibody. IL-13 (Interleukin-13) is
+a therapeutic target for asthma and allergic disease, but CNTO607 has
+non-optimal solubility. Engineering better solubility could yield an
+improved product. We will examine the affinity of CNTO607 by starting
+with the crystal structure of CNTO607 bound to IL-13 (PDB code: 3G6D)
+[Bethea&nbsp;2012].</p>
+
+<p>This tutorial examines protein design and illustrates how to:
+<ol>
+<li>Create an electrostatic map to investigate binding 
+&quot;hot spots&quot;.</li>
+<li>Identify potential mutation sites.</li>
+<li>Generate mutations using Residue Scan.</li>
+<li>Review the mutations using:
+	<ul>
+	<li>Affinity and Stability Scores.</li>
+	<li>The Database Browser.</li>
+	</ul>
+</ol>
+</p>
+
+
+<h6 class="h-two">Contents</h6>
+
+<div id="toc-list"><script>var gman_OrderedListTOC=false; </script></div>
+
+
+<h6 class="h-three">Conventions Used in this Tutorial</h6>
+
+<p>The menu commands are prefixed with the name of the window
+in which they originate:</p>
+
+<table cellpadding="3">
+<tr>
+<td bgcolor="#cccccc">MOE</td>
+<td>MOE Window</td>
+</tr>
+<tr>
+<td bgcolor="#cccccc">SE</td>
+<td >Sequence Editor</td>
+</tr>
+<tr>
+<td bgcolor="#cccccc">MOE | RHS</td>
+<td>Right Hand Side Button Bar of the MOE Window</td>
+</tr>
+<tr>
+<td bgcolor="#cccccc">MOE | Footer</td>
+<td>MOE Window Footer Area</td>
+</tr>
+</table>
+
+<p>For example, <span class="menu">MOE | File | Open</span> refers to
+the &quot;Open&quot; command of the &quot;File&quot; pull-down menu of the
+MOE Window.</p>
+
+
+
+<a name="Prepare"></a>
+<h2>Prepare the System</h2>
+
+<ol>
+<p><li>Close the current system using <span class="menu">MOE | File | Close</span>.</li></p>
+
+<p><li>Because we are working with a protein system, we will change the potential to <b>Amber10:EHT</b>.
+    <ol>
+    <li>Click the potential button (its default is <b>MMFF94x</b>) in the 
+    bottom left of the MOE window. The <b>Potential Setup</b> panel
+	will open.</li>
+    <li>In the panel, click the <b>Load</b> menu, and select <b>Amber10:EHT</b>.</li>
+	<li>In the <b>Solvation</b> menu, select the <b>R-Field</b> model.</li>
+	<li>Click <b>OK</b> to accept the remaining default values and close the panel.</li>
+	</ol>	
+	<p class="cntr">
+	<img src="ph4_tut/AmberPotSetup.png" width="400px"
+	alt="Amber10:EHT Potential setup" /></p>
+</li></p>
+
+<p><li>Load the anti-IL-13 monoclonal antibody:
+<span class="menu">MOE | RHS | Open | <tt>$MOE/sample/mol/3g6d.pdb</tt></span>
+<p> In the <b>Load PDB File</b> panel, click <b>OK</b> to accept the default settings.</p>
+<p>The structure will be loaded in MOE, with the protein in ribbon mode and long-range interaction residues shown in line mode.</p>
+<p class="cntr"><a href="protdes_tut/3g6d_Complex.png">
+<img src="protdes_tut/3g6d_Complex.png" width="400px" 
+alt="3g6d complex" /></a></p>
+</li></p>
+
+<p><li>To get a detailed view of the protein sequences, open the 
+<b>Sequence Editor</b> by clicking <b>SEQ</b> in the top right of the 
+main MOE window.
+<p>The system is divided into chains: the light chain (L), heavy chain (H),
+and antigen (A: IL-13). The sulfate ion is parented to its own chain.</p>
+<p class="cntr"><a href="protdes_tut/3g6d_SEQ.png">
+<img src="protdes_tut/3g6d_SEQ.png" width="800px" 
+alt="3g6d sequences" /></a></p>
+</li></p>
+
+<p><li>Switch to single-letter residue mode by pressing 
+<img src="protdes_tut/code_toggle.png" width="20px" alt="code toggle" />,
+and switch to wrapped alignment view by pressing
+<img src="protdes_tut/wrap_toggle.png" width="20px" alt="wrap toggle" />.
+Both buttons are in the footer of the Sequence Editor.
+<p class="cntr"><a href="protdes_tut/SEQ_toggles.png">
+<img src="protdes_tut/SEQ_toggles.png" width="600px" 
+alt="Sequence Editor toggle buttons" /></a></p>
+</li></p>
+
+<p><li>Annotate the antibody CDRs and number the residues by the CCG 
+antibody numbering scheme: 
+<span class="menu">SE | Annotate | Antibody | CCG</span>.
+<p>The ribbon in the main MOE window and the residues in the Sequence Editor
+will be colored to identify the CDRs.
+<p class="cntr"><a href="protdes_tut/3g6d_SEQ_Annotated.png">
+<img src="protdes_tut/3g6d_SEQ_Annotated.png" width="600px" 
+alt="3g6d annotated sequences" /></a></p>
+</li></p>
+
+<p><li>To make it easier to differentiate the antigen and antibody, color the 
+antigen carbon atoms gold.  
+<ol>
+	<li>Click <span class="menu">MOE | RHS | System</span> to open the System Manager.</li>
+	<li>Press <img src="protdes_tut/SysManAttach_button.png" width="20px" 
+	alt="attach System Manager" /> (in the footer of the System Manager panel)
+	to attach the System Manager panel to the right of the MOE window.</li>
+	<li>Press <img src="protdes_tut/expand_toggle.png" width="20px" 
+	alt="expand toggle" /> (also in the footer of the System Manager panel)
+	to expand the System Manager list.</li>
+	<li>Click the gray box to the right of <b><tt>Receptor 3G6D.A</tt></b>, 
+	and then click the gold box in the color panel to apply that 
+	color scheme to the antigen.</li>
+	<p class="cntr"><img src="protdes_tut/SysManAntigen.png" width="400px" 
+	alt="MOE System panel for 3G6D" /></p>
+</ol>
+<p>Rotate the molecule in the main MOE window. The antigen ribbon and carbon 
+atoms are colored gold, while the antibody retains its annotated colors
+from the previous step.</p>
+<p class="cntr"><a href="protdes_tut/3g6d_Complex_Annotated.png">
+<img src="protdes_tut/3g6d_Complex_Annotated.png" width="600px" 
+alt="3g6d annotated complex" /></a></p>
+</li></p>
+
+<p><li>Open the <b>LigX</b> panel to fix atoms and set tethers: 
+<span class="menu">MOE | RHS | LigX</span>. <br />
+In the <b>LigX</b> panel: 
+	<ol>
+	<li>Uncheck <b>Fix</b>. This will free all atoms for minimization.</li>
+	<li>Click <b>OK</b> to accept the remaining defaults and close the panel.</li>
+	</ol>	
+	<p class="cntr">
+	<img src="protdes_tut/LigXSetup.png" width="400px"
+	alt="LigX calculation setup" /></p>
+<p>The LigX calculation will begin and will prepare the complex by 
+correcting any problems with the 
+structure using the <a href="../apps/structprep.htm">Structure Preparation</a> tool. 
+Then hydrogens are added and assigned 
+protonation states, which is performed automatically using the 
+<a href="../apps/protonate3d.htm">Protonate3D</a> 
+application.</p>
+</li></p>
+
+<p><li>Rotate the molecule and zoom in to show the orientation illustrated below.
+The two highlighted loops (circled in red) at the base of the F<sub>V</sub> 
+are lined up with each other, like a &quot;W&quot;.
+<p class="cntr"><a href="protdes_tut/3g6d_Viewpoint.png">
+<img src="protdes_tut/3g6d_Viewpoint.png" width="300px" 
+alt="3g6d common viewpoint" /></a></p>
+<p>This is a common viewpoint for antibody structures, with the V<sub>L</sub>
+domain (purple ribbons) to the left, and the V<sub>H</sub> domain
+(red and tan ribbons) to the right.</p>
+<p>Note that the H1 and H2 loops (in tan) are close only to the flexible
+C-terminus of the antigen, and that the L1, L2, and L3 loops (purple ribbons) 
+all make interactions with the antigen helix.</p>
+</li></p>
+
+<p><li>Because of their interactions with the antigen,
+	focus on the L1, L2, and L3 loops:
+	<ol>
+	<li>In the System Manager panel, click the arrow to the left of <b>Sets</b>
+	to expand the list of sets created by LigX and the CCG annotation.
+	<p class="cntr">
+	<img src="protdes_tut/Sets_SelectLoops.png" width="200px"
+	alt="selecting the L loops" style="border:1px solid grey" /></p>
+	</li>
+	<li>Select the set of atoms in the L loops by clicking the circles 
+	to the left of <b><tt>CDR_L1</tt></b>, <b><tt>CDR_L2</tt></b>,
+	and <b><tt>CDR_L3</tt></b>.<br />
+	The atoms of the L loops will be selected in the main MOE window.
+	</li>
+	<li>Center the display around the L loops by clicking
+	<span class="menu">MOE | RHS | SiteView</span> with the atoms still selected.
+	</li>
+	<li>Deselect the atoms by clicking in any empty space in the MOE window.</li>
+	</ol>	
+<p>The system will now be centered around the L1, L2, and L3 loops. Proximal 
+atoms will be shown in line mode, while distant atoms will be hidden.</p>
+<p class="cntr"><a href="protdes_tut/Focus_Loops.png">
+<img src="protdes_tut/Focus_Loops.png" width="300px" 
+alt="focus on the L loops" /></a></p>
+</li></p>
+
+<p><li>Because we are only interested in the L loops interaction with the 
+antigen, hide the other residues:
+	<ul>
+	<li>In the System Manager panel, click the <b><tt>Receptor 3G6D.H</tt></b>
+	and <b><tt>FAB_FR_VL</tt></b> labels.
+	<p class="cntr">
+	<img src="protdes_tut/HideUnimportant_panel.png" width="200px"
+	alt="hide other residues" style="border:1px solid grey" /></p>
+	</li></ul>
+</li></p>
+
+<p><li>Label the residues: <span class="menu">MOE | Footer | Atoms</span>,
+and click the <b>Residue</b> button above the color bar.
+<p class="cntr">
+<img src="protdes_tut/label_Residue.png" width="300px" 
+alt="labeling the residues" /></p>
+</li></p>
+
+<p><li>Display Receptor-Receptor contacts:
+<span class="menu">MOE | Footer | Contacts</span>, and click on the
+<b>Rec-Rec</b> square in the <b>H Bond</b> half of the panel until 
+the square turns green.
+<p class="cntr">
+<img src="protdes_tut/contacts_RecRec.png" width="300px" 
+alt="display receptor-receptor contacts" /></p>
+<p>Receptor-Receptor contacts are now easier to visualize, and are displayed
+with strength bars that indicated the strength of the interaction between them.</p>
+<p class="cntr"><a href="protdes_tut/Focus_Loops2.png">
+<img src="protdes_tut/Focus_Loops2.png" width="300px" 
+alt="potential mutation sites" /></a></p>
+</li></p>
+
+<p><li>Rotate the displayed residues to locate interesting sites for mutations.
+<b>Phe31</b> looks like it is in a pocket of the antigen, which could make it an 
+interesting mutation site,
+and <b>Asp52</b> has a hydrogen-bond interaction with the antigen's 
+<b>Lys105</b>, which might be made stronger by mutating it from 
+<b>Asp</b> to <b>Glu</b>.
+<p class="cntr"><a href="protdes_tut/Interactions.png">
+<img src="protdes_tut/Interactions.png" width="600px" 
+alt="potential mutation sites" /></a></p>
+</li></p>
+</ol>
+<p>In the next section, we will create electrostatic maps to determine
+binding &quot;hot spots&quot; that can indicate favorable mutation sites.</p>
+
+
+
+<a name="Electrostatic"></a>
+<h2>Map Electrostatic Hotspots</h2>
+
+<p><a href="../apps/surfmap.htm">Electrostatic maps</a> compute favorable 
+locations of neutral, positive, and negative features in a binding site 
+using Poisson-Boltzmann electrostatics. Electrostatic isoenergy contours
+are plotted around a receptor to indicate binding areas of interest.
+<ul>
+<li><b>Hydrophobic Contours</b> in white/grey show favorable regions for 
+hydrophobic contact, with a maximum gain of 3 kcal/mol in binding energy.</li>
+<li><b>Acceptor Contours</b> in red show favorable regions for 
+H-bond acceptors, with a maximum gain of 2 kcal/mol in binding energy.</li>
+<li><b>Donor Contours</b> in blue show favorable regions for 
+H-bond donors, with a maximum gain of 2 kcal/mol in binding energy.</li>
+</ul>
+
+<ol>
+<p><li>Select the antigen chain (<b>3G6D.A</b>) in the Sequence Editor. 
+These will be the atoms used to generate the electrostatic map.
+<p class="cntr"><a href="protdes_tut/SE_selectAntigen.png">
+<img src="protdes_tut/SE_selectAntigen.png" width="600px" 
+alt="select the antigen in the Sequence Editor" /></a></p>
+</li></p>
+
+<p><li>In the System Manager,
+select the set of atoms in the L loops by clicking the circles 
+to the left of <b><tt>CDR_L1</tt></b>, <b><tt>CDR_L2</tt></b>,
+and <b><tt>CDR_L3</tt></b>.
+We will limit the display of the electrostatic map to be near these atoms.
+<p class="cntr"><a href="protdes_tut/SysMan_selectLoops.png">
+<img src="protdes_tut/SysMan_selectLoops.png" width="300px" 
+alt="select the L loops in the System Manager" /></a></p>
+</li></p>
+
+<p><li>Open the <b>Surfaces and Maps</b> panel: 
+<span class="menu">MOE | Compute | Surfaces and Maps | Electrostatic Map</span>.
+	<ol>
+	<p class="cntr"><a href="protdes_tut/electrostatic_panel.png">
+	<img src="protdes_tut/electrostatic_panel.png" width="400px" 
+	alt="Electrostatic Map panel" /></a></p>
+	<li>Ensure that the <b>Surface</b> drop-down displays <i>Electrostatic Map</i>.
+	(If not, select it.)</li>
+	<li>In the <b>Atoms</b> drop-down, choose <i>Selected Chains</i>.</li>
+	<li>In the <b>Near</b> drop-down, choose <i>Selected Atoms</i>.</li>
+	<li>Keep the remaining default values and click <b>Create</b>.</li>
+	</ol>
+<p>This will create an electrostatic map of the selected antigen chain near
+the selected L loop atoms. The created map will appear in the main MOE window.</p>
+	<ul>
+	<li>Click any empty area in the MOE window to deselect the L loop atoms.</li>
+	</ul>
+<p class="cntr"><a href="protdes_tut/electrostatic_init.png">
+<img src="protdes_tut/electrostatic_init.png" width="500px" 
+alt="the generated electrostatic map" /></a></p>
+</li></p>
+</ol>
+
+<a name="DetermineMutations"></a>
+<h2>Determine Mutations</h2>
+
+<p>The electrostatic map can be used to determine mutation sites and possible
+mutants to use at those sites.</p>
+<p>Looking at the map, <b>Phe31</b> and <b>Asp52</b> still appear to be promising
+candidates for mutations, as suspected earlier.</p>
+
+<ol>
+<p><li>Rotate the system and zoom in to the <b>Phe31</b> residue.
+<p class="cntr"><a href="protdes_tut/electroPhe31_crop.png">
+<img src="protdes_tut/electroPhe31_crop.png" width="500px" 
+alt="electrostatic map near Phe31" /></a></p>
+<p>Note the large red acceptor patch created by the <b>Lys104</b> group on
+the antigen. Mutating <b>Phe31</b> to a residue that interacts electrostatically
+with <b>Lys104</b> may increase affinity. The small grey hydrophobic patch
+at the tip of the <b>Phe31</b> sidechain suggests using a hydrophobic ring.
+Finally, there is a small blue donor patch deep in the pocket, which could provide
+interaction with a large residue at site 31.</p>
+<p>Based on this information, we should try mutating <b>Phe31</b> to residues that
+are large, hydrophobic, or basic. We will try the following residues:<br />
+Trp (W), Tyr (Y), His (H), Lys (K), Arg (R), Ile (I), Leu (L), and Met (M).</p>
+</li></p>
+
+<p><li>Rotate the system and zoom in to the <b>Asp52</b> residue.
+<p class="cntr"><a href="protdes_tut/electroAsp52_crop.png">
+<img src="protdes_tut/electroAsp52_crop.png" width="500px" 
+alt="electrostatic map near Asp52" /></a></p>
+<p>The large red acceptor patch created by the <b>Lys105</b> group on
+the antigen suggests mutating <b>Asp52</b> to Glu (E).</p>
+</li></p>
+</ol>
+
+
+
+<a name="Generate"></a>
+<h2>Generate Mutations</h2>
+<p>The <a href="../apps/prodesign.htm#ResidueScan">Residue Scan</a> in the 
+Protein Design panel will be used to
+create the mutations for residues <b>Phe31</b> and <b>Asp52</b>.
+Residue Scanning, also known as site-directed mutagenesis, mutates in a 
+sequential fashion all residues specified in the mutation list, and is used 
+to generate mutations that may produce rationally designed proteins 
+with modulated properties.</p>
+
+<ol>
+<p><li>Open the <b>Sequence Editor</b> window. 
+	<ol>
+	<li>Ensure the antigen chain (chain <b><tt>3G6D.A</tt></b>) is still 
+	selected. If not, select it. These antigen chain atoms will be used
+	during the Residue Scan to calculate affinity scores.</li>
+	<li>Use <b>CTRL-click</b> to select 
+	residues <b>F31</b> and <b>D52</b> from the light chain that contains the 
+	three L loops (chain <b><tt>3G6D.L</tt></b>). These are the residues that
+	will be mutated.</li>
+	</ol>
+<p class="cntr"><a href="protdes_tut/SE_mutates.png">
+<img src="protdes_tut/SE_mutates.png" width="600px" 
+alt="select the residues to mutate" /></a></p>
+</li></p>
+
+<p><li>With the <b>F31</b> and <b>D52</b> selected, open the Residue Scan panel:<br />
+<span class="menu">SE | Protein | Design | Residue Scan</span>.
+<p class="cntr"><a href="protdes_tut/ResScanInit.png">
+<img src="protdes_tut/ResScanInit.png" width="400px" 
+alt="Residue Scan panel" /></a></p>
+<p>The selected residues are listed for mutation (if no residues were selected,
+all will be listed). By default, all 20 natural amino acids are listed as 
+possible mutations for each residue.</p>
+</li></p>
+
+<p><li>Select <b>Phe31</b> in the list to edit its mutations. In addition to the
+mutations determined previously for this site, we will also put Phe (F) itself
+in the list. This enables us to test each mutation site separately.
+	<ol>
+	<li>Press the <b>Clear</b> button.
+	<p class="cntr"><a href="protdes_tut/ResScanClear.png">
+	<img src="protdes_tut/ResScanClear.png" width="400px" 
+	alt="Residue Scan clear mutants" /></a></p>
+	</li>
+	<li>In the mutation text box, enter the mutant residues:
+		<b>FWYHKRILM</b></li>
+	<li>Click the <b>Apply</b> button.
+	<p class="cntr"><a href="protdes_tut/ResScanPhe31.png">
+	<img src="protdes_tut/ResScanPhe31.png" width="400px" 
+	alt="Residue Scan set Phe31 mutants" /></a></p>
+	</li>
+	</ol>
+</li></p>
+
+<p><li>Select <b>Asp52</b> in the list to edit its mutations. In addition to the
+Glu (E) mutation determined previously for this site, we will also put Asp (D) itself
+in the list. Again, this enables us to test each mutation site separately.
+	<ol>
+	<li>Press the <b>Clear</b> button.</li>
+	<li>Click the <img src="protdes_tut/edit_button.png" width="20px" 
+	alt="select residues" /> button to select mutant residues from a list.</li>
+	<li>Select <b>Asp</b> and <b>Glu</b> from the list of residues.
+	<p class="cntr"><a href="protdes_tut/ResScanAsp52.png">
+	<img src="protdes_tut/ResScanAsp52.png" width="450px" 
+	alt="Residue Scan set Asp52 mutants" /></a></p>
+	</li>
+	<li>Click back into the main Residue Scan panel to automatically
+	close the list of residues.</li>
+	<li>Click the <b>Apply</b> button.</li>
+	</ol>
+</li></p>
+
+<p><li>Set the affinity scoring and site limit for the Residue Scan: 
+	<ol>
+	<li>Enable the <b>Affinity</b> calculation by checking its box.</li>
+	<li>For the <b>Atoms</b> to use for the affinity score, choose
+	<i>Selected Chains</i>. This will use the antigen chain that was
+	previously selected in the Sequence Editor.</li>
+	<li>Uncheck <b>Properties</b> to disable the calculation of protein 
+	properties.	</li>
+	<li>Change the <b>Site Limit</b> to <b>2</b> to perform up to 2 mutations
+	at a time during the calculations. The Mutation Space should be <b>18</b>.</li>
+	<li>Press <b>OK</b> to start the scan.</li>
+	</ol>
+<p class="cntr"><a href="protdes_tut/ResScanSettings.png">
+<img src="protdes_tut/ResScanSettings.png" width="400px" 
+alt="Residue Scan settings" /></a></p>
+<p>The progress of the run will be reported to the MOE window, and a 
+MOE database with the mutated structures will open.</p>
+</li></p>
+</ol>
+
+
+<a name="Review"></a>
+<h2>Review the Results</h2>
+<p>The output of the Residue Scan produces the mutated structures, affinity scores,
+stability scores, and relative affinities and stabilities (<b>dAffinity</b> and
+<b>dStability</b>). 
+The wild-type affinity is computed from a structure that is repacked around 
+the residue to be mutated.
+The <b>dAffinity</b> of a mutant
+is relative to the affinity of the repacked wild-type.</p>
+
+<ol>
+<p><li>Open the Database Viewer window that contains the mutated structures.
+<p class="cntr"><a href="protdes_tut/prodesign_results_hi.png">
+<img src="protdes_tut/prodesign_results_hi.png" width="600px" 
+alt="Residue Scan results" /></a></p>
+<p>Reviewing the results, we see that for every mutation of <b>F31</b>, the
+mutation of <b>D52</b> to <b>E</b> provides better affinity and better
+stability than keeping <b>D52</b> unchanged. Therefore, mutating
+<b>D52</b> to <b>E</b> is a mutation that should be made, and the review of 
+the mutations of <b>F31</b> will be made with this in mind.</p>
+<p>Mutating <b>D52</b> to <b>E</b>, while keeping <b>F31</b> unchanged,
+slightly improves both the affinity and stability of the structure.
+Among the remaining <b>F31</b> mutations, three others improve both 
+affinity and stability to varying degrees 
+(<b>F31</b> to <b>W</b>, <b>Y</b>, or <b>L</b>). These promising candidates
+are all highlighted in green.</p>
+<p>The mutation of <b>F31</b> to <b>M</b> (highlighted in orange) 
+is a potential candidate because it 
+improves the affinity by 11% over the non-mutated structure. 
+This is the largest improvement in affinity among the calculated mutations.
+However, it slightly decreases the stability of the structure, as well.
+If this mutation is investigated and becomes a worthwhile candidate, it
+could be worthwhile to also investigate the mutation of 
+<b>F31</b> to <b>R</b>, as it shows a similar improvement in affinity.</p>
+<p>Finally, the mutation of <b>F31</b> to <b>H</b> (highlighted in red)
+shows a solid increase in affinity, but it significantly decreases the 
+stability of the structure, so it therefore is not a promising mutation 
+candidate.</p>
+</li></p>
+
+<p><li>Prepare for browsing the scan results by first hiding the current system.
+	<ul>
+	<li>In the System Manager panel, click the <b>3G6D</b> tag to hide the 
+	system.</li>
+	</ul>
+	<p>There should now be nothing visible in the MOE window.</p>
+</li></p>
+
+<p><li>Open the database browser: 
+<span class="menu">DBV | File | Browse</span>.
+	<ol>
+	<li>Ensure that <i>Protein Design</i> is selected as the <b>Subject</b>.</li>
+	<li>Enable <b>Center Mutation</b>.</li>
+	<li>Enable <b>Overlay Wild Type</b>.</li>
+	</ol>
+<p class="cntr"><a href="protdes_tut/dbBrowse.png">
+<img src="protdes_tut/dbBrowse.png" width="500px" 
+alt="Residue Scan settings" /></a></p>
+</li></p>
+
+<p><li>Use the arrows in the <a href="../mdb/dbbrowse.htm">Database Browser</a>
+to inspect the generated mutants, overlaid on the wild type.
+<p>The repacked wild type is displayed in grey, while the mutant is overlaid 
+in green. Both systems are also displayed in the System Manager.</p>
+<p class="cntr"><a href="protdes_tut/viewMutants.png">
+<img src="protdes_tut/viewMutants.png" width="600px" 
+alt="viewing the mutants using the Database Browser" /></a></p>
+</li></p>
+</ol>
+
+
+
+<h2>Summary</h2>
+
+<p>This tutorial showcased the use of electrostatic maps to determine 
+mutation sites, and described how to use Residue Scan to generate
+mutations at the sites. The results of the Residue Scan calculation were 
+reviewed in the database viewer, where affinity and 
+stability scores were used to determine promising mutations. 
+Finally, the Database Browser was used to view the mutations while 
+they were overlaid on the wild type.</p>
+
+
+
+<h2>References</h2>
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="top">[Bethea&nbsp;2012]</td>
+<td>
+Bethea, D., <i>et.al.</i>;
+Mechanisms of self-association of a human monoclonal antibody CNTO607; 
+<i>Protein Engineering Design & Selection 25</i> 
+(<b>2012</b>) 531&ndash;538.
+</td>
+</tr>
+</table>
+
+
+<h2> See Also</h2>
+<a href="../apps/prodesign.htm">Protein Design</a><br />
+<a href="../mdb/dbbrowse.htm">Database Browser</a><br />
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

@@ -1,0 +1,956 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    /proteins/propatch.htm        Protein Patch Analyzer
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Protein Patch Analyzer</title>
+<meta panel Protein Patch Analyzer>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Overview">Overview</a>
+</li><li><a href="#Method">Methodology</a>
+</li><li><a href="#Run">Running the Application</a>
+  <ul>
+    <li><a href="#main">The Application Interface</a>
+    </li><li><a href="#settings">Application Settings</a>
+    </li><li><a href="#report">Report</a>
+  </ul>
+</li><li><a class="example" href="#Example">Example:
+Human Growth Hormone</a>
+</li>
+<li><a href="#Ref">References</a>
+</li>
+</ul>
+
+<p>The Protein Patch Analyzer application is used to generate visual
+representations of protein surface patches as a means for predicting
+locations highly prone to protein aggregation
+or for rationalizing mutation sites, in order to
+improve protein solubility.
+The application offers a SAR-type approach with a high degree of flexibility
+and interactivity and helps in conceptualizing the problem and in guiding the
+decision making process for assigning potential mutations.
+
+<p>
+<a name="Overview"></a>
+<h2>Overview</h2>
+<p>
+Therapeutic proteins have become the most rapidly
+growing class of pharmaceuticals in the industry because of their remarkable
+curative potential in a variety of diseases. While engineering
+efforts have been focused on producing macromolecules with high target
+specificity but low immunogenicity, the practical requirement of
+storing such biotherapeutics in high concentration formulations
+has led to an urgent new problem that must be addressed:
+in the case of many antibodies, various forms of
+aggregation can occur with a concomitant significant loss of drug efficacy
+and higher rate of immunogenic response.
+The control and reduction of aggregation
+tendencies has thus become a high priority in the biopharmaceutical industry and
+presents a serious challenge since aggregation is potentially encountered
+during all manufacturing steps of the complex life cycle of a biotherapeutic
+agent.
+</p>
+
+<!--
+<p>
+For example,
+monoclonal antibodies are typically produced in cell culture and secreted in
+the medium that contains cell nutrients, ions, host cell proteins and many other
+species including proteases. They are then purified over Protein A
+affinity chromatography which elutes the antibody at highly acidic conditions
+(pH 3.2), followed by polishing steps that include cation exchange
+chromatography, centrifugation and/or filtration
+[Harris&nbsp;2004],[Cromwell&nbsp;2006].
+</p>
+-->
+
+<p>
+The underlying mechanisms for protein
+aggregation are poorly understood.  This is substantiated by the fact
+that there is no single analytical method available to cover the various
+sizes and types of aggregation that appear in experiments or in production.
+Covalent protein aggregates are commonly observed as a result of disulfide bond
+formation of previously unpaired free thiols [Shahrokh&nbsp;1994].
+Oxidation of tyrosines may also result in covalent aggregation through the
+formation of bityrosine [Giulivi&nbsp;1994].
+Other studies attribute a suppressing role to arginine residues in the formation of
+aggregates [Tsumoto&nbsp;2004]. Furthermore, changes to the environment such as
+in pH and ionic strength may promote deamidation and oxidation reactions,
+which in turn
+promote aggregation kinetics [Idicula-Thomas&nbsp;2007].
+Glycosylation in antibodies has been shown to improve
+homogeneity
+and affect aggregation propensities [Wu&nbsp;2010][Kayser&nbsp;2011].
+</p>
+
+<p>
+Reversible protein aggregates are typically the result of relatively weak
+noncovalent interactions. In particular, hydrophobic interactions have long
+been
+recognized as major contributors in high affinity interactions between
+macromolecules.  In antibodies, electrostatic interactions have been implicated
+in forming self-associated aggregates [Karshikoff&nbsp;2006], while
+dipole-dipole
+interactions are believed to be the cause of fibrillogenic association of
+&beta;-sheets.
+</p>
+
+<p>
+A variety of computational tools have been developed in order to
+assist scientists in understanding the complex mechanisms of protein aggregation
+but have traditionally focused on amyloid-like aggregation due to its
+importance in neurodegenerative diseases. These tools
+employ a diverse set of computational methods ranging from a strict
+bioinformatics or sequence-based approach to computationally expensive
+molecular dynamics simulations in order to determine or predict
+aggregation-prone regions (APRs) in proteins. The studies suggest that ARPs
+become surface exposed upon conformational transition and are able to
+facilitate intermolecular interaction [Agrawal&nbsp;2011].
+
+Recently, a computational method
+called Spatial Aggregation Propensity (SAP)
+has been presented
+that predicts aggregation propensities by identifying
+hydrophobic surface patches [Chennamsetty&nbsp;2009].
+</p>
+
+<p>
+In summary, the aggregation predictions provided by the computational tools
+are limited because there is simply not enough information available for
+validation.
+<p>
+
+        <!-- ======================== METHODS ====================== -->
+
+<p>
+<a name="Method"></a>
+<h2>Methodology</h2>
+<p>
+The main task of the Protein Patch Analyzer application is to determine the
+hydrophilic and hydrophobic patch regions of a specified protein. The patches
+are calculated on a
+<a href="../apps/surfmap.htm#InteractionSurface">van der
+Waals solvent accessible interaction surface</a>.
+In brief, the interaction surface is calculated on a lattice and is a
+0-potential contour of the van der Waals potential of a probe atom with
+a molecule.  The interior of the 0-potential surface contains those
+locations at which the probe van der Waals energy is positive; the
+exterior has negative interaction energy.  More precisely,
+define a potential <i>v</i>(<i>x</i>) as follows:
+<p>
+<p align="center"><img src="propatch/math_potentialfunction.png" /></p>
+<p>
+where <i>A<sub>i</sub></i> and <i>B<sub>i</sub></i> are the
+OPLSA-AA van der Waals parameters [Jorgensen&nbsp;1996] with a water oxygen
+used as a probe.  The interaction surface is close to the solvent
+accessible surface of a molecule - the points of close contact of
+water nucleus.
+</p>
+<p>
+Three classes of surface patches are calculated on the basis of
+electrostatic and hydrophobic potential calculations, allowing for
+classification to <i>hydrophobic</i>, <i>negative</i> and <i>
+positive</i> patches. As suggested by the class name, the positive patches
+are associated with positive electrostatic
+potential and negative with the negative patches.
+The hydrophobic potential is calculated from the Wildman
+and Crippen SlogP parameters [Wildman&nbsp;1999]:
+</p>
+<p align="center"><img src="propatch/math_Exyz_lipophilic.png" /></p>
+
+<p>
+where <i>f<sub>i</sub></i> is the contribution for atom <i>i</i> and
+g(d<sub>i</sub>) is the Fermi-type distance function proposed by
+Heiden <i>et al.</i> [Heiden&nbsp;1993]:
+</p>
+<p align="center">
+<img src="propatch/math_fermi_distancefunction.png" />
+
+<p>
+with a proximity distance (<i>d<sub>cutoff</sub></i>) of 2.5 &Aring; and
+&alpha; = 1.5.
+<p>
+The median of each potential value set is used as the iso-contour cutoff to
+calculate the core patch areas on the surface; these are
+then extended to adjacent
+grid triangles to smoothen the patch transition.
+
+</p>
+The particular characteristics of APRs include high surface exposure and strong
+interaction potential. While the latter is represented by the potential value
+described above, the surface exposure property requires a surface
+calculation by rolling a protein probe with a 5.0 &Aring; radius over the
+target protein. The atom surface area values obtained from the protein probe
+are then mapped back onto the interaction surface grid for visual inspection.
+<p>
+For each calculated patch, a series of properties are calculated,
+including the patch surface area (&Aring;<sup>2</sup>), the
+patch surface as a percentage of
+the total surface area of the protein, the maximum potential
+value measured within the patch (kcal/mol) and the average patch potential
+(kcal/mol). In addition, the number of highly surface-exposed oxygen,
+nitrogen and sulfur atoms are determined as well.  As mentioned in the
+introduction, different residues may play important roles
+in various forms of protein aggregation.
+
+With respect to nitrogens, this includes
+residues with propensities for deamidation, glycosylation or simply point to
+exposed Arginine residues. For oxygens, the surface-exposed tyrosine residues
+are of particular interest due to their ability to form covalent species.
+
+</p>
+
+<!-- ============================ RUNNING ================================ !-->
+
+<p>
+<a name="Run"></a><h2>Running the Application</h2>
+<p>
+<p>To open the Protein Patch Analyzer panel, select
+<b><nobr>MOE | Protein | Patch Analyzer</nobr></b>.
+Press <b>Calculate</b> to generate the patch surface.
+</p>
+
+<div align="center" style="padding-top:15px;padding-bottom:15px;">
+  <img src="propatch/propatch.png" alt="Protein Patch Analyzer Panel" />
+  <br /><br /><i>Patch Analyzer Panel</i>
+</div>
+<p>
+The Protein Patch Analyzer panel may conceptually be divided into three sections:
+<ul>
+ <li>
+  The top section specifies the protein(s) that are the basis for the surface
+  patch calculations and the potential type for visualizing them.
+ </li>
+
+ <li>
+  The middle section is designed to allow easy navigation through the results of
+  the patch calculation and offers the user a set of controls to reduce/modify
+  the content of the result table to a desired scope.
+  This section is populated when <b>Calculate</b> is pressed.
+ </li>
+
+ <li>
+  The bottom section allows for visual modulation of the patches as they are
+  shown in the MOE Window. This includes the modification of each of the
+  patch class colors, the transparency settings within or outside the patch
+  regions as well as general rendering options for fine-tuning the
+    patch visuals.
+ </li>
+</ul>
+
+
+<a name="main"></a>
+<table width="100%" border="0" cellspacing="5" cellpadding="5">
+<tr>
+ <td valign="top"><b>Chains</b></td>
+ <td valign="top">
+    Specify the protein chain
+    or collection of chains that are used for the patch calculations.
+    The application screens the current MOE system for possible input candidates
+    and lists the individual chain names in the pulldown menu along with chain
+    tags and the collection of all protein chains in the system
+    (<tt>Receptor</tt>).  Inert or non-protein chains are excluded from display.
+    The chain number is shown in case there is no chain name available to uniquely
+    identify the chain input.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Visualize</b></td>
+<td valign="top">
+    Specify the patch viewing mode.
+    Examining the patches in different modes could potentially reveal important
+    information.
+    As mentioned above in the Methodology section, patches are calculated
+    based on their respective potential values which determine the
+    sizes of the patches.  However, in general,
+    the charge or hydrophobicity is not
+    uniformly distributed within a particular patch. The
+    potential distribution could be
+    concentrated around a few residues within a larger patch area indicating
+    "hot spots" for greasiness or charge.
+    Such hot spots might look entirely different
+    when inspected in the <tt>Surface Exposure</tt> mode if, for example,
+    they lacked surface exposure; this would render
+    them unsuitable for mutation.
+    For some proteins,
+    it is also interesting to compare the patches
+    within a distinct class based on the potential average of the patches and
+    visualize this comparison within the topology of a protein. Sometimes, this
+    reveals interesting distribution patterns, when patches with comparatively
+    high potential values are located in one section of the protein and weaker
+    ones in other parts of the protein.
+
+    <p>Each of the display modes has its own coloring scheme that may be
+    modified in the <b>Color Settings</b> section described below.
+    When elucidating APRs, it is strongly recommended to make use of these
+    different viewing modes.
+    </p>
+
+    <ul>
+      <p><li>
+        <tt>Potential.</tt> This mode shows the potential values within the
+        respective patches, possibly indicating hot spots for charge or
+        hydrophobicity.
+      </li></p>
+      <p><li>
+        <tt>Potential Average.</tt> In this viewing mode, the potential averages
+        of a distinct patch class are compared.  By default,
+        the associated coloring scheme has a resolution of 5% of the designated
+        energy cutoffs (see <a href="#settings">Settings</a> below).
+        This means that for each patch class,
+        the patches with an average potential value in an energy bin of 5% are
+        assigned the same color value. As a result, patches with a "strong"
+        potential average are rendered in a darker color, and the "weak" patches
+        in a lighter color. For some proteins, the distribution of
+        weak and strong patches is not uniform with the protein topology and
+        can be clearly seen in this viewing mode.
+     </li></p>
+     <p><li>
+        <tt>Surface Exposure.</tt>
+        This viewing mode allows for inspecting the patches
+        merely on the basis of their exposure to a virtual protein probe.
+        Highly exposed areas in this viewing mode are colored in a darker color
+        tone based on the respective patch class
+        (hydrophobic,
+        negative or positive); buried patch areas are shown in very
+        light or white color tones.
+        In this way, the hotspots for potential interactivity with external
+        macromolecules which represent potential mutation sites
+        are easily detected.
+     </li></p>
+    </ul>
+</td>
+</tr>
+<tr><td valign="top"><b><i>Patch List</i></b></td>
+<td valign="top">
+The middle section of the panel is a list
+providing information about
+the calculated patches. It offers a fast convenient navigation
+structure to display distinct sets/subsets or combinations
+of surface patches, and
+allows for easy comparisons with respect
+to size and to presence of key residues
+within a patch area.
+Patches currently
+visible in the MOE Window are indicated by an asterisk <tt>*</tt>
+in the leftmost column.
+The visibility of
+each individual patch in the MOE Window may be toggled
+on and off by double-clicking the list entry.
+
+<p>
+<center>
+  <img src="propatch/patchdetails.png" alt="Protein Patch Details"
+    style="padding-top:15px; padding-bottom:15px;"
+  />
+</center>
+</p>
+
+<p>
+Each line in the list is associated with a single patch for
+which the following information is provided:
+</p>
+
+<table align="center" cellpadding="5"  cellspacing="5" width="85%">
+  <tr><td colspan="2">
+ </td></tr>
+  <tr><td width="75"><b>Id</b></td>
+    <td>
+      Unique patch id
+    </td>
+  </tr>
+  <tr><td><b>Type</b></td>
+    <td>
+       Patch type (<tt>hyd</tt> for hydrophobic, <tt>(-)</tt> for negative,
+       <tt>(+)</tt> for positive)
+    </td>
+  </tr>
+  <tr><td valign="top"><b>Area</b></td>
+    <td valign="top">
+      Water-accessible surface area of the patch (&Aring;<sup>2</sup>)
+    </td>
+  </tr>
+  <tr><td valign="top"><b>% ASA</b></td>
+    <td valign="top">
+      Patch surface area as a percentage of the total protein surface
+    </td>
+  </tr>
+  <tr><td valign="top"><b>Max E</b></td>
+    <td valign="top">
+      Maximum patch potential value (kcal/mol).  This is an absolute value,
+	so high positive values are preferable, unlike with potential energy.
+    </td>
+  </tr>
+  <tr><td valign="top"><b>Avg E</b></td>
+    <td valign="top">
+      Average patch potential value (kcal/mol)
+    </td>
+  </tr>
+  <tr><td valign="top"><b>N</b></td>
+    <td valign="top">
+      Number of highly surface-exposed nitrogen atoms.
+      The number provided may be seen as a flag rather than a detailed listing.
+      The nitrogens in question may be associated with deamidation or
+      glycosylation or arginines that have been shown to modulate
+      aggregation. The <b>Report</b> provides a detailed listing of each of
+      the outlined categories of these nitrogens.
+    </td>
+  </tr>
+  <tr><td valign="top"><b>O</b></td>
+    <td valign="top">
+      Count of highly surface-exposed oxygen atoms.
+      These residues might be linked to oxidation
+      reactions that promote aggregation,
+      in particular
+      Tyrosine residues. The <b>Report</b> offers a detailed listing
+      of these residues.
+    </td>
+  </tr>
+  <tr><td valign="top"><b>S</b></td>
+    <td valign="top">
+      Number of highly surface-exposed sulfur atoms.
+      The residues of these thiol groups might be involved in the formation of
+      covalent aggregates.
+    </td>
+  </tr>
+  <tr><td valign="top"><b>W</b></td>
+    <td valign="top">
+      Count of highly surface-exposed tryptophan residues.
+      Although tryptophan residues are not directly associated
+      with protein aggregation,
+      this information may be useful for linking quenching data to a particular
+      patch area.
+    </td>
+  </tr>
+</table>
+
+</td></tr>
+
+<tr>
+<td valign="top"><b>List</b></td>
+<td valign="top">Specify which
+patch classes (<b>Hydrophobic</b>,
+<b>Negative</b>, <b>Positive</b>) to calculate.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Display</b></td>
+<td valign="top">
+Shortcut action buttons
+to show/hide all the patches that are listed in the table.<br /`>
+<tt>[All]:</tt> Show all patches in the list<br />
+<tt>[None]:</tt> Hide all patches in the list
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Selection</b></td>
+<td valign="top">
+  This section allows finer control when working with a
+  distinct set of patches, and operates only on the patches selected in the
+  table.
+
+  <table align="left" style="padding-top:15px; padding-bottom:15px;"
+    cellpadding="5" cellspacing="5"
+   >
+    <tr><td colspan="2" align="left">
+        <img src="propatch/selection.png" alt="Protein Patch Selection"/>
+    </td></tr>
+    <tr>
+      <td valign="top"><b>Toggle</b>
+      <td valign="top">
+        Switch the visibility of the selected patches
+      </td>
+    </tr>
+    <tr>
+      <td valign="top"><b>Show</b>
+      <td valign="top">
+        Show the selected patches in the MOE Window
+      </td>
+    </tr>
+    <tr>
+      <td valign="top"><b>Hide</b>
+      <td valign="top">
+        Hide the selected patches in the MOE Window
+      </td>
+    </tr>
+    <tr>
+      <td valign="top"><b>Delete</b>
+      <td valign="top">
+        Remove the selected patches permanently from the list. A recalculation
+        of the patches is required to recover the full list.
+      </td>
+    </tr>
+    <tr>
+      <td valign="top"><b>Residues</b>
+      <td valign="top">
+        Select the residues associated with the selected patches in the list.
+        The residue selection can be viewed in the Sequence Editor.
+      </td>
+    </tr>
+    <tr>
+      <td valign="top"><b>Color&nbsp;SE</b>
+      <td valign="top">
+        Pressing this button will color the residues associated with the
+        selected patches.  The residue coloring can be viewed in
+	the Sequence Editor. The assigned colors are based
+        on the selected visualization mode and the coloring choice of a
+        particular patch type as outlined in <b>Color Settings</b>.
+      </td>
+    </tr>
+  </table>
+</td>
+</tr>
+
+<tr><td colspan="2">
+
+The bottom section of the Patch Analyzer panel
+provides controls for various visual aspects of the patch
+surfaces shown in the MOE Window.
+</td></tr>
+
+<tr>
+<td valign="top"><b>Rendering</b></td>
+<td valign="top">Change the general look of the patches in terms of
+shading, gloss and overall brightness as presented in predefined sets.
+</tr>
+
+<tr>
+<td valign="top"><b>Background</b></td>
+<td valign="top">Change the coloring of the surface outside the patch
+regions.  Turn off the
+checkbox to hide this part of the surface.  The display of patch labels
+is controlled by the <b>Patch Labels</b> checkbox and assigns a patch
+id to each patch shown. For each patch class, the labels have distinct colors.
+</tr>
+
+<tr>
+<td valign="top"><b>Transparency</b></td>
+<td valign="top">Control the transparency settings of the
+patch and non-patch regions of the surface.
+</tr>
+
+<tr>
+<td valign="top"><b>Color Settings</b></td>
+<td valign="top">This section controls the color settings of the patches in the
+MOE Window. The colors to be modified are linked to the patch display mode
+as mentioned above. The color settings of each of the patch display modes
+(Potential, Potential Average or Surface Exposure) are stored separately.
+The color gradient
+displayed over the patches ranges from white (very low potential values) to the
+color specified in the panel. In the case of <i>Potential</i>, the
+coloring is also influenced by the energy cutoff as specified in the
+<b>Settings</b> panel. Since the potential energies are absolute, the coloring
+of the patches may be used for relative comparisons.
+</tr>
+
+</table>
+The status line at the bottom of the panel
+warns if changes in the system would require
+recalculation of the patches presented in the list.
+<p>
+
+<a name="settings"></a><h3>Settings</h3>
+<p>
+The settings panel is opened by pressing the <b>Settings</b> button.
+The following
+set of parameters influence the patch surface calculation or visuals.
+
+<div align="center" style="padding-top:15px;padding-bottom:15px;">
+  <img src="propatch/settings.png" alt="Protein Patch Analyzer Settings" />
+  <br /><br /><i>Patch Analyzer Settings</i>
+</div>
+
+<table width="100%" border="0" cellspacing="5" cellpadding="5">
+  <tr><td width="20%" valign="top"><b>Size Cutoff:</b></td>
+  <td valign="top">
+  Specify the minimum patch size (&Aring;<sup>2</sup>) for each patch class
+  that is considered for display. All patches
+  with a patch size below the specified value will be discarded.
+  </td>
+
+  </tr>
+  <tr><td valign="top"><b>Energy Cutoff:</b></td>
+    <td valign="top">
+  The energy value (kcal/mol) for each patch class determines the coloring
+  of the <tt>Potential</tt> viewing mode described above.  Patch areas with
+  energy values equal or above the specified value are shown in the color as
+  specified by the <b>Color Settings</b> for surface potentials. Since the
+  coloring is dependent on specific energy values, the surface potential patches
+  may be compared across proteins, such as wildtypes and mutant.
+    </td>
+  </tr>
+  <tr><td valign="top"><b>Color Labels:</b></td>
+   <td valign="top">Specify the color of the labels in each patch category.
+   </td>
+  </tr>
+</table>
+
+
+<a name="report"></a><h3>Report</h3>
+<p>
+A detailed report of the calculated patches is generated by pressing the
+<b>Report</b> button. In addition to the patch data as listed in the
+patch list of the application, a detailed listing for each patch with its
+corresponding residues is also provided. For highly exposed nitrogen, oxygen and
+sulfur atoms, the residues and the respective context
+(e.g. oxidation, deamidation etc.) are also listed.
+
+<div align="center" style="padding-top:15px;padding-bottom:15px;">
+  <img src="propatch/report.png" alt="Protein Patch Analyzer Report" />
+  <br /><br /><i>Patch Analyzer Report</i>
+</div>
+
+<!-- ============================== Examples ============================== -->
+
+<a name="Example"></a>
+<div class="example">
+<h3>Example: Human Growth Hormone</h3>
+Experiments have shown aggregation formation of bovine growth hormone (bGH) at
+concentrations of 10 <tt>&micro;M</tt> or higher that is not observed with human
+growth hormone (hGH). Aggregation formation was linked to region 109-133 in
+bGH, that differs in 8 residues from the human protein as shown in the
+illustration below.
+
+<div align="center" style="padding-top:15px;padding-bottom:15px;">
+  <img src="propatch/bGH.png"
+  alt="Excerpt human/bovine growth hormone sequence" />
+  <br><i>Sequence mismatch of hGH (1HWG.a) and bGH in the aggregation-prone
+   region 109-133 (green)
+  </i>
+</div>
+There are several X-ray structures of human growth hormone available in the PDB,
+and submission 1HWG is used as a representative for hGH. Since no structure of
+bGH is available, we generate a model of bGH using 1HWG as a template. For this
+example, the
+<a href="../moe/pot.htm">Amber12EHT forcefield</a>
+has been used with a Reaction Field implicit solvation model.
+
+<a name="Example" />
+<h4>Structure Preparation</h4>
+
+<ol>
+<p><li><i>Clear the molecular data in MOE.</i>
+  <p class="indent_novspace">
+    <b><span class="nobr">MOE | RHS | Close</span></b>
+  </p>
+</li></p>
+<p><li><i>Load the PDB structure in MOE.</i>
+  <p class="indent_novspace">
+    <b><span class="nobr">MOE | Open |
+    	<tt>$MOE/sample/mol/1hwg.pdb</tt></span></b><br>
+    	For the purposes of this study, we are only interested in the growth
+    	hormone protein (chain 1HWG.A) and therefore all the other chains
+    	are removed in the system. In the Sequence Editor,
+	select chain 1HWG.A.  Then:<br><br>
+    <b><span class="nobr">SEQ | Select | Chains | Invert</span></b><br>
+    <b><span class="nobr">SEQ | Edit | Delete</span></b>
+  </p>
+</li></p>
+<p><li><i>Prepare the structure.</i>
+  <p class="indent_novspace">
+    <b><span class="nobr">
+    	MOE | Protein | Structure Preparation</span></b>
+    <br />Correct all issues and run <b>Protonate 3D</b>.
+  </p>
+</li></p>
+</ol>
+
+<p>
+<h4>Using the Protein Patch Analyzer application to rationalize aggregation
+in bGH</h4>
+Since there is no bovine growth hormone structure available, a model has to be
+created first. A bGH model using hGH as a template is provided in the
+<tt>$MOE/sample/mol</tt> directory.
+
+<ol>
+<p><li><i>Launch the Protein Patch Analyzer application.</i>
+  <p class="indent_novspace">
+    <b><span class="nobr">MOE | Protein | Patch Analyzer</span></b><br>
+  </p>
+</li></p>
+<p><li><i>Create surface patches for human growth hormone.</i>
+  <p class="indent_novspace">
+    <b><span class="nobr">Patch Analyzer | Chains </span></b><br>
+    Select <tt>1HWG</tt> from the option menu.
+    Turn on <tt>Patch Labels</tt> and press <b>Calculate</b>.
+  </p>
+</li></p>
+<p><li><i>Load the bovine growth hormone (bGH) model.</i>
+  <p class="indent_novspace">
+    <b><span class="nobr">MOE | Open |
+    	<tt>$MOE/sample/mol/bGH_model.moe</tt></span></b>
+  </p>
+</li></p>
+<p><li><i>Align sequences and superpose hGH and bGH structures in order to create
+ a visual frame of reference.</i>
+  <p class="indent_novspace">
+    <b><span class="nobr">SEQ | Alignment | Align</span></b><br>
+    In the <b>Action</b> menu, select <tt>Sequence Alignment Only</tt>.
+    Ensure that <tt>Superpose Chains</tt> is enabled and press
+    <b>OK</b>.
+  </p>
+</li></p>
+<p><li><i>Select residues 109 - 133 in the Sequence Editor.</i><br />
+    Use drag-select in the Sequence Editor residue display area.
+  <p class="indent_novspace">
+    <b><span class="nobr">SEQ | Select | Synchronize</span></b><br>
+    Turn on Synchronization. Rotate the proteins so that the atoms of
+    the selected residues are in the center of the MOE Window.
+    <br>The selected region is dominated by two negative patches (patches #14
+    and #16).
+  </p>
+</li></p>
+<p><li><i>Hide hGH surface patches.</i>
+  <p class="indent_novspace">
+    <span class="menu">MOE | RHS | System | 1HWG </span></span><br />
+    This will make hGH inactive. As a result, the patch object should become
+    invisible.
+  </p>
+</li></p>
+<p><li><i>Create surface patches for bovine growth hormone.</i>
+  <p class="indent_novspace">
+    <b><span class="nobr">Patch Analyzer | Chains </span></b><br>
+    Select <tt>bGH</tt> from the option list and press <b>Calculate</b>.
+  </p>
+</li></p>
+</ol>
+
+<p>
+<center>
+<table border="0" width="100%" cellpadding="5">
+<tr>
+<td>
+  <center>
+  <img src="propatch/hGH_patches.png"
+  alt="Surface patches of human growth hormone" />
+  <br /><br /><i>Surface patches of hGH.<br />
+  The aggregation-prone region is shown in yellow.</i>
+  </center>
+</td>
+<td>
+  <center>
+  <img src="propatch/bGH_patches.png"
+  alt="Surface patches of bovine growth hormone" />
+  <br /><br /><i>Surface patches of bGH.<br />
+  The aggregation-prone region is shown in yellow.</i>
+  </center>
+</td>
+</tr>
+</table>
+</center>
+</p>
+
+<p style="clear:both;">
+Given the differences in surface patch composition of hGH and the bovine model,
+it is easy to conceptualize the differences in aggregation behavior. The APR
+of 1HWG is entirely dominated by two large negative patches (#14 and #16) that
+are completely devoid in the bovine model. The dominant patches within the APR
+in bGH are the large hydrophobic patch #2 (339 &Aring; in size) and to a lesser
+degree positive patch #37 (80 &Aring; in size). The large hydrophobic surface
+patch (#2) that spans the entire APR region combined with surface-exposed
+hydrophobic patches #14 and #3 form an ideal and large platform for non-specific
+binding. The surface-exposed residues within these patches can be visualized by
+the <tt>Surface Exposure</tt> visualization mode,
+and represent prime targets for
+potential mutations.
+</p>
+
+</div>
+
+<p style="clear: both;">
+<h2>See Also</h2>
+<p>
+<a href="../apps/structprep.htm">Protein Preparation</a><br>
+<a href="../apps/protonate3d.htm">Protonate 3D</a><br>
+<a href="proprop.htm">Protein Properties</a><br>
+
+
+<a name="Ref"></a>
+<h2>References</h2>
+
+<table cellpadding="5" width="100%">
+
+<tr>
+<td valign="top">[Agrawal&nbsp;2011]</td>
+<td valign="top">
+Agrawal, N.J., Kumar, S., Wang, X., Helk, B., Singh, S.K.;
+Aggregration in Protein-Based Biotherapeutics: Computational Studies and
+Tools to Identify Aggregation-Prone Regions;
+<i>J. Pharmac. Sci. 100</i> (<b>2011</b>) 5081&ndash;5095.
+ </td>
+</tr>
+
+<tr>
+<td valign="top">[Chennamsetty&nbsp;2009]</td>
+<td valign="top">
+Chennamsetty, N., Voynov, V., Kayser, V., Helk, Trout, B.L.;
+Design of therapeutic proteins with enhanced stability;
+<i>PNAS 29</i> (<b>2009</b>) 11937&ndash;11942.
+</td>
+</tr>
+
+
+<tr>
+<td valign="top">[Cromwell&nbsp;2006]</td>
+<td valign="top">
+Cromwell, M.E.M., Hilaro, E., Jacobson, F;
+Protein Aggregation and Bioprocessing;
+<i>AAPS J. 8</i> (<b>2006</b>) E572&ndash;E579.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Giulivi&nbsp;1994]</td>
+<td valign="top">
+Giulivi, C., Davies, K.J.A; Dityrosine: a marker for oxidatively modified
+proteins and selective proteolysis;
+<i>Methods in Enzymology 233</i> (<b>1994</b>) 363&ndash;371.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Harris&nbsp;2004]</td>
+<td valign="top">
+Harris, R.J. , Shire, J., Winter, C.;
+Commercial manufacturing scale formulation and analytical characterization
+of therapeutic recombinant antibodies;
+<i>Drug Dev. Res. 61</i> (<b>2004</b>)
+137&ndash;154.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Heiden&nbsp;1993]</td>
+<td valign="top">
+Heiden, W., Moeckel, G., Brickmann, J.;
+A New Approach to Analysis and Display of Local Lipophilicity/Hydrophilicity
+Mapped on Molecular Surfaces;
+<i>J. Comput. Aided Mol. Des. 7</i> (<b>1993</b>) 503&ndash;514.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Idicula-Thomas&nbsp;2007]</td>
+<td valign="top">
+Idicula-Thomas, S., Balaji, P.V.;
+Correlation between the structural stability and aggregation propensity of
+proteins;
+<i>In Silico Biol. 7</i> (<b>2007</b>) 225&ndash;237.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Jorgensen&nbsp;1996]</td>
+<td valign="top">
+Jorgensen W.L., Maxwell, D.S., Tirado-Rives, J.;
+Development and Testing of the OPLS All-Atom Force Field on
+Conformational Energetics and Properties of Organic Liquids;
+<i>J. Am. Chem. Soc. 117</i> (<b>1996</b>) 11225&ndash;11236.
+</td>
+</tr>
+
+
+<tr>
+<td valign="top">[Karshikoff&nbsp;2006]</td>
+<td valign="top">
+Karshikoff, A.;
+Non-Covalent Interactions In Proteins;
+<i>Imperial College Press</i> (<b>2006</b>) pp. 348.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Kayser&nbsp;2011]</td>
+<td valign="top">
+Kayser, V., Chennamsetty, N., Voynov, V., Forrer, K., Helk, B.,
+Trout, B.L.;
+Glycosylation influences on the aggregation propensity of therapeutic
+monoclonal antibodies;
+<i>Biotechnol. J. 6</i> (<b>2011</b>)
+38&ndash;44.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Shahrokh&nbsp;1994]</td>
+<td valign="top">
+Shahrokh, Z., Sluzky, V., Stratton, P.R., Eberlein, G.A., Wang, Y.J.;
+Disulfide-linked oligomerization of basic fibroblast growth factors: effect
+of sulfated compounds;
+<i>ACS Symposium Series 567</i> (<b>1994</b>) 85&ndash;99.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Tsumoto&nbsp;2004]</td>
+<td valign="top">
+Tsumoto, K., Umetsu, M., Kumagai, I., Ejima, D., Philo, J., Arakawa, T.;
+Role of Arginine in Protein Refolding, Solubilization, and Purification;
+<i>Biotechnol. Prog. 20</i> (<b>2004</b>) 1301&ndash;1308.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Wildman&nbsp;1999]</td>
+<td valign="top">
+Wildman, S.A., Crippen, G.M.;
+Prediction of Physicochemical Parameters by Atomic Contributions;
+<i>J. Chem. Inf. Comput. Sci. 39</i> (<b>1999</b>) 868&ndash;873.
+</td>
+</tr>
+
+
+<tr>
+<td valign="top">[Wu&nbsp;2010]</td>
+<td valign="top">
+Wu, S-J., Luo, J., O'Neil, K.T., Kang, J., Lacy, E.L., <i>et al.</i>;
+Structure-based engineering of a monoclonal antibody for improved solubility;
+<i>Protein Eng. 23</i> (<b>2010</b>)
+643&ndash;651.
+</td>
+</tr>
+
+
+</table>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

@@ -1,0 +1,1020 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!! 	moefmt.htm	MOE Molecule File format chapter
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta fileformat .moe>
+
+<title>MOE File Format</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+<p>
+<blockquote>
+<table border="0">
+<tr>
+<td><i>file</i>
+<td>: 
+	<b><tt>#moe</tt> <tt>#system</tt></b> <i>molecule</i>
+	<b>{</b> <i>item</i> <b>}*</b>
+	<b><tt>#endsystem</tt></b>
+<tr>
+<td><i>molecule</i>
+<td>: 
+	<b><tt>#molecule</tt></b>
+	<b>{ <tt>#attr | #bond</tt> }*</b>
+	<b><tt>#endmolecule</tt></b>
+<tr>
+<td><i>item</i>
+<td>: 
+	<b><tt>#meter | #restraint | #collection </b>
+	<b>| #alignmentconstraint |</tt></b>
+	<i>graphics</i>
+<tr>
+<td><i>graphics</i>
+<td>: 
+	<b><tt>#graphics</tt> { <tt>#gvertex | #gtext</tt> }*
+	<tt>#endgraphics</tt></b>
+
+</table>
+</blockquote>
+
+<p><a name="file"></a></p><h2>Description</h2>
+
+<p>
+A MOE file is an ASCII file (characters 0 through 127 only) interpreted
+according to strict syntax rules which are described in this document.
+The MOE file format was designed with flexibility and future enhancements in
+mind.  For this reason, MOE files have some self-describing features (although
+no attempt was made to create a fully self-describing format such as XML).
+
+<p>
+<b>Lines</b>.
+MOE files are interpreted as a sequence of <i>lines</i> of any length.
+A line is terminated with any of the following character strings:
+a) CR not followed by LF; b) LF; c) the two-character combination CR LF;
+and d) end-of-file.  Here CR denotes the carriage return ASCII character
+(octal 015) and LF denotes the line feed ASCII character (octal 012).  Thus,
+files written under MacOS, Windows or Unix can be read and properly split
+into lines (even if the line formats are mixed within the file).
+
+<p>
+<b>Words</b>.
+Each line of a MOE file is divided into <i>words</i>.  A word is a non-zero
+length sequence of non-whitespace characters surrounded by either a) the
+beginning of line; b) the end of line; or c) whitespace.  A <i>whitespace</i>
+character is any one of blank (octal 040), backspace (octal 010),
+tab (octal 011), form-feed (octal 014) as well as CR and LF.
+
+<p>
+Some words in a MOE file are expected to have a particular format and
+content because they will be interpreted in a specific way (such as
+integers or real numbers).  The following table denotes the names and
+formats of particular types of words:
+
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr>
+<th>Type</th>
+<th>Name</th>
+<th>Description</th>
+<tr>
+<td valign="baseline"><tt>i</tt>
+<td valign="baseline">integer
+<td valign="baseline">A decimal integer with characters in the set
+<tt>[-+0123456789]</tt>.
+<tr>
+<td valign="baseline"><tt>ix</tt>
+<td valign="baseline">integer
+<td valign="baseline">A hexadecimal integer with characters in the set
+<tt>[-0123456789ABCDEFabcdef]</tt>; e.g., FF, -3A4B.
+<tr>
+<td valign="baseline"><tt>r</tt>
+<td valign="baseline">real
+<td valign="baseline">A decimal real number with characters in the set
+<tt>[-+.0123456789EeDd]</tt> or the value INF or NAN (expressed
+using either upper- or lowercase);
+e.g., 2.5, -3.2e10, Inf.
+<tr>
+<td valign="baseline"><tt>c</tt>
+<td valign="baseline">char
+<td valign="baseline">A single encoded character (byte in the range 0..255) encoded
+by the scheme described below.
+<tr>
+<td valign="baseline"><tt>ss</tt>
+<td valign="baseline">string
+<td valign="baseline">An array of characters (bytes in the range 0..255) encoded
+by the scheme described below (to be read as a <tt>char</tt> SVL data type).
+<tr>
+<td valign="baseline"><tt>tt</tt>
+<td valign="baseline">token
+<td valign="baseline">An array of characters (bytes in the range 0..255) encoded
+by the scheme described below (to be read as a <tt>tok</tt> SVL data type).
+</table>
+
+<p>
+The word types that encode characters (<tt>c, ss, tt</tt>) must follow a
+particular encoding so that whitespace and other non-printable ASCII
+characters do not appear in the file data stream.  Characters appear in the
+file as either a single character or a two-character combination that must
+be mapped to a single ASCII character.  We define the following sets of
+characters (note that the RAW set includes blank (octal 040)):
+
+<p><blockquote>
+ENCODE = <tt>[A-Za-z0-9+/]</tt> &nbsp;
+PREFIX = <tt>[$%&~]</tt> &nbsp;
+RAW = <tt>[A-Za-z0-9 ()+-*.,/:;=?[_]{|}^]</tt>
+</blockquote>
+
+<p>
+The following algorithm is used to encode a string of bytes (values in the
+range [0,255]):
+
+<ol>
+<li>
+An empty string is encoded as the single character "$" (octal 044).
+<p><li>
+Every character <i>k</i> not in the RAW set is replaced by the two character
+combination PREFIX(<i>i</i>) ENCODE(<i>j</i>) where
+<span class="nobr"><i>i</i> = 1 + (k >> 6)</span> and <nobr><i>j</i> = 1 + (k & 0x3F)</nobr>.
+<p><li>
+Replace any blanks (octal 040) with "!" (octal 041).
+</ol>
+
+<p>
+The following algorithm is used to decode strings that have been encoded
+by the previous scheme:
+
+<ol>
+<li>
+Remove all characters not in the union of the RAW, ENCODE, PREFIX and {"!"}
+sets of characters.
+
+<p><li>
+
+Replace all two character combinations AB in which A is in the PREFIX set
+with either a) the corresponding ASCII character if B is in the ENCODE set,
+or b) the character "A" if B is not in the ENCODE set.
+
+<p><li>
+If the resulting string is exactly "$" (octal 044) then return the empty
+string.
+<p><li>
+Replace any "!" (octal 041) characters with blank (octal 040) and return
+the resulting string.
+</ol>
+
+
+<p>
+<b>Paragraphs</b>. A <i>paragraph</i> is a contiguous sequence of lines
+such that a) the first character of the first word of the first line is "#"
+(octal 043); and b) "#" does not appear as the first character of the first
+word of any subsequent line of the paragraph.  A paragraph contains specific
+data for the file.  Paragraphs without meaning to a particular reader
+can safely be ignored by scanning for the next paragraph marker (the "#").
+<p>
+The following SVL code can be used to process a MOE file by repeatedly
+searching for the start of the next paragraph and processing it:
+<blockquote><pre>
+// wordsplit splits a line into words
+
+<b>local function</b> wordsplit line
+    <b>local</b> k = x_pack not isspace line;      // split into words
+    <b>local</b> c = mtoc (rotr k &lt;> dec k);       // word lengths
+    <b>return</b> split [line[k], c];              // word strings
+<b>endfunction</b>
+
+// nextparagraph reads lines from the input file, f, until
+// a new paragraph is detected.  We then return the words of
+// the first line of the paragraph.  [] is returned if the
+// end of file is encountered.
+
+<b>local function</b> nextparagraph f
+    <b>local</b> line;
+
+    <b>loop</b>
+        line = freadb [f, 'line', 1];           // read a line
+        <b>if</b> not length line <b>then break</b>; <b>endif</b>    // eof?
+        line = wordsplit line;
+    <b>until</b> line(1)(1) === "#" <b>endloop</b>            // paragraph?
+
+    <b>return</b> line;
+<b>endfunction</b>
+
+// scanfile repeatedly searches for paragraphs and processes them
+
+<b>local function</b> scanfile f
+    <b>local</b> line;
+
+    <b>while</b> length (line = nextparagraph f) <b>loop</b>
+        // ... process the paragraph including 'line' ...
+        // ... or skip it if it is not understood ...
+    <b>endloop</b>
+<b>endfunction</b>
+</pre></blockquote>
+
+<p>
+<b>ParaTables</b>.
+A <i>ParaTable</i> is a paragraph that encodes a table (two dimensional
+array) of values.  The format of the first line of the paragraph is
+
+<blockquote>
+#<i>name</i> <i>n</i> <i>field</i>1 <i>fmt</i>1 ...
+<i>field</i>K <i>fmt</i>K<br />
+</blockquote>
+
+<p>The first line is followed by multiple lines consisting of data words
+required by the first line.
+
+<p>
+<ul>
+
+<li><i>name</i> is the name of the paragraph (e.g., "#bond" or "#molecule")
+
+<li><i>n</i> is the number of entries in the table, and is encoded as a
+word with word format "i"
+
+<li><i>field</i>J is the name of the J'th column of the table, and is
+encoded with word format "t"
+
+<li><i>fmt</i>J is the value format for items in the J'th column which
+appear in the data words to follow.  Legal values for the format are any
+of the legal word formats (described above) and any formats in the
+following table:
+
+</ul>
+
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr>
+<th>Format</th>
+<th>Description</th>
+<tr>
+<td valign="baseline"><tt>i*</tt>
+
+<td valign="baseline">A decimal integer vector.  A vector of length <i>k</i> is
+encoded as a sequence of <span class="nobr"><i>k</i> + 1</span> data words, the first
+being an encoding of <i>k</i> in the word "i" format followed by <i>k</i>
+"i" format data words encoding the values.
+
+<tr>
+<td valign="baseline"><tt>ix*</tt>
+
+<td valign="baseline">A hexadecimal integer vector.  A vector of length <i>k</i>
+is encoded as a sequence of <span class="nobr"><i>k</i> + 1</span> data words, the first
+being an encoding of <i>k</i> in the word "i" format followed by <i>k</i>
+"ix" format data words encoding the values.
+
+<tr>
+<td valign="baseline"><tt>r*</tt>
+
+<td valign="baseline">A decimal real vector.  A vector of length <i>k</i> is
+encoded as a sequence of <span class="nobr"><i>k</i> + 1</span> data words, the first
+being an encoding of <i>k</i> in the word "i" format followed by <i>k</i>
+"r" format data words encoding the values.
+
+<tr>
+<td valign="baseline"><tt>t</tt>
+
+<td valign="baseline">A (possibly long) token.
+If the first word is tilde (<tt>~</tt>) then the next word is taken to be
+a word count, <i>k</i> (in <tt>i</tt> format).  The next <i>k</i> words
+are concatenated and interpreted as being in <tt>tt</tt> format.
+If the first word is not tilde then <tt>tt</tt> format is assumed.
+
+<tr>
+<td valign="baseline"><tt>t*</tt>
+
+<td valign="baseline">A token vector.  A vector of length <i>k</i> is encoded
+as a sequence of <span class="nobr"><i>k</i> + 1</span> data words, the first being
+an encoding of <i>k</i> in the word "i" format followed by <i>k</i> "t"
+format data words encoding the values.
+
+<tr>
+<td valign="baseline"><tt>s</tt>
+
+<td valign="baseline">A (possibly long) vector of characters.
+If the first word is tilde (<tt>~</tt>) then the next word is taken to be
+a word count, <i>k</i> (in <tt>i</tt> format).  The next <i>k</i> words
+are concatenated and interpreted as being in <tt>ss</tt> format.
+If the first word is not tilde then <tt>ss</tt> format is assumed.
+
+<tr>
+<td valign="baseline"><tt>s*</tt>
+
+<td valign="baseline">A string vector.  A vector of length <i>k</i> is encoded
+as a sequence of <span class="nobr"><i>k</i> + 1</span> data words, the first being
+an encoding of <i>k</i> in the word "i" format followed by <i>k</i> "s"
+format data words encoding the values.
+
+<tr>
+<td valign="baseline"><tt>*</tt>
+
+<td valign="baseline">Variable item format.  In the data stream, the value format is
+determined from a word in "t" format prepended to the data words giving the
+value of the item.  This prepended word must be one of the legal formats
+in this table but not the "*" format.
+
+<tr>
+<td valign="baseline"><i>f</><tt>=</tt><i>v</i>
+
+<td valign="baseline">An implied data format.  In this case <i>f</i> is one
+of the word formats (not in this table but described above) and <i>v</i> is
+the word value.  For formats matching this scheme (that is, they have an
+"=" character in them) no data words appear in the following word stream
+but instead the <i>v</i> value is replicated for each row in the column
+(i.e., an entire table column is filled with this value).
+
+</table>
+
+<p>The data words for a ParaTable follow a row-major ordering (the
+table is encoded row by row, each row being encoded column by column).
+The data words are processed by reading a line at a time until the
+table has been filled.  Any remaining words in the last line are ignored.
+This means that line breaks and empty lines can appear anywhere in the data
+words without affecting the resulting table.  Here are several examples
+of ParaTables and the associated SVL vectors they encode:
+
+<blockquote>
+<pre>
+<b>#table1 3 f1 i f2 t f3 r
+-5 abc 3.2 63 def
+-4.1 44 ghi 0.1</b>
+
+fields: ['f1','f2','f3']
+values: [ [-5,63,44], ['abc','def','ghi'], [3.2,-4.1,-.1] ]
+
+<b>#table2 4 f1 s f2 i=5 f3 i
+abc 1 def 2 ghi 3 jkl 4</b>
+
+fields: ['f1','f2','f3']
+values: [ ["abc","def","ghi","jkl"], [5,5,5,5], [1,2,3,4] ]
+
+<b>#table3 2 name t value i*
+abc 3 1 2 3
+def 2 4 5</b>
+
+fields: ['name','value']
+values: [ ['abc','def'], [ [1,2,3], [4,5] ] ]
+
+<b>#table4 3 tag t value *
+abc i 1 def s hello ghi r* 2 -1.2 0.3</b>
+
+fields: ['tag','value']
+values: [ ['abc','def','ghi'], [1, "hello", [-1.2,0.3]] ]
+</pre>
+</blockquote>
+
+<p>
+<b>ParaTags</b>.
+
+A <i>ParaTag</i> is a paragraph that encodes a tagged vector of values in
+which the tags are tokens and the values are of variable type.  A ParaTag
+is a ParaTable with the following format:
+
+<blockquote>
+#<i>name</i> <i>n</i> tag t value *<br />
+... data words ...
+</blockquote>
+
+<p>
+Thus, ParaTags are just a specific form of ParaTable.
+
+<!-- GRAPHICS OBJECTS -->
+
+<p>
+<b>Graphics Objects Encoding</b>.
+Graphics objects are encoded as a sequence of paragraphs according to the
+syntax:
+
+<blockquote>
+<pre>
+<b>#graphics</b> { <b>#gvertex</b> | <b>#gtext</b> }* <b>#endgraphics</b>
+</pre></blockquote>
+
+<p>That is, between the #graphics and #endgraphics indicators, any number
+of #gvertex or #gtext paragraphs can appear.  Other paragraphs are ignored.
+The following are the paragraph formats:
+
+<pre>
+<b>#graphics <i>n</i> tag t value *</b>
+GTitle t <i>graphics-object-title</i>
+GShow  i <i>graphics-object-show-flag</i>
+</pre>
+
+<p>
+The "GTitle" and "GShow" tags are optional.  If GTitle is missing then the
+empty token is used as a title.  If GShow is missing then a value of 1 is
+assumed.   Other tags that appear are ignored.
+
+<pre>
+<b>#gtext <i>n</i> color i x r y r z r text t</b>
+... data words ...
+</pre>
+
+<p>
+Creates <i>n</i> text graphics.  Each graphic has a color, a position
+(x,y,z) and a text token.  The color can be encoded in any numeric format
+(although "i" is shown) as can x, y and z.  The text is encoded as a token.
+<i>All fields are required</i> but can appear in any order.  Fields with names
+other than "color", "x", "y", "z" and "text" are ignored.
+Unit extending formats such as "color ix="#cccccc"" or "z r=0" are legal.
+
+<p>
+<pre>
+<b>#gvertex <i>n</i> color i x r y r z r</b>
+... data words ...
+$ 2 tag t value *
+seg i* ... data words ...
+idx i* ... data words ...
+</pre>
+
+<p>This #gvertex encodes data points with color and position but no normal
+vector data.  The #gvertex paragraph is special in that there are really
+two data blocks.  The first is the vertex data for <i>n</i> data points.
+Each <i>must</i> have a "color", "x", "y" and "z" (in any order and in
+any numeric format).  The next block encodes a ParaTag with two tags:
+"idx" and "seg" each of which must be a numeric vector containing the
+segmentation and indices for the call to GVertex.  Unit extending formats
+such as "color ix="#cccccc"" or "z r=0" are legal.  The <tt>$</tt> at the
+beginning of the ParaTag is a placeholder that is ignored.
+
+<p>
+<pre>
+<b>#gvertex <i>n</i> color i x r y r z r nx r ny r nz r</b>
+... data words ...
+$ 2 tag t value *
+seg i* ... data words ...
+idx i* ... data words ...
+</pre>
+
+<p>This #gvertex encodes data points with color and position and normal
+vector data.  The #gvertex paragraph is special in that there are really
+two data blocks. The first is the vertex data for <i>n</i> data points.
+Each <i>must</i> have a "color", "x", "y", "z", "nx", "ny" and "nz"
+(in any order and in any numeric format).  The next block encodes a
+ParaTag with two tags: "idx" and "seg" each of which must be a numeric
+vector containing the segmentation and indices for the call to GVertex.
+Unit extending formats such as "color ix="#cccccc"" or "z r=0" are legal.
+The <tt>$</tt> at the beginning of the ParaTag is a placeholder that
+is ignored.
+
+<pre>
+<b>#endgraphics</b>
+</pre>
+
+<p>
+The #endgraphics marks the end of a graphics object.  No data words are
+required.
+
+<!-- MOLECULAR OBJECTS -->
+
+<p>
+<b>Molecular Objects Encoding</b>.
+The encoding of molecular objects handles all chain, residue and atom data
+for a molecular system.  There is no notion of "molecule" as an individual
+entity other than a collection of chains, residues and atoms that can be
+represented in MOE as a molecular system.  Molecular objects are encoded as
+a sequence of paragraphs according to the syntax:
+
+<blockquote>
+<pre>
+<b>#molecule</b> { <b>#attr</b> | <b>#bond</b> }* <b>#endmolecule</b>
+</pre></blockquote>
+
+<p>That is, between the #molecule and #endmolecule indicators, any number
+of #attr or #bond paragraphs can appear.  Other paragraphs are ignored.
+The following are the paragraph formats:
+
+<a name="Molecule"></a>
+<pre>
+<b>#molecule <i>n</i> tag t value *</b>
+atoms i <i>number-of-atoms</i>
+residues i <i>number-of-residues</i>
+chains i <i>number-of-chains</i>
+</pre>
+
+<p>The #molecule paragraph defines the number of molecular objects in the
+system.  Each of the "atoms", "residues" and "chains" tags must be present
+(exactly once).  If there are any atoms at
+all then there must be at least one residue and one chain.  These counts
+define an identification system for molecular objects.  If there <i>a</i>
+atoms, <i>r</i> residues and <i>c</i> chains, then individual atoms are
+referenced with integer ID numbers in the range [1,<i>a</i>], residues
+with integers in the range [<i>a</i>+1,<i>a</i>+<i>r</i>], and chains with
+integers in the range [<i>a</i>+<i>r</i>+1,<i>a</i>+<i>r</i>+<i>c</i>].
+These identification integers will appear in certain fields in the #attr and
+#bond paragraphs (and any other paragraphs that refer to molecular objects).
+All atoms belonging to a particular residue must be in a contiguous
+block, and the order of the blocks must follow the order of the residues.
+All residues belonging to a particular chain must be in a contiguous block,
+and the order of the blocks must follow the order of the chains.
+
+
+<pre>
+<b>#bond <i>n</i> a i b i o i</b>
+... data words ...
+</pre>
+
+<p>
+The #bond paragraph defines <i>n</i> bonds between pairs of atoms.  The
+data words are integer ID numbers of atoms (see the
+<a href="#Molecule">#molecule</a> paragraph).
+A bond is defined between atoms <tt>a(k)</tt> and <tt>b(k)</tt> of
+order <tt>o(k)</tt>.
+Legal bond orders are in the set {1,2,3}.
+If the bond order term is absent then no bond order is specified (for
+backward compatibility).
+The bond order data words are for descriptive purposes only and
+are currently ignored when reading MOE files.
+Duplicate bonds are removed and symmetric bond entries are not required.
+
+<pre>
+<b>#attr <i>n</i> f1 fmt1 ... fK fmtK</b>
+... data words ...
+</pre>
+
+<p>The #attr paragraph associates values with atom, residue and chain
+attributes.  In general, there will be many #attr paragraphs for reasons
+of encoding efficiency.  One of the field names <i>must</i> be "ID",
+for specifying the molecular object identification number (see the 
+<a href="#Molecule">#molecule</a> description).  The remaining fields in
+the paragraph are the actual molecular object attributes and depend on
+the molecular object in question.  In principle, any attribute name can be
+associated with any object; however, any attributes not understood by MOE
+for a particular object will be ignored.
+
+<p>The following attributes are associated with chain objects:
+
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr>
+<th valign="baseline" bgcolor="#cccccc" width=20%>Name
+<th valign="baseline" bgcolor="#cccccc" width=15%>Format
+<th valign="baseline" bgcolor="#cccccc">Description
+<tr>
+<td valign="baseline">cColorBy
+<td valign="baseline" align=center>t
+<td valign="baseline">The method used to color the chain label in the Sequence
+Editor.  Legal values are any of the
+ColorBy token values accepted by <tt>cSetColorBy</tt>.
+The default value is 'c:number'.
+<tr>
+<td valign="baseline">cHeader
+<td valign="baseline" align=center>t
+<td valign="baseline">
+The header of the chain (usually a short description).  If not specified
+then the empty string is specified.
+<tr>
+<td valign="baseline">cName
+<td valign="baseline" align=center>t
+<td valign="baseline">
+The name of the chain.  If not specified then the empty string is assigned.
+<tr>
+<td valign="baseline">cResidueCount
+<td valign="baseline" align=center>i
+<td valign="baseline">
+The number of residues in the chain.  The residues are divided among
+the chains by blocking them according to the residue counts (which must
+be non-negative).  If not specified, a value of zero is used.  The sum
+of all the residue counts must equal the number of residues.
+<tr>
+<td valign="baseline">cRGB
+<td valign="baseline" align=center>i
+<td valign="baseline">
+The chain's byte-encoded internal color (0x00rrggbb), which
+is used when <tt>cColorBy</tt> is set to 'c:rgb'.  The default color is 0.
+<tr>
+<td valign="baseline">cSelected
+<td valign="baseline" align=center>i
+<td valign="baseline">The chain selection flag.  The default is 0.
+<tr>
+<td valign="baseline">cTag
+<td valign="baseline" align=center>t
+<td valign="baseline">
+The tag of the chain (usually the PDB code).  If not specified then the
+empty string is assigned.
+</table>
+
+<p>The following attributes are associated with residue objects:
+
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr>
+<th valign="baseline" bgcolor="#cccccc" width=20%>Name
+<th valign="baseline" bgcolor="#cccccc" width=15%>Format
+<th valign="baseline" bgcolor="#cccccc">Description
+<tr>
+<td valign="baseline">rColorBy
+<td valign="baseline" align=center>t
+<td valign="baseline">
+The method used to color residues in the Sequence Editor.  Legal
+values are those accepted by <tt>rSetColorBy</tt>.  The default is 'r:rgb'.
+<tr>
+<td valign="baseline">rAtomCount
+<td valign="baseline" align=center>i
+<td valign="baseline">
+The number of atoms in the residue.  The atoms are divided among
+the residues by blocking them according to the atom counts (which must
+be non-negative).  If not specified, a value of zero is used.  The sum
+of all the atom counts must equal the number of atoms.
+<tr>
+<td valign="baseline">rINS
+<td valign="baseline" align=center>c
+<td valign="baseline">
+The single character insertion code (the default is blank <span class="nobr">" "</span>).
+<tr>
+<td valign="baseline">rName
+<td valign="baseline" align=center>t
+<td valign="baseline">
+The name of the residue (typically three characters).  The default is
+the empty token.
+<tr>
+<td valign="baseline">rPos
+<td valign="baseline" align=center>i
+<td valign="baseline">
+The alignment position of the residue (the column number).  The default
+is zero.
+<tr>
+<td valign="baseline">rRGB
+<td valign="baseline" align=center>i
+<td valign="baseline">
+The residue's byte-encoded color (0x00rrggbb), which
+is used when <tt>rColorBy</tt> is set to 'r:rgb'.
+The default is zero.
+<tr>
+<td valign="baseline">rRibbonColorBy
+<td valign="baseline" align=center>t
+<td valign="baseline">
+The method used to color the ribbon segment for this residue.
+Legal values are those accepted by <tt>rSetRibbonColorBy</tt>.  The default
+is 'r:aseg'.
+<tr>
+<td valign="baseline">rRibbonHeight
+<td valign="baseline" align=center>r
+<td valign="baseline">
+The height of the ribbon segment for this residue when rendered as a solid.
+The default is zero.
+<tr>
+<td valign="baseline">rRibbonMode
+<td valign="baseline" align=center>t
+<td valign="baseline">
+The rendering mode of the ribbon segment for this residue.
+Legal values are those accepted by <tt>rSetRibbonMode</tt>.  The default
+is 'none'.
+<tr>
+<td valign="baseline">rRibbonRGB
+<td valign="baseline" align=center>i
+<td valign="baseline">
+The residue's ribbon segment byte-encoded color (0x00rrggbb), which is used
+when the rRibbonColorBy mode is 'r:rgb'.  The default is zero.
+<tr>
+<td valign="baseline">rRibbonWidth
+<td valign="baseline" align=center>r
+<td valign="baseline">
+The width of the ribbon segment for this residue when rendered as a solid.
+The default is zero.
+<tr>
+<td valign="baseline">rSegment
+<td valign="baseline" align=center>t
+<td valign="baseline">
+The assigned (or predicted) secondary structure segment label for the residue.
+Legal values are those accepted
+by <tt>rSetSegment</tt>.  The default is 'none'.
+<tr>
+<td valign="baseline">rSelected
+<td valign="baseline" align=center>i
+<td valign="baseline">
+The residue selection flag.  The default is zero.
+<tr>
+<td valign="baseline">rType
+<td valign="baseline" align=center>t
+<td valign="baseline">
+The residue's type.  Legal values are those
+accepted by <tt>rSetType</tt>.  The default is 'none'.
+<tr>
+<td valign="baseline">rUID
+<td valign="baseline" align=center>i
+<td valign="baseline">
+The residue's identification number.  The default is zero.
+</table>
+
+<p>The following attributes are associated with atom objects:
+
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+<tr>
+<th valign="baseline" bgcolor="#cccccc" width=20%>Name
+<th valign="baseline" bgcolor="#cccccc" width=15%>Format
+<th valign="baseline" bgcolor="#cccccc">Description
+<tr>
+<td valign="baseline">aBackbone
+<td valign="baseline" align=center>i
+<td valign="baseline">The backbone flag.  The default is zero.
+<tr>
+<td valign="baseline">aBondLook
+<td valign="baseline" align=center>t
+<td valign="baseline">The bond rendering style.  Legal values are those accepted
+by <tt>aSetBondLook</tt>.  The default is 'line'.
+<tr>
+<td valign="baseline">aCharge
+<td valign="baseline" align=center>r
+<td valign="baseline">The partial charge.  The default is zero.
+<tr>
+<td valign="baseline">aColorBy
+<td valign="baseline" align=center>t
+<td valign="baseline">The method used to color the atom.  Legal values
+are those accepted by <tt>aSetColorBy</tt>.  The default is 'element'.
+<tr>
+<td valign="baseline">aElement
+<td valign="baseline" align=center>t
+<td valign="baseline">The element symbol.  The default is 'C'.
+<tr>
+<td valign="baseline">aFixed
+<td valign="baseline" align=center>i
+<td valign="baseline">The fixed flag.  The default is zero.
+<tr>
+<td valign="baseline">aForceRS
+<td valign="baseline" align=center>i
+<td valign="baseline">The chirality constraint.  Legal values are -1, 0 and 1.
+The default is zero.
+<tr>
+<td valign="baseline">aGeometry
+<td valign="baseline" align=center>t
+<td valign="baseline">The hybridization token.  Legal values are those accepted
+by <tt>aSetGeometry</tt>.  The default is 'sp3'.
+<tr>
+<td valign="baseline">aHidden
+<td valign="baseline" align=center>i
+<td valign="baseline">The rendering hidden flag.  The default is zero.
+<tr>
+<td valign="baseline">aHintLP
+<td valign="baseline" align=center>i
+<td valign="baseline">The lone-pair hint flag.  The default is zero.
+<tr>
+<td valign="baseline">aInert
+<td valign="baseline" align=center>i
+<td valign="baseline">The potential energy inert flag.  The default is zero.
+<tr>
+<td valign="baseline">aIon
+<td valign="baseline" align=center>i
+<td valign="baseline">The ionization state.  The default is zero.
+<tr>
+<td valign="baseline">aLabelChain
+<td valign="baseline" align=center>i
+<td valign="baseline">The label by chain ID flag. The  default is zero.
+<tr>
+<td valign="baseline">aLabelCharge
+<td valign="baseline" align=center>i
+<td valign="baseline">The label by partial charge flag. The default is zero.
+<tr>
+<td valign="baseline">aLabelElement
+<td valign="baseline" align=center>i
+<td valign="baseline">The label by element flag. The default is zero.
+<tr>
+<td valign="baseline">aLabelMMType
+<td valign="baseline" align=center>i
+<td valign="baseline">The label by force field type flag. The default is zero.
+<tr>
+<td valign="baseline">aLabelName
+<td valign="baseline" align=center>i
+<td valign="baseline">The label by atom name flag. The default is zero.
+<tr>
+<td valign="baseline">aLabelRes
+<td valign="baseline" align=center>i
+<td valign="baseline">The label by residue name flag. The default is zero.
+<tr>
+<td valign="baseline">aName
+<td valign="baseline" align=center>t
+<td valign="baseline">The name of the atom (typically four characters).  The
+default is the empty token.
+<tr>
+<td valign="baseline">aNucleusLook
+<td valign="baseline" align=center>t
+<td valign="baseline">The rendering mode of the nucleus.  Legal values are those
+accepted by <tt>aSetNucleusLook</tt>.  The default is 'point'.
+<tr>
+<td valign="baseline">aPosX
+<td valign="baseline" align=center>r
+<td valign="baseline">The x coordinate. The default is zero.
+<tr>
+<td valign="baseline">aPosY
+<td valign="baseline" align=center>r
+<td valign="baseline">The y coordinate. The default is zero.
+<tr>
+<td valign="baseline">aPosZ
+<td valign="baseline" align=center>r
+<td valign="baseline">The z coordinate. The default is zero.
+<tr>
+<td valign="baseline">aRGB
+<td valign="baseline" align=center>i
+<td valign="baseline">The atom's byte-encoded color (0x00rrggbb), which is
+used when the aColorBy mode is 'a:rgb'.  The default is zero.
+<tr>
+<td valign="baseline">aScalar
+<td valign="baseline" align=center>r
+<td valign="baseline">A scalar value associated with the atom. The default is zero.
+<tr>
+<td valign="baseline">aSelected
+<td valign="baseline" align=center>i
+<td valign="baseline">The atom selection flag. The default is zero.
+<tr>
+<td valign="baseline">aState
+<td valign="baseline" align=center>i
+<td valign="baseline">The interaction state class. The default is zero.
+<tr>
+<td valign="baseline">aTempFactor
+<td valign="baseline" align=center>r
+<td valign="baseline">The crystallographic temperature factor. The default is zero.
+</table>
+
+<pre>
+<b>#endmolecule</b>
+</pre>
+
+<p>
+The <tt>#endmolecule</tt> marks the end of the molecular objects.
+No data words are required.
+
+<!-- MOE FILE FORMAT -->
+
+<p>
+<b>MOE Molecule File Format</b>.
+The MOE Molecule File is an ASCII file following the previously described
+conventions in this document.  It can contain a single #molecule block
+and any number of #graphics blocks along with other molecular system
+properties of MOE.  The legal paragraph syntax is
+
+<blockquote>
+<pre>
+<b>#moe #system</b> <b>#molecule</b> { <i>item</i> }* <b>#endsystem</b>
+<i>item</i> := <b>#graphics</b> | <b>#meter</b> | <b>#restraint</b> | <b>#alignmentconstraint</b> |<b> #collection</b>
+</pre>
+</blockquote>
+
+<p>The <tt>#molecule</tt> and <tt>#graphics</tt> blocks have been described
+previously in this document.  The following are the details of the paragraphs
+in a MOE Molecule File.
+
+<pre><b>#moe yyyy.mm</b>
+</pre>
+
+<p>
+The first line of the MOE file must be the #moe paragraph.  The single
+word is the revision of the file format where yyyy is the year and mm is
+the month of the revision.
+
+<pre><b>#system <i>n</i> tag t value *</b>
+BoxEnable i* 3 <i>3-vector-of-flags</i>
+BoxSize r* 3 <i>3-vector-of-sizes</i>
+ViewOrientationY r* 3 <i>unit-3-vector</i>
+ViewOrientationZ r* 3 <i>unit-3-vector</i>
+ViewScale r <i>window-diagonal</i>
+ViewLookat r* 3 <i>3-vector-view-center</i>
+ViewDepthCueFront r <i>value</i>
+ViewDepthCueStrength r <i>value</i>
+</pre>
+
+<p>
+The #system paragraph begins the molecular system data in the MOE file.
+Each of the tags is optional and suitable defaults are chosen in their
+absence.  The BoxEnable and BoxSize tags refer to the periodic box enabling
+flags and dimensions.  The View tags refer to the rendering orientation.
+
+<p>The #molecule paragraph follows the #system paragraph.
+
+<pre><b>#meter <i>n</i> type t atoms i*</b>
+... data words ...
+</pre>
+
+<p>
+The #meter paragraph defines <i>n</i> measurement meters.  Both fields
+"type" and "atoms" are required.  The "type" values must be one of
+'distance', 'angle' or 'dihedral'.  The "atoms" values are sets of valid
+atom ID numbers (see <tt>#molecule</tt> description).
+
+
+<pre><b>#restraint <i>n</i> type t atoms i* target r weight r</b>
+... data words ...
+</pre>
+
+<p>
+The #restraint paragraph defines <i>n</i> geometry restraints.  All fields
+"type", "atoms", "target" and "weight" are required.  The "type" values must
+be one of 'distance', 'angle' or 'dihedral'.  The "atoms" values are sets of
+valid atom ID numbers (see <tt>#molecule</tt> description).
+
+<pre><b>#alignmentconstraint <i>n</i> residues i* show i</b>
+... data words ...
+</pre>
+
+<p>
+The #alignmentconstraint paragraph defines <i>n</i> alignment constraints.
+Both the "residues" and "show" fields are required.  Each "show" value is
+a flag indicating whether or not the constraint is to be displayed in the
+Sequence Editor.  The "residues" values are sets of valid residue ID
+numbers (see <tt>#molecule</tt> description).
+
+<pre><b>#collection <i>n</i> name t objects i*</b>
+... data words ...
+</pre>
+
+<p>
+The #collection paragraph defines <i>n</i> collections.  Both "name" and
+"objects" fields are required.  
+<tt>name</tt> is a string defining the name of the collection.
+<tt>objects</tt> values are
+valid atom, residue and chain ID numbers 
+(see <tt>#molecule</tt> description).
+
+
+<pre><b>#endsystem</b>
+</pre>
+
+<p>This paragraph ends the molecular system data.  All subsequent
+paragraphs in the file are ignored.
+
+<p>The following is an example of the CC=O molecule with a few rendering
+attributes set, and a distance meter:
+
+<blockquote><pre>
+#moe 2001.01
+#system 7 tag t value *
+BoxEnable i* 3 0 0 0 BoxSize i* 3 10 10 10 BoxShape i* 3 90 90 90
+ViewOrientationY r* 3 0.5288977 0.40126794 -0.747831
+ViewOrientationZ r* 3 -0.605035 0.79619836 -0.000686
+ViewScale i 10 ViewLookAt r* 3 -0.11224838 0.259611 -0.819731
+#molecule 3 tag t value *
+atoms i 7 residues i 1 chains i 1
+#bond 6 a i b i
+1 4 1 3 1 2 1 5 5 6 5 7
+#attr 7 ID i aName t aElement t aGeometry t aPosX r aPosY r aPosZ r
+1 C C sp3 0.0208102 -0.00130413 0.0871428
+2 H H sp 0.749326 -0.194629 0.874725
+3 H H sp -0.101109 1.07508 -0.0350641
+4 H H sp -0.936577 -0.442636 0.366255
+5 C C sp2 0.516692 -0.606549 -1.2208
+6 H H sp 1.36344 -0.309536 -1.59991
+7 O O sp2 -0.142881 -1.46597 -1.80218
+#attr 7 ID i aBondLook t=cylinder
+1 2 3 4 5 6 7
+#attr 1 ID i cResidueCount i cName t cHeader t cTag t cColorBy t cRGB ix
+9 1 $ $ $ c:number 0
+#attr 1 ID i rAtomCount i rName t rUID i rINS c rPos i rType t
+8 7 * 0 ! 0 none
+#attr 1 ID i rRGB ix rColorBy t rSegment t
+8 0 r:rgb none
+#attr 1 ID i rRibbonWidth r rRibbonHeight r rRibbonColorBy t rRibbonMode t
+8 0 0 r:aseg none
+#endmolecule
+#meter 1 type t atoms i*
+distance 2 4 7
+#endsystem
+</pre></blockquote>
+
+<h2>See Also</h2>
+
+<a href="atom.htm">Atom Functions</a><br />
+<a href="residue.htm">Residue Functions</a><br />
+<a href="chain.htm">Chain Functions</a><br />
+<a href="obj.htm">Introduction to Molecular Object Functions</a>
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

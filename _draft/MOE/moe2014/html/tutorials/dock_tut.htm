@@ -1,0 +1,406 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--	dock_tut.htm
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+
+<title>Docking Tutorial</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<p>This tutorial provides a worked example of docking in MOE, using
+a complex of PDE4B complexed with Rolipram (PDB code <tt>1RO6</tt>).
+Initially, we will prepare the PDE4B receptor structure, and then dock
+Rolipram into it (self-docking). Then we will create a pharmacophore
+query, which will be used in a second docking run with a database of
+known PDE4B inhibitors:</p>
+
+<ul>
+<li><a href="#PrepareStructure">Preparing the PDB4B Structure for Docking</a></li>
+<li><a href="#SelfDocking">Docking a Single Ligand</a></li>
+<li><a href="#PH4Query">Creating a Pharmacophore Query</a></li>
+<li><a href="#DatabaseDocking">Docking a Database of Compounds</a></li>
+</ul>
+
+<p>These MOE applications will be used:</p>
+
+<table cellpadding="3" width="90%" style="margin-left:3em;">
+    <tr>
+    <td valign="top"><u>Application</u></td>
+    <td valign="top"><u>Functions</u></td>
+    </tr>
+    <tr>
+    <td valign="top"><a href="../apps/protonate3d.htm">Protonate 3D</a></td>
+    <td valign="top">Assign ionization states and position Hydrogens for a 
+	molecular system</td>
+    </tr>
+    <tr>
+    <td valign="top"><a href="../apps/docking.htm">Docking</a></td>
+    <td valign="top">Place and score ligand molecules in a binding site</td>
+    </tr>
+    <tr>
+    <td valign="top"><a href="../apps/surfmap.htm">Surfaces and Maps</a></td>
+    <td valign="top">Display surfaces and fields</td>
+    </tr>
+    <tr>
+    <td valign="top">
+	<a href="../apps/ph4_query.htm">Pharmacophore Query Editor</a>
+    </td>
+    <td valign="top">Create and modify pharmacophore queries</td>
+    </tr>
+</table>
+
+<h3>Conventions Used in this Tutorial</h3>
+
+<table cellpadding="3">
+<tr>
+<td valign="top" bgcolor="#cccccc">MOE</td>
+<td valign="top">MOE Window</td>
+</tr>
+<tr>
+<td valign="top" bgcolor="#cccccc">DBV</td>
+<td valign="top">Database Viewer</td>
+</tr>
+<tr>
+<td valign="top" bgcolor="#cccccc">MOE | RHS</td>
+<td valign="top">Right Hand Side Button Bar (MOE Window)</td>
+</tr>
+<tr>
+<td valign="top" bgcolor="#cccccc">MOE | Footer</td>
+<td valign="top">MOE Window Footer Area</td>
+</tr>
+</table>
+
+<p>This tutorial assumes that you are using a three-button mouse. For more
+information on using the mouse in MOE, click 
+<span class="menu">MOE | Help | Mouse</span>
+or see
+<a href="../moe/gui/mouse.htm">Using the Mouse</a>.
+</p>
+
+<a name="PrepareStructure"></a>
+<h3>Preparing the PDB4B Structure for Docking.</h3>
+
+<p>The original <tt>1RO6</tt> PDB file contained crystallized Zinc and Manganese
+ions as well as an Arsenic atom bonded to a Cysteine thiol. 
+In <span class="nobr"><tt>$MOE&#47;sample&#47;mol&#47;1RO6.moe</tt></span>, 
+this has been processed to keep only one of the two protein chains, and 
+only the water molecules near the active site.  The Manganese ions and the 
+Arsenic atom were removed.
+</p>
+
+<ol>
+<p class="none"><li>Open the MOE file:</p>
+<p class="indent_novspace">
+<span class="menu">MOE | File | Open  | 
+    <tt>$MOE&#47;sample&#47;mol&#47;1RO6.moe</tt></span>
+</p>
+
+<p align="center"><img src="dock_tut/fopen.png" alt="File Open"/></li></p>
+
+<p class="none"><li>Place Hydrogens and assign ionization states throughout 
+the system:</p>
+
+<p class="indent_novspace">
+<span class="menu">MOE | Compute | Prepare | Protonate 3D</span></p>
+
+<p>Click <b>OK</b> in the <b>Protonate 3D</b> panel. <b>Protonate 3D</b>
+will run an optimization routine to determine the overall lowest
+potential energy configuration for the different states of
+terminal amides, hydroxyls, thiols, histidines, and titratable groups
+throughout the system. Note that there is a dedicated
+<a href="../apps/structprep.htm">Structure Preparation</a> application
+available in MOE. </li></p>
+
+<p class="none"><li>Isolate the ligand and pocket in 3D:</p>
+<p class="indent_bottomspace">
+<span class="menu">MOE | RHS | SiteView</span></li></p>
+
+<p class="none"><li>Color the ligand atoms using the System Manager:</p>
+<p class="indent_novspace">
+<span class="menu">MOE | RHS | System</span></p>
+Click on the gray box next to "Ligand" to open the atom color panel.
+<p class="none">Color the ligand carbon atoms green:</p>
+
+<p align="center"><img src="dock_tut/atomcolor.png" alt="Atom Coloring"/></p>
+
+<p>Click on the background of the MOE Window to deselect the ligand atoms.</li></p>
+
+<p class="none"><li>Draw a <em>Molecular Surface</em> around the binding site:
+</p>
+<p class="indent_bottomspace">
+<span class="menu">MOE | RHS | Surface | Receptor</span></li></p>
+
+<p class="none"><li>Adjust the transparency of the pocket surface
+from the <span class="menu">Surfaces and Maps</span> panel:
+</p>
+<p class="indent_novspace">
+<span class="menu">MOE | RHS | Surface | Surfaces and Maps</span></p>
+
+<p>Select the <b>Quick Surface</b> in the list and adjust the transparency
+of the front and back faces with the slider controls:</p>
+
+
+<p align="center"><img src="dock_tut/surfmap.png" alt="Surfaces and Maps Panel"/>
+</p>
+
+<p align="center"><img src="dock_tut/dock1.png" alt="Docked Ligand"/></li></p>
+</ol>
+
+<a name="SelfDocking"></a>
+<h3>Docking a Single Ligand</h3>
+
+<p>The atoms specified in the <b>Receptor</b> option will be 
+considered when the ligands are docked, with binding poses
+focused around the atoms specified with the <b>Site</b> option.
+The site atoms might typically be dummy atoms created using the
+<a href="../apps/sitefind.htm">Site Finder</a> application.
+</p>
+
+<p>The <b>Protocols</b> menu applies changes to the settings on the
+rest of the panel.  It includes protocols for Rigid Protein Docking,
+High-Throughput Virtual Screening and Induced Fit Docking (where receptor
+sidechains are allowed to flex during refinement of the poses).</p>
+
+<p>
+In the first example we will use the default protocol -
+Rigid Protein Docking.  This uses <b>Receptor+Solvent</b> for the 
+<b>Receptor</b>, and <span class="menu">Ligand Atoms</span> for both the 
+<b>Ligand</b> and <b>Site</b>.  Ligand conformations are generated with 
+the bond rotation method. These are then placed in the site with the
+<span class="menu">Triangle Matcher</span> method, and ranked 
+with the <span class="menu">London dG</span> scoring function.
+The <b>Retain</b> option specifies the number of poses (30) to 
+pass to the <b>Refinement</b>, for energy minimization in the pocket, 
+before rescoring with the <span class="menu">GBVI/WSA dG</span> 
+scoring function.</p>
+
+<ol>
+<p class="none"><li>Open the <b>Dock</b> panel:</p>
+
+<p class="indent_novspace">
+<span class="menu">MOE | Compute | Dock</span>
+</p>
+
+<p align="center"><img src="dock_tut/dock_panel.png" alt="Dock Panel"/></li></p>
+
+<p><li>Click <b>Run</b> to start the calculation.</li></p>
+
+<p><li>Click the <b>SVL</b> button at the top right of the MOE window to view 
+progress reports in the <span class="menu">SVL Commands window</span> as the 
+calculation is running.</p>
+
+<p align="center"><img src="dock_tut/dock_db.png" alt="Docking Results"/></li></p>
+
+<p><li>The docking results in <tt>dock.mdb</tt> will appear in the 
+<span class="menu">Database Viewer</span>.
+The poses are ranked by the scores from the GBVI/WSA binding
+free energy calculation in the <b>S</b> field.  The <b>rmsd</b>
+field shows the RMSD of the docking pose compared to the co-crystal
+ligand position.  The <b>rmsd_refine</b> field has the RMSD between the
+pose before and after refinement.</li></p>
+
+<p><li>Use the <span class="menu">Database Browser</span> to compare
+the docking poses to the ligand in the co-crystallized structure:</p>
+
+<p class="indent_novspace"><span class="menu">DBV | File | Browse&hellip;</span>
+</p>
+
+<p align="center"><img src="dock_tut/browser.png" alt="Database Browser"/></li></p>
+
+<p class="none"><li>The <b>SiteView</b> button will render the ligands
+in stick mode and hide the non-polar Hydrogens:</p>
+<p class="indent_bottomspace">
+<span class="menu">MOE | RHS | SiteView</span></p>
+
+<p align="center"><img src="dock_tut/dock_pose1.png" alt="Docking Poses"/>
+</li></p>
+
+<p class="none"><li>Use the arrows of the 
+<span class="menu">Database Browser</span> 
+to browse through some of the docked poses.  Close the 
+<span class="menu">Database Browser</span> and close the
+<tt>dock.mdb</tt> <span class="menu">Database Viewer</span>.</li></p>
+</ol>
+
+<a name="PH4Query"></a>
+<h3>Creating a Pharmacophore Query.</h3>
+
+<p>A pharmacophore query is created using the 
+<span class="menu">Pharmacophore Query Editor</span>.  
+A query consists of a set of constraints on the location 
+and type of pharmacophoric features. It can be used with <b>MOE Dock</b>
+to either place the ligands into the site, or to filter poses from 
+another placement method.</p>
+
+<p>Rolipram makes two Hydrogen bonds with the receptor; between the 
+two ether oxygens and the amide Nitrogen in the sidechain of 
+<span class="nobr">Glutamine 443</span>. 
+The <span class="menu"><a href="../moe/gui/mainwin.htm#Contacts">Contacts panel
+</a></span> in the <span class="menu">MOE Footer</span> controls the display
+of these interactions.
+</p>
+
+<p>We will create a pharmacophore query with two features. First is a 
+<b>Acc2</b> projected Hydrogen bond acceptor feature  placed
+on the sidechain amide Nitrogen for <span class="nobr">Gln 443</span>. 
+Ligand poses will only be accepted if a Hydrogen bond acceptor atom in the 
+ligand is in a suitable position to form a Hydrogen bond with the Nitrogen.
+Second is an <b>Aro</b> feature, matching the aromatic ring centroid 
+in the ligand.</p>
+
+<ol>
+<p class="none"><li>Open the <span class="menu">Pharmacophore Query Editor</span>:
+</p>
+<p class="indent_bottomspace">
+<span class="menu">MOE | Compute | Pharmacophore | Query Editor&hellip;</span>
+</li></p>
+
+<p class="none"><li>In the <span class="menu">Pharmacophore Query Editor</span>,
+press the button
+labeled <b>R</b>, (adjacent to the <b>Scheme</b>) so that it becomes yellow
+as shown below.</p>
+
+<p align="center" class="none"><img src="dock_tut/redr.png" 
+alt="Single letter button" /></p>
+
+<p>This will annotate
+the receptor for creating receptor-based pharmacophore features. </li></p>
+
+<p><li>Select the cyan annotation point on the amide Nitrogen 
+(see below) and click <b>Feature</b> in the 
+<span class="menu">Pharmacophore Query Editor</span>.</li></p>
+
+<p><li>Select the orange annotation point in the center of the 
+phenyl ring (see below) and click <b>Feature</b> in the 
+<span class="menu">Pharmacophore Query Editor</span>.</li></p>
+</ol>
+
+<p align="center"><img src="dock_tut/dock_acc2.png" alt="Acceptor Annotations"/>
+</p>
+<p class="caption">Two pharmacophore features in the MOE window</p>
+
+<p align="center"><img src="dock_tut/pqe.png" alt="Pharmacophore Query Editor"/>
+</p>
+<p class="caption">Two pharmacophore features in the 
+<span class="nobr">Pharmacophore Query Editor</span></p>
+
+<p>You have now created a pharmacophore query with a projected acceptor and an
+aromatic feature 
+defined by the regions of the spheres shown in the MOE window. </p>
+
+<a name="DatabaseDocking"></a>
+<h3>Docking a Database of Compounds</h3>
+
+<p>Next, we will dock a database of ligands to the receptor and filter the 
+poses with the <a href="#PH4Query">pharmacophore query</a>. </p>
+
+<ol>
+<p class="none"><li>Open the <b>Dock</b> panel:</p>
+
+<p class="indent_novspace">
+<span class="menu">MOE | Compute | Dock</span>
+</li></p>
+
+<p><li>Select <span class="menu">
+Virtual Screening</span> from the <b>Protocols</b> menu.</p>
+This will change the panel settings to those 
+suitable for docking a large number of compounds. For example, refinement of the poses is disabled.
+</li>
+
+<li><p>Set the <b>Output</b> database to <tt>dock2.mdb</tt></li></p>
+
+<p><li>Verify that the <b>Receptor</b> and <b>Site</b> pull-down menus
+are set to <b>Receptor+Solvent</b> and <b>Ligand Atoms</b>.
+</li></p>
+
+<p><li><b>Pharmacophore</b> will be set
+to <b>Pharmacophore Query Editor</b> by default.</li></p>
+
+<p><li>Set the <b>Ligand</b> pull-down
+menu to <span class="menu">MDB File</span>. Click <b>Browse</b> and select
+<span class="nobr"><tt>$MOE/sample/mol/1RO6_ligands.mdb</tt></span>
+as the database of ligands to dock.</li></p>
+
+<p><li>Click <b>Run </b>to start the calculation. When the docking is finished, 
+the docked poses and scores will be written to the output database.</p>
+
+<p align="center"><img src="dock_tut/dock_panel2.png" alt="Dock Panel"/></li></p>
+
+<p class="none"><li>Allow a few moments to complete the docking. When
+it is finished, close the <b>Pharmacophore Query Editor</b> and use the
+database browser to compare the docking poses to the co-crystallized
+ligand already present in the MOE window:</p>
+
+<p class="indent_bottomspace">
+<span class="menu">DBV | File | Browse&hellip;</span></li></p>
+
+<p class="none"><li>The <b>SiteView</b> button will render the ligands
+in stick mode and hide the non-polar Hydrogens:</p>
+<p class="indent_bottomspace">
+<span class="menu">MOE | RHS | SiteView</span></li></p>
+</ol>
+
+<p align="center"><img src="dock_tut/dock_pose2.png" alt="Docking Pose"/>
+</p>
+
+<p>As you browse through the docking database, you can compare the
+poses of Rolipram from the co-crystallized structure (green carbons)
+with the docked.  Have a look at the displayed Hydrogen bond interactions
+between the ligands and the receptor and note how they are preserved by
+most of the docking poses.</p>
+
+<p>You can also compare the docking poses of the other six ligands to
+the co-crystal position of Rolipram. The co-crystal positions of the
+seven ligands are available in the <b>crystal</b> field of the <span
+class="nobr"><tt>$MOE/sample/mol/1RO6_ligands.mdb</tt></span> database.
+Compare the ligands in their crystal structure positions from the with
+the docked poses.</p>
+
+<h2>See Also</h2>
+
+<p class="none"><a href="../apps/ph4_query.htm">Pharmacophore Query Editor</a>
+</p>
+<p class="none"><a href="../apps/docking.htm">Docking</a></p>
+<p class="none"><a href="../apps/sitefind.htm">Site Finder</a></p>
+<p class="none"><a href="../apps/structprep.htm">Structure Preparation</a></p>
+<p class="none"><a href="../apps/protonate3d.htm">Protonate 3D</a></p>
+<p class="nonebottom"><a href="../moe/gui/mainwin.htm">MOE Window</a></p>
+<p class="none"><a href="../mdb/db.htm">Database Viewer Window</a></p>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

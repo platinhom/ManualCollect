@@ -1,0 +1,580 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	ph4calc.htm	Calculating Fingerprints chapter
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<meta index entry="fingerprint" subentry="calculate">
+<meta index entry="FP:BIT_MACCS">
+<meta index entry="FP:GpiDAPH3">
+<meta index entry="FP:MACCS">
+<meta index entry="FP:TAD">
+<meta index entry="FP:TAT">
+<meta index entry="FP:TGD">
+<meta index entry="FP:TGT">
+<meta index entry="FP:piDAPH3">
+<meta index entry="FP:piDAPH4">
+<meta index entry="fingerprint" subentry="FP:BIT_MACCS">
+<meta index entry="fingerprint" subentry="FP:GpiDAPH3">
+<meta index entry="fingerprint" subentry="FP:MACCS">
+<meta index entry="fingerprint" subentry="FP:TAD">
+<meta index entry="fingerprint" subentry="FP:TAT">
+<meta index entry="fingerprint" subentry="FP:TGD">
+<meta index entry="fingerprint" subentry="FP:TGT">
+<meta index entry="fingerprint" subentry="FP:piDAPH3">
+<meta index entry="fingerprint" subentry="FP:piDAPH4">
+
+<meta panel Fingerprint Database>
+
+<meta keywords FP:BIT_MACCS, bit-packed maccs structural keys />
+<meta keywords FP:GpiDAPH3, pharmacophore graph triangle />
+<meta keywords FP:MACCS />
+<meta keywords FP:TAD, typed atom distance />
+<meta keywords FP:TAT, typed atom triangle />
+<meta keywords FP:TGD, typed graph distance />
+<meta keywords FP:TGT, typed graph triangle />
+<meta keywords FP:piDAPH3, pharmacophore atom triangle />
+<meta keywords FP:piDAPH4, pharmacophore atom quadruplet />
+<meta keywords FP:ESshape3D, eigenvalue spectrum shape />
+<meta keywords FP:ESshape3D_HYD />
+<meta keywords calculate fingerprint />
+<meta keywords Tanimoto coefficient, Inverse Distance, similarity metric />
+
+<title>Calculating Fingerprints</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Calc">Calculating Fingerprints</a>
+<li><a href="#Types">Fingerprint Types</a>
+<ul>
+<li><a href="#MACCS">MACCS Structural Keys (MACCS)</a>
+<li><a href="#BIT_MACCS">Bit-Packed MACCS Structural Keys (BIT_MACCS)</a>
+<li><a href="#TGD">Typed Graph Distance (TGD)</a>
+<li><a href="#TGT">Typed Graph Triangle (TGT)</a>
+<li><a href="#TAD">Typed Atom Distance (TAD)</a>
+<li><a href="#TAT">Typed Atom Triangle (TAT)</a>
+<li><a href="#GPIDAPH3">Pharmacophore Graph Triangle (GpiDAPH3)</a>
+<li><a href="#PIDAPH3">Pharmacophore Atom Triangle (piDAPH3)</a>
+<li><a href="#PIDAPH4">Pharmacophore Atom Quadruplet (piDAPH4)</a>
+<li><a href="#ESshape3D">Eigenvalue Spectrum Shape</a>
+<li><a href="#ESshape3D_HYD">Hydrophobic Atoms Eigenvalue Spectrum Shape</a>
+</ul>
+<li><a href="#Similarity">Similarity Metrics</a>
+<li><a href="#SVL">SVL Commands</a>
+<li><a href="#References">References</a>
+</ul>
+
+<p>Before using a MOE application that requires fingerprints (e.g.
+<a href="ph4sim.htm">similarity searching</a>), it is often necessary &mdash;
+and more efficient &mdash; to pre-calculate fingerprints for all molecules in
+the molecular database.  This document describes
+the kinds of fingerprints in MOE and how to compute them.
+
+<a name="Calc"></a><h2>Calculating Fingerprints</h2>
+
+<p>To calculate fingerprints for molecules in a molecular database,
+open a database in the Database Viewer and choose
+<span class="nobr"><b>Compute | Fingerprint | Calculate</b></span>.
+(This command will be greyed out if the
+database does not include a molecule field or if the database is
+read-only.)  The Fingerprint Database panel will appear:
+
+<p align=center>
+<img src="ph4calc/fpdb.png" alt="Fingerprint Database Panel">
+</p>
+
+<p>
+<table width=100% cellpadding=5>
+<tr>
+<td valign=top width=25%><b>Database</b>
+<td valign=top>
+Path and filename of the database for which fingerprints will be calculated. 
+
+<br /><br />
+If the <b>Selected Entries Only</b> option is turned on, only entries
+that are selected in the Database Viewer will be used in the calculation
+(the rest will be ignored).
+
+<tr>
+<td valign=top><b>Molecule</b>
+<td>
+Option menu containing the list of molecule fields in the database.
+Select the field for which fingerprints will be calculated. 
+
+<tr>
+<td valign=top><b>Fingerprint</b>
+<td>
+
+Contains one line for each fingerprint system loaded in MOE.  (May contain
+items not in the standard distribution if <a href="fphowto.htm">custom
+fingerprints</a> have been added to the system using SVL.)
+
+<p>The first column (Field) shows the code name of the fingerprint; this
+code is used to name the database field into which the fingerprints will
+be written (overwriting current contents).  The second column is a short
+description of the fingerprint type.  See subsequent sections in this
+document for a more complete description of the built-in fingerprints
+in MOE.
+</p>
+
+<p><b>Note:</b> Although the <a href="../apps/plif.htm">FP:PLIF</a>
+fingerprints are listed here, they cannot be computed in the
+same way as the other fingerprints on account of their requiring
+the presence of a receptor.  The PLIF generation application
+(<span class="menu">DBV | Compute | PLIF | Generate</span>)
+must be used for the calculations.
+
+
+</table>
+
+To start the calculation, press <b>OK</b>.  A database field will be
+created in the database to hold the calculated fingerprints.  The field
+name will reflect the code of the selected fingerprint.
+
+<p><b>Note:</b> The calculation may take some time if there are many
+molecules in the database or if a particular fingerprint method is
+computationally intensive.
+
+<a name="Types"></a><h2>Fingerprint Types</h2>
+
+<a name="MACCS"></a><h4>MACCS Structural Keys (FP:MACCS)</h4>
+
+<p>MDL MACCS keys [MACCS] were originally developed for the purpose of database
+substructure searching.  Each "key" describes a small substructure consisting
+of about one to ten non-hydrogen atoms.  These substructures can be used
+to characterize molecules.  In MOE, a MACCS fingerprint consists of a set
+of indicators showing whether each of the 166 MACCS keys was found to be
+present in a given molecule.  The fingerprint is stored internally as a
+vector of indices, where the presence of an index in the vector indicates
+the presence of the corresponding substructure (key) in the molecule.
+The fingerprint code is FP:MACCS.
+
+<a name="BIT_MACCS"></a><h4>Bit-Packed MACCS Structural Keys (FP:BIT_MACCS)</h4>
+
+<p>The bit-packed version of the MACCS fingerprint is 6 words long.
+These packed fingerprints compare much faster than the full key list in
+searching and in diverse subset calculations.  The fingerprint code is
+FP:BIT_MACCS.
+
+<a name="TGD"></a><h4>Typed Graph Distance (FP:TGD)</h4>
+
+<p>
+The Typed Graph Distance (TGD) fingerprints have the code FP:TGD.  Each
+fingerprint is the set of all triples of the form (<i>u</i>,<i>v</i>,<i>d</i>),
+where <i>u</i> and <i>v</i> are atom types and <i>d</i> is the graph distance
+between the two atoms (the number of bonds in the shortest path between
+the atoms in the chemical graph).  Each atom is assigned one of the
+following types:
+
+<p><center>
+<table class="titlebar" cellpadding="5" border="1">
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr>
+<td align="center"><b>+</b></td>
+<td>Acid</td>
+</tr>
+<tr><td align="center"><b>-</b></td>
+<td>Base</td>
+</tr>
+<tr><td align="center"><b>D</b></td>
+<td>Hydrogen bond donor</td>
+</tr>
+<tr><td align="center"><b>A</b></td>
+<td>Hydrogen bond acceptor</td>
+</tr>
+<tr><td align="center"><b>P</b></td>
+<td>Both hydrogen bond acceptor and donor</td>
+</tr>
+<tr><td align="center"><b>H</b></td>
+<td>Hydrophobic</td>
+</tr>
+<tr><td align="center"><b>X</b></td>
+<td>None of the above</td>
+</tr>
+</table>
+</center>
+
+<p>Conformational searches are not required since graph distance and
+atom types can be determined from the molecular connection table alone.
+The internal representation is a list of triplet ID numbers.
+
+<a name="TGT"></a><h4>Typed Graph Triangle (FP:TGT)</h4>
+
+<p>
+The Typed Graph Triangle (TGT) fingerprints have the code FP:TGT.  Each
+fingerprint is the set of all tuples of the form
+(<i>u</i>,<i>v</i>,<i>w</i>,<i>d</i>,<i>e</i>,<i>f</i>),
+where <i>u</i>, <i>v</i> and <i>w</i> are atom types and
+<i>d</i>, <i>e</i> and <i>f</i> are graph distances between the atoms.
+The graph distance is defined as the number of bonds in the shortest path
+between the atoms in the chemical graph.  Each atom is assigned one of
+the following types:
+
+<p><center>
+<table class="titlebar" cellpadding="5" border="1">
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr>
+<td align="center"><b>D</b></td>
+<td>Hydrogen bond donor or Base</td>
+</tr>
+<tr>
+<td align="center"><b>A</b></td>
+<td>Hydrogen bond acceptor or Acid</td>
+</tr>
+<tr>
+<td align="center"><b>P</b></td>
+<td>Both hydrogen bond acceptor and donor</td>
+</tr>
+<tr>
+<td align="center"><b>H</b></td>
+<td>Hydrophobic</td>
+</tr>
+</table>
+</center>
+
+<P>Distances are binned into categories {1,2,3,4,5-9,10-} so that there
+is higher resolution in the smaller distances and less in the larger
+distances (this prevents fingerprints from becoming too large).
+Conformational searches are not required since graph distance and
+atom types can be determined from the molecular connection table alone.
+The internal representation is a list of triplet ID numbers.
+
+<a name="TAD"></a><h4>Typed Atom Distance (FP:TAD)</h4>
+
+<p>
+The Typed Atom Distance (TAD) fingerprints have the code FP:TAD.  Each
+fingerprint is the set of all triples of the form (<i>u</i>,<i>v</i>,<i>d</i>),
+where <i>u</i> and <i>v</i> are atom types and <i>d</i> is the distance
+between the atoms discretized into a particular bin.  Each atom is assigned
+one of the following types:
+
+<p><center>
+<table class="titlebar" cellpadding="5" border="1">
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr>
+<td align="center"><b>+</b></td>
+<td>Acid</td>
+</tr>
+<tr><td align="center"><b>-</b></td>
+<td>Base</td>
+</tr>
+<tr><td align="center"><b>D</b></td>
+<td>Hydrogen bond donor</td>
+</tr>
+<tr><td align="center"><b>A</b></td>
+<td>Hydrogen bond acceptor</td>
+</tr>
+<tr><td align="center"><b>P</b></td>
+<td>Both hydrogen bond acceptor and donor</td>
+</tr>
+<tr><td align="center"><b>H</b></td>
+<td>Hydrophobic</td>
+</tr>
+<tr><td align="center"><b>X</b></td>
+<td>None of the above</td>
+</tr>
+</table>
+</center>
+
+<P>Distances are binned into ranges whose boundaries roughly follow the
+formula <nobr><tt>floor (5 * atan ((D-3)/2) + 6)</tt></nobr>.
+This fingerprint is calculated
+from a 3D conformation of a molecule although no conformational sampling
+is conducted; therefore, it is assumed that different conformations of
+the same molecule must be explicitly computed and stored in a database.
+The internal representation is a list of triplet ID numbers.
+
+<a name="TAT"></a><h4>Typed Atom Triangle (FP:TAT)</h4>
+
+<p>
+The Typed Atom Triangle (TAT) fingerprints have the code FP:TAT.  Each
+fingerprint is the set of all tuples of the form
+(<i>u</i>,<i>v</i>,<i>w</i>,<i>d</i>,<i>e</i>,<i>f</i>),
+where <i>u</i>, <i>v</i> and <i>w</i> are atom types and
+<i>d</i>, <i>e</i> and <i>f</i> are the inter-atomic distances between the
+atoms.  Each atom is assigned one of the following types:
+
+<p><center>
+<table class="titlebar" cellpadding="5" border="1">
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr>
+<td align="center"><b>+</b></td>
+<td>Acid</td>
+</tr>
+<tr><td align="center"><b>-</b></td>
+<td>Base</td>
+</tr>
+<tr><td align="center"><b>D</b></td>
+<td>Hydrogen bond donor</td>
+</tr>
+<tr><td align="center"><b>A</b></td>
+<td>Hydrogen bond acceptor</td>
+</tr>
+<tr><td align="center"><b>P</b></td>
+<td>Both hydrogen bond acceptor and donor</td>
+</tr>
+<tr><td align="center"><b>H</b></td>
+<td>Hydrophobic</td>
+</tr>
+<tr><td align="center"><b>X</b></td>
+<td>None of the above</td>
+</tr>
+</table>
+</center>
+
+<P>Distances are binned into ranges whose boundaries roughly follow the
+formula <nobr><tt>floor (5 * atan ((D-3)/2) + 6)</tt></nobr>.
+This fingerprint is calculated
+from a 3D conformation of a molecule although no conformational sampling
+is conducted; therefore, it is assumed that different conformations of
+the same molecule must be explicitly computed and stored in a database.
+The internal representation is a list of triplet ID numbers.
+
+
+<a name="GPIDAPH3"></a><h4>Pharmacophore Graph Triangle (FP:GpiDAPH3)</h4>
+
+<p>
+The Pharmacophore Graph Triangle (GpiDAPH3) fingerprints have the code FP:GpiDAPH3.  
+These are three-point pharmacophore fingerprints calculated from the 2D molecular graph.
+Each fingerprint is the set of all tuples of the form
+(<i>u</i>,<i>v</i>,<i>w</i>,<i>d</i>,<i>e</i>,<i>f</i>),
+where <i>u</i>, <i>v</i> and <i>w</i> are atom types and
+<i>d</i>, <i>e</i> and <i>f</i> are graph distances between the atoms.
+The graph distance is defined as the number of bonds in the shortest path
+between the atoms in the chemical graph.  Each atom is assigned one of
+eight types computed from three atomic properties:  "in pi system",
+"is donor", and "is acceptor".  Anions and cations are not represented.
+
+
+<a name="PIDAPH3"></a><h4>Pharmacophore Atom Triangle (FP:piDAPH3)</h4>
+
+<p>
+The Pharmacophore Atom Triangle (piDAPH3) fingerprints have the code FP:piDAPH3.  
+These are three-point pharmacophore fingerprints calculated from a 3D conformation.
+Each fingerprint is the set of all tuples of the form
+(<i>u</i>,<i>v</i>,<i>w</i>,<i>d</i>,<i>e</i>,<i>f</i>),
+where <i>u</i>, <i>v</i> and <i>w</i> are atom types and
+<i>d</i>, <i>e</i> and <i>f</i> are the inter-atomic distances between the
+atoms.  Each atom is assigned one of eight types computed from three atomic
+properties:  "in pi system", "is donor", and "is acceptor".  Anions and
+cations are not represented.
+
+
+<a name="PIDAPH4"></a><h4>Pharmacophore Atom Quadruplet (FP:piDAPH4)</h4>
+
+<p>
+The Pharmacophore Atom Quadruplet (piDAPH4) fingerprints have the code FP:piDAPH4.  
+These are four-point pharmacophore fingerprints calculated from a 3D conformation.
+Each fingerprint is the set of all tuples of the form
+(<i>u</i>,<i>v</i>,<i>w</i>,<i>x</i>,<i>d</i>,<i>e</i>,<i>f</i>,<i>g</i>,<i>h</i>,<i>i</i>,<i>C</i>),
+where <i>u</i>, <i>v</i>, <i>w</i> and <i>x</i> are atom types,
+<i>d</i>, <i>e</i>, <i>f</i>, <i>g</i>, <i>h</i> and <i>i</i> are the six inter-atomic 
+distances between the atoms and <i>C</i> is the chirality of the quadruplet.
+Each atom is assigned one of eight types computed from three atomic
+properties:  "in pi system", "is donor", and "is acceptor".  Anions and
+cations are not represented.
+
+<a name="ESshape3D"></a><h4>Eigenvalue Spectrum Shape (FP:ESshape3D)</h4>
+
+<p>
+The Eigenvalue Spectrum Shape (ESshape3D) fingerprints have the
+code FP:ESshape3D.  These are fixed-length fingerprints calculated
+from the heavy atoms of a molecule and permit comparison of 3D shape.
+
+<a name="ESshape3D_HYD"></a><h4>Hydrophobic Atoms Eigenvalue Spectrum Shape
+(FP:ESshape3D_HYD)</h4>
+
+<p>
+The Hydrophobic Atoms Eigenvalue Spectrum Shape (ESshape3D_HYD) fingerprints
+have the code FP:ESshape3D_HYD.  These are fixed-length fingerprints calculated
+from the hydrophobic heavy atoms of a molecule and permit comparison of 3D
+shape.
+
+<a name="Similarity"></a><h2>Similarity Metrics</h2>
+
+With the exception of the Eigenvalue Spectrum Shape fingerprints,
+all fingerprint types in MOE support two Tanimoto similarity metrics.
+These metrics measure the similarity between two fingerprints A and B
+by comparing the number of common features to the total number of features
+in each.
+
+<ul>
+
+<li><i>Tanimoto Coefficient</i> = #AB / (#A + #B - #AB)
+
+<p>
+<li><i>Tanimoto Superset/Subset</i> = #AB / min(#A,#B)
+
+</ul>
+
+<p>
+where
+
+<blockquote>
+<table border=0 width="90%">
+
+<!--
+<tr>
+<td width=20%>#AB
+<td width=80%>The number of features in common
+
+<tr>
+<td width=20%>#A
+<td width=80%>The number of features in fingerprint A
+
+<tr>
+<td width=20%>#B
+<td width=80%>The number of features in fingerprint B
+!!-->
+
+<tr>
+<td>#AB
+<td>The number of features in common
+</tr><tr>
+<td>#A
+<td>The number of features in fingerprint A
+</tr><tr>
+<td>#B
+<td>The number of features in fingerprint B
+</tr>
+
+</table>
+</blockquote>
+
+<p>The ESshape3D and ESshape3D_HYD fingerprints use the
+Inverse Distance similarity metric.
+For fingerprints A and B, this is calculated
+as follows:
+</p>
+
+<blockquote>
+<span class="nobr">
+<i>Inverse_Distance</i> = <i>K</i> / (<i>K</i> + <i>C</i> * norm(A&ndash;B))
+</span>
+</blockquote>
+
+<p>
+where
+
+<blockquote>
+<table border=0 width="90%">
+
+<!--
+<tr>
+<td width=20%><i>K</i>, <i>C</i>
+<td width=80%>are constants
+</tr>
+
+<tr>
+<td width=20%>norm
+<td width=80%>Euclidean norm;
+<span class="nobr"><tt>norm x</tt></span> is equivalent to
+<span class="nobr"><tt>sqrt add sqr x</tt></span>.
+</tr>
+!!-->
+
+<tr>
+<td><i>K</i>, <i>C</i>
+<td>are constants
+</tr><tr>
+<td>norm
+<td>Euclidean norm;
+<span class="nobr"><tt>norm x</tt></span> is equivalent to
+<span class="nobr"><tt>sqrt add sqr x</tt></span>.
+</tr>
+
+</table>
+</blockquote>
+
+<h2><a name="SVL">SVL Commands</a></h2>
+
+<p>
+<a class="svl" href="../moe/fcnref/ph4_mdb.htm">ph4_FingerprintMDB</a><br />
+<a class="svl" href="../moe/fcnref/ph4_flst.htm">ph4_FingerprintList</a>
+
+
+
+<h2><a name="References">References</a></h2>
+
+<table width="100%" cellpadding="2">
+<tr>
+<td valign="top">[Sheridan&nbsp;1996]
+<td valign="top">
+Sheridan, R.P., Miller, M.D., Underwood, D.J., Kearsley, S.K.
+Chemical Similarity Using Geometric Atom Pair Descriptors.
+<i>J. Chem. Info. Comput. Sci.</i> <b>36</b>, No. 1 (1996).
+</tr>
+
+<tr>
+<td valign="top">[Brown&nbsp;1996]
+<td valign="top">
+Brown, R.D. and Martin, Y.C.
+Use of Structure-Activity Data to Compare Structure-Based Clustering. 
+Methods and Descriptors for Use in Compound Selection.
+<i>J. Chem. Inf. Comput. Sci.</i> <b>36</b>, 572-584 (1996).
+</tr>
+
+<tr>
+<td valign="top">[MACCS]
+<td valign="top">
+MACCS Keys; MDL Information Systems, Inc., 14600 Catalina Street,
+San Leandro, CA 94577.
+</tr>
+
+</table>
+
+<h2>See Also</h2>
+
+<a href="ph4intro.htm">Introduction to Molecular Fingerprints</a><br>
+<a href="diverse.htm">Calculating a Diverse Subset</a> (using fingerprints)<br>
+<a href="db.htm">Molecular Database Viewer</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

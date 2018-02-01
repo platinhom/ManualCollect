@@ -1,0 +1,584 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	uqofcn.htm
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta functions uqo_Verify, uqo_Mask>
+<meta functions uqo_MatrixVDW, uqo_MatrixELE, uqo_BornSelfEnergy>
+<title>Unary Quadratic Optimization Utilities</title>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    uqo = [Iseg, E0, Eself, Eij, Eint]
+
+    uqo = <a class="fcnlink" href="#uqo_Verify">uqo_Verify</a>    [ uqo ]
+    uqo = <a class="fcnlink" href="#uqo_Mask">uqo_Mask</a>      [ uqo, mask ]
+    uqo = <a class="fcnlink" href="#uqo_MatrixVDW">uqo_MatrixVDW</a> [ uqo, envmol, mlist, opt ]
+    uqo = <a class="fcnlink" href="#uqo_MatrixELE">uqo_MatrixELE</a> [ uqo, envmol, mlist, opt ]
+
+    [envmol, mlist] = <a class="fcnlink" href="#uqo_BornSelfEnergy">uqo_BornSelfEnergy</a> [ uqo, envmol, mlist, opt ]
+</pre>
+
+<h2>Description</h2>
+
+<p>
+The following functions are intended for use when solving the
+Unary Quadratic Optimization (UQO) problem for molecular structures.
+The UQO problem is stated as follows.
+Let <i>G</i> be an <i>n</i> by <i>n</i> symmetric matrix, <i>g</i> an
+<i>n</i>-vector and <i>g</i><sub>0</sub> a scalar.  Let {<i>I<sub>k</sub></i>}
+be an <i>m</i>-partition of {1,...,<i>n</i>}; that is,
+the union of the {<i>I<sub>k</sub></i>} is {1,...,<i>n</i>}, the
+{<i>I<sub>k</sub></i>} are disjoint (non-intersecting) and non-empty.
+The UQO problem is to minimize the function
+<p align=center>
+<i>F</i>(<i>x</i>) = 0.5 <i>x<sup>T</sup></i> <i>G</i> <i>x</i>
+    + <i>g<sup>T</sup></i> <i>x</i> + <i>g</i><sub>0</sub></i>
+</p>
+subject to the constraints that <i>x</i> is in {0,1}<sup><i>n</i></sup>
+(<i>x</i> is binary) and for each <i>k</i> the sum of
+<span class="nobr">{ <i>x<sub>j</sub></i> : <i>j</i> in <i>I<sub>k</sub></i> }</span>
+is 1.  The idea is that each <i>j</i> in <i>I<sub>k</sub></i> represents
+a possible "state" for an "object" <i>k</i>.  Each object can be in exactly
+one state.  Each state of an object interacts with the other objects' states
+according to the quadratic function <i>F</i>.  A solution of the UQO is
+a binary vector <i>x</i> satisfying the constraints that has the
+smallest <i>F</i>(<i>x</i>).
+
+<p>
+A UQO problem is specified with a vector <tt>[Iseg,E0,Eself,Eij,Eint]</tt>
+where
+
+<blockquote><dl>
+<dt><tt>Iseg</tt>
+<dd>
+The sizes of the sets in the <i>m</i>-partition; that is,
+<span class="nobr"><tt>Iseg(k)</tt> = |<i>I<sub>k</sub></i>|</span>.  Furthermore,
+it is assumed that each <i>I<sub>k</sub></i> consists of a contiguous
+sequence of members of {1,...<i>n</i>}.  In other words,
+<i>I</i><sub>1</sub> contains the first |<i>I<sub>k</sub></i>|,
+members of {1,...<i>n</i>},
+<i>I</i><sub>2</sub> contains the next |<i>I<sub>k</sub></i>|
+members of {1,...<i>n</i>}, and so on.
+If <tt>x</tt> is a binary vector then
+<span class="nobr"><tt>s_add [x, Iseg]</tt></span> must be a vector of all ones for
+the constraints to hold.
+<p>
+<dt><tt>E0</tt>
+<dd>The additive constant <i>g</i><sub>0</sub> in the definition of the
+objective function <i>F</i>.
+<p>
+<dt><tt>Eself</tt>
+<dd>The <i>n</i>-vector <i>g</i> in the definition of the objective
+function <i>F</i>.  The elements of <tt>Eself</tt> are intended to
+be the "self" energy of each of the states of each of the objects.
+<p>
+<dt><tt>Eij</tt><br /><tt>Eint</tt>
+<dd>
+A sparse representation of the symmetric <i>n</i> by <i>n</i> matrix
+<i>G</i> in the definition of the objective function <i>F</i>.
+The length of <tt>Eij</tt> and <tt>Eint</tt> are both <i>n</i>.
+For a given index <tt>r</tt> in {1,...,<i>n</i>} the vector
+<tt>Eij(r)</tt> is a set of indices in {1,...,<i>n</i>}.  The vector
+<tt>Eint(r)</tt> contains a corresponding set of values from <i>G</i>.
+More precisely,
+<span class="nobr"><tt>put [ zero Eself, Eij(r), Eint(r) ]</tt></span> is row <tt>r</tt>
+of the matrix <i>G</i>.
+<b>Warning!</b> It is assumed that if <i>i</i> and
+<i>j</i> are in the same <i>I<sub>k</sub></i> then <i>G<sub>ij</sub></i>=0.
+</dl></blockquote>
+
+<p>
+Solving a UQO problem entails populating the UQO vectors (possibly with
+the functions described here) and then calling <tt>opt_UQO</tt> to obtain
+solutions.
+
+<!-- VERIFY -->
+
+<p><a name="uqo_Verify"></a></p><p><hr noshade="noshade" /></p>
+<pre>uqo = <span class="fcndef">uqo_Verify</span> [ uqo ]
+</pre>
+
+<p>
+The <tt>uqo_Verify</tt> function performs verification and standardization
+of the elements of the <tt>uqo = [Iseg,E0,Eself,Eij,Eint]</tt> argument.
+The following checks and standardizations are performed:
+<ol>
+<li>
+<tt>Iseg</tt> is rounded and checked to make sure that all of its values are
+positive (integers).  The size of the UQO problem, <i>N</i>, is then
+calculated with <tt>add&nbsp;Iseg</tt>.
+<p><li>
+<tt>E0</tt> is tested to make sure that it is a scalar numeric quantity.
+<p><li>
+<tt>Eself</tt> is tested to make sure that it is a flat numeric vector and
+unit extended to length <i>N</i>.
+<p><li>
+<tt>Eij</tt> is unit extended to length <i>N</i>.
+<p><li>
+<tt>Eint</tt> is unit extended to length <i>N</i>.
+</ol>
+
+<p>
+These checks and standardizations are intended to be relatively fast;
+consequently, not all possible verifications are performed.
+An error will be generated if the <tt>uqo</tt> has an illegal structure;
+otherwise, the standardized vector will be returned.
+
+<!-- MASK -->
+
+<p><a name="uqo_Mask"></a></p><p><hr noshade="noshade" /></p>
+<pre>uqo = <span class="fcndef">uqo_Mask</span> [ uqo, mask ]
+</pre>
+
+<p>
+The <tt>uqo_Mask</tt> function extracts a submatrix from a specified
+<tt>uqo</tt> problem argument.  The <tt>mask</tt> argument is used to
+specify which rows and columns of the <tt>uqo</tt> will be retained
+(nonzero means retain, zero means remove).  The returned <tt>uqo</tt>
+vector will contain a reduced problem of size
+<tt>add&nbsp;notnot&nbsp;mask</tt> with all indices appropriately renumbered
+and new <tt>Iseg</tt> values (all of which are positive integers).
+
+<!-- VDW -->
+
+<p><a name="uqo_MatrixVDW"></a></p><p><hr noshade="noshade" /></p>
+<pre>uqo = <span class="fcndef">uqo_MatrixVDW</span> [ uqo, envmol, mlist, opt ]
+</pre>
+
+<p>
+The <tt>uqo_MatrixVDW</tt> adds values to a UQO problem vector, <tt>uqo</tt>,
+representing van der Waals interactions between molecular alternatives
+given each <tt>mlist</tt> and an environment molecule given in <tt>envmol</tt>.
+The <tt>envmol</tt> is a MOL vector representing the environment atoms and
+<tt>mlist</tt> is a vector of MOL vectors representing each alternative's
+atomic data;  the length of <tt>mlist</tt> must be the problem size
+of the <tt>uqo</tt> vector.
+The resulting modified <tt>uqo</tt> vector is returned.
+
+<p>
+A number of options specified in the tagged vector <tt>opt</tt> can affect
+the calculation:
+<blockquote><dl>
+<p>
+<dt><tt>Mself</tt> : <i>flag</i>
+<dd>
+If nonzero, then for each <tt>r</tt>, the sum of the interactions
+between atoms in <tt>mlist(r)</tt> is added to <tt>Eself(r)</tt>.
+The default is 1.
+<p>
+<dt><tt>EE</tt> : <i>flag</i>
+<dd>
+If non-zero then the sum of interactions between atoms in
+the <tt>envmol</tt> alone are added to <tt>E0</tt>.
+The default is 1.
+<p>
+<dt><tt>EM</tt> : <i>flag</i>
+<dd>
+If nonzero, then for each <tt>r</tt>, the sum of the
+interactions between <tt>mlist(r)</tt> and <tt>envmol</tt> is added to
+<tt>Eself(r)</tt>.
+The default is 1.
+<p>
+<dt><tt>MM</tt> : <i>flag</i>
+<dd>
+If nonzero, then for each <tt>r</tt> and <tt>s</tt> with <tt>r,s</tt> not in
+the same group of alternatives indicated by <tt>Iseg</tt>, the sum of the
+interactions between <tt>mlist(r)</tt> and <tt>mlist(s)</tt>
+is added to the sparse matrix <tt>[Eij,Eint]</tt>.
+The default is 1.
+<p>
+<dt><tt>MOL_ATOM_VDW_R</tt> : <i>index</i>
+<dd>
+If zero then the van der Waals radii parameters are chosen based upon the
+elements (and connectivity) of the <tt>envmol</tt> and each <tt>mlist</tt>
+molecule.  If positive, then <i>index</i> indicates an index into
+each molecule's atom block of the van der Waals radii parameters; that is,
+the parameters are assumed to be in <tt>envmol(4)(MOL_ATOM_VDW_R)</tt>
+and each <tt>mlist(r)(4)(MOL_ATOM_VDW_R)</tt>.
+The default is 0.
+<p>
+<dt><tt>MOL_ATOM_VDW_E</tt> : <i>index</i>
+<dd>
+If zero then the van der Waals well depth parameters are chosen based upon the
+elements (and connectivity) of the <tt>envmol</tt> and each <tt>mlist</tt>
+molecule.  If positive, then <i>index</i> indicates an index into
+each molecule's atom block of the van der Waals well depth parameters; that is,
+the parameters are assumed to be in <tt>envmol(4)(MOL_ATOM_VDW_E)</tt>
+and each <tt>mlist(r)(4)(MOL_ATOM_VDW_E)</tt>.
+The default is 0.
+<p>
+<dt><tt>rcutoff</tt> : <i>number</i>
+<dd>
+Atoms separated (in distance) by more than the specified value (in Angstroms)
+will be ignored and considered to be non-interacting.  The default is 10.
+<p>
+<dt><tt>vdwfcn</tt> : <i>token</i>
+<dd>
+The given token specifies the functional form of the van der Waals interactions.
+Several pairwise interaction energy forms are supported
+(<i>r</i> is the separation distance):
+<p>
+<blockquote>
+<table class="titlebar" border="1" cellpadding="3">
+<tr>
+<th>Token</th>
+<th>Function</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="baseline"><tt>'800R3'</tt>
+<td valign="baseline">
+&epsilon;
+800 (1 - <i>r</i>/<i>R</i>)<sup>3</sup>
+<td valign="baseline">Repulsive only interaction energy; <i>r/R</i> clamped to [0.75,1].
+<tr>
+<td valign="baseline"><tt>'SCWRL'</tt>
+<td valign="baseline">
+&epsilon;
+57.273 (1 - <i>r</i>/<i>R</i>)
+<td valign="baseline">Repulsive only interaction energy; <i>r/R</i> clamped to [0.8254,1].
+<tr>
+<td valign="baseline"><tt>'12-6'</tt>
+<td valign="baseline">
+&epsilon; [
+(<i>r</i>/<i>R</i>)<sup>12</sup>
+- 2 (<i>r</i>/<i>R</i>)<sup>6</sup>
+]
+<td valign="baseline">Lennard-Jones 12-6 repulsive and attractive energy;
+<i>r/R</i> clamped &ge; 0.75.
+<tr>
+<td valign="baseline"><tt>'9-6'</tt>
+<td valign="baseline">
+&epsilon; [
+2 (<i>r</i>/<i>R</i>)<sup>9</sup>
+- 3 (<i>r</i>/<i>R</i>)<sup>6</sup>
+]
+<td valign="baseline">Lennard-Jones 9-6 repulsive and attractive energy;
+<i>r/R</i> clamped &ge; 0.75.
+</table></blockquote>
+
+</ol>
+<p>
+where <i>R = R<sub>i</sub> + R<sub>j</sub></i> and
+<i>&epsilon;</i> = sqrt (<i>&epsilon;<sub>i</sub> + &epsilon;<sub>j</sub></i>).
+The default is <tt>'800R3'</tt>.
+
+<p>
+<dt><tt>progfcn</tt> : <i>token</i><br />
+<tt>progfcn_arg</tt> : <i>vector</i>
+<dd>
+During the calculation, a progress callback function specified by
+<tt>progfcn</tt> will be called periodically with a value in [0,1] indicating
+the progress to completion.  The function will be called with
+<tt>call [<i>token</i>, [<tt>frac</tt>,<i>vector</i>]]</tt> where frac
+is the fractional completion.  The progress function will be called
+once with 0.0 (at the start), and once with 1.0 (at the end).
+
+<p>
+<dt><tt>verbose</tt> : <i>flag</i>
+<dd>
+If nonzero then information will be written to the SVL Commands window
+during the calculation.  The default is 0.
+</dl></blockquote>
+
+<p>
+<b>Note!</b> no attempt is made to remove very small magnitude interaction
+energies from the resulting energy matrix.  For large scale problems it
+may be worthwhile to strip these values after the calculation.
+
+<!-- ELE -->
+
+<p><a name="uqo_MatrixELE"></a></p><p><hr noshade="noshade" /></p>
+<pre>uqo = <span class="fcndef">uqo_MatrixELE</span> [ uqo, envmol, mlist, opt ]
+</pre>
+
+<p>
+The <tt>uqo_MatrixELE</tt> adds values to a UQO problem vector, <tt>uqo</tt>,
+representing electrostatic interactions between molecular
+alternatives given in <tt>mlist</tt> and an environment molecule given in
+<tt>envmol</tt>.
+The <tt>envmol</tt> is a MOL vector representing the environment atoms and
+<tt>mlist</tt> is a vector of MOL vectors representing each alternative's
+atomic data;  the length of <tt>mlist</tt> must be the problem size
+of the <tt>uqo</tt> vector.
+The partial charges are taken from the <tt>MOL_ATOM_CHARGE</tt> field
+of <tt>envmol</tt> and each molecule in <tt>mlist</tt>.
+The resulting modified <tt>uqo</tt> vector is returned.
+
+<p>
+A number of options specified in the tagged vector <tt>opt</tt> can affect
+the calculation:
+<blockquote><dl>
+<p>
+<dt><tt>Mself</tt> : <i>flag</i>
+<dd>
+If nonzero, then for each <tt>r</tt>, the sum of the interactions
+between atoms in <tt>mlist(r)</tt> is added to <tt>Eself(r)</tt>.
+The default is 1.
+<p>
+<dt><tt>EE</tt> : <i>flag</i>
+<dd>
+If non-zero then the sum of interactions between atoms in
+the <tt>envmol</tt> alone are added to <tt>E0</tt>.
+The default is 1.
+<p>
+<dt><tt>EM</tt> : <i>flag</i>
+<dd>
+If nonzero, then for each <tt>r</tt>, the sum of the
+interactions between <tt>mlist(r)</tt> and <tt>envmol</tt> is added to
+<tt>Eself(r)</tt>.
+The default is 1.
+<p>
+<dt><tt>MM</tt> : <i>flag</i>
+<dd>
+If nonzero, then for each <tt>r</tt> and <tt>s</tt> with <tt>r,s</tt> not in
+the same group of alternatives indicated by <tt>Iseg</tt>, the sum of the
+interactions between <tt>mlist(r)</tt> and <tt>mlist(s)</tt>
+is added to the sparse matrix <tt>[Eij,Eint]</tt>.
+The default is 1.
+<p>
+<dt><tt>MOL_ATOM_SOL_G</tt> : <i>index</i>
+<dd>
+If positive, then <i>index</i> indicates an index into
+each molecule's atom block of the Generalized Born self energy values
+-1/(2<i>R</i>) where <i>R</i> is the Born radius; that is
+the parameters are assumed to be in <tt>envmol(4)(MOL_ATOM_SOL_G)</tt>
+and each <tt>mlist(r)(4)(MOL_ATOM_SOL_G)</tt>.
+For Generalized Born calculations, <i>index</i> must be greater
+than 0.
+The default is 0.
+<p>
+<dt><tt>MOL_ATOM_SOL_X</tt> : <i>index</i>
+<dd>
+If positive, then <i>index</i> indicates an index into
+each molecule's atom block of the Generalized Born Volume Integral
+volume coefficients.  If non-positive, then the exposure coefficients
+are not used in the GB calculation.
+The default is 0.
+<p>
+<dt><tt>rcutoff</tt> : <i>number</i>
+<dd>
+Atoms separated (in distance) by more than the specified value (in Angstroms)
+will be ignored and considered to be non-interacting.
+The default is 15 Angstroms.
+<p>
+<dt><tt>d_in</tt> : <i>number</i>
+<dd>
+The dielectric constant of the solute used for the electrostatics interactions.
+The default is 1.0
+<p>
+<dt><tt>d_out</tt> : <i>number</i>
+<dd>
+The dielectric constant of the solvent
+The default is 1.0
+<p>
+<dt><tt>ionC</tt> : <i>number</i>
+<dd>
+The concentration (in mol/L) of salt in solvent.
+The default is 0.
+<p>
+<dt><tt>elefcn</tt> : <i>token</i>
+<dd>
+The given token specifies the functional form of the electrostatic interactions.
+Several pairwise interaction energy forms are supported
+(<i>r</i> is the separation distance):
+<p>
+<blockquote>
+<table class="titlebar" border="1" cellpadding="3">
+<tr>
+<th>Token</th>
+<th>Function</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="baseline"><tt>'1/r'</tt>
+<td valign="baseline">
+<i>q<sub>i</sub>q<sub>j</sub></i> <i>r</i><sup>-1
+<td valign="baseline">Coulomb potential
+<tr>
+<td valign="baseline"><tt>'1/r2'</tt>
+<td valign="baseline">
+<i>q<sub>i</sub>q<sub>j</sub></i> <i>r</i><sup>-2
+<td valign="baseline">Distance dependent dielectric; best with <tt>d_in</tt> = 4.
+<tr>
+<td valign="baseline"><tt>'SF/r'</tt>
+<td valign="baseline">
+<i>q<sub>i</sub>q<sub>j</sub></i>
+[
+  <i>r</i><sup>-1</sup>
+- <i>R<sub>c</sub></i><sup>-1</sup>
++ (<i>r</i> - <i>R<sub>c</sub></i>) <i>R<sub>c</sub></i><sup>-2</sup>
+]
+<td valign="baseline">Shifted force potential (<i>R<sub>c</sub></i> is <tt>rcutoff</tt>)
+<tr>
+<td valign="baseline"><tt>'GB'</tt>
+<td valign="baseline">
+<i>q<sub>i</sub>q<sub>j</sub></i> <i>F</i><sub>GB/VI</sub>(<i>r</i>)
+<td valign="baseline">The GB/VI interaction energy
+</table></blockquote>
+
+</ol>
+<p>
+The partial charges are taken from the <tt>MOL_ATOM_CHARGE</tt> field
+in the input MOL structures.
+
+<p>
+<dt><tt>progfcn</tt> : <i>token</i><br />
+<tt>progfcn_arg</tt> : <i>vector</i>
+<dd>
+During the calculation, a progress callback function specified by
+<tt>progfcn</tt> will be called periodically with a value in [0,1] indicating
+the progress to completion.  The function will be called with
+<tt>call [<i>token</i>, [<tt>frac</tt>,<i>vector</i>]]</tt> where frac
+is the fractional completion.  The progress function will be called
+once with 0.0 (at the start), and once with 1.0 (at the end).
+
+<p>
+<dt><tt>verbose</tt> : <i>flag</i>
+<dd>
+If nonzero then information will be written to the SVL Commands window
+during the calculation.  The default is 0.
+</dl></blockquote>
+
+<p>
+<b>Note!</b> no attempt is made to remove very small magnitude interaction
+energies from the resulting energy matrix.  For large scale problems it
+may be worthwhile to strip these values after the calculation.
+
+<!-- BORN SELF ENERGY -->
+
+<p><a name="uqo_BornSelfEnergy"></a></p><p><hr noshade="noshade" /></p>
+<pre>[envmol, mlist] = <span class="fcndef">uqo_BornSelfEnergy</span> [ uqo, envmol, mlist, opt ]
+</pre>
+
+<p>
+The <tt>uqo_BornSelfEnergy</tt> function is used for calculating the
+<tt>MOL_ATOM_SOL_G</tt> values required for the Generalized Born electrostatics
+interactions of <tt>uqo_MatrixELE</tt>.
+The <tt>envmol</tt> is a MOL vector representing the environment atoms and
+<tt>mlist</tt> is a vector of MOL vectors representing each alternative's
+atomic data;  the length of <tt>mlist</tt> must be the problem size
+of the <tt>uqo</tt> vector.
+The resulting modified molecular structures <tt>envmol</tt> and
+<tt>mlist</tt> are returned.
+
+<p>
+A mean field approximation is used to calculate the self energies.  In other
+words, each atom's self energy will be calculated as a mean field average
+over all other alternative configurations specified in the <tt>uqo</tt>.
+
+<p>
+A number of options specified in the tagged vector <tt>opt</tt> can affect
+the calculation:
+<blockquote><dl>
+<p>
+<dt><tt>MOL_ATOM_SOL_G</tt> : <i>index</i>
+<dd>
+If positive, then <i>index</i> indicates an index into
+each molecule's atom block to which the calculated
+Generalized Born Volume Integral self energies will be written.
+The default is 0.
+<p>
+<dt><tt>MOL_ATOM_SOL_G0</tt> : <i>index</i>
+<dd>
+If positive, then <i>index</i> indicates an index into
+each molecule's atom block to which the calculated
+Generalized Born Volume Integral self energies will be written.
+These <i>isolated</i> self energies are the Generalized Born self energies
+of the <tt>envmol</tt> interacting only with atoms in <tt>envmol</tt>
+and similarly for each molecule in <tt>mlist</tt>.
+The default is 0.
+<p>
+<dt><tt>MOL_ATOM_SOL_R</tt> : <i>index</i>
+<dd>
+The <i>index</i> indicates an index into each molecule's atom block of
+the solvation radii to be used for the atoms; that is the solvation
+radii are found in <tt>envmol(4)(opt.MOL_ATOM_SOL_R)</tt>.
+A non-zero value of <i>index</i> is required.
+The default is 0.
+<p>
+<dt><tt>MOL_ATOM_SOL_S</tt> : <i>index</i>
+<dd>
+The <i>index</i> indicates an index into each molecule's atom block of
+the integration radii to be used for the atoms; that is the integration
+radii are found in <tt>envmol(4)(opt.MOL_ATOM_SOL_S)</tt>.
+A non-zero value of <i>index</i> is required.
+The default is 0.
+<p>
+<dt><tt>rcutoff</tt> : <i>number</i>
+<dd>
+Atoms separated (in distance) by more than the specified value (in Angstroms)
+will be ignored and considered to be non-interacting.
+The default is 15 Angstroms.
+<p>
+<dt><tt>progfcn</tt> : <i>token</i><br />
+<tt>progfcn_arg</tt> : <i>vector</i>
+<dd>
+During the calculation, a progress callback function specified by
+<tt>progfcn</tt> will be called periodically with a value in [0,1] indicating
+the progress to completion.  The function will be called with
+<tt>call [<i>token</i>, [<tt>frac</tt>,<i>vector</i>]]</tt> where frac
+is the fractional completion.  The progress function will be called
+once with 0.0 (at the start), and once with 1.0 (at the end).
+<p>
+<dt><tt>verbose</tt> : <i>flag</i>
+<dd>
+If nonzero then information will be written to the SVL Commands window
+during the calculation.  The default is 0.
+</dl></blockquote>
+
+<p>
+<b>Warning!</b> Non-zero values for <tt>MOL_ATOM_SOL_R</tt> and
+<tt>MOL_ATOM_SOL_S</tt> are required otherwise an error will result.
+A separate calculation is required to compute these values; radii may
+be determined by elements and solvation radii may be determined by
+pairwise approximations or by scaling factors as is often done in
+Born radius calculations.
+
+<h2>See Also</h2>
+
+<a href="../../svl/fcnref/optfcn.htm">Optimization Functions</a><br />
+<a href="../../moe/fcnref/extract.htm">MOL Data Structure</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+
+

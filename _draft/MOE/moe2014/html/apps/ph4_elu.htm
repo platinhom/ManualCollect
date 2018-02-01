@@ -1,0 +1,1011 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	ph4_elu.htm		Pharmacophore Editor and Search
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>The Pharmacophore Elucidator</title>
+
+<meta panel Pharmacophore Elucidation>
+
+<meta main_keywords query generation, scoring, expression, feature />
+<meta main_keywords chi-square statistic, radius, label />
+
+<meta keywords search, overlay, FlexAlign, Gaussian, alignment, activity />
+<meta keywords candidate, distance geometry />
+<meta keywords 1RO6, 1XMU, PDE IV, conformation, aromatic, cluster />
+
+</head>
+<body>
+<div id="useMathJax"></div>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Introduction">Introduction</a>
+<li><a href="#Methodology">Methodology</a>
+<li><a href="#Run">Running the Application</a>
+<li><a href="#Output">Analyzing the Output</a>
+<li><a href="#SeeAlso">See Also</a>
+<li><a href="#References">References</a>
+</ul>
+
+<a name="Introduction"><h2>Introduction</h2></a>
+<p>
+The purpose of the Pharmacophore Elucidator is to generate a collection of
+pharmacophore queries from a collection of compounds some or all of which are
+active against a particular biological target such that all or most of active
+compounds satisfy the queries.  A pharmacophore query is a 3D arrangement of
+molecular features.  In the absence of receptor information, it is hoped that
+feature geometries common to many of the actives will contain information
+related to the important interactions between the bound conformations of the
+actives and the receptor.  In this context, it is assumed that:
+
+<ol>
+<li>Within reason, all of the active compounds bind to the receptor in the same
+mode (i.e. overlay well); and
+<li>Within reason, the protonation and tautomer state of the molecules is
+known; and
+<li>There is sufficient diversity in the collection of active compounds that
+geometries of molecular features common to many of the actives contain a
+pharmacophore query related to activity.
+</ol>
+
+<p>
+Except possibly for (2), these assumptions are required to elucidate queries
+correlated with actives without knowledge of the receptor.  If the active
+compounds bind in different ways, then common feature geometries will be
+meaningless.  If there is little diversity in the active compounds, then, for
+example, flexible similar molecules will possess many common feature geometries
+quite unrelated to their activity.
+<p>
+The notion that common feature geometries contain information related to
+activity is not new.  Marshall's Active Analog Method [Marshall&nbsp;1979] was
+based upon the idea that among the conformations of active compounds there is a
+small subset of important molecular features and a feature geometry that is
+related to activity.  With CoMFA, Cramer went further and suggested that
+activity measurements themselves can be approximated with a linear equation on
+feature geometry [Cramer&nbsp;1988].  In later developments Martin's DISCO
+searched for common feature geometries in a collection of actives
+[Martin&nbsp;1995].  Jones' GASP program [Jones&nbsp;1995] not only searched
+for common feature geometries but also required that they produce good
+alignments of the active conformations.  The HipHop/HypoGen methods described
+in [Guner&nbsp;2000] attempt to relate common feature geometries to activity
+and/or complexity, but explicit alignments are not used to assess plausibility.
+<p>
+The fundamental approach for Pharmacophore Elucidation described herein is to
+exhaustively search for all pharmacophore queries that induce good overlay of
+most of the active molecules and separate actives from inactives (when
+inactives are presented).  Thus, the plausibility of the pharmacophore is
+measured by overlay of actives (common binding mode) and the relationship to
+activity is measured by classification accuracy.
+<p>
+The overlay scoring is similar to that of
+<a href="flex.htm">FlexAlign</a> [Labute&nbsp;2001] which
+approximates molecular shape as a sum of Gaussian densities.  Notwithstanding
+the similarity of the scoring method, whole molecule alignments are slightly
+different from pharmacophore feature based alignments.  For example, the PDE IV
+inhibitors in PDB files 1RO6 and 1XMU in Figure&nbsp;1(a) have a FlexAlign
+alignment shown in Figure&nbsp;1(b) while their pharmacophore alignment is
+shown in Figure&nbsp;1(c).
+
+<p>
+<center><table cellpadding="0">
+<tr>
+<td align="center" valign="top">
+<img src="ph4_elu/1ro61xmu.png" alt="Ligands not aligned"/>
+  <p class="caption">
+	 (a)
+  </p>
+</center></td>
+<td align="center" valign="top">
+<img src="ph4_elu/1ro61xmuph4.png" alt="Ligands Flex aligned"/>
+  <p class="caption">
+	 (b)
+  </p>
+</center></td>
+<td align="center" valign="top">
+<img src="ph4_elu/1ro61xmuflex.png" alt="Ligands Elu aligned"/>
+  <p class="caption">
+	 (c)
+  </p>
+</center></td>
+</tr>
+</table></center>
+
+<div class="caption">
+Figure 1.  a) PDE IV inhibitors 1RO6 and 1MXU; b) FlexAlign alignment of
+1RO6 and 1XMU; c) Pharmacophore feature based alignment of 1RO6 and 1XMU.
+In general, one should expect poorer shape overlay from pharmacophore
+alignments than from FlexAlign alignments.
+</div>
+
+<p>
+Pharmacophore alignments focus on overlay of pharmacophore features themselves
+with the remainder of the molecule a secondary concern.  This means that
+shape overlay scores resulting from pharmacophore overlay may be slightly worse
+than optimal whole molecule overlay scores.
+
+<p>
+The activity scoring in Pharmacophore Elucidation is based on classification
+accuracy.  In general, activity against a target is determined by many
+factors including solvation effects, entropy and enthalpy.  In general,
+pharmacophore feature matches cannot predict activity measurements.  For these
+reasons, the more conservative classification methodology was chosen.
+Even so, classification accuracy can be misleading so care must be taken
+when interpreting classification (or even correlation) results.  A molecule
+may be inactive for reasons other than the presence or absence of a certain
+geometry of features.  It is quite possible for actives and inactives to
+share the "correct" pharmacophore.
+
+<p>
+With the foregoing context, caveats and assumptions in mind, and with the
+understanding that in general there are many possible solutions for any
+given set of active compounds, we describe the methodology of the
+Pharmacophore Elucidation, how it is run and how to analyze its output.
+
+<a name="Methodology"><h2>Methodology</h2></a>
+<p>
+Pharmacophore Elucidation accepts as input a collection of
+<span class='LaTeX'>\(N\)</span> molecules
+each with <span class='LaTeX'>\(C_{i}\)</span> conformations.  With each
+molecule there is an associated activity flag
+<span class='LaTeX'>\(A_{i}\)</span> which is 1 for active and 0 for inactive.
+Let <span class='LaTeX'>\(N_{1}\)</span> denote the number of active molecules
+and let <span class='LaTeX'>\(N_{0}\)</span> denote the number of inactive
+molecules. Pharmacophore Elucidation will generate pharmacophore queries each
+of which matches at least <span class='LaTeX'>\(n\)</span> active molecules.
+A query that matches <span class='LaTeX'>\(k\)</span> active molecules is said
+to have <i>coverage</i> <span class='LaTeX'>\(k\)</span> (or <i>covers</i>
+<span class='LaTeX'>\(k\)</span>) actives.  Thus, each generated query will
+have coverage of <span class='LaTeX'>\(n\)</span>.  Typically
+<span class='LaTeX'>\(n\)</span> will be 90% of
+<span class='LaTeX'>\(N_{1}\)</span>.  Queries with a coverage of
+<span class='LaTeX'>\(n\)</span> are said to be <i>popular</i>.
+
+<p>
+The objective of Pharmacophore Elucidation is to generate "all" popular
+pharmacophore queries (i.e. with coverage <span class='LaTeX'>\(n\)</span>).
+Because the space of all
+pharmacophore queries is continuous, the generation is conducted initially on a
+discretized space with "gridded" or "binned" inter-feature distances.
+Candidate queries are generated such that their inter-feature distances are a
+multiple of a Query Spacing parameter <span class='LaTeX'>\(h\)</span>; all inter-feature distances are
+integer multiples of <span class='LaTeX'>\(h\)</span>.  Typically,
+<span class='LaTeX'>\(h = 0.6~\unicode{x212B}\)</span>.
+These candidate queries will be, at some stage, clustered and averaged and the
+output queries will contain inter-feature distances that are not multiples of
+<span class='LaTeX'>\(h\)</span>.  In addition, arbitrary pharmacophore queries generally contain
+boolean expressions of annotation points (e.g. "Don&amp;Acc" meaning Donor and
+Acceptor).  The space of all queries contains all expressions which is
+prohibitively large.  To make the generation tractable, a finite a set of
+<i>query expressions</i> is supplied as input.  All combinations of expressions
+(subject to possible frequency of occurrence constraints) will be considered.
+<p>
+<b>Query Generation</b>.
+The objective of Pharmacophore Elucidation can be re-stated as follows.
+Generate all popular queries considering all possible discrete geometries
+with all possible combinations of input query expressions.  This space
+is still too large for brute-force generation and coverage testing.
+A key observation is that a <span class='LaTeX'>\(k\)</span>-feature popular query contains
+<span class='LaTeX'>\(k\)</span> smaller (<span class='LaTeX'>\(k-1\)</span>)-feature popular queries.  This suggests a
+strategy for initial query generation: build larger queries only from popular
+smaller queries.  In this way the combinatorial explosion can be managed
+without a dramatic sacrifice of completeness.  The "build-up" method
+proceeds as in Figure&nbsp;2 and as described as follows.
+
+<p>
+<center><img src="ph4_elu/method.jpg" width=650 height=485 alt="Method" /></center>
+<p>
+<blockquote>
+<i>Figure 2.  The methodology flow of the Pharmacophore Elucidation application.
+Larger pharmacophores are built from smaller pharmacophores that appear
+in sufficiently many active molecules.</i>
+</blockquote>
+
+<p>
+Restricting the generation phase to the <span class='LaTeX'>\(N_{1}\)</span> active molecules
+only, query generation up to 4-point queries proceeds in three stages:
+<ol>
+<li><i>2-Point Query Generation</i>.
+For each conformation <span class='LaTeX'>\(x_{ij}\)</span>
+with <span class='LaTeX'>\(i\)</span> in
+<span class='LaTeX'>\(\left\{ 1, \ldots, N_{1} \right\}\)</span>
+and <span class='LaTeX'>\(j\)</span> in
+<span class='LaTeX'>\(\left\{ 1, \ldots, C_{i} \right\}\)</span>
+calculate all pairs of annotation points.
+Each such pair will have
+two annotation types <span class='LaTeX'>\(a\)</span> and
+<span class='LaTeX'>\(b\)</span> and an inter-feature distance
+<span class='LaTeX'>\(d\)</span>.  Each such pair causes the generation of a
+number of query expression pairs, namely, all expression pairs that match
+<span class='LaTeX'>\(a\)</span> and <span class='LaTeX'>\(b\)</span>.
+The list of query expression pairs and query expression
+distances is further expanded by including not only
+<span class='LaTeX'>\(d\)</span>, but
+<span class='LaTeX'>\(d + h\)</span> and
+<span class='LaTeX'>\(d - h\)</span>, all three
+rounded to the nearest integer multiple of <span class='LaTeX'>\(h\)</span>.
+From the list of all 2-point queries generated, remove all queries that
+are not present in at least <span class='LaTeX'>\(n\)</span> actives molecules; that is, remove
+the unpopular 2-point queries.
+<p>
+<li><i>3-Point Query Generation</i>.
+For each conformation <span class='LaTeX'>\(x_{ij}\)</span>
+with <span class='LaTeX'>\(i\)</span> in
+<span class='LaTeX'>\(\left\{ 1, \ldots, N_{1} \right\}\)</span>
+and <span class='LaTeX'>\(j\)</span> in
+<span class='LaTeX'>\(\left\{ 1, \ldots, C_{i} \right\}\)</span>
+calculate all triplets of annotation points.  Similarly as for 2-point
+generation, each triplet causes the generation of multiple 3-point queries
+containing all combinations of query expressions that match the triplet of
+annotations
+and with all combinations of rounded
+<span class='LaTeX'>\(d_{ab} + h \left\{-1,0,1\right\}\)</span>
+for each of the three inter-query distances determined by the triplet.
+Triplets are removed from further consideration if they are not
+entirely composed of the popular 2-point queries determined in Step&nbsp;1.
+From the list all 3-point queries generated, remove all queries that are
+not present in at least <span class='LaTeX'>\(n\)</span> active molecules; that is, remove the
+unpopular 3-point queries.
+<p>
+<li><i>4-Point Query Generation</i>.
+For each conformation <span class='LaTeX'>\(x_{ij}\)</span>
+with <span class='LaTeX'>\(i\)</span> in
+<span class='LaTeX'>\(\left\{ 1, \ldots, N_{1} \right\}\)</span>
+and <span class='LaTeX'>\(j\)</span> in
+<span class='LaTeX'>\(\left\{ 1, \ldots, C_{i} \right\}\)</span>
+calculate all quadruplets of annotation points.  Similarly as for 2-point
+and 3-point generation, each quadruplet causes the generation of
+multiple 4-point queries containing all combinations of query expressions
+that match the quadruplet of annotations and with all combinations of
+rounded <span class='LaTeX'>\(d_{ab} + h \left\{-1,0,1\right\}\)</span>
+for each of the six inter-query
+distances determined by the quadruplet.
+Quadruplets are removed from further consideration if they are not
+entirely composed of the popular 3-point queries determined in Step&nbsp;2.
+From the list all 4-point queries generated, remove all queries that are
+not present in at least <span class='LaTeX'>\(n\)</span> active molecules;
+that is, remove the unpopular 4-point queries.
+</ol>
+
+<p>
+Cartesian coordinates are assigned to each of the 4-point queries resulting
+from Step&nbsp;3 using a least-squares Distance Geometry embedding procedure.
+The resulting geometries are subjected to clustering since many near-duplicate
+geometries are produced (especially if the <span class='LaTeX'>\(h\)</span> parameter is small).
+The query clusters are determined by a Query Cluster parameter <span class='LaTeX'>\(T\)</span>.
+Queries that superpose to an RMSD less than <span class='LaTeX'>\(T\)</span> are averaged to produce
+a much smaller list of 4-point queries (with inter-feature distances
+that are not in general integer multiples of <span class='LaTeX'>\(h\)</span>).  Each resulting
+query is then used to search the active molecules and only those queries
+that actually have coverage <span class='LaTeX'>\(n\)</span> are retained; that is, only the
+popular Cartesian 4-point queries are retained.
+
+<p>
+The build-up method continues building 5-point or larger queries by
+concatenating Cartesian 4-point queries with compatible geometry.  Each such
+larger query is used to search the active molecules and only those queries
+that actually have coverage <span class='LaTeX'>\(n\)</span> are retained; that is, only the
+popular Cartesian 5-point queries are retained.  Larger queries are
+built by repeating the addition of a 4-point query followed by search
+validation of the coverage.  The build-up method stops when no queries
+can be produced or when a pre-set maximum feature limit has been reached.
+
+<p>
+<b>Accuracy Scoring</b>.  If inactive molecules are present in the input
+collection then a measure of the degree of separation of actives and inactives
+(for each query) can be meaningful.  However, it is important to keep in mind
+that inactive molecules can also contain the same pharmacophore as active
+molecules.  For this reason, it is important to carefully select the inactive
+molecules given to the Pharmacophore Elucidation application.  Inactives should
+be similar in shape to the active molecules so that steric clashes are not the
+reason for their inability to bind.
+
+<p>
+For each query, several quantities are calculated:
+<ul>
+<li>The over-all accuracy (<tt>accuracy</tt>) =
+<span class='LaTeX'>\(m/N\)</span>
+where <span class='LaTeX'>\(N\)</span> is
+the number of molecules
+in the input collection and <span class='LaTeX'>\(m\)</span> is the sum of the number of actives
+that match the query and the number of inactives that do not match
+the query.
+<p>
+<li>The accuracy on actives (<tt>acc1</tt>) =
+<span class='LaTeX'>\(m_{1}/N_{1}\)</span>
+where <span class='LaTeX'>\(N_{1}\)</span> is the number of active molecules and
+<span class='LaTeX'>\(m_{1}\)</span> is the number of active molecules that match the query.
+<p>
+<li>The accuracy on inactives (<tt>acc0</tt>) =
+<span class='LaTeX'>\(m_{0}/N_{0}\)</span>
+where <span class='LaTeX'>\(N_{0}\)</span> is the number of inactive molecules and
+<span class='LaTeX'>\(m_{0}\)</span> is the number of inactive molecules that do not match the
+query.
+</ul>
+<p>
+The statistical significance of these accuracy measures is summarized with the
+chi-squared statistic p-value, which is the probability that the results would
+have arisen by chance using only the proportion of active and inactive
+compounds.  Denoting the number of agreements in the actives by
+<span class='LaTeX'>\(n_{1}\)</span>, the number of disagreements in the actives by
+<span class='LaTeX'>\(n_{2}\)</span>, the number of agreements in the inactives by
+<span class='LaTeX'>\(n_{3}\)</span>, and the number of disagreements in the inactives by
+<span class='LaTeX'>\(n_{4}\)</span>, we can then contrast these observed frequencies with
+the numbers that one would obtain if there was no correlation between the model
+and the sample. Denote these values by <span class='LaTeX'>\(e_{1}\)</span> through
+<span class='LaTeX'>\(e_{4}\)</span>. The Chi-square statistic
+
+<span class='LaTeX'>
+\begin{align}
+\chi^{2} = \sum_{i=1}^{4} \frac{\left( n_{i} - e_{i} \right)^{2}}{e_{i}}
+\end{align}
+</span>
+
+<p>
+also takes on a Chi-square distribution with three degrees of freedom.  The
+p-value is the probability that both accuracies (on actives and inactives)
+would differ from the "chance accuracy" as much as they do, if the actives and
+inactives that match the query are uncorrelated with activity.  The result
+output as <tt>p</tt> in the output database is the log (base 10) of the
+p-value.  Smaller numbers indicate more significant results.
+
+<p>
+<b>Overlap Scoring</b>.
+As each query is produced it is used to search the active compounds and
+all matching conformations are collected.  Under the assumption that a
+plausible pharmacophore must induce a good alignment of the active
+molecules, a search is made to produce such an alignment.  Alignments
+are scored according to atomic overlap.  The shape of each conformation
+is modeled with a sum-of-Gaussians density (in the spirit of SEAL
+[Kearsley&nbsp;1990] and FlexAlign [Labute&nbsp;2001]).  A stochastic
+search is made in an effort to find the highest scoring alignment amongst
+the matching conformations.  The resulting score and alignment are
+written to the output database.
+
+<a name="Run"><h2>Running the Application</h2></a>
+
+<p>
+Prior to running Pharmacophore Elucidation, a database of molecules and
+(optionally) related activity information must be prepared.  The input
+database must contain:
+<ol>
+<li>A molecule field with 2D or 3D structures.  The Pharmacophore
+Elucidator works with 3D conformations; if 2D structures are given, then
+conformations can be automatically generated by the application (see below).
+Alternatively, the input conformations can be used "as-is" (meaning that
+no conformational search is conducted).
+<p>
+<li>
+Optionally, a numeric field containing activity measurements can be given.
+The Pharmacophore Elucidator works with binary activity values; the numeric
+field can be subjected to a threshold to convert non-binary data into
+binary data.  Empty activity values are treated as inactive.  If no activity
+data is given, then all molecules will be taken to be active.
+</ol>
+
+<p>
+Once the Input Database is prepared, launch the Pharmacophore Elucidation
+application with
+<nobr><b>MOE | Compute | Pharmacophore | Elucidation...</b></nobr>.
+The following panel will appear:
+
+<p>
+<center><img src="ph4_elu/elupanel.png" alt="Elucidator Panel" /></center>
+
+<p>
+<table cellspacing=5>
+
+<tr>
+<td valign=top nowrap><b>Output&nbsp;Database</b>
+<td valign=top>
+The name of the Output Database to which results will be written.
+The default is <tt>ph4elucidate.mdb</tt> in the current directory.
+If <b>Open Database Viewer</b> is on, then a Molecular Database Viewer
+will be opened to display the results.
+
+<tr>
+<td valign=top nowrap><b>Report&nbsp;File</b>
+<td valign=top>
+The name of the Report File to which progress report and result
+statistics will be written.  If the name is empty, no report file
+is written and progress is reported only in the CLI.
+
+<tr>
+<td valign=top nowrap><b>Input&nbsp;Database</b>
+<td>
+The name of the Input Database containing active (and possibly inactive)
+molecules.  If <b>Selected Entries Only</b> is on, then only the entries
+that are selected in a Molecular Database Viewer will be used.
+The Input Database must contain a molecule field.  If more than one molecule
+field is present then the appropriate field can be selected from the
+<b>Molecule Field</b> option list.  3D conformations are required by
+the application; 2D structures may be supplied but one of Bond Rotation,
+Stochastic Search or Conformation Import must be chosen from the Conformations
+option list.
+
+The user can select from  three options of clustering the input conformations:
+
+<ol>
+<li><b>Clustered</b>.
+The input conformation are clustered to reduce their numbers.
+<p><li><b>Unique</b>.
+The input conformation are clustered to remove duplicates,
+i.e. multiple conformations that are very close to each other.
+<p><li><b>All</b>. 
+The input conformation are used without any clustering
+or duplicate removal.
+<p>
+<p>
+</ol>
+
+
+<tr>
+<td valign=top nowrap><b>Conformations</b>
+<td>
+Pharmacophore Elucidation operates on 3D conformations of the input molecules.
+The Conformations options control how the Input Database molecules are
+interpreted.  The options are:
+<ol>
+<li><b>As-Is</b>.  The Input Database is assumed to contain the explicit
+3D conformations that will be used by the application.  No further processing
+will be performed on the input structures.  This mode is intended for use
+when the conformations have been generated by another application.
+This option cannot be used if 2D structures are supplied.
+<p>
+<li><b>Bond Rotation</b>.  The Input Database is assumed to contain a single
+3D conformation per molecule.  The rotatable bonds of each molecule will
+be set systematically to specific torsion angles from a collection of rules.
+For larger molecules, a stochastic sampling of the torsion angles is conducted.
+Ring conformations are not searched.
+<p>
+<li><b>Conformation Import</b>.  The Input Database is assumed to contain a
+single structure per molecule.  The conformations of the molecules will be
+generated with the Conformation Import application using the current Potential
+Setup.
+<p>
+<li><b>Stochastic Search</b>.  The Input Database is assumed to contain a
+single structure per molecule.  The conformations of the molecules will be
+generated with Stochastic Conformational Search using the current Potential
+Setup.  </ol>
+<p>
+The methods are ordered from fastest to slowest; Stochastic Search is the
+most thorough.  In general, it is best to use the same method for generating
+conformations as is used for preparing the 3D search databases.
+
+<tr> <td valign=top nowrap><b>Save&nbsp;Conformations</b> <td> If on,
+then a database named <tt>XXX_conf.mdb</tt>, where <tt>XXX</tt> is Input
+Database, will be created in the current working directory.  This new
+database will contain the conformations generated by the Pharmacophore
+Elucidation along with the activity values from the Input Database (if
+any).  It is intended that the <tt>XXX_conf.mdb</tt> be supplied as the
+Input Database in a subsequent calculation (to avoid conducting
+redundant conformational searches).
+
+<tr>
+<td valign=top nowrap><b>Activity&nbsp;Field</b>
+<td>
+Specifies which of the Input Database numeric fields will
+be interpreted as specifying activity data.  The default is to treat all
+input molecules as active.  Pharmacophore Elucidation requires binary
+activity values.  Values in the Activity Field are converted to binary
+values by thresholding the activity value with the value supplied
+in the text field to the right of the Activity Field.  The intervening
+operator specifies the threshold operator; it can be one of "&gt;" for greater
+than, "&lt;" for less than, "&gt;=" for greater than or equal to, "&lt;=" for
+less than or equal to and "&lt;&gt;" for not equal to.
+Entries in the Input Database with empty Activity Field values are treated
+as inactive.
+
+<tr>
+<td valign=top nowrap><b>Scheme</b>
+<td>
+Specifies which annotation scheme should be used to determine
+the pharmacophore features of each molecule.  The default is Unified.
+Pharmacophore Elucidation will generate pharmacophores compatible with the
+specified scheme.  The query expressions used for query generation are
+displayed in the list under the Scheme specification.  When changing
+schemes the <b>Reset</b> button may need to be pressed to populate the
+list with the default query expressions related to the selected scheme.
+<p>
+The collection of query expressions can be saved to named collections.
+The <b>Memory</b> field is used to save or recall such collections.  Type
+a collection name or select an entry from the shortcut list and press
+<b>Load</b> to replace the list contents with a previously stored list.  Type
+a new collection name and press <b>Store</b> to save a new named collection.
+The Scheme is saved along with the list and will become the current Scheme
+upon Load.
+<p>
+The <b>Up</b> and <b>Down</b> buttons move the selected expression
+up or down in the list.  <b>Del</b> will delete the selected expression.
+The <b>Add</b> button will add a new expression to the list which can be
+edited with the fields below the list.
+
+<tr>
+<td valign=top nowrap><b>Limit<br>Radius<br>Label<br>Expression</b>
+<td valign=top>
+These fields are used to modify the properties of the query expression
+selected in the list above.  The properties are:
+<ol>
+<li><b>Limit</b>  constrains the frequency of
+occurrence of the expression in generated pharmacophore queries.  The
+constraint is expressed as a range of the form <i>L</i>-<i>U</i> where
+<i>L</i> is the lower limit and <i>U</i> is the upper limit.  Both
+<i>L</i> and <i>U</i> are optional; for example, "2-" means at least two
+and "-3" means at most three and "-" means no constraint.
+<p>
+<li><b>Radius</b>  contains the radius (in angstroms) of
+the query feature expression used when searching conformations.  Larger
+values will result in more matches.  Generally, this value need not be
+modified unless there is very little agreement amongst the active molecule
+annotations.
+<p>
+<li><b>Label</b> is a short one or two character nickname for
+the query expression.  This nickname is used in printouts and for naming
+the generated pharmacophore queries.
+<p>
+<li><b>Expression</b>.  The Expression field must contain a valid
+query expression using the annotation types of the selected scheme.
+Any expression valid in the Pharmacophore Editor can be used.  For example,
+"Don&amp;!Cat" means Donor and not Cation in the PCHD scheme.
+</ol>
+<p>
+Press <b>Apply</b> when edits are complete; the list will be updated
+to reflect the changes.
+
+<tr>
+<td valign=top nowrap><b>Active&nbsp;Coverage</b>
+<td>
+Specifies the number of molecules, <span class='LaTeX'>\(n\)</span>, that a
+generated query must match in order for it to be considered further and output.
+There are a number of ways to specify this value:
+<ol>
+<li>A number <span class='LaTeX'>\(x\)</span> in the range
+<span class='LaTeX'>\(\left[0,1\right]\)</span> means that
+<span class='LaTeX'>\(n = \texttt{round} \left( x N_{1} \right)\)</span>
+where <span class='LaTeX'>\(N_{1}\)</span> is the number of
+active molecules.
+<li>A number <span class='LaTeX'>\(x\)</span> less than zero means that
+<span class='LaTeX'>\(n = \left( N_{1} - x \right)\)</span>
+where <span class='LaTeX'>\(N_{1}\)</span>
+is the number of active molecules.
+<li>A number <span class='LaTeX'>\(x\)</span> greater than one means that
+<span class='LaTeX'>\(n = x\)</span>; i.e.
+direct specification of the number of active molecules.
+</ol>
+<p>
+If the resulting <span class='LaTeX'>\(n\)</span> is less than two then it is taken to be two.
+
+<tr>
+<td valign=top nowrap><b>Feature&nbsp;Limit</b>
+<td>
+The maximum number of features that an output pharmacophore is permitted
+to contain.  Large pharmacophore queries tend to match fewer molecules
+outside the Input Database.
+
+<tr>
+<td valign=top nowrap><b>Query&nbsp;Spacing</b>
+<td>
+In the first phase of pharmacophore query generation, all possible queries
+are considered such that the inter-query distances are multiples of the
+supplied Query Spacing value, <span class='LaTeX'>\(h\)</span>.  Smaller values emphasize queries
+that are contained in one or more of the active molecules.  Larger values
+result in more queries that will satisfy the Active Coverage value.  In some
+cases, larger values such as 0.8 are required, especially if very few queries
+are output or if the molecules are very diverse with poor agreement amongst
+their annotation points.
+
+<tr>
+<td valign=top nowrap><b>Query&nbsp;Cluster</b>
+<td>
+The first phase of query generation can generate a great many queries
+that have very similar geometries.  The Query Cluster value specifies
+an RMSD value (in angstroms) used to cluster the queries prior to
+overlap and classification scoring.  Larger values result in fewer
+output queries with a more coarse resolution.  Smaller values result in
+more queries with finer resolution.
+
+<tr>
+<td valign=top nowrap><b>Alignment</b>
+<td>
+The Alignment options influence the overlap scoring.  If enabled, terms
+will be added to the overlap score in order to emphasize certain molecular
+properties.
+<ol>
+<li><b>Emphasize Aromatic Atoms</b> enables terms that score overlap of
+aromatic atoms higher than otherwise.
+<p>
+<li><b>Emphasize Donor and Acceptor Atoms</b> enables terms that score
+overlap of hydrogen bond donor and acceptor atoms higher than otherwise.
+</ol>
+<p>
+These terms are similar to those used in FlexAlign.
+</table>
+
+<p>
+Press <b>OK</b> to begin the calculation.  Information will be printed
+to the SVL Commands window throughout the calculation.  The results will
+be written to the Output Database.
+Pharmacophore elucidation is a computationally intensive algorithm. The
+generation of results may take some time depending strongly on the number of
+molecules in the input database, the number of conformations of each molecule
+and the number of pharmacophore features in each molecular annotation.
+
+<a name="Output"><h2>Analyzing the Output</h2></a>
+<p>
+During the calculation various types of information will be written to the SVL
+Commands window.  This information is useful to monitor the progress of the
+calculation and can give an indication of whether voluminous output
+will result (which may indicate that a change of parameters is required).
+After printing the SVL command that invokes the calculation, a summary of
+the various options and settings is printed:
+<blockquote>
+<pre>ph4_Elucidate (2009.06) Fri Sep 04 12:22:33 2009
+    output     : ph4elucidate.mdb
+    input      : c:/moe2009/sample/mol/1RO6_ligands.mdb
+    csearch    : Bond Rotation
+    ccluster   : 0.1 (Unique)
+    csave      : (none)
+    activity   : all active
+    scheme     : Unified
+    coverage   : 0.9
+    maxfeatures: 5
+    qspacing   : 0.6
+    qcluster   : 1.25
+    o_aro      : 0
+    o_lpa      : 0
+</pre>
+</blockquote>
+<p>
+This is followed by information related to the creation of the temporary
+database used during the calculation.  (This database will be automatically
+deleted upon completion or cancellation.)
+<blockquote>
+<pre>creating temporary database ...
+    [        1] conformations: 221 (1RO6)
+    [        2] conformations: 270 (1XLZ)
+    [        3] conformations: 373 (1XM4)
+    [        4] conformations: 225 (1XM6)
+    [        5] conformations: 435 (1XMU)
+    [        6] conformations: 452 (1XOS)
+    [        7] conformations: 476 (1XOT)
+    total molecules     : 7
+    active molecules    : 7
+    inactive molecules  : 0
+    total conformations : 2452
+</pre>
+</blockquote>
+<p>
+Each of the lines contains a summary of each molecule and its generated
+(or input) conformations.  A total of the active and inactive molecule
+count is printed as well as the total number conformations used in the
+calculation.
+<p>
+The calculation will then begin in earnest and information related to the
+various stages will be printed.  Information related to the 2-point,
+3-point, 4-point and 5-point pharmacophore generation phases will be printed:
+
+<blockquote>
+<pre>generating 2-point queries (cover=6) ...
+    T1 T2   [    TOTAL]      7/7      6/7      5/7      4/7      3/7
+     R  H : [       69]       69        0       13       42        6
+     R  d : [       19]       19        0       65        2       21
+     R  a : [       87]       83        4       12       30        0
+     H  H : [      105]      102        3        5       20        3
+     <i>... more output ...</i>
+
+generating 3-point queries (cover=6) ...
+    T1 T2 T3   [    TOTAL]      7/7      6/7      5/7      4/7      3/7
+     R  H  H : [       65]       45       20       64      193      136
+     R  H  a : [      125]       85       40      207      556      466
+     R  a  a : [       16]       10        6       41      180      384
+     H  H  H : [      172]      139       33       52      253      134
+     <i>... more output ...</i>
+     
+generating 4-point queries (cover=6) ...
+    T1 T2 T3 T4   [    TOTAL]      7/7      6/7
+     R  H  H  a : [        3]        3        0
+     R  H  a  a : [        3]        3        0
+     H  H  H  a : [       12]       12        0
+     H  H  d  a : [        5]        5        0
+     <i>... more output ...</i>
+
+ggenerating 5-point queries (cover=6) ...
+    T1 T2 T3 T4 T5   [    TOTAL]      7/7      6/7
+     R  H  H  a  a : [        9]        6        3
+     H  H  H  a  a : [       33]       21       12
+     H  H  a  a  a : [        8]        2        6
+     *  *  *  *  * : [       50] 
+     time: 13.024 sec
+
+</pre>
+</blockquote>
+<p>
+In each case, the T<i>k</i> columns contain a short label describing the
+pharmacophore query type.  Typically "D" means a heavy atom donor, "d" means a
+projected donor feature, "H" means a hydrophobe or aromatic features, etc.
+These short labels depend on the pharmacophore scheme used and any
+modifications that have been made to the query types used to generate
+pharmacophore queries.  The <tt>TOTAL</tt> contains the number of queries
+generated that (at this stage) satisfy the requirement of being contained in
+the prescribed number of active molecules (the "cover").
+
+The remaining columns contain more detailed totals; each column is entitled
+<span class='LaTeX'>\(x/n\)</span>
+where <span class='LaTeX'>\(n\)</span> is
+the number of active molecules and <span class='LaTeX'>\(x\)</span> indicates the coverage
+(<span class='LaTeX'>\(n/n\)</span> means 100%).
+
+Note: The 2-point and 3-point queries will generally show higher numbers
+since they are unclustered and only minimally validated.  The 4-point
+and 5-point queries are clustered to reduce their numbers and compared
+against the input database to determine the precise numbers of active
+molecules.
+
+<p>
+Once the queries are generated, each will be scored.  Scoring consists
+of searching the input molecules to determine all matching conformations
+of active molecules.  The collection of conformations is analyzed to determine
+a high scoring alignment that is induced by the query.  The information
+printed will resemble:
+<blockquote>
+<pre>scoring 5-point queries ...
+    T1 T2 T3 T4 T5      Index Subtotal  HitConf nConfigs SrchTime AlgnTime
+     R  H  H  a  a :        1        9     1300 1.8e+015      0.2      2.6
+     R  H  H  a  a :        2        9      439 1.3e+012      0.3      0.9
+     R  H  H  a  a :        3        9      341 4.2e+011      0.3      0.7
+     R  H  H  a  a :        4        9      174 9.8e+006      0.2      1.9
+     <i>... more output ...</i>
+
+scoring 4-point queries ...
+    T1 T2 T3 T4      Index Subtotal  HitConf nConfigs SrchTime AlgnTime
+     R  H  H  a :        1        3     9405 4.7e+020      1.0     38.7
+     R  H  H  a :        2        3     6242 6.7e+018      0.9     31.2
+     R  H  H  a :        3        3     5771 1.2e+019      0.9     16.3
+     R  H  a  a :        1        3     5872 9.1e+018      0.7     17.5
+     <i>... more output ...</i>
+</pre>
+</blockquote>
+<p>
+Each line is a specific query with the indicated query types.  The
+<tt>Index</tt> column is the ordinal number of the query in a sequence
+of queries of similar types; the total in the sequence is given by
+<tt>Subtotal</tt>.  The <tt>HitConf</tt> column contains the total number
+of conformations of the active molecules that satisfy the query and
+<tt>nConfigs</tt> is the number of possible alignments.  <tt>SrchTime</tt>
+is the number of seconds required to generate the conformations and
+<tt>AlgnTime</tt> is the number of seconds required to determine a high
+scoring alignment.
+<p>
+Each such validated query that match at least the prescribed number of active
+molecules will be written to the output database.  This database will
+contain the following fields:
+<blockquote>
+<dl>
+<dt><tt>mol</tt>
+<dd>
+The conformations of the high scoring alignment induced by the query.
+<p>
+<dt><tt>label</tt>
+<dd>
+A string of one-letter labels, one for each feature of the query.
+Different letters correspond to different feature types.
+<p>
+<dt><tt>cover</tt>
+<dd>
+The number of active molecules that match the query.
+<p>
+<dt><tt>overlap</tt>
+<dd>
+The score of the alignment.  This number varies between
+<span class='LaTeX'>\(\left[0,n\right]\)</span>
+where
+<span class='LaTeX'>\(n\)</span> is the number of active molecules.  Bigger numbers indicate
+better alignments.
+<p>
+<dt><tt>accuracy</tt>
+<dd>
+The accuracy of the query in separating actives and inactives.  A value of 1.0
+means that the query matched all actives and did not match any inactives.
+The accuracy is measured on clustered conformations.
+<p>
+<dt><tt>p</tt>
+<dd>
+The log (base 10) of the probability that the accuracy results would be
+generated by chance alone.  (Modeled by the chi-squared significance test.)
+Lower values indicate more significant results.
+<p>
+<dt><tt>acc1</tt>
+<dd>
+The accuracy of the query in matching the active compounds.  A value of 1.0
+means that all actives were matched; a value 0.0 means that none were matched.
+The accuracy is measured on clustered conformations.
+<p>
+<dt><tt>acc0</tt>
+<dd>
+The accuracy of the query in not matching the inactive compounds.  A value of
+1.0 means that no inactives were matched; a value 0.0 means that all were
+matched.
+The accuracy is measured on clustered conformations.
+<p>
+<dt><tt>query</tt>
+<dd>
+A numerical vector containing the query information.  The Database Browser
+can be used to visualize these queries.  The Pharmacophore Editor can
+be invoked in the Browser to further inspect or save the query (see below).
+Alternatively, double-clicking in the query cell in the Database Viewer
+will launch the Pharmacophore Query Editor with the contained query.
+</dl>
+<p>
+<dt><tt>Qsize</tt>
+<dd>
+The total number of features in the query.
+</dl>
+<p>
+<dt><tt>Q:Xxx</tt>
+<dd>
+The number of features of given type in the query, where "<tt>Xxx</tt>"
+stands for the given feature expression, e.g.  "<tt>Hyd|Aro</tt>".
+</dl>
+</blockquote>
+
+<p>
+Upon completion, the output database will be sorted by decreasing
+<tt>overlap</tt> score.  <b><nobr>DBV | File | Browser</nobr></b> can be
+used to visualize the queries in the MOE window.  Select <tt>EluAlignments</tt>
+in the <b>Subject</b> option to visualize queries.  The Browser panel will
+resemble:
+<p>
+<center><img src="ph4_elu/bpanel.png" alt="Elu Browser Panel" /></center>
+<p>
+<table>
+<tr>
+<td valign=top>
+The controls in the Browser panel related to the pharmacophore queries are:
+<table width=100% cellpadding=5>
+<tr>
+<td valign=top><b>Query</b>
+<td valign=top>
+A brief description of the query contained in the selected Entry.
+The query feature expressions are listed along with the Accuracy (in percent),
+the number of active compounds that hit the query (in parenthesis) and
+the Overlap score.
+<tr>
+<td valign=top><b>Edit</b>
+<td valign=top>
+Use the Edit button to invoke the Pharmacophore Query Editor with the
+current query.  From the editor, database searches can be made and the
+query can be saved to a file.
+</table>
+<p>
+Each query feature expression is displayed as a sphere in the MOE window
+along with the alignment of the active molecules that satisfy the query.
+<td valign=top>
+<img src="ph4_elu/bexample.png" alt="Browser Elucidator Example" />
+</table>
+
+<p>
+In general, one can expect multiple solutions for any given data set.  If
+the number of solutions is not reasonable (either too many or too few) then
+the following can be attempted:
+<ol>
+<li>
+If there are too many solutions then the Query Cluster parameter can be
+increased.  This will merge more queries prior to validation and alignment
+production.
+<p>
+<li>
+If there are too few solutions then decreasing the Query Cluster parameter
+often helps.  Also, increasing the Query Spacing parameter will result
+in more common queries being considered for validation (since the resolution
+will be reduced).
+<p>
+<li>
+If there are too many queries then adjusting the constraints may reduce
+the total number of queries; for example, eliminating metal ligation or
+limiting the total number of hydrophobic features may also help.
+<p>
+<li>
+If there are too many queries then reducing the number of input conformations
+often helps.  In particular, the addition of chiral constraints on known
+chiral centers will provide a significant reduction in output.
+</ol>
+
+<a name="References"><h2>References</h2></a>
+<p>
+<table cellpadding=4>
+<tr>
+<td valign=top>[Cramer&nbsp;1988]
+<td valign=top>
+Cramer, R.D., Patterson, D.E., Bunce, J.D.;
+Comparative Molecular Field Analysis (CoMFA). 1. Effect of Shape on Binding
+of Steroids to Carrier Proteins;
+<i>J. Am. Chem. Soc. 110(18)</i> (<b>1988</b>) 5959-5967.
+<tr>
+<td valign=top>[Guner&nbsp;2000]
+<td valign=top>
+Guner, O.F. <i>ed.</i>;
+<i>Pharmacophore Perception, Development and Use in Drug Design</i>;
+International University Line, La Jolla, CA (<b>2000</b>)
+<tr>
+<td valign=top>[Jones&nbsp;1995]
+<td valign=top>
+Jones, G., Willet, P., Glen, R.C.;
+A Genetic Algorithm for Flexible Molecular Overlay and Pharmacophore
+Elucidation;
+<i>J. Comput. Aided Mol. Des. 9</i> (<b>1995</b>) 532-549.
+<tr>
+<td valign=top>[Kearsley&nbsp;1990]
+<td valign=top>
+Kearsley, S.;
+An Alternative Method for the Alignment of Molecular Structures: Maximizing
+Electrostatic and Steric Overlap;
+<i>Tetrahedron Computer Methodology 3(6C)</i> (<b>1990</b>) 615-633.
+<tr>
+<td valign=top>[Labute&nbsp;2001]
+<td valign=top>
+Labute, P., Williams, C., Feher, M., Sourial, E., Schmidt, J.M.;
+Flexible Alignment of Small Molecules;
+<i>J. Med. Chem. 44</i> (<b>2001</b>) 1483-1490.
+<tr>
+<td valign=top>[Marshall&nbsp;1979]
+<td valign=top>
+Marshall, G.R., Barry, C.D., Bosshard, H.E., Dammhoehler, R.A., Dunn, D.A.;
+The Conformational Parameter in Drug Design: The Active Analog Approach;
+<i>Computer-Assisted Drug Design 112</i> (<b>1979</b>) 205-226.	
+<tr>
+<td valign=top>[Martin&nbsp;1995]
+<td valign=top>
+Martin, Y.C.; Distance Comparisons (DISCO): A New Strategy for Examining
+3D Structure-Activity Relationships;
+<i>Classical and 3D QSAR in Agrochemistry</i>, Hansch, C., Fujita, T, eds.
+American Chemical Society (<b>1995</b>) 318-329.
+</table>
+
+<a name="SeeAlso"></a>
+<h2>See Also</h2>
+
+<p>
+<a href="ph4_guide.htm">Introduction to Pharmacophores in MOE</a>
+<br /><a href="ph4_annot.htm">Pharmacophore Annotation Schemes</a>
+<br /><a href="ph4_query.htm">Pharmacophore Query Editor</a>
+<br /><a href="ph4_search.htm">Pharmacophore Search</a>
+<br /><a href="confgui.htm">High Throughput Conformation Generation</a>
+<br /><a href="confsrch.htm">Generating and Analyzing Conformations</a>
+<br /><a href="../mdb/db.htm">Molecular Database Viewer</a>
+<br /><a href="../svl/fcnref/svlmpu.htm">SVL Multi-Processor Functions</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

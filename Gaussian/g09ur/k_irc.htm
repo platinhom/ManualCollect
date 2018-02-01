@@ -1,0 +1,164 @@
+<html><head><title>G09 Keyword: IRC</title></head><body>
+
+<h1>IRC</h1>
+<h3><font size="-1" color="#222222">DESCRIPTION</font></h3>
+<p>This calculation type keyword requests that a reaction path be followed by integrating the intrinsic reaction coordinate <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Fukui81" class="showTip Fukui81">Fukui81</a>, <a href="refs.htm#Hratchian05a" class="showTip Hratchian05a">Hratchian05a</a>]</font>. The initial geometry (given in the molecule specification section) is that of the transition state, and the path can be followed in one or both directions from that point. The <font face="Times New Roman, Times, serif" size="3"><i>forward</i></font> direction is defined as the direction the transition vector is pointing when the largest component of the transition vector (&ldquo;phase&rdquo;) is positive; it can be defined explicitly using the <b><font color="#0000FF">Phase</font></b> option. By default, both reaction path directions are followed. Gaussian 09 uses a new algorithm <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Hratchian04a" class="showTip Hratchian04a">Hratchian04a</a>, <a href="refs.htm#Hratchian05a" class="showTip Hratchian05a">Hratchian05a</a>, <a href="refs.htm#Hratchian05b" class="showTip Hratchian05b">Hratchian05b</a>]</font> for computing points on the reaction path which is much more efficient than the one used in earlier program versions. See the discussion of the <b><font color="#0000FF">HPC</font></b> option below.</p>
+<p>IRC calculations <font face="Times New Roman, Times, serif" size="3"><i>require</i></font> initial force constants to proceed. You must provide these to the calculation in some way. The usual method is to save the checkpoint file from the preceding frequency calculation (used to verify that the optimized geometry to be used in the IRC calculation is in fact a transition state), and then specify the <b><font color="#0000FF">RCFC</font></b> option in the route section. Another possibility is to compute them at the beginning of the IRC calculation (<b><font color="#0000FF">CalcFC</font></b>). Note that one of <b><font color="#0000FF">RCFC</font></b> and <b><font color="#0000FF">CalcFC</font></b> must be specified (<b><font color="#0000FF">CalcAll</font></b> is also available but is not typically necessary with the new IRC algorithm).</p>
+<p>In Gaussian 09, the default IRC algorithms have changed. Most calculations use the HPC algorithm by default. ONIOM(MO:MM) calculations use the Euler predictor-corrector integration algorithm. Calculations using methods with gradients but without analytic second derivatives should include the <b><font color="#0000FF">GradientOnly</font></b> option and will then use the damped velocity verlet integrator (<b><font color="#0000FF">DVV</font></b>), but may specify Euler integration instead if desired (<b><font color="#0000FF">Euler</font></b>). Available algorithms are discussed in detail below.</p>
+<p>The default is to report only the energies and reaction coordinate at each point on the path; if geometrical parameters along the path are desired, these should be defined as redundant internal coordinates via <b><font color="#0000FF">Geom=ModRedundant</font></b> or as input to the IRC code via <b><font color="#0000FF">IRC(Report=Read)</font></b>.</p>
+<p>You can specify alternative isotopes for <a href="k_irc.htm"><b><font color="#0000FF">IRC</font></b></a> jobs using the <b><font color="#0000FF">ReadIsotopes</font></b> option (see below).</p>
+<h3><font size="-1" color="#222222">PATH SELECTION OPTIONS</font></h3>
+<p><b><font color="#0000FF">Phase=(<font face="Times New Roman, Times, serif" size="3"><i>N1, N2</i></font> [,<font face="Times New Roman, Times, serif" size="3"><i>N3</i></font> [,<font face="Times New Roman, Times, serif" size="3"><i>N4</i></font>]])</font></b><br />
+Defines the phase for the transition vector such that forward motion along the transition vector corresponds to an increase in the specified internal coordinate, designated by up to four atom numbers. If two atom numbers are given, the coordinate is a bond stretch between the two atoms; three atom numbers specify an angle bend; and four atoms define a dihedral angle.
+</p>
+<p><b><font color="#0000FF">Forward</font></b><br />
+Follow the path only in the forward direction.
+</p>
+<p><b><font color="#0000FF">Reverse</font></b><br />
+Follow the path only in the reverse direction.
+</p>
+<p><b><font color="#0000FF">Downhill</font></b><br />
+Proceed downhill from the input geometry.
+</p>
+<p><b><font color="#0000FF">MaxPoints=<font face="Times New Roman, Times, serif" size="3"><i>N</i></font></font></b><br />
+Number of points along the reaction path to examine (in each direction if both are being considered). The default is 10.
+</p>
+<p><b><font color="#0000FF">StepSize=<font face="Times New Roman, Times, serif" size="3"><i>N</i></font></font></b><br />
+Step size along the reaction path, in units of 0.01 Bohr. If <font face="Times New Roman, Times, serif" size="3"><i>N</i></font>&lt;0, then the step size is taken in units of 0.01 amu<sup>1/2</sup>-Bohr. The default is 10.
+</p>
+<p><b><font color="#0000FF">ReadIsotopes</font></b><br />
+This option allows you to specify alternatives to the default temperature, pressure, frequency scale factor and/or isotopes&mdash;298.15 K, 1 atmosphere, no scaling, and the most abundant isotopes (respectively). It is useful when you want to rerun an analysis using different parameters from the data in a checkpoint file. 
+<br /><br />Be aware, however, that all of these can be specified in the route section (<a href="k_temp.htm"><b><font color="#0000FF">Temperature</font></b></a>, <a href="k_pressure.htm"><b><font color="#0000FF">Pressure</font></b></a> and <a href="k_scale.htm"><b><font color="#0000FF">Scale</font></b></a> keywords) and molecule specification (<b><font color="#0000FF">Iso=</font></b> parameter), as in this example:
+<pre>
+#T <font face="Times New Roman, Times, serif" size="3"><i>Method</i></font>/6-31G(d) <font face="Times New Roman, Times, serif" size="3"><i>JobType</i></font> <b>Temperature=300.0</b> &hellip;
+
+&hellip;
+
+0 1
+C(<b>Iso=13</b>)
+&hellip;
+</pre>
+<b><font color="#0000FF">ReadIsotopes</font></b> input has the following format:
+<pre>
+<font face="Times New Roman, Times, serif" size="3"><i>temp</i></font> <font face="Times New Roman, Times, serif" size="3"><i>pressure</i></font> [<font face="Times New Roman, Times, serif" size="3"><i>scale</i></font>]</i></font> &nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Values must be real numbers.</i></font></font>
+<font face="Times New Roman, Times, serif" size="3"><i>isotope mass for atom 1</i></font>
+<font face="Times New Roman, Times, serif" size="3"><i>isotope mass for atom 2</i></font>
+&hellip; 
+<font face="Times New Roman, Times, serif" size="3"><i>isotope mass for atom n</i></font>
+</pre>
+</p>
+where <font face="Times New Roman, Times, serif" size="3"><i>temp</i></font>, <font face="Times New Roman, Times, serif" size="3"><i>pressure</i></font>, and <font face="Times New Roman, Times, serif" size="3"><i>scale</i></font> are the desired temperature, pressure, and an optional scale factor for frequency data when used for thermochemical analysis (the default is unscaled). The remaining lines hold the isotope masses for the various atoms in the molecule, arranged in the same order as they appeared in the molecule specification section. If integers are used to specify the atomic masses, the program will automatically use the corresponding actual exact isotopic mass (e.g., 18 specifies <sup>18</sup>O, and Gaussian uses the value 17.99916).
+</p>
+<h3><font size="-1" color="#222222">ALGORITHM SELECTION OPTIONS</font></h3>
+<p><b><font color="#0000FF">HPC</font></b><br />
+Use the Hessian-based Predictor-Corrector integrator <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Hratchian04a" class="showTip Hratchian04a">Hratchian04a</a>, <a href="refs.htm#Hratchian05a" class="showTip Hratchian05a">Hratchian05a</a>, <a href="refs.htm#Hratchian05b" class="showTip Hratchian05b">Hratchian05b</a>]</font>: a very accurate algorithm that uses the Hessian-based local quadratic approximation as the predictor component and a modified Bulrisch-Stoer integrator for the corrector portion. This corrector integrator is done using a distance weighted interpolant surface <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Collins02" class="showTip Collins02">Collins02</a>]</font> fitted to energies, gradients, and Hessians at the beginning and ending points of the predictor step. This is the default for most calculations. Note that it is not practical for extremely large molecular systems.
+</p>
+<p><b><font color="#0000FF">EulerPC</font></b><br />
+Use the first-order Euler integration for the predictor step along with the <b><font color="#0000FF">HPC</font></b> corrector step. This is the default for <a href="k_irc.htm"><b><font color="#0000FF">IRC=GradientOnly</font></b></a> calculations. This is also the default algorithm for IRC calculations using an ONIOM(MO:MM) method. It is a practical choice for such calculations on large molecules.</p>
+<p><b><font color="#0000FF">LQA</font></b><br />
+Use the local quadratic approximation <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Page88" class="showTip Page88">Page88</a>, <a href="refs.htm#Page90" class="showTip Page90">Page90</a>]</font>. </p>
+<p><b><font color="#0000FF">DVV</font></b><br />
+Use the damped velocity verlet integrator <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Hratchian02" class="showTip Hratchian02">Hratchian02</a>]</font>.</p>
+<p><b><font color="#0000FF">Euler</font></b><br />
+Use only the first-order Euler integration predictor step for the IRC. This option is not recommended for production use.
+</p>
+<p><b><font color="#0000FF">ReCalc<font face="Times New Roman, Times, serif" size="3"><i>=N</i></font></font></b><br />
+Compute the Hessian analytically every <font face="Times New Roman, Times, serif" size="3"><i>N</i></font> predictor steps, or every |<font face="Times New Roman, Times, serif" size="3"><i>N</i></font>| corrector steps if <font face="Times New Roman, Times, serif" size="3"><i>N</i></font>&lt;0. Analytic second derivatives can be requested intermittently during IRCs using <b><font color="#0000FF">IRC=(CalcFC,RecalcFC=(Predictor=</font></b><em>N</em><b><font color="#0000FF">,Corrector=</font></b><em>M</em><b><font color="#0000FF">))</font></b>, which computes second derivatives at the initial point and then at every <em>N</em><sup>th</sup> predictor step and every <em>M</em><sup>th</sup> corrector step. You must still specify <b><font color="#0000FF">RCFC</font></b> or <b><font color="#0000FF">CalcFC</font></b> to provide the initial Hessian. <b><font color="#0000FF">Update</font></b> is a synonym for <b><font color="#0000FF">ReCalc</font></b>. Requires a method which has analytic second derivatives.
+</p>
+<p><b><font color="#0000FF">GradientOnly</font></b><br />
+Use an algorithm which does not require second derivatives. Note that you must specify this option explicitly for such methods (they are not automatically detected). Can be combined with <b><font color="#0000FF">EulerPC</font></b> (the default), <b><font color="#0000FF">Euler</font></b> or <b><font color="#0000FF">DVV</font></b>. </p>
+<h3><font size="-1" color="#222222">COORDINATE SYSTEM SELECTION OPTIONS</font></h3>
+<p><b><font color="#0000FF">MassWeighted</font></b><br />
+Follow the path in mass-weighted Cartesian coordinates. <b><font color="#0000FF">MW</font></b> is a synonym for <b><font color="#0000FF">MassWeighted</font></b>. This is the default.
+</p>
+<p><b><font color="#0000FF">Cartesian</font></b><br />
+Follow the path in Cartesian coordinates without mass-weighting.
+</p>
+<h3><font size="-1" color="#222222">OPTIONS FOR GENERATING INITIAL FORCE CONSTANTS</font></h3>
+<p><b><font color="#0000FF">RCFC</font></b><br />
+Specifies that the computed force constants in Cartesian coordinates from a frequency calculation are to be read from the checkpoint file. <b><font color="#0000FF">ReadCartesianFC</font></b> is a synonym for <b><font color="#0000FF">RCFC</font></b>.
+</p>
+<p><b><font color="#0000FF">CalcFC</font></b><br />
+Specifies that the force constants be computed at the first point.
+</p>
+<h3><font size="-1" color="#222222">OPTIONS FOR COMPATIBILITY WITH GAUSSIAN 03</font></h3>
+<p>The <b><font color="#0000FF">GS2</font></b> option requests the IRC algorithm used in Gaussian 03 within the new IRC implementation. Use the keyword <b><font color="#0000FF">Use=L115</font></b> in order to run the code that was the default in Gaussian 03 (recommended for reproducing old results only).</p>
+<p><b><font color="#0000FF">GS2</font></b><br />
+Use the IRC algorithm that was the default in Gaussian 03 and earlier <font face="Arial, Helvetica, sans-serif" size="-2">[<a href="refs.htm#Gonzalez89" class="showTip Gonzalez89">Gonzalez89</a>, <a href="refs.htm#Gonzalez90" class="showTip Gonzalez90">Gonzalez90</a>]</font>. The geometry is optimized at each point along the reaction path such that the segment of the reaction path between any two adjacent points is described by an arc of a circle, and so that the gradients at the end points of the arc are tangent to the path. By default, a <b><font color="#0000FF">GS2</font></b> IRC calculation steps 6 points in mass-weighted internal coordinates in the forward direction and 6 points in the reverse direction, in steps of 0.1 amu<sup>1/2</sup> Bohr along the path.
+</p>
+<p><b><font color="#0000FF">CalcAll</font></b><br />
+Specifies that the force constants be computed at every point.
+</p>
+<h3><font size="-1" color="#222222">PROCEDURE RELATED OPTIONS</font></h3>
+<p><b><font color="#0000FF">Restart</font></b><br />
+Restarts an IRC calculation which did not complete, or restarts an IRC calculation which did complete, but for which additional points along the path are desired.
+</p>
+<p><b><font color="#0000FF">Report[=<font face="Times New Roman, Times, serif" size="3"><i>item</i></font>]</font></b><br />
+Controls which geometric parameters are reported by an IRC. By default, no geometrical parameters are reported. <b><font color="#0000FF">Report</font></b> without a parameter includes all of the generated internal coordinates. The possible values for <font face="Times New Roman, Times, serif" size="3"><i>item</i></font> are:
+<table border="0" cellpadding="2">
+<tr valign="top"><td><b><font color="#0000FF">Read</font></b></td><td>&nbsp;&nbsp;</td>
+<td>Read a list of internal coordinates to report. These are specified in the same way as for <b><font color="#0000FF">ModRedundant</font></b>.</td>
+<tr valign="top"><td><b><font color="#0000FF">Bonds</font></b></td><td>&nbsp;&nbsp;</td>
+<td>Reports bonds from the internal coordinates (if present).</td>
+<tr valign="top"><td><b><font color="#0000FF">Angles</font></b></td><td>&nbsp;&nbsp;</td>
+<td>Reports angles from the internal coordinates (if present).</td>
+<tr valign="top"><td><b><font color="#0000FF">Dihedrals</font></b></td><td>&nbsp;&nbsp;</td>
+<td>Reports dihedrals from the internal coordinates (if present).</td>
+<tr valign="top"><td><b><font color="#0000FF">Cartesians</font></b></td><td>&nbsp;&nbsp;</td>
+<td>Reports all Cartesian coordinates.</td>
+</table>
+</p>
+<p><b><font color="#0000FF">ReCorrect[=<font face="Times New Roman, Times, serif" size="3"><i>when</i></font>]</font></b><br />
+Controls testing-and-recomputing for the correction step of <b><font color="#0000FF">HPC</font></b> and <b><font color="#0000FF">EulerPC</font></b> IRCs. <b><font color="#0000FF">ReCorrect</font></b> (without a parameter) and <b><font color="#0000FF">ReCorrect=Yes</font></b> say to repeat the corrector step whenever the correction is greater than the threshold  (which can be decreased with the <b><font color="#0000FF">Tight</font></b> and <b><font color="#0000FF">VTight</font></b> options). The parameter can take on the following values:
+<table border="0" cellpadding="2">
+<tr valign="top"><td><b><font color="#0000FF">Never</font></b></td><td>&nbsp;&nbsp;</td>
+<td>Do not repeat correction steps (i.e., suppress the threshold test).</td>
+<tr valign="top"><td><b><font color="#0000FF">Always</font></b></td><td>&nbsp;&nbsp;</td>
+<td>Always recompute the corrector at least once regardless of the size of the initial correction.</td>
+<tr valign="top"><td><a href="k_test.htm"><b><font color="#0000FF">Test</font></b></a></td><td>&nbsp;&nbsp;</td>
+<td>Test the quality of the corrector step and report the results, but do not take an additional corrector step. The computed IRC path will be the same as with <b><font color="#0000FF">ReCorrect=Never</font></b>.</td>
+</table>
+The default is <b><font color="#0000FF">Yes</font></b> for <b><font color="#0000FF">EulerPC</font></b> and <b><font color="#0000FF">HPC</font></b>, and <b><font color="#0000FF">Never</font></b> for other integrators.
+</p>
+<p><b><font color="#0000FF">MaxCycle=<font face="Times New Roman, Times, serif" size="3"><i>N</i></font></font></b><br />
+Sets the maximum number of steps to <font face="Times New Roman, Times, serif" size="3"><i>N</i></font>. The default is 20.
+</p>
+<p><b><font color="#0000FF">Tight</font></b><br />
+This option tightens the cutoffs on forces and step size that are used to determine convergence. For DFT calculations, <b><font color="#0000FF">Int=UltraFine</font></b> should be specified as well.
+</p>
+<p><b><font color="#0000FF">VeryTight</font></b><br />
+Extremely tight optimization convergence criteria. <b><font color="#0000FF">VTight</font></b> is a synonym for <b><font color="#0000FF">VeryTight</font></b>. For DFT calculations, <b><font color="#0000FF">Int=UltraFine</font></b> should be specified as well.
+</p>
+<h3><font size="-1" color="#222222">AVAILABILITY</font></h3>
+<p>The default algorithms are available for HF, all DFT methods, CIS, MP2, MP3, MP4(SDQ), CID, CISD, CCD, CCSD, QCISD, BD, CASSCF and all semi-empirical methods.</p>
+<h3><font size="-1" color="#222222">RELATED KEYWORDS</font></h3>
+<p><a href="k_opt.htm"><b><font color="#0000FF">Opt</font></b></a>, <a href="k_scan.htm"><b><font color="#0000FF">Scan</font></b></a>, <a href="k_ircmax.htm"><b><font color="#0000FF">IRCMax</font></b></a></p>
+<h3><font size="-1" color="#222222">EXAMPLES</font></h3>
+<p>When the IRC has completed, the program prints a table summarizing the results:</p>
+<pre>
+ Reaction path calculation complete.
+
+ Energies reported relative to the TS energy of         -91.564851
+ --------------------------------------------------------------------------
+    Summary of reaction path following
+ --------------------------------------------------------------------------
+                        Energy   Rx Coord
+   1                   -0.00880  -0.54062
+   2                   -0.00567  -0.43250
+   3                   -0.00320  -0.32438
+   4                   -0.00142  -0.21626
+   5                   -0.00035  -0.10815
+   6                    0.00000   0.00000
+   7                   -0.00034   0.10815
+   8                   -0.00131   0.21627
+   9                   -0.00285   0.32439
+  10                   -0.00487   0.43252
+  11                   -0.00725   0.54065
+ --------------------------------------------------------------------------
+</pre>
+<p>The initial geometry (transition structure) appears in the middle of the table (in this case, as point 6). It can be identified quickly by looking for reaction coordinate and energy values of 0.00000.</p>
+<p>&nbsp;</p>
+<hr />
+<p class="upd">Last update: 3 May 2013</p>  
+
+</body></html>

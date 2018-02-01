@@ -1,0 +1,544 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	potfcn.htm				Potential Energy Functions
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<title>Potential Energy Functions</title>
+<meta functions Potential, pot_Energy, pot_Breakdown, pot_DefaultSetup>
+<meta functions pot_Load, pot_FinalizeModel, pot_Info>
+<meta functions pot_SetCharges, pot_ChargeBCI>
+<meta functions pot_Setup>
+<meta functions pot_angEnergy, pot_eleEnergy, pot_oopEnergy>
+<meta functions pot_resEnergy, pot_solEnergy, pot_stbEnergy>
+<meta functions pot_strEnergy, pot_torEnergy, pot_vdwEnergy>
+<meta functions pot_WallEnable, pot_WallParameters>
+
+<meta obsolete PotSetup>
+
+<meta functions _PotSetup, _pot_Setup>
+<meta functions _pot_Load>
+
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    [F,dX,W] = <a class="fcnlink" href="#Potential">Potential</a> options
+    [F,dX,W] = <a class="fcnlink" href="#pot_Energy">pot_Energy</a> options
+
+    options = [
+        W     : flag, 
+        X     : [x,y,z],
+        dX    : flag, 
+        Q     : q, 
+        setup : potsetup
+    ]
+
+    [Etot,Eint,Einteract] = <a class="fcnlink" href="#pot_angEnergy">pot_angEnergy</a> atom_keys
+    [Etot,Eint,Einteract] = <a class="fcnlink" href="#pot_eleEnergy">pot_eleEnergy</a> atom_keys
+    [Etot,Eint,Einteract] = <a class="fcnlink" href="#pot_oopEnergy">pot_oopEnergy</a> atom_keys
+    [Etot,Eint,Einteract] = <a class="fcnlink" href="#pot_resEnergy">pot_resEnergy</a> atom_keys 
+    [Etot,Eint,Einteract] = <a class="fcnlink" href="#pot_solEnergy">pot_solEnergy</a> atom_keys
+    [Etot,Eint,Einteract] = <a class="fcnlink" href="#pot_stbEnergy">pot_stbEnergy</a> atom_keys
+    [Etot,Eint,Einteract] = <a class="fcnlink" href="#pot_strEnergy">pot_strEnergy</a> atom_keys
+    [Etot,Eint,Einteract] = <a class="fcnlink" href="#pot_torEnergy">pot_torEnergy</a> atom_keys
+    [Etot,Eint,Einteract] = <a class="fcnlink" href="#pot_vdwEnergy">pot_vdwEnergy</a> atom_keys 
+
+    terms = <a class="fcnlink" href="#pot_Breakdown">pot_Breakdown</a> setup 
+    setup = <a class="fcnlink" href="#pot_DefaultSetup">pot_DefaultSetup</a> []
+    info  = <a class="fcnlink" href="#pot_Info">pot_Info</a> []
+
+    <a class="fcnlink" href="#pot_ChargeBCI">pot_ChargeBCI</a> []
+    <a class="fcnlink" href="#pot_FinalizeModel">pot_FinalizeModel</a> []
+    <a class="fcnlink" href="#pot_SetCharges">pot_SetCharges</a> []
+
+    <a class="fcnlink" href="#pot_Load">pot_Load</a>  'filename'
+    <a class="fcnlink" href="#pot_Load">pot_Load</a>  "parameter_data"
+    <a class="fcnlink" href="#_pot_Load">_pot_Load</a> 'filename'
+    <a class="fcnlink" href="#_pot_Load">_pot_Load</a> "parameter_data"
+
+    old_wall_enable = <a class="fcnlink" href="#pot_WallEnable">pot_WallEnable</a> flag
+    old_wall_params = <a class="fcnlink" href="#pot_WallParameters">pot_WallParameters</a> wall_params
+
+    wall_params = ['mode', weight, center, radius, metric]
+
+    old_setup =  <a class="fcnlink" href="#pot_Setup">pot_Setup</a> setup
+    old_setup = <a class="fcnlink" href="#_pot_Setup">_pot_Setup</a> setup
+
+    setup = [ 
+	strEnable:	str_enable_flag, 
+	strWeight:	str_term_weight,
+	angEnable:	ang_enable_flag, 
+	angWeight:	ang_term_weight, 
+	angForm:	code,
+	stbEnable:	stb_enable_flag, 
+	stbWeight:	stb_term_weight, 
+	torEnable:	tor_enable_flag, 
+	torWeight:	tor_enable_weight, 
+	oopEnable:	oop_enable_flag, 
+	oopWeight:	oop_term_weight, 
+	eleEnable:	ele_enable_flag, 
+	eleWeight:	ele_term_weight, 
+	eleDist:	code, 
+	eleScale14:	ele_14scale, 
+	eleDielectric:	dielectric, 
+	eleBuffer:	ele_buff, 
+	vdwEnable:	vdw_enable_flag, 
+	vdwWeight:	vdw_term_weight, 
+	vdwScale14:    	vdw_14scale, 
+	vdwBuffer1:	vdw_buff1,  
+	vdwBuffer2:	vdw_buff2, 
+        resEnable:      res_enable_flag,
+	cutoffEnable:	cutoff_flag,
+	cutoffOn:	on, 
+	cutoffOff:	off, 
+	solEnable:	sol_enable_flag, 
+	solWeight:	sol_term_weight, 
+	solDielectric:	sol_dielectric,
+	solDielectricOffset:	P0_val,
+	state0:		like_state_scale, 
+	state1:		unlike_state_scale, 
+	state2:		wildcard_state_scale,
+        threadCount:    cpu_count
+    ]
+</pre>
+
+<a name="PotSetup"></a>
+<a name="_PotSetup"></a>
+<h3 class="obsolete">Obsolete</h3>
+
+<pre>
+    old_setup =  <a class="obsolete" href="#PotSetup">PotSetup</a>  setup
+    old_setup = <a class="obsolete" href="#_PotSetup">_PotSetup</a>  setup
+</pre>
+
+<p>These functions have been superseded by <tt>pot_Setup</tt>
+and <tt>_pot_Setup</tt>.
+</p>
+
+<h2>Description</h2>
+<p>
+The Potential Energy Functions are used to manipulate or evaluate the
+potential energy function on the current system.  The potential energy
+of the system can be affected by atom properties, crystal cell properties,
+geometric restraints and the currently loaded forcefield parameters.
+
+<p><a name="pot_Energy"></a></p><p><a name="Potential"></a></p><p><hr noshade="noshade" />
+<pre>[F,dX,W] = <span class="fcndef">Potential</span> options
+[F,dX,W] = <span class="fcndef">pot_Energy</span> options
+</pre>
+<p>
+The <tt>Potential</tt> function is used to evaluate the potential energy
+of the currently loaded system.  The <tt>pot_Energy</tt> function does
+the same except that only the built-in potential energy model will be used;
+that is, additional SVL terms supplied through <tt>Potential</tt> will not
+be evaluated.  Applications, in general, should call <tt>Potential</tt> and
+not <tt>pot_Energy</tt>.
+<p>
+The optional arguments are used to override current variables (such as
+atom positions) and setup parameters, as well as to control the calculation.
+Options are provided as a tagged vector of attribute-value pairs:
+<p>
+<table>
+<tr>
+<td valign="baseline"><tt>W</tt>
+<td valign="baseline">Set to 1 to enable instantaneous pressure evaluation, 0
+to disable it.  The default is 0.
+
+<tr>
+<td valign="baseline"><tt>X</tt>
+<td valign="baseline">Atom coordinates.  The default is the
+current atom positions.
+The coordinates may be provided as either a list of triples (or
+4-tuples if working in 4D):
+
+<pre>
+    [ [x1,y1,z1], [x2,y2,z2], ... ]
+</pre>
+
+or
+
+<pre>
+    [ [x1,y1,z1,w1], [x2,y2,z2,w2], ... ]
+</pre>
+
+or a 3-element (or 4-element) vector, one element per coordinate:<br />
+
+<pre>
+    [ [x1,x2,x3,...], [y1,y2,y3,...], [z1,z2,z3,...] ]
+</pre>
+
+or
+
+<pre>
+    [ [x1,x2,x3,...], [y1,y2,y3,...], [z1,z2,z3,...], [w1,w2,w3,...] ]
+</pre>
+
+Unit extension applies.
+
+<tr>
+<td valign="baseline"><tt>dX</tt>
+<td valign="baseline">Set to 1 to enable gradient
+evaluation, 0 to disable it.  The default is 1.
+
+<tr>
+<td valign="baseline"><tt>Q</tt>
+<td valign="baseline">Partial charges.  The default is the charges currently
+associated with the atoms in the system.  Unit extension applies.
+
+<tr><td valign="baseline"><tt>setup</tt>
+<td valign="baseline">Potential energy model parameters.  The default is
+the current potential energy model parameters. 
+The <tt>setup</tt> options are the same as those for <tt>pot_Setup</tt>.
+
+</table>
+
+<p>Example: 
+
+<pre>
+    svl&gt; [F,dX,p] = Potential [W:1, dX:0]
+        // evaluate energy and virial, but not gradients 
+</pre>
+
+<p>Return values are:
+
+<table>
+<tr>
+<td valign="baseline"><tt>F</tt>
+<td valign="baseline">Potential energy value of all atoms in the system, in kcal/mol.
+
+<tr>
+<td valign="baseline"><tt>dX</tt>
+<td valign="baseline">Derivatives <tt>[dF/dx,dF/dy,dF/dz,dF/dw]</tt> of
+potential energy with respect to each of the coordinate directions
+<i>x</i>, <i>y</i>, <i>z</i>, and, if working in 4 dimensions,
+<i>w</i>.
+
+<tr>
+<td valign="baseline"><tt>W</tt>
+<td valign="baseline">Three-vector whose sum is the instantaneous virial.
+
+</table>
+
+<p><a name="pot_vdwEnergy"></a></p>
+<p><a name="pot_torEnergy"></a></p>
+<p><a name="pot_strEnergy"></a></p>
+<p><a name="pot_stbEnergy"></a></p>
+<p><a name="pot_solEnergy"></a></p>
+<p><a name="pot_resEnergy"></a></p>
+<p><a name="pot_oopEnergy"></a></p>
+<p><a name="pot_eleEnergy"></a></p>
+<p><a name="pot_angEnergy"></a></p>
+
+<p><hr noshade="noshade" />
+<pre>[Etot,Eint,Einteract] = <span class="fcndef">pot_angEnergy</span> atom_keys
+[Etot,Eint,Einteract] = <span class="fcndef">pot_eleEnergy</span> atom_keys
+[Etot,Eint,Einteract] = <span class="fcndef">pot_oopEnergy</span> atom_keys
+[Etot,Eint,Einteract] = <span class="fcndef">pot_resEnergy</span> atom_keys 
+[Etot,Eint,Einteract] = <span class="fcndef">pot_solEnergy</span> atom_keys
+[Etot,Eint,Einteract] = <span class="fcndef">pot_stbEnergy</span> atom_keys
+[Etot,Eint,Einteract] = <span class="fcndef">pot_strEnergy</span> atom_keys
+[Etot,Eint,Einteract] = <span class="fcndef">pot_torEnergy</span> atom_keys
+[Etot,Eint,Einteract] = <span class="fcndef">pot_vdwEnergy</span> atom_keys 
+</pre>
+<p>
+These functions calculate the energy contribution of individual terms in
+the potential energy model:
+<tt>ang</tt> - angle bend, <tt>ele</tt> - electrostatic,
+<tt>oop</tt> - out-of-plane, <tt>res</tt> - restraints,
+<tt>sol</tt> - implicit solvation, <tt>stb</tt> - stretch-bend,
+<tt>str</tt> - bond stretch, <tt>tor</tt> - torsion and
+<tt>vdw</tt> - van der Waals.
+
+All the functions return:
+<ol>
+<li><tt>Etot</tt>: The total energy of all atoms in the system.
+<li><tt>Eint</tt>: The internal energy of the atoms given by <tt>atom_keys</tt>.
+<li><tt>Einteract</tt>: The interaction energy between the atoms given by
+<tt>atom_keys</tt> and all other atoms in the system.
+</ol>
+
+<p><a name="pot_Breakdown"></a></p><p><hr noshade="noshade" />
+<pre>terms = <span class="fcndef">pot_Breakdown</span> setup
+</pre>
+The <tt>pot_Breakdown</tt> function returns a tagged vector consisting of
+the energy contribution of each term in the potential energy model when
+evaluated on all atoms in the system:
+<tt>ang</tt> - angle bend, <tt>ele</tt> - electrostatic,
+<tt>oop</tt> - out-of-plane, <tt>res</tt> - restraints,
+<tt>sol</tt> - implicit solvation, <tt>stb</tt> - stretch-bend,
+<tt>str</tt> - bond stretch, <tt>tor</tt> - torsion and
+<tt>vdw</tt> - van der Waals.  The <tt>setup</tt> argument is that of
+returned by <tt>pot_Setup</tt>.
+
+<p><a name="pot_DefaultSetup"></a></p><p><hr noshade="noshade" />
+<pre>setup = <span class="fcndef">pot_DefaultSetup</span> []
+</pre>
+<p>
+The <tt>pot_DefaultSetup</tt> function returns the default (or suggested)
+setup values for the currently loaded forcefield.  The return value is
+the same format as that of <tt>pot_Setup</tt>.
+
+<p><a name="pot_SetCharges"></a></p>
+<p><a name="pot_FinalizeModel"></a></p>
+<p><a name="pot_ChargeBCI"></a></p>
+<p><hr noshade="noshade" />
+
+<pre><span class="fcndef">pot_ChargeBCI</span> []
+<span class="fcndef">pot_FinalizeModel</span> []
+<span class="fcndef">pot_SetCharges</span> []
+</pre>
+<p>
+The <tt>pot_ChargeBCI</tt> function calculates partial charges for all atoms
+in the system using the Bond Charge Increment method parameterized in the
+parameter file.  Note: not all forcefields use this method and
+<tt>pot_ChargeBCI</tt> should only be called if <tt>pot_ChargeBCI</tt>
+is specified in the return value of <tt>pot_Info</tt>.
+<p>
+<tt>pot_FinalizeModel</tt>
+creates or destroys hydrogens and lone pairs as necessary to complete
+outer valence electron shells and assign charges to all atoms.
+Charges are calculated using <tt>pot_SetCharges</tt>.
+Always call <tt>pot_FinalizeModel</tt> after building a molecular model
+(e.g. at the end of a homology session) or after reading a
+molecule into the system (e.g. from a PDB file), or as part of the
+preparations of a molecular system for subsequent simulations.
+<p>
+<tt>pot_SetCharges</tt> calculates the atomic partial charges for all
+atoms in the system using the method specified by the current forcefield
+(and specified in the return value of <tt>pot_Info</tt>).
+
+<p><a name="pot_Info"></a></p><p><hr noshade="noshade" />
+<pre>info = <span class="fcndef">pot_Info</span> []
+</pre>
+The <tt>pot_Info</tt> function returns a tagged vector consisting of
+information about the currently loaded force field.  The returned tags
+are
+<dl>
+<dt><tt>title</tt>
+<dd>
+The force field name as given by the <tt>title</tt> line in the parameter file.
+<dt><tt>filename</tt>
+<dd>
+The parameter filename.  This value may be <tt>'string'</tt> if the parameter
+file was loaded in a MOE/cluster (MOE/smp) session.
+<dt><tt>ref</tt>
+<dd>
+The contents of the reference lines in the parameter file.
+<dt><tt>chargefcn</tt>
+<dd>
+The name of the SVL function to use to calculate partial charges.
+Use <tt>call[(pot_Info[]).chargefcn]</tt> to calculate the correct partial
+charges for the current forcefield.
+</dl>
+
+<p><a name="_pot_Load"></a></p>
+<p><a name="_pot_Load"></a></p>
+<p><a name="pot_Load"></a></p>
+<p><a name="pot_Load"></a></p>
+<p><hr noshade="noshade" />
+<pre>
+<span class="fcndef">pot_Load</span> 'filename'
+<span class="fcndef">pot_Load</span> "parameter_data"
+<span class="fcndef">_pot_Load</span> 'filename'
+<span class="fcndef">_pot_Load</span> "parameter_data"
+</pre>
+The <tt>pot_Load</tt> function replaces the currently loaded forcefield
+parameters with those specified by its argument.  If the argument is
+a token then it is interpreted as the name of the parameter file whose
+contents will be loaded.  If the argument is a string then it is interpreted
+as the parameter file contents.  In a MOE/cluster (MOE/smp) session, <tt>pot_Load</tt> will 
+load the parameters on all hosts of the MOE/cluster (MOE/smp) session.
+<p>
+The <tt>_pot_Load</tt> function is similar to the <tt>pot_Load</tt> function
+except that only the current host in a MOE/cluster (MOE/smp) session is affected; that is,
+the other hosts' forcefield parameters will remain unchanged.
+
+<p><a name="pot_WallParameters"></a></p>
+<p><a name="pot_WallEnable"></a></p>
+<p><hr noshade="noshade" />
+<pre>old_wall_enable = <span class="fcndef">pot_WallEnable</span> flag
+old_wall_params = <span class="fcndef">pot_WallParameters</span> [mode, weight, center, radius, metric]
+</pre>
+<p>
+The <tt>pot_WallEnable</tt> function enables or disables the wall restraints
+in the potential energy evaluation.  The <tt>pot_WallParameters</tt> function
+obtains and/or modifies the parameters controlling the wall restraints.
+The wall parameters are:
+
+<dl>
+<dt><tt>mode</tt>
+<dd>A token indicating which atoms are affected by the wall restraints.
+If the mode is <tt>'all'</tt> then all atoms are affected by the wall
+restraints.  If the mode is <tt>'atom'</tt> then only atoms such that the
+<tt>aWall</tt> flag is true are affected.
+
+<dt><tt>weight</tt>
+<dd>A force constant weight representing the strength of the wall restraints.
+
+<dt><tt>center</tt>
+<dd>
+A 3-vector defining the center of the wall restraints.
+
+<dt><tt>radius</tt>
+<dd>
+A 3-vector defining the radius in each dimension of the wall restraints.
+Zero values disable the wall restraint along the corresponding axis.
+
+<dt><tt>metric</tt>
+<dd>If <tt>metric</tt> is false, then the Euclidean norm is used in the
+wall calculations; otherwise each axis will be treated independently (
+a box-type metric).
+
+</dl>
+
+<p><a name="_pot_Setup"></a></p><p><a name="pot_Setup"></a></p><p><hr noshade="noshade" />
+<pre>
+old_setup =  <span class="fcndef">pot_Setup</span> setup
+old_setup = <span class="fcndef">_pot_Setup</span> setup
+</pre>
+<p>
+The <tt>pot_Setup</tt> functions control additional parameters of the
+potential energy evaluation.  Note: <tt>PotSetup</tt> is an alias for
+<tt>pot_Setup</tt> and is retained for compatibility with previous version;
+the same is true for the underscore prefixed version.  <tt>pot_Setup</tt>
+will change the setup on all hosts in a MOE/cluster (MOE/smp) session.  The
+<tt>_pot_Setup</tt> will affect only the current host; that is, other
+hosts' potential setup in the MOE/cluster (MOE/smp) session will remain unchanged.
+
+<p>The <tt>setup</tt> argument is tagged vector with the following tags
+<p>
+<blockquote><dl>
+<dt><tt>xxxEnable: xxx_enable_flag </tt>
+<dd>
+Enables the various <tt>'xxx'</tt> energy terms in the calculation. A zero
+flag excludes these terms from the energy calculation.  The various
+<tt>'xxx'</tt> abbreviations represent:
+<tt>ang</tt> - angle bend, <tt>ele</tt> - electrostatic,
+<tt>oop</tt> - out-of-plane, <tt>res</tt> - restraints,
+<tt>sol</tt> - implicit solvation, <tt>stb</tt> - stretch-bend,
+<tt>str</tt> - bond stretch, <tt>tor</tt> - torsion and
+<tt>vdw</tt> - van der Waals. 
+
+<p><dt><tt>xxxWeight: xxx_term_weight</tt>
+<dd>
+The value of <tt>xxx_term_weight</tt> is multiplicative scale factor
+given to the <tt>'xxx'</tt> (see above) energy term in the total energy.
+Default values are 1.
+
+<p><dt><tt>angForm: code</tt>
+<dd>If <tt>code</tt> is 1, the cosine form of the bond angle energy term
+is used, otherwise the angle form is used.
+
+<p><dt><tt>eleDist: code</tt>
+<dd>The distance-dependent dielectric code
+A zero value means Coulomb electrostatics, a one value means a distance
+dependent dielectric functional form and a value of two means a reaction
+field functional form.
+
+<p><dt><tt>eleScale14: ele_14scale</tt>
+<dd>Sets the electrostatic 1-4 interaction 
+  scaling constant to <tt>ele_14scale</tt>.
+
+<p><dt><tt>eleDielectric: dielectric</tt>
+<dd>Sets the dielectric constant to <tt>dielectric</tt>.
+
+<p><dt><tt>eleBuffer: ele_buff</tt>
+<dd>Sets the "sigma" buffering constant 
+  in the electrostatic energy term to <tt>ele_buff</tt>. This term
+  prevents division by zero.
+
+<p><dt><tt>vdwScale14: vdw_14scale</tt>
+<dd>Sets the van der Waals 1-4 interaction 
+  scaling constant to <tt>vdw_14scale</tt>.
+
+<p><dt><tt>vdwBuffer1: vdw_buff1</tt>
+<dd>Sets the "alpha" buffering constant
+   in the van der Waals energy term to <tt>vdw_buff1</tt>.
+
+<p><dt><tt>vdwBuffer2: vdw_buff2</tt> 
+<dd>Sets the "beta" buffering constant
+   in the van der Waals energy term to <tt>vdw_buff2</tt>.
+
+<p><dt><tt>cutoffEnable: cutoff_flag</tt>
+<dd>If <tt>cutoff_flag</tt> is non-zero, enables 
+  the non-bonded cutoff (damping) function. Otherwise,
+  if <tt>cutoff_flag</tt> is zero, disables it.
+
+<p><dt><tt>cutoffOn: on</tt><br /><tt>cutoffOff: off</tt>
+<dd>Sets the cutoff range between <tt>on</tt>
+  and <tt>off</tt>. The <tt>on</tt> and <tt>off</tt> values are distances
+  measured in angstroms. The cutoff function is:
+  1 if <i>r</i> &lt; <tt>on</tt>, 0 if <i>r</i> &gt; <tt>off</tt> and
+  sigmoidal if <tt>on</tt> &lt;= <i>r</i> &lt;= <tt>off</tt>.
+
+<p><dt><tt>solDielectric: sol_dielectric</tt>
+<dd>Sets the solvent dielectric constant to <tt>sol_dielectric</tt>.
+
+<p><dt><tt>state0: like_state_scale</tt>
+<dd>Sets the weight of like-state
+   non-bonded interactions to <tt>like_state_scale.</tt>
+
+<p><dt><tt>state1: unlike_state_scale</tt>
+<dd>Sets the weight of 
+  the unlike-state non-bonded interactions to <tt>unlike_state_scale</tt>.
+
+<p><dt><tt>state2: wildcard_state_scale</tt>
+<dd>Sets the weight of the 
+  wildcard non-bonded interactions to <tt>wildcard_state_scale</tt>.
+
+<p><dt><tt>threadCount: cpu_count</tt>
+<dd>Assigns <tt>cpu_count</tt> processors to the potential energy calculation.
+A maximum of 4 processors may be used.  The default value of 0 indicates
+that the actual number CPUs on a multiprocessor should be used.  If
+a non-zero value is specified then that number processors is used regardless
+of the actual number CPUs on the machine.
+</dl></blockquote>
+
+
+<h2>See Also</h2>
+<p>
+<a href="atom_p.htm">Atom Potential Functions</a><br />
+<a href="cellfcn.htm">Crystal Parameters Functions</a><br />
+<a href="../pot.htm">MOE Potential Energy Model</a><br />
+<a href="restrain.htm">Restraint Functions</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+
+

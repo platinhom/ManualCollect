@@ -1,0 +1,724 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--	svl/fcnref/matinv.htm	Matrix inversion and SVD
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+
+<meta functions matdiag>
+<meta functions matid>
+<meta functions matinv>
+<meta functions matmul>
+<meta functions matpr>
+<meta functions matsetdiag>
+<meta functions matsvd>
+<meta functions matsvdt>
+<meta functions _matsvdt>
+<meta functions matmgs>
+<meta functions matdet>
+<meta functions vcross>
+<meta functions vnormalize>
+
+
+<title>Matrix Operations and SVD</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+<h2>Syntax</h2>
+
+<pre>
+    <a class="fcnlink" href="#matpr">matpr</a> M
+
+    E          = <a class="fcnlink" href="#matid">matid</a> n
+
+    d          = <a class="fcnlink" href="#matdiag">matdiag</a> M
+    M          = <a class="fcnlink" href="#matsetdiag">matsetdiag</a> [M, d]
+    D          = <a class="fcnlink" href="#matsetdiag">matsetdiag</a> [0, d]
+
+    M          = <a class="fcnlink" href="#matmul">matmul</a> [M1, M2]
+    M          = <a class="fcnlink" href="#matmul">matmul</a> [M1, M2, M3, ...]
+
+    B          = <a class="fcnlink" href="#matmgs">matmgs</a> [B, V]
+    B          = <a class="fcnlink" href="#matmgs">matmgs</a> [B, V, kmin, nmin]
+
+    d          = <a class="fcnlink" href="#matdet">matdet</a> M
+
+    [U, w, V]      =  <a class="fcnlink" href="#matsvd">matsvd</a> M
+    [U, w, V, err] =  <a class="fcnlink" href="#matsvdt">matsvdt</a> [M, k]
+    [U, w, V, err] =  <a
+		   class="fcnlink" href="#matsvdt">matsvdt</a> [M, k, limit]
+    [U, w, V, err] = <a class="fcnlink" href="#matsvdt">_matsvdt</a> [M, k, V]
+
+    X          = <a class="fcnlink" href="#matinv">matinv</a> M
+
+    uxv        = <a class="fcnlink" href="#vcross">vcross</a> [u, v]
+    e          = <a class="fcnlink" href="#vnormalize">vnormalize</a> u
+</pre>
+
+
+
+<h2>Description</h2>
+
+<p>SVL matrices are represented as vectors of vectors, e.g.
+
+<pre>
+    svl&gt; mtx = [
+        [1, 2, 3, 4],
+	[2, 2, 5, 6],
+	[3, 5, 8, 7]
+    ];
+</pre>
+
+<p>Individual cells can be referenced by row (<i>i</i>) and column (<i>j</i>) in
+the manner of two dimensional arrays: <tt>mtx(i)(j)</tt>. Rows can be
+accessed by referencing the first level of the vector, such as:
+
+<pre>
+    svl&gt; mtx(2)
+    [2, 2, 5, 6]
+</pre>
+ 
+Columns can be extracted by operations such as <tt>apt peek</tt>:
+
+<pre>
+    svl&gt; apt peek [mtx, 4]
+    [4, 6, 7]
+</pre>
+
+<p>Matrices have no special properties in SVL, except that by definition the
+length of each sub-vector is the same, once unit extension is applied, and each
+element is a numeric scalar value. The following two matrices are equivalent:
+
+<pre>
+    [ [1,1,0], 2, [3,3,3] ]
+    [ [1,1,0], [2,2,2], 3 ]
+</pre>
+
+<p>Standard vector operations apply to matrices as for any other construct,
+e.g.:
+
+<pre>
+    svl&gt; A = [ [1,2,3], [4,5,6], [7,8,9] ];
+    svl&gt; A + 2 // unit addition
+    [ [3,4,5], [6,7,8], [9,10,11] ]
+    
+    svl&gt; v = [10,11,12];
+    svl&gt; A + v // vector addition
+    [ [11,13,15], [14,16,18], [17,19,21] ]
+
+    svl&gt; B = [ [0.1,0.2,0.3], [0.4,0.5,0.6], [0.7,0.8,0.9] ]
+    svl&gt; A + B // matrix addition
+    [ [1.1,2.2,3.3], [4.4,5.5,6.6], [7.7,8.8,9.9] ]
+</pre>
+
+<p>The remainder of this document describes SVL functions which apply to
+matrices. Wherever possible, these functions should be used instead of low level
+SVL operators, in order to improve code readability.
+
+<p><a name="matpr"></a></p><p>
+<hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">matpr</span> M
+</pre>
+
+Returns the value of its argument with the side-effect of printing the
+value at the SVL Commands window.  Function <tt>matpr</tt> behaves
+similarly to function <tt>pr</tt>, except for using a different printing
+format, more appropriate for printing algebraic vectors and matrices.
+
+<p><a name="matid"></a></p><p>
+<hr noshade="noshade" />
+
+<pre>
+E = <span class="fcndef">matid</span> n
+</pre>
+
+Returns an <i>n</i>&times;<i>n</i> identity matrix.
+
+<p><a name="matdiag"></a></p><p>
+<hr noshade="noshade" />
+
+<pre>
+d = <span class="fcndef">matdiag</span> M
+</pre>
+
+Returns the diagonal elements of matrix <i>M</i>.
+
+<p><a name="matsetdiag"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+M = <span class="fcndef">matsetdiag</span> [M, d]
+D = <span class="fcndef">matsetdiag</span> [0, d]
+</pre>
+
+Sets the diagonal elements of matrix <i>M</i> to <i>d</i>.  If
+<i>M</i>=0, the function returns a diagonal matrix with diagonal
+<i>d</i>.
+
+<p><a name="matmul"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+C = <span class="fcndef">matmul</span> [A, B]
+</pre>
+
+Returns the matrix product of matrices <i>A</i> and <i>B</i>.
+
+<p>
+If matrix <i>A</i> is of shape <i>n</i>&times;<i>m</i>
+and matrix <i>B</i> is of shape <i>m</i>&times;<i>p</i>,
+then the product of matrices <i>A</i> and <i>B</i> is
+a matrix <i>C=A</i>&times;<i>B</i> of shape <i>n</i>&times;<i>p</i>.
+
+The (<i>i</i>,<i>j</i>)-th element of matrix <i>C</i> is defined as follows:
+
+<p>
+<center><i>C</i><sub><i>ij</i></sub> =
+    <i>A</i><sub><i>i</i>1</sub>&times;<i>B</i><sub>1<i>j</i></sub> +
+    <i>A</i><sub><i>i</i>2</sub>&times;<i>B</i><sub>2<i>j</i></sub> +
+    ... +
+    <i>A</i><sub><i>im</i></sub>&times;<i>B</i><sub><i>mj</i></sub>
+</center>
+
+where
+<span class="nobr"><i>i</i> = 1...<i>n</i></span>,&nbsp;
+<span class="nobr"><i>j</i> = 1...<i>p</i>.</span>
+
+<p>Note:
+Except for numerical errors, the matrix multiplication operation is associative:
+
+<span class="nobr">(<i>A</i>&times;<i>B</i>)&times;<i>C</i>
+ = <i>A</i>&times;(<i>B</i>&times;<i>C</i>)
+</span>.
+
+However, it is not commutative:
+
+<span class="nobr"><i>A</i>&times;<i>B</i>
+ &ne; <i>B</i>&times;<i>A</i>
+</span>.
+
+<p><hr noshade="noshade" />
+
+<pre>
+B = <span class="fcndef">matmul</span> [A_1, A_2, ... A_<i>K</i>] 
+</pre>
+
+Returns the matrix product of matrices
+<i>A_</i>1,
+<i>A_</i>2,
+...
+<i>A_K</i>.
+
+The matrices <i>A_i</i>,
+must be of compatible shapes.  
+Each matrix <i>A_i</i>,
+
+<span class="nobr"><i>i</i> = 1...<i>K</i></span>,
+
+must be of shape
+
+<span class="nobr"><i>p</i><sub><i>i</i>-1</sub>&times;<i>p</i><sub><i>i</i></sub>,</span>
+
+where
+
+<span class="nobr">
+<i>p</i><sub>0</sub>,
+<i>p</i><sub>1</sub>,
+<i>p</i><sub>2</sub>,
+...
+<i>p</i><sub><i>K</i></sub>
+</span>
+
+are positive integers.
+
+The matrix product <i>B</i> is then of shape
+
+<span class="nobr"><i>p</i><sub>0</sub>&times;<i>p</i><sub><i>K</i></sub>.</span>
+
+<p><hr noshade="noshade" />
+
+<pre>
+u = <span class="fcndef">matmul</span> [A, v]
+</pre>
+
+<p>Returns the matrix-vector product
+<i>u</i>=<i>A</i>&times;<i>v</i>, defined as
+
+<p>
+<center><i>u</i><sub><i>i</i></sub> =
+    <i>A</i><sub><i>i</i>1</sub>&times;<i>v</i><sub>1</sub> +
+    <i>A</i><sub><i>i</i>2</sub>&times;<i>v</i><sub>2</sub> +
+    ... +
+    <i>A</i><sub><i>im</i></sub>&times;<i>v</i><sub><i>m</i></sub>
+</center>
+
+where
+<span class="nobr"><i>i</i> = 1...<i>n</i></span>.
+
+<p><hr noshade="noshade" />
+
+<pre>
+[u] = <span class="fcndef">matmul</span> [[v], A]
+</pre>
+
+<p>Returns the vector-matrix product
+<i>u</i><sup>T</sup>=<i>v</i><sup>T</sup>&times;<i>A</i>, defined as
+
+<p>
+<center><i>u</i><sub><i>j</i></sub> =
+    <i>v</i><sub>1</sub>&times;<i>A</i><sub>1<i>j</i></sub> +
+    <i>v</i><sub>2</sub>&times;<i>A</i><sub>2<i>j</i></sub> +
+    ... +
+    <i>v</i><sub><i>n</i></sub>&times;<i>A</i><sub><i>nj</i></sub>
+</center>
+
+where
+<span class="nobr"><i>j</i> = 1...<i>m</i>.</span>
+
+
+
+<p><a name="matmgs"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+B = <span class="fcndef">matmgs</span> [B, V]
+B = <span class="fcndef">matmgs</span> [B, V, kmin, nmin]
+</pre>
+
+<p>Applies the modified Gram-Schmidt orthogonalization to the set of
+vectors <tt>cat [<i>B</i>, V]</tt>, where vectors in <i>B</i> must be
+orthonormal and all vectors must be of the same length, <tt>n</tt>.
+
+<p> When called with only 2 arguments, the function returns
+<tt>k&nbsp;= length&nbsp;B + length&nbsp;V</tt> vectors, of which
+<tt>r&nbsp;=</tt> rank(<tt>cat[B,V]</tt>) vectors are orthonormal
+and the remaining <tt>k-r</tt> vectors are zero.
+
+<p> When <tt>kmin</tt> is present, the zero vectors are stripped
+from the result and the result is extended by <tt>max[0,kmin-r]</tt>
+random orthonormal vectors.  If <tt>kmin&gt;n</tt> then the length
+of the resulting vectors is extended to <tt>kmin</tt> by random
+orthonormal vectors of size <tt>(kmin-n)</tt>.
+
+<p> When <tt>nmin</tt> is present and <tt>nmin&gt;n</tt>, the length
+of the resulting vectors is extended to <tt>nmin</tt> by random
+orthonormal vectors of size <tt>(nmin-n)</tt>.
+
+<p>Let
+<pre>
+    proj [u,v] = add (v*u) / add (u*u) * u
+</pre>
+
+Then the classical Gram-Schmidt orthogonalization is defined as:
+
+<pre>
+    U(k) = V(k);
+    for i = 1, n loop
+	U(k) = U(k) - proj [U(i),V(k)];
+    endloop
+</pre>
+
+while the modified Gram-Schmidt orthogonalization is defined as:
+
+<pre>
+    U(k) = V(k);
+    for i = 1, n loop
+	U(k) = U(k) - proj [U(i),U(k)]
+    endloop
+</pre>
+
+<p><a name="matdet"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+d = <span class="fcndef">matdet</span> A
+</pre>
+
+Given a square <i>n</i>&times;<i>n</i> matrix <i>A</i>, function <i>matdet</i>
+returns a vector <tt>d</tt> of <i>n</i> numbers whose product is equal to the
+determinant of <i>A</i>.  If matrix <i>A</i> is <i>m</i>&times;<i>n</i>, then
+its determinant is not defined.  However, the function will still return
+<tt>d</tt> of length min(<i>m</i>,<i>n</i>).
+
+<p>The returned values are multiplicative factors in the 
+iterative process of Chi&oacute;'s pivotal condensation, recursively
+defined by:
+
+<blockquote>
+    <span class="nobr">det(<i>A</i>) =
+	det(<i>B</i>) / (<i>a</i><sub>11</sub>)<sup><i>n</i>-2</sup>,
+	where</span>
+    <span class="nobr"><i>B</i> =
+	<i>a</i><sub>11</sub> &times; <i>A</i>[2..<i>n</i>,2..<i>n</i>] -
+	<i>A</i>[2..<i>n</i>,1] &times; <i>A</i>[1,2..<i>n</i>]</span>
+</blockquote>
+
+However, in each iteration, instead of <i>a</i><sub>11</sub>
+we choose the largest absolute value element of <i>A</i> and we
+scale <i>B</i> by that element.
+
+<p>If <i>A</i> is ill-conditioned, then the returned value will contain
+zeros or numbers close to zero.  The numerical rank of the matrix
+can be estimated by counting elements of <tt>d</tt> that are not close to zero.
+
+<p>If <i>A</i> is square, then the condensation process ends with
+the matrix <i>B</i> containing only one element, which becomes the last element
+of <tt>d</tt>.  If <i>A</i> is not square, then the condensation process ends
+with the matrix <i>B</i> of either one row or one column, whose largest
+absolute value element then becomes the last element of <tt>d</tt>.
+
+<!--
+Chi&oacute;, F.
+&quot;M&eacute;moire sur les fonctions connues sous le nom de
+r&eacute;sultantes ou de d&eacute;terminants.&quot;
+Turin: E.&nbsp;Pons, 1853.
+-->
+
+</p>
+
+<p><a name="matsvd"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[U, s, V] = <span class="fcndef">matsvd</span> A
+</pre>
+
+<p>Returns the singular value decomposition (SVD) of a given matrix.
+The SVD of
+an <span class="nobr"><i>n</i>&times;<i>m</i></span> matrix <i>A</i>
+is defined as a triplet of
+an <span class="nobr"><i>n</i>&times;<i>m</i></span> orthogonal matrix <i>U</i>,
+an <span class="nobr"><i>n</i>&times;<i>n</i></span> diagonal matrix <i>D</i>
+with a non-negative diagonal <i>s</i>,
+and an <span class="nobr"><i>n</i>&times;<i>n</i></span>
+orthogonal matrix <i>V</i>,
+such that
+
+<p>
+<center><span class="nobr">
+<i>A</i> = <i>U</i> &times; <i>D</i> &times; <i>V</i>
+</span></center>
+
+<p>
+The values of the diagonal <i>s</i> are called the
+<i>singular values</i> of matrix <i>A</i>.  The returned values of
+<i>s</i> are sorted from the largest to the smallest.
+
+<p>Notes:
+<ul>
+
+<li>
+The typical SVD formulas in mathematical literature differ from the
+SVD formula given here:  the matrix <i>V</i>
+is usually given as the transpose of the matrix <i>V</i>
+returned by function <tt>matsvd</tt>.
+</li>
+
+<li>
+The decomposition is unique, except for a permutation
+of the singular values and the direction (sign)
+of columns of <i>U</i> and rows of <i>V</i>.
+</li>
+
+<li>
+This form of SVD is usually called the <i>thin</i> SVD.
+</li>
+
+<li>The ratio of the largest to the smallest singular value is
+called the <i>condition number</i> of the matrix.
+</li>
+
+<li>A matrix is <i>singular</i> if any of its singular values are zero.
+The condition number of a singular matrix is <i>Inf</i>.
+</li>
+
+<li>A non-singular (<i>regular</i>) matrix is considered
+<i>ill-conditioned</i> if its condition number is too large when
+compared to the precision of the matrix elements. For example,
+the following is an ill-conditioned matrix:
+
+<pre>
+    A = resize [inv (igen m + [dec igen m]), n]
+</pre>
+</li>
+
+<li>Ill-conditioned matrices with condition numbers too large
+to be safely handled by the limited-precision machine
+arithmetics are considered singular:
+all singular values smaller than a given multiple, <i>T</i>,
+of the largest singular value are set to zero.
+In the case of an&nbsp;<i>n</i>&times;<i>m</i> matrix, we use
+<span class="nobr"><tt>
+    T = min[n,m] * sqrt EPS_M
+</tt></span>.
+This value has been chosen to optimize the
+expected precision of different matrix operation that involve
+the result of SVD.  It may be different from the tolerance
+used by other programs (e.g.  <tt>max[n,m] * EPS_M</tt> used by
+<i>matlib</i>).
+</li>
+
+<li>If the input or the output contains non-finite values
+(i.e. <i>Inf</i>s or <i>NaN</i>s), the function will return
+<i>U</i> and <i>V</i> as unit matrices and <i>s</i> as a zero vector.
+</li>
+
+<li>Except for numerical errors, matrix <i>A</i> is equal to matrix
+<pre>
+    B = matmul [U, s * V]
+</pre>
+or, alternatively
+<pre>
+    B = matmul [U, matsetdiag [0,s], V]
+</pre>
+</li>
+
+<li>The vector space of columns of <i>U</i> that correspond to nonzero
+singular values is the <i>range</i> of matrix <i>A</i>.  The vector space
+of rows of <i>V</i> that correspond to zero singular values is the
+<i>nullspace</i> of matrix <i>A</i>.
+
+<pre>
+    range_A  = tr U | s &gt; 0
+    nullspace_A = V | s == 0
+</pre>
+
+Note that we compare the values of <i>s</i> to 0 and not to some
+non-zero tolerance; this is because any singular value that
+is numerically (too) close to zero is set to 0 exactly
+by the SVD function.
+</li>
+
+<li>The squares of singular values of matrix <i>A</i> are the eigenvalues
+of the symmetric matrix <i>A</i>'&times;<i>A</i>.  If
+
+<pre>
+    [U, s, V]  = matsvd A
+    [d, Q] = symeigensystem matmul [tr A, A]
+</pre>
+
+then, except for numerical errors,
+
+<pre>
+    s = sqrt d
+    V = p * Q
+</pre>
+where
+<span class="nobr">|<tt>p</tt><sub><i>j</i></sub>| = 1.</span>
+
+However, the singular value decomposition, <tt>matsvd</tt>, is a faster
+and numerically more stable method than the symmetric eigensystem,
+<tt>symeigensystem</tt>.
+</li>
+
+</ul>
+
+<p><a name="matsvdt"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+[U, s, V, err] = <span class="fcndef">matsvdt</span> [A, k]
+[U, s, V, err] = <span class="fcndef">matsvdt</span> [A, k, limit]
+[U, s, V, err] = <span class="fcndef">_matsvdt</span> [A, k, V]
+</pre>
+
+<p>Returns an approximate truncated SVD of matrix <i>A</i>
+of m rows and n columns.
+
+The function returns U, s, V, err, where U, s, V form the SVD
+decomposition of <i>A</i> and err is the Frobenius norm of approximation
+error, i.e. the difference between <i>A</i> and matmul [U, s*V]:
+<pre>
+    err = norm cat (matmul [U, s*V] - A_m_n)
+</pre>
+
+The SVD is truncated to the largest k singular values, i.e.
+<tt>length(s)&nbsp;==&nbsp;k</tt>.
+
+<p>There are two functions, <tt>matsvdt</tt> and <tt>_matsvdt</tt>,
+that return an approximation of the truncated SVD.  Function
+<tt>_matsvdt</tt> makes a single estimate and returns the result.
+Function <tt>matsvdt</tt> iteratively improves the initial estimate
+and allows the caller to control the size of the resulting error.
+If called with only two arguments, both functions are identical.
+
+<p>Function <tt>_matsvd</tt> can be called iteratively with the
+optional third parameter, V, being a set of orthonormal vectors
+(of <tt>n</tt> elements each) from the rowspace of&nbsp;<i>A</i>.
+
+If the function is called iteratively with V from one iteration
+used as the 3rd argument of <tt>_matsvdt</tt> in the next iteration,
+the returned err will decrease, for example:
+
+<pre>
+    local lasterr = Inf;
+    local [U_m_k, s_k, V_k_n, err] = _matsvdt [A_m_n, k];
+    while gtE [lasterr * 0.99, lasterr = err] loop
+	[U_m_k, s_k, V_k_n, err] = _matsvdt [A_m_n, k, V_k_n];
+    endloop
+</pre>
+
+<p>Function <tt>matsvdt</tt> iteratively calls <tt>_matsvdt</tt> to
+improve the approximation of the truncated SVD.  The function accepts
+an optional third parameter, <tt>limit</tt>, which controls the error of
+the approximation by limiting the number of iterative improvements. 
+
+<ul>
+<li>
+    If <tt>limit</tt> is missing or&nbsp;1, then <tt>_matsvdt</tt> is called
+    only once and the result of <tt>matsvdt</tt> is identical to that
+    of <tt>_matsvdt</tt>.
+</li><li>
+    If <tt>limit</tt>&nbsp;&ge;&nbsp;1, then <tt>_matsvdt</tt> is called
+    at most <tt>floor</tt>&nbsp;(<tt>limit</tt>) times.
+</li><li>
+    If <tt>mod1</tt>&nbsp;(<tt>limit</tt>)&nbsp;&gt;&nbsp;0, then <tt>_matsvdt</tt>
+    is called until the relative improvement in of approximation from
+    the previous iteration becames less than <i>alpha</i>,
+    <i>alpha</i> = (1&nbsp;-&nbsp;<tt>mod1</tt>&nbsp;(<tt>limit</tt>)).
+</li><li>
+    The typical values of <tt>limit</tt> are 0.005 for small matrices,
+    10.05 for medium-size matrices and 2.0 for large matrices.
+</ul>
+
+<p><b>Warning:</b> The initial estimate of the truncated SVD makes
+use of the random number generator; the returned values are thus not
+exactly reproducible.  To obtain reproducible values, the calling
+function must first call <tt>randseed</tt> to reset the random number
+generator to a predetermined state.
+
+<p><a name="matinv"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+X = <span class="fcndef">matinv</span> A
+</pre>
+
+Returns the Moore-Penrose pseudo-inverse of matrix <i>A</i>:
+
+the unique matrix <i>X</i> that satisfies the following four identities:
+
+<p>
+<center>
+<i>A</i>&times;<i>X</i>&times;<i>A</i> = <i>A</i><br />
+<i>X</i>&times;<i>A</i>&times;<i>X</i> = <i>X</i><br />
+(<i>A</i>&times;<i>X</i>)' = <i>A</i>&times;<i>X</i><br />
+(<i>X</i>&times;<i>A</i>)' = <i>X</i>&times;<i>A</i><br />
+</center>
+
+<p>If <i>A</i> is invertible, then the Moore-Penrose pseudo-inverse is
+identical to the inverse of the matrix: the unique matrix <i>X</i>, such
+that
+
+<p>
+<center><i>X</i>&times;<i>A</i> = <i>A</i>&times;<i>X</i> = <i>E</i>
+</center>
+
+<p>Vector <span class="nobr"><i>x</i> = <i>X</i>&times;<i>b</i></span> is the
+least-squares-fit solution of the linear equation
+<span class="nobr"><i>A</i>&times;<i>x</i> = <i>b</i></span>.
+
+<p><a name="vcross"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+c = <span class="fcndef">vcross</span> [a, b]
+</pre>
+
+Returns the vector product (<i>cross product</i>) of two 3-vectors.
+The resulting vector, <i>c</i>, is perpendicular to both <i>a</i>
+and <i>b</i>.  The three vectors, (<i>a</i>,<i>b</i>,<i>c</i>),
+form a right-handed system.
+
+<p><a name="vnormalize"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+e = <span class="fcndef">vnormalize</span> u
+</pre>
+
+Returns a vector of length one that is parallel to the argument vector.
+That is, the function returns the <i>versor</i> of its argument.
+Returns null (<tt>[]</tt>) if <tt>u</tt> is null.
+
+<p><hr noshade="noshade" />
+
+Examples:
+
+<pre>
+svl&gt; <span class="fcndef">vnormalize</span> [10,20,97]
+[0.100458,0.200916,0.974444]
+
+svl&gt; <span class="fcndef">vcross</span> [[2,0,0],[0,2,0]]
+[0,0,4]
+
+svl&gt; A = <span class="fcndef">matpr</span> [[1,2,3,4],[2,3,4,5],[3,4,5,6]]
+    1     2     3     4
+    2     3     4     5
+    3     4     5     6
+
+svl&gt; <span class="fcndef">matmul</span> [A, [[1000,2000], [100,200], [10,20], [1,2]]]
+ 1234  2468
+ 2345  4690
+ 3456  6912
+
+svl&gt; <span class="fcndef">matmul</span> [A, [1000,100,10,1]]
+ 1234
+ 2345
+ 3456
+
+svl&gt; <span class="fcndef">matmul</span> [[[100,10,1]], A]
+  123   234   345   456
+
+</pre>
+
+
+
+
+<h2>See Also</h2>
+
+<p>
+<a class="svl" href="eigen.htm">symeigenvalues</a><br />
+<a class="svl" href="eigen.htm">symeigensystem</a><br />
+<a class="svl" href="eigen.htm">symtridiagonal</a>
+</p>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+

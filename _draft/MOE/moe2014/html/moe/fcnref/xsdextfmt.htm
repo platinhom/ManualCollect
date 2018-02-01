@@ -1,0 +1,330 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!! 	xsdexitfmt.htm	XSD Extension File format chapter
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta fileformat .xsdext>
+
+<title>XSD Extension File Format</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+<p>
+<blockquote>
+<table border="0">
+<tr>
+<td><i>&lt;file&gt;</i>
+<td>::= 
+	{ <i>&lt;category details&gt;</i> }*
+</td></tr>
+
+<tr>
+<td><i>&lt;category details&gt;</i>
+<td>::= 
+ <tt><b>category =</b> </tt> <i>category name</i> <tt>&lt;EOL&gt;</tt>
+ <tt>&lt;category properties&gt;</tt> <tt>{ &lt;field details&gt; }*</tt>
+ <tt>&lt;EOL&gt;</tt>
+</td></tr>
+
+<tr>
+<td><i>&lt;category properties&gt;</i>
+<td>::= 
+ <tt>{ &lt;category attribute&gt; = <i>value</i> &lt;EOL&gt; }*</tt>
+</td></tr>
+
+<tr>
+<td><i>&lt;category attribute&gt;</i>
+<td>::= 
+ <tt><b>multi</b> | <b>printname</b></tt>
+</td></tr>
+
+<tr>
+<td><i>&lt;field details&gt;</i>
+<td>::= 
+ <tt><i>field name</i> <b>= {</b> &lt;EOL&gt; &lt;field properties&gt; <b>}</b>
+ &lt;EOL&gt; | <i>field name</i> <b>=</b> <i>existing field</i> &lt;EOL&gt;</tt>
+</td></tr>
+
+<tr>
+<td><i>&lt;field properties&gt;</i>
+<td>::= 
+ <tt>{ &lt;field attribute&gt; = <i>value</i> &lt;EOL&gt; | &lt;field enumeration&gt; }*</tt>
+</td></tr>
+
+<tr>
+<td><i>&lt;field attribute&gt;</i>
+<td>::= 
+ <tt><b>optional</b> | <b>attribute</b> | <b>type</b> | <b>precision</b> | 
+ <b>printname</b> | <b>docs</b></tt>
+</td></tr>
+
+<tr>
+<td><i>&lt;field enumeration&gt;</i>
+<td>::= 
+ <tt>&lt;field enumeration attribute&gt; <b>= {</b> &lt;EOL&gt; { <i>field enumeration value</i> &lt;EOL&gt; }* <b>}</b> &lt;EOL&gt;</tt>
+</td></tr>
+
+<tr>
+<td><i>&lt;field enumeration attribute&gt;</i>
+<td>::= 
+ <tt><b>enum</b> | <b>printenum</b> | <b>catenum</b> | <b>catprintenum</b></tt>
+</td></tr>
+
+</table>
+</blockquote>
+
+<p><a name="file"></a></p><h2>Description</h2>
+
+<p>The RCSB provides structure records in an XML format called PDBML, as well
+as the more popular PDB and mmCIF formats.  This format has a one-to-one
+correspondence with mmCIF format, making it simple to interconvert between
+the two formats.  The XML is described by an XML Schema Definition (XSD) file,
+the latest version of which is found
+<a href="http://pdbml.pdb.org/schema/pdbx-v32.xsd" target="_blank">here</a>,
+and is also provided in <tt>$MOE/lib</tt> for convenience.  This file
+describes the various data types and allowed values in the XML.
+While this covers all the fields found in standard RCSB PDB files,
+extra fields are sometimes necessary.  For example, the RCSB specification does
+not contain any fields for storing ligand SMILES strings or InChI codes.</p>
+
+<p>The main purpose of the XML specification file for MOE is to define the
+data tables in each record, their data types, whether they are optional or
+required, and so on.  A system has been devised to allow further fields to be
+defined in order to customize MOE to particular needs.  This required
+information about the additional fields may be provided in an external file,
+the format of which is described below.
+</p>
+
+<h2>Format of XSD Extensions</h2>
+
+<p>The format for the XSD Extension files are simple token-based text files
+with one piece of information per line.  Lines beginning with hash symbols (#)
+are ignored, as are blank lines except when inside enumerations (see below).
+Generally, lines are of the form:</p>
+<pre>
+    token = value
+</pre>
+<p>where <code>value</code> is any text to be associated with the token.  There
+is no need to enclose the value in quotes or to escape any characters, the only
+restriction is that it must be specified on a single line in the file.
+</p>
+
+<p>
+<code>token</code> is one of the following:</p>
+
+<p>
+<center>
+<table border="0" cellpadding="3" width="80%">
+
+<tr>
+<td width="20%" valign="top"><b><tt>category</tt></b></td>
+<td valign="top">
+ The name of a new or existing category (i.e. table) in the
+XML.  All successive records apply to this category, until a new category token
+is read.</td>
+</tr>
+
+<tr>
+<td valign="top"><b><tt>multi</tt></b></td>
+<td valign="top">Set to 1 if the current category can have more than one
+row in a record; the publication category would be an example of one which
+can have multiple rows (one per publication) in a record.</td>
+</tr>
+
+<tr>
+<td valign="top"><b><tt>printname</tt></b></td>
+<td valign="top">A user-friendly name to print for this category.</td>
+</tr>
+
+</table>
+</center>
+</p>
+
+<p>Any other token is assumed to be a definition for a field in the category.
+If such a field already exists, its definition will be replaced by the one
+provided here.  For new fields, the value corresponding to the fieldname token
+is an opening brace ({).  All successive tokens will apply to this field,
+until a close brace (}) on a line by itself is encountered, which will terminate
+the field definition.  Each field should be defined with some or all of the
+following tokens:</p>
+
+<p>
+<center>
+<table class="titlebar" width="80%">
+
+<tr>
+<th>token</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td width="20%" valign="top"><b><tt>optional</tt></b></td>
+<td valign="top">A value of 1 indicates that the field is optional and
+can be completely omitted within the category. 0 indicates that
+the field <i>must</i> have a value.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><tt>attribute</tt></b></td>
+<td valign="top">Set to 1 for XML attributes, 0 otherwise.  Every
+category should have at least one attribute.  The combined set of attributes
+for each row must be unique in a given XML category.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><tt>type</tt></b></td>
+<td valign="top">The data type stored in the field.  Valid types are:
+<i>string</i>, <i>integer</i>, or <i>decimal</i>.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><tt>precision</tt></b></td>
+<td valign="top">
+The number of decimal places to which floating point values will be truncated.
+Only applies to <i>decimal</i> data types.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><tt>printname</tt></b></td>
+<td valign="top">A user-friendly name to print for the field.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><tt>docs</tt></b></td>
+<td valign="top">Specifies the help text or comments about the field. 
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><tt>enum</tt></b></td>
+<td valign="top">
+Specifies that the values of a field are to be restricted to a
+specific set of constant values (e.g. yes/no).  This is
+known as an <i>enumeration</i>.
+Enumerations must always begin with the line
+
+<pre>
+    enum = {
+</pre>
+
+followed by the allowable values, one per line.
+The end of an enumeration is signalled by
+
+<pre>
+    }
+</pre>
+
+on a line by itself.  Note that blank lines within enumerations <i>are</i>
+significant.  Every enumeration must have both
+<tt>enum</tt> and <tt>printenum</tt> specified.
+<tt>enum</tt> field values
+should not contain any spaces, quotation marks, slashes, etc.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><tt>printenum</tt></b></td>
+<td valign="top">Same as <tt>enum</tt> above,
+except that this field is meant to contain
+human-readable values for the enumeration, whereas values in <tt>enum</tt>
+should generally be shorter abbreviations,
+and should not contain any spaces, quotation marks, slashes, etc.
+<tt>printenum</tt> values may include standard HTML.
+Every enumeration must have both <tt>enum</tt> and
+<tt>printenum</tt> specified, and both must contain the
+same number of terms.
+<br /><br />
+
+Note that if the corresponding entry in <tt>enum</tt> is left blank, then the
+<tt>printenum</tt> item will be interpreted as a subheading in the list of
+options.  This can be useful for grouping together long lists of options into
+several logical categories.</td>
+</tr>
+
+<tr>
+<td valign="top"><b><tt>catenum</tt></b></td>
+<td valign="top">Same as <tt>enum</tt> except that
+the values will be appended to
+any existing field values defined earlier,
+as opposed to completely replacing those values.
+<tt>catenum</tt> must be used in conjunction with <tt>catprintenum</tt>.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><tt>catprintenum</tt></b></td>
+<td valign="top">Similar to <tt>printenum</tt>, to be used in
+conjunction with <tt>catenum</tt>.
+</td>
+</tr>
+
+</table>
+</center>
+</p>
+
+<p>There is an alternative for defining a field's properties if they are
+the same as those for an existing field.  Instead of
+
+<pre>
+    newfield = {
+</pre>
+
+followed by the field definition, the following can be used:</p>
+
+<pre>
+    newfield = existing_category.existing_field
+</pre>
+
+<p>which will duplicate the entire field definition from an existing field in an
+existing category.  This can be a field defined in the file itself or in the
+main XML specification.  Similarly, you can completely remove a field from
+the specification (though this is not recommended!)
+using <code>newfield = {}</code>.</p>
+
+<h2>See Also</h2>
+
+<a href="cif.htm">CIF/PDBXML Molecular Data Functions</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

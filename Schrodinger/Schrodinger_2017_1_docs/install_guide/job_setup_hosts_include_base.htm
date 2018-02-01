@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:MadCap="http://www.madcapsoftware.com/Schemas/MadCap.xsd" lang="en-US" xml:lang="en-US" data-mc-search-type="Stem" data-mc-help-system-file-name="Documentation.xml" data-mc-path-to-help-system="../" data-mc-target-type="WebHelp2" data-mc-runtime-file-type="Topic" data-mc-preload-images="false" data-mc-in-preview-mode="false" data-mc-toc-path="Installation and Jobs|Installation Guide|Preparing for Remote Job Submission|The Hosts File">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link href="../Skins/Default/Stylesheets/Slideshow.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/TextEffects.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Topic.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Components/Styles.css" rel="stylesheet" type="text/css" data-mc-generated="True" /><title>The include and base Settings in the Hosts File</title>
+        <link href="../Resources/Stylesheets/docs.css" rel="stylesheet" />
+        <script src="../Resources/Scripts/custom.modernizr.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/jquery.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.config.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/foundation.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/plugins.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/MadCapAll.js" type="text/javascript">
+        </script>
+    </head>
+    <body><a name="aanchor9113"></a>
+        <MadCap:concept term="Installation/Jobs" /><a name="aanchor9114"></a>
+        <MadCap:concept term="Installation and Jobs" /><a name="job_setup_525780828_790021"></a>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="job_setup_hosts_env.htm" xrefformat="{paratext}">The env Setting in the Hosts File</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="install_guideTOC.htm" xrefformat="{paratext}">Installation Guide</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="job_setup_hosts_custom.htm" xrefformat="{paratext}">Customizing the Hosts File</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+        <h1 class="Title">The include and base Settings in the Hosts File</h1>
+        <p>The <code>include</code> and <code>base</code> settings offer tools for maintaining a hosts file that can be used across multiple installations of the software.</p>
+        <p>The <code>include</code> setting permits you to include a hosts file in another hosts file. This allows you, for example, to make release-independent settings in one hosts file, and use those settings in a hosts file that contains settings for a particular release. The syntax is </p><pre>
+include <i class="UserReplace">filename</i></pre>
+        <p>where the file name must be an absolute path. </p>
+        <p>The <code>base</code> setting can be used to include settings from another entry that are used as defaults, and can be overridden by settings in the current entry. This allows you to specify settings that are common to a number of entries, without having to duplicate them for each entry. The syntax is </p><pre>
+base <i class="UserReplace">entry-name</i></pre>
+        <p>The examples below illustrate the use of the include and base settings. Suppose you define a hosts file named <code>cluster_queues.hosts</code>, that contains settings for several queues on a cluster. These settings use a base to pick up any common settings for the cluster, such as the location of the software installation and the queue host. The file might look like this:</p><pre>
+# Small queue on cluster1
+name:         small1
+base:         cluster1
+processors:   16
+&#160;
+# Medium queue on cluster1
+name:         medium1
+base:         cluster1
+processors:   64
+&#160;
+# Large queue on cluster1
+name:         large1
+base:         cluster1
+processors:   256
+</pre>
+        <p>Note that the base setting refers to an entry that is not in this file. Now you define your main hosts file, <code>schrodinger.hosts</code>, with the settings that are common to the queues and also the software installation location, which will vary from release to release. This file has the base definition for the queues, and the cluster queue definitions are imported from the above file:</p><pre>
+# Local host definition
+name:         localhost
+&#160;
+# Base settings for cluster1
+name:         cluster1
+host:         cluster1.mynetwork.com
+schrodinger:  /cluster1/schrodinger/schrodinger2014
+queue:        SGE
+tmpdir:       /var/tmp
+&#160;
+include /opt/schrodinger/cluster_queues.hosts
+</pre>
+        <p>When this hosts file is read, <code>cluster_queues.hosts</code> is imported and the <code>base</code> settings are resolved. Note that <code>cluster_queues.hosts</code> is stored in a release-independent location. The hosts file itself is stored in the usual location in the software installation, on your workstation or wherever you plan to submit jobs from. This approach makes it easy to upgrade to a new software version, as you only have to edit the main hosts file that contains the base settings, change the path to the software installation, and save it in the new installation directory. </p>
+        <p>Entries used as a base can also refer to another base. So, for example, you could have entries that just defined the installation directory in your main <code>schrodinger.hosts</code> file, and use them as a base for everything else, which would be imported by an <code>include</code> setting:</p><pre>
+# Local host entry
+name:         localhost
+&#160;
+# NFS-mounted installation
+name: nfs-installation
+schrodinger: /nfs/schrodinger2014-4
+&#160;
+# Cluster installation
+name: cluster-installation
+schrodinger: /software/schrodinger2014-4
+&#160;
+include /opt/schrodinger/cluster.hosts
+include /opt/schrodinger/workstations.hosts
+</pre>
+        <p>The included files could contain both the base settings for the cluster and the settings for the queues, like this (for <code>cluster.hosts</code>):</p><pre>
+# Base setting for cluster1
+name:         cluster1
+base:         cluster-installation
+host:         cluster1.mynetwork.com
+queue:        SGE
+tmpdir:       /var/tmp
+&#160;
+# Small queue on cluster1
+name:         small1
+base:         cluster1
+processors:   16
+...
+</pre>
+        <p>The base entry for the cluster also has a base setting, for the release-dependent <code>schrodinger</code> setting in the main hosts file. When you install a new release, you only need to copy the main hosts file to the new release directory and edit the <code>schrodinger</code> settings.</p>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="job_setup_hosts_env.htm" xrefformat="{paratext}">The env Setting in the Hosts File</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="install_guideTOC.htm" xrefformat="{paratext}">Installation Guide</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="job_setup_hosts_custom.htm" xrefformat="{paratext}">Customizing the Hosts File</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

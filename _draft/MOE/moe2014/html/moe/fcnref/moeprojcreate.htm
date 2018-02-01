@@ -1,0 +1,208 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	/moe/fcnref/moeprojcreate.htm		MOE Project Database Generation Function Ref
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<meta keywords>
+<meta functions ProjectCreate>
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+<title>MOE Project Database Generation Function</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+
+<h2>Syntax</h2>
+<pre>
+    <a class="fcnlink" href="#ProjectCreate">ProjectCreate</a> ['config_file', opt]
+</pre>
+
+<h2>Description</h2>
+
+<h3>MOE Project</h3>
+
+<p><a href="../../proteins/moeproject.htm">MOE Project</a> is a highly configurable 
+meta-protocol for data organization.
+It takes a set of standard format data files as input, processes this data, and
+outputs a single .mdb file. Structures can be aligned and superposed,
+optionally with electron density around the active site and/or ligand topology
+correction. Various forms of structure preparation can also be carried out, and
+associated data assembled or calculated, possibly using SOAP, HTTP or a number
+of other common access methods.  After the input data, a reference file,
+and an XML configuration file have all been prepared, the actual project
+database .mdb file can be generated using the <tt>ProjectCreate</tt> function.
+</p>
+
+<p><a name="ProjectCreate"></a></p>
+<hr noshade="noshade" />
+
+<pre><span class="fcndef">ProjectCreate</span> ['config_file', opt]
+
+    opt = [
+        path              : 'path1,path2,...',
+        include           : 'pat1,pat2,...',
+        exclude           : 'pat1,pat2,...',
+        reffile           : 'reference_filename',
+        outfile           : 'output_filename',
+        errorfile         : filename or file_handle,
+        forcerebuild      : flag,
+        deletemissing     : flag,
+<!-- PSILO-only option
+        sid               : 'session_id',
+-->        progress_fcn      : 'function',
+        progress_fcn_data : data
+    ]
+</pre>
+
+
+<dt><tt>config_file</tt></dt>
+<dd>An XML configuration file that specifies the formats and protocols 
+that will be used to generate the Project Database (MDB file).
+If updating an existing database, this argument may be null since
+the configuration is stored within the MDB file itself.</dd>
+
+<dt><tt>opt</tt></dt>
+<dd>A tagged vector with the following options:</dd>
+
+<div style="margin-left: 2em;"> <!-- indent -->
+
+<dt><tt>path : 'path1,path2,...'</tt>
+</dt><dd>Specifies the location of the files (PDB, MTZ, SDF, etc.) that are used to create the
+project.  This can be a comma-separated list of paths.  All paths given
+are automatically searched recursively downwards.  If omitted, the path to
+<tt>config_file</tt> will be used.
+<!-- Use the special value $PSILO### to get the data from PSILO where ### is
+the family id in the database. -->
+</dd>
+
+<dt><tt>include : 'pat1,pat2,...'</tt>
+</dt><dd>An optional comma-separated list of patterns, in the style of the
+<a href="../../svl/fcnref/findetc.htm"><tt>findmatch</tt></a> command, which
+will be applied to the list of files and directories found in <tt>path</tt>.
+Only those matching one of the patterns will be included in the processing.
+If omitted, all files and directories are processed.
+</dd>
+
+<dt><tt>exclude : 'pat1,pat2,...'</tt>
+</dt><dd>An optional comma-separated list of patterns, in the style of the
+<a href="../../svl/fcnref/findetc.htm"><tt>findmatch</tt></a> command, 
+that indicates which files and paths 
+should be excluded when gathering source files to be used to build the
+project database.  Matching files and directories are excluded <i>after</i>
+<tt>include</tt> has been applied.  If omitted, no additional files or
+directories are excluded from processing.
+</dd>
+
+<dt><tt>reffile  : 'reference_filename'</tt>
+</dt><dd>The filename of the .moe reference file, which must exist in one of the root
+directories in <tt>path</tt>.
+<!-- This is ignored for PSILO (it comes from the database instead). -->
+Normally this will be a .moe file containing one or more aligned sequences,
+with one or more structures, from the family or project of interest.  This is
+in many ways the heart of the project file, used to identify what goes into the
+final project file and how each structure is processed.  <br style="margin-bottom: 0.75em;" />
+As an alternative, a
+single .pdb file can be provided as a quick mode, in which case the
+ligand will be set to $ligand and the pocket will be set to $superpose, the
+collection used for superposition. In this quick mode, only the first polymer chain
+is used as the reference; the other polymer chains are deleted. <br style="margin-bottom: 0.75em;" /> 
+If this argument is omitted, the reference file is assumed to have
+the same name as <tt>config_file</tt> but with a .moe extension.  An error
+will be reported if the reference file does not exist. However, if updating an
+existing database, this argument may be null since the reference file is
+stored within the MDB file itself.
+</dd>
+
+<dt><tt>outfile : 'output_filename'</tt>
+</dt><dd>The output MDB file to create.  If omitted, it will be named the same
+as the <tt>config_file</tt> (and in the same directory), but with an .mdb
+extension.
+</dd>
+
+<dt><tt>errorfile : filename or file_handle</tt>
+</dt><dd>An optional output stream for errors and other messages to be
+written to, instead of the SVL window.
+</dd>
+
+<dt><tt>forcerebuild : flag</tt>
+</dt><dd>If non-zero and <tt>outfile</tt> exists, MOE Project will 
+overwrite the existing database.
+If zero (the default), MOE Project will check if the reference or configuration 
+files have changed since the database was created.  If they have, it will exit 
+with an error, otherwise it will run in update mode (only add new records, delete old ones). 
+</dd>
+
+<dt><tt>deletemissing : flag</tt>
+</dt><dd>If non-zero and in update mode, any rows in the MDB file whose source
+files are no longer present in the source directory will be deleted; this can
+be used to remove obsolete entries from the database when updating.
+</dd>
+
+<!-- PSILO-specific option
+<dt><tt>sid : 'session_id'</tt>
+</dt><dd>The current active PHP session ID, if any, to allow MOE Project to
+query PSILO without logging in to PSILO.
+</dd>
+-->
+
+<dt><tt>progress_fcn : 'function'</tt>
+</dt><dd>An optional callback function to report progress.  It will be
+called with three arguments: 1) the progress (from 0 to 1); 2) the filename
+of the structure file currently being processed; and 3) the <tt>progress_fcn_data</tt>
+argument as a tagged options vector. A typical callback function will be of the form:
+<b><tt>local function my_progress [prog, msg, opt]</tt></b>, 
+where <i><tt>opt.progress_data</tt></i> is the <tt>progress_fcn_data</tt> argument that was provided.
+</dd>
+
+<dt><tt>progress_fcn_data : data</tt>
+</dt><dd>An argument that is passed to the <tt>progress_fcn</tt> callback function. 
+This can be used to pass any additional information needed by the callback function.
+Often, this is used to pass a filename to which progress can be written.
+</dd>
+
+</div> <!-- indent -->
+
+<h2>See Also</h2>
+
+<p>
+<a href="../../proteins/moeproject.htm">MOE Project</a> <br />
+<a href="../moeweb_intro.htm#Configure_Project_Database">Configure Project
+Database</a>
+</p>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

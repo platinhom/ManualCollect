@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:MadCap="http://www.madcapsoftware.com/Schemas/MadCap.xsd" lang="en-US" xml:lang="en-US" data-mc-search-type="Stem" data-mc-help-system-file-name="Documentation.xml" data-mc-path-to-help-system="../" data-mc-target-type="WebHelp2" data-mc-runtime-file-type="Topic" data-mc-preload-images="false" data-mc-in-preview-mode="false" data-mc-toc-path="Command References|Knime Extensions Command Reference|Running KNIME Workflows from the Command Line">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link href="../Skins/Default/Stylesheets/Slideshow.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/TextEffects.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Topic.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Components/Styles.css" rel="stylesheet" type="text/css" data-mc-generated="True" /><title>Modifying Node Settings in a KNIME Batch Workflow</title>
+        <link href="../Resources/Stylesheets/docs.css" rel="stylesheet" />
+        <script src="../Resources/Scripts/custom.modernizr.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/jquery.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.config.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/foundation.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/plugins.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/MadCapAll.js" type="text/javascript">
+        </script>
+    </head>
+    <body><a name="aanchor6777"></a>
+        <MadCap:concept term="Command Reference" /><a name="aanchor6778"></a>
+        <MadCap:concept term="KNIME" /><a name="knime_command_124733133_744227"></a>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="knime_command_batch_example.htm" xrefformat="{paratext}">Example of a KNIME Batch Workflow</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="knime_command_referenceTOC.htm" xrefformat="{paratext}">KNIME Extensions Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="knime_command_batch_running.htm" xrefformat="{paratext}">Running KNIME Batch Workflows</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+        <h1 class="Title">Modifying Node Settings in a KNIME Batch Workflow</h1>
+        <p>The example workflow discussed above used hard-coded generic input and output file names. This approach allows you to run different input data sets by simply renaming or copying the actual input and output files to the respective names. While this is a simple approach, it lacks flexibility. Instead it would be desirable to be able to control the settings of the nodes directly. This becomes especially important when you want to change the settings of nodes, for example to turn certain options on or off, or to modify numerical settings such as cutoffs and convergence criteria. </p>
+        <p>The KNIME batch executor provides a facility for changing the settings of every node in a workflow. Conceptually this facility is simple and easy to use but the actual mechanics depend on the complexity of the workflow. The settings can be made with the <code>knime</code> command using <code>-option</code>. There are four pieces of information that need to be provided for each setting: the node ID, the setting name, the value, and the type of value.</p>
+        <p>The first step in controlling the settings of a workflow is finding out what the settings of the nodes actually are. To do this you have to analyze various files in the workflow itself. There are currently no tools available for doing this analysis, so it must be done manually. </p>
+        <p>For the purpose of describing the process, we will again use the sample workflow introduced above (starting with the ZIP file). If you want to use this as an exercise, create a temporary directory to hold the workflow, change to that directory and unzip the workflow archive:</p><pre>
+mkdir <i class="UserReplace">tempdir</i>
+cd tempdir
+unzip <i class="UserReplace">wfpath</i>/batch-example.zip
+</pre>
+        <p>The output from unzipping the workflow archive is as follows:</p><pre>
+Archive: <i class="UserReplace">wfpath</i>/batch-example.zip
+  inflating: batch-example/.lock     
+  inflating: batch-example/.project  
+  inflating: batch-example/CSV Writer (#7)/settings.xml  
+  inflating: batch-example/Extract MAE Properties (#6)/data/data_0/data.xml  
+  inflating: batch-example/Extract MAE Properties (#6)/data/data_0/data.zip  
+  inflating: batch-example/Extract MAE Properties (#6)/data/data_0/spec.xml  
+  inflating: batch-example/Extract MAE Properties (#6)/settings.xml  
+  inflating: batch-example/File Reader (#1)/data/data_0/data.xml  
+  inflating: batch-example/File Reader (#1)/data/data_0/data.zip  
+  inflating: batch-example/File Reader (#1)/data/data_0/spec.xml  
+  inflating: batch-example/File Reader (#1)/settings.xml  
+  inflating: batch-example/LIGPREP (#2)/data/data_0/data.xml  
+  inflating: batch-example/LIGPREP (#2)/data/data_0/data.zip  
+  inflating: batch-example/LIGPREP (#2)/data/data_0/reference_0/data.xml  
+  inflating: batch-example/LIGPREP (#2)/data/data_0/reference_0/data.zip  
+  inflating: batch-example/LIGPREP (#2)/data/data_0/reference_0/spec.xml  
+  inflating: batch-example/LIGPREP (#2)/data/data_0/spec.xml  
+  inflating: batch-example/LIGPREP (#2)/internal/internalData.xml  
+  inflating: batch-example/LIGPREP (#2)/settings.xml  
+  inflating: batch-example/Molecule Writer (#3)/internal/internalData.xml  
+  inflating: batch-example/Molecule Writer (#3)/settings.xml  
+  inflating: batch-example/Molecule Writer (#5)/internal/internalData.xml  
+  inflating: batch-example/Molecule Writer (#5)/settings.xml  
+  inflating: batch-example/QIKPROP (#4)/data/data_0/data.xml  
+  inflating: batch-example/QIKPROP (#4)/data/data_0/data.zip  
+  inflating: batch-example/QIKPROP (#4)/data/data_0/reference_0/data.xml  
+  inflating: batch-example/QIKPROP (#4)/data/data_0/reference_0/data.zip  
+  inflating: batch-example/QIKPROP (#4)/data/data_0/reference_0/spec.xml  
+  inflating: batch-example/QIKPROP (#4)/data/data_0/spec.xml  
+  inflating: batch-example/QIKPROP (#4)/internal/internalData.xml  
+  inflating: batch-example/QIKPROP (#4)/settings.xml  
+  inflating: batch-example/workflow.knime  
+</pre>
+        <p>Note the layout of the workflow directory. Subdirectories correspond to nodes in the workflow and every node has a number (or ID) associated with it. The IDs are assigned when the workflow is created and do not change when you add or delete nodes.</p>
+        <p>To change the settings for the input file in this workflow you need to determine the ID for the File Reader node, of which there is only one. The relevant directory is “File Reader (#1)” so the node ID is 1. You can also determine the node ID in the GUI either from the default node name (which is <span class="GUI">Node </span><i class="UserReplace">n</i>) or by opening the configuration dialog, which shows the node ID in the title bar, for example <span class="GUI">File Reader (#1)</span> or <span class="GUI">Molecule Writer (#3)</span>.</p>
+        <p>Information on the setting that controls the name of the input data file is in the <code>settings.xml</code> within the “File Reader (#1)” subdirectory. To extract this information, you will normally have to open this file in a text editor. In this case, the easiest way to locate the relevant setting is to look for the hard-coded file name, <code>/tmp/input.smi</code>, which is on the following line:</p><pre>
+&lt;entry key="DataURL" type="xstring" value="file:/tmp/input.smi"/&gt;
+</pre>
+        <p>The relevant node setting is named <code>DataURL</code> and is of type <code>String</code>. The type is not exactly the same as in the XML file, which is <code>xstring</code>. This type maps to <code>String</code> for the purpose of input to the batch executor. The current value of the setting is <code>file:/tmp/input.smi</code>. Note that in this case the node represents the data location as a URL so the file name is prefixed with <code>file:</code>.</p>
+        <p>Simple scalar settings such as <code>DataURL</code> are easy to modify. To point the workflow to a different input file, such as <code>/tmp/new-input.smi</code>, you can use the following <code>-option</code> setting on the command line:</p><pre>
+-option=1,DataURL,"file:/tmp/new-input.smi",String
+</pre>
+        <p>To run the workflow with this new data file, you can use the following command:</p><pre>
+$SCHRODINGER/knime -batch -reset -workflowFile=<i class="UserReplace">wfpath</i>/batch-example.zip -option=1,DataURL,"file:/tmp/new-input.smi",String
+</pre>
+        <p>Another example of a file type is the output file for the CSV Writer (node 7). Information on this file from the corresponding <code>settings.xml</code> file is found on the following line:</p><pre>
+&lt;entry key="filename" type="xstring" value="/tmp/molprops.csv"/&gt;
+</pre>
+        <p>Since the CSV writer can only write to actual files on disk (as opposed to generic URLs), the setting for the file name is a plain string without any prefix. To change the node setting to write the file <code>new-molprops.csv</code>, you can use the following <code>-option</code> setting:</p><pre>
+-option=7,filename,"/tmp/new-molprops.csv",String
+</pre>
+        <p>Thus to run the workflow with custom names for the input SMILES file and the output CSV file, you can use the following command:</p><pre>
+$SCHRODINGER/knime -batch -reset -workflowFile=<i class="UserReplace">wfpath</i>/batch-example.zip -option=1,DataURL,"file:/tmp/new-input.smi",String -option=7,filename,"/tmp/new-molprops.csv",String
+</pre>
+        <p>The discussion so far has illustrated how to change input and output file settings. You can also change numerical settings. For example, the <code>settings.xml</code> file for the <span class="GUI">LIGPREP</span> node contains the following lines (among others):</p><pre>
+&lt;entry key="hostname" type="xstring" value="localhost:2"/&gt;
+&lt;entry key="force_field" type="xstring" value="OPLS_2005"/&gt;
+&lt;entry key="force_field_arg" type="xstring" value="-bff 14"/&gt;
+&lt;entry key="retain_state" type="xboolean" value="false"/&gt;
+&lt;entry key="neutralize" type="xboolean" value="false"/&gt;
+&lt;entry key="generate_possible" type="xboolean" value="true"/&gt;
+&lt;entry key="ph" type="xstring" value="7.0"/&gt;
+&lt;entry key="pht" type="xstring" value="2.0"/&gt;
+&lt;entry key="ionizer" type="xboolean" value="true"/&gt;
+</pre>
+        <p>These lines contain settings for numeric values, which are treated as strings, and Booleans, for which the type to use in the <code>-option</code> setting is <code>Boolean</code>. There is also an integer type, <code>xint</code>, for which the type to use in the <code>-option</code> setting is <code>int</code>. The setting names have obvious interpretations (which should be true for all the Schrödinger nodes), so that it is not difficult to work out what settings to make. </p>
+        <p>These lines also contain a setting for the host name. This setting is passed as the <code>-HOST</code> argument when the Schrödinger program is executed. The host name can include the number of processors. For nodes that also specify the number of jobs (as LigPrep does), there is usually an <code>njobs</code> setting that allows you to set the number of jobs. You can run the workflow above with the following command to set the host name to <code>clus_queue</code>, the number of nodes to 2, and number of jobs to 2 for LigPrep:</p><pre>
+$SCHRODINGER/knime -batch -reset -workflowFile=<i class="UserReplace">wfpath</i>/batch-example.zip -option=2,hostname,"clus_queue:2",String -option=2,njobs,2,String
+</pre>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="knime_command_batch_example.htm" xrefformat="{paratext}">Example of a KNIME Batch Workflow</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="knime_command_referenceTOC.htm" xrefformat="{paratext}">KNIME Extensions Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="knime_command_batch_running.htm" xrefformat="{paratext}">Running KNIME Batch Workflows</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

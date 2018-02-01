@@ -1,0 +1,416 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta functions aFixed, aSetFixed>
+<meta functions aState, aSetState>
+<meta functions aForceRS, aSetForceRS>
+<meta functions aInert, aSetInert>
+<meta functions aMMType, aRadius, aMass, aSetMass>
+<meta functions aCharge, aSetCharge>
+<meta functions aPos, aSetPos>
+<meta functions aTether, aSetTether, aWall, aSetWall>
+<meta intro Atom Potential Functions>
+
+<title>Atom Potential Functions</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+
+<h2>Syntax</h2>
+
+<pre>
+    partial_charges = <a class="fcnlink" href="#aCharge">aCharge</a>  atom_keys
+    flags           = <a class="fcnlink" href="#aFixed">aFixed</a>   atom_keys
+    chiral_numbers  = <a class="fcnlink" href="#aForceRS">aForceRS</a> atom_keys
+    flags           = <a class="fcnlink" href="#aInert">aInert</a>   atom_keys
+    mass_numbers    = <a class="fcnlink" href="#aMass">aMass</a>    atom_keys
+    mm_type_tokens  = <a class="fcnlink" href="#aMMType">aMMType</a>  atom_keys
+    [x,y,z]         = <a class="fcnlink" href="#aPos">aPos</a>     atom_keys
+    radius_numbers  = <a class="fcnlink" href="#aRadius">aRadius</a>  atom_keys
+    state_numbers   = <a class="fcnlink" href="#aState">aState</a>   atom_keys
+    tether_data     = <a class="fcnlink" href="#aTether">aTether</a>  atom_keys
+    wall_flags      = <a class="fcnlink" href="#aWall">aWall</a>    atom_keys
+
+    <a class="fcnlink" href="#aSetCharge">aSetCharge</a>  [atom_keys, partial_charges]
+    <a class="fcnlink" href="#aSetFixed">aSetFixed</a>   [atom_keys, flags]
+    <a class="fcnlink" href="#aSetForceRS">aSetForceRS</a> [atom_keys, chiral_numbers]
+    <a class="fcnlink" href="#aSetInert">aSetInert</a>   [atom_keys, flags]
+    <a class="fcnlink" href="#aSetMass">aSetMass</a>    [atom_keys, mass_numbers]
+    <a class="fcnlink" href="#aSetPos">aSetPos</a>     [atom_keys, [x,y,z]]
+    <a class="fcnlink" href="#aSetState">aSetState</a>   [atom_keys, state_numbers]
+    <a class="fcnlink" href="#aSetTether">aSetTether</a>  [atom_keys, [x,y,z], weight, lo, hi]
+    <a class="fcnlink" href="#aSetWall">aSetWall</a>    [atom_keys, wall_flags]
+</pre>
+
+<h2>Description</h2>
+
+<p>
+In MOE, molecular data is organized as a hierarchy of <i>molecular
+objects</i> or <i>objects</i>.  MOE stores atom information in separate
+internal data structures.  Atoms are referenced with an object key, which
+is a unique number identifying the atom object.  The many atom functions
+provided in MOE cover the following broad categories:
+
+<ul>
+<li><a href="atom.htm">Fundamental Properties</a>
+<li><a href="atom_p.htm">Potential Properties</a> (this page)
+<li><a href="atom_d.htm">Display Properties</a>
+<li><a href="atom_g.htm">Geometry</a>
+</ul>
+
+<p>
+The following functions can be used to obtain atom information:
+
+<!-- DESC -->
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline">
+<a name="aCharge"></a><tt>aCharge</tt>
+<td valign="baseline">
+Returns the partial charge value of each atom in the argument.  Note that
+this function does not actually calculate partial charges; it just returns
+the current partial charge value assigned to the atoms.
+This function can be used on arbitrarily nested vectors.
+
+<pre>
+partial_charges = aCharge atom_keys
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aFixed"></a><tt>aFixed</tt>
+<td valign="baseline">
+Returns a value of 1 for each atom that is fixed in space, 0 otherwise.
+Fixed atoms cannot be moved (programmatically, e.g. in energy
+minimization, or manually, e.g. with the mouse), and have
+their potential energy gradients set to 0.
+This function can be used on arbitrarily nested vectors.
+
+<pre>
+flags = aFixed atom_keys
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aForceRS"></a><tt>aForceRS</tt>
+<td valign="baseline">
+Returns the value of the chiral constraint of each atom in the argument.
+This value is either -1 for an S constraint, 0 for no constraint or 1 for
+an R constraint. For atoms which are part of a double bond, the meaning of the
+values is 1 for the Z stereoisomer and -1 for the E stereoisomer. For
+consistency, both atoms of double bonds must have the same value.
+This function can be used on arbitrarily nested vectors.
+
+<pre>
+chiral_numbers = aForceRS atom_keys
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aInert"></a><tt>aInert</tt>
+<td valign="baseline">
+Returns a value of 1 for each atom that is marked for omission from
+potential energy calculations, 0 otherwise.
+
+<pre>
+flags = aInert atom_keys
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aMass"></a><tt>aMass</tt>
+<td valign="baseline">
+Returns the mass (in AMU) of each atom in the argument.  If the
+mass is positive then this value is returned.  Otherwise the mass is
+taken from the forcefield parameters, if the atom has a correct type;
+or, from a default atomic weight table.
+This function can be used on arbitrarily nested vectors.
+
+<pre>
+mass_numbers = aMass atom_keys
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aMMType"></a><tt>aMMType</tt>
+<td valign="baseline">
+Returns the molecular mechanics atom type token of each atom in the
+argument.  A <tt>'??'</tt>is returned for atoms of unrecognized type.
+This function can be used on arbitrarily nested vectors.
+<pre>
+mm_type_tokens = aMMType atom_keys
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aPos"></a><tt>aPos</tt>
+<td valign="baseline">
+Returns the 3D Cartesian coordinates of the position of each atom in the
+argument in the form of 3 vectors,
+<tt>x</tt>, <tt>y</tt> and <tt>z</tt>.
+The length of each of these vectors is 
+equal to the length of <tt>atom_keys</tt>.
+This function applies to flat vectors only.
+
+<pre>
+[x,y,z] = aPos atom_keys
+</pre>
+
+Hint: to obtain the vectors
+[[x<sub>1</sub>,y<sub>1</sub>,z<sub>1</sub>]...[x<sub>n</sub>, y<sub>n</sub>,
+z<sub>n</sub>]] where <tt>n</tt> is the length of <tt>atom_keys</tt>, use:
+<span class="nobr"><tt>tr aPos atom_keys</tt></span>.
+
+<tr>
+<td valign="baseline">
+<a name="aRadius"></a><tt>aRadius</tt>
+<td valign="baseline">
+Returns the van der Waals radius (in angstroms) of each atom in the argument.
+If the given atom has a correct forcefield type, then the
+forcefield radius is returned; otherwise, a default non-bonded radius is
+returned.  Note: this is the van der Waals radius value that is used
+in calculating the potential.
+This function can be used on arbitrarily nested vectors.
+
+<pre>
+radius_numbers = aRadius atom_keys
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aState"></a><tt>aState</tt>
+<td valign="baseline">
+Returns the state tag (an integer) of each atom in the argument.  State
+tags are used to scale (or disable) non-bonded interactions.  Scale
+factors can be set for cases when state tags are equal, unequal or when
+one state tag is 0.  The potential control and setup function can be used
+to specify the scale factors.
+This function can be used on arbitrarily nested vectors.
+
+<pre>
+state_numbers = aState atom_keys
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aTether"></a><tt>aTether</tt>
+<td valign="baseline">
+Returns the tether data of each atom in the argument in the form of a laminated
+vector.  The return value has the form <tt>[[x,y,z], weight, lo, hi]</tt> where
+<tt>[x(i),y(i),z(i)]</tt> is the target position of the tether,
+<tt>weight(i)</tt> is the force constant, <tt>lo(i)</tt> and <tt>hi(i)</tt>
+define the range to which the atom's distance to the target position belongs
+results in a force of zero.
+
+<pre>
+[[x,y,z],weight,lo,hi] = aTether atom_keys
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aWall"></a><tt>aWall</tt>
+<td valign="baseline">
+Returns the wall flag for each atom in the argument.  The wall flag indicates
+whether the atom will be affected by Wall restraints.
+
+</table>
+
+<!-- ENDDESC -->
+
+<p>
+The following functions can be used to modify atom information:
+
+<!-- DESC -->
+
+<p>
+<table class="titlebar" width="100%" border="1" cellpadding="3">
+
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td valign="baseline">
+<a name="aSetCharge"></a><tt>aSetCharge</tt>
+<td valign="baseline">
+Sets the partial charge of each given atom.
+This function can be used on arbitrarily nested vectors.
+
+<pre>
+aSetCharge [atom_keys, partial_charges]
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aSetFixed"></a><tt>aSetFixed</tt>
+<td valign="baseline">
+Sets the "fixed position" flag of each atom in the argument.  Unfixed
+atoms (flag value of 0) can have their positions altered.
+Fixed atoms (non-zero flag value) are prevented from having their
+positions altered and have their potential energy gradients set to 0.
+This function can be used on arbitrarily nested vectors.
+
+<pre>
+aSetFixed [atom_keys, flags]
+</pre>
+
+<tr> <td valign="baseline">
+<a name="aSetForceRS"></a><tt>aSetForceRS</tt> <td valign="baseline"> Sets a chirality constraint on
+each given atom.  A value of -1 imposes S chirality, 1 imposes R chirality and 0
+disables the chiral constraint. The meaning of chiral constraints for atoms
+participating in double bonds is 1 for Z and -1 for E stereochemistry. The two
+types of stereochemistry use the same priority system, and apply to mutually
+exclusive sets of atoms. To define Z or E stereochemistry, <i>both</i> atoms of
+the double bond should always be set to the same value. This function can be
+used on arbitrarily nested vectors.
+
+<pre>
+aSetForceRS [atom_keys, chiral_numbers]
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aSetInert"></a><tt>aSetInert</tt>
+<td valign="baseline">
+Sets the "inert" flag of each atom in the argument.  Inert atoms (non-zero
+flag value) are excluded from potential energy calculations.
+
+<pre>
+aSetInert [atom_keys, flags]
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aSetMass"></a><tt>aSetMass</tt>
+<td valign="baseline">
+Sets the mass (AMU) of each given atom.  Non-positive values map to 0,
+causing <tt>aMass</tt> to return the forcefield and/or default element mass.
+This function can be used on arbitrarily nested vectors.
+
+<pre>
+aSetMass [atom_keys, mass_numbers]
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aSetPos"></a><tt>aSetPos</tt>
+<td valign="baseline">
+Sets the position of each atom in the first argument to the Cartesian
+coordinates in the second argument.  The second argument should be of the form
+<tt>[x,y,z]</tt>, where <tt>x</tt>, <tt>y</tt> and <tt>z</tt> are each vectors
+that are unit extendable to the length of the <tt>atom_keys</tt> vector.
+
+<pre>
+aSetPos [atom_keys, [x,y,z]]
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aSetState"></a><tt>aSetState</tt>
+<td valign="baseline">
+Sets the nonbonded interaction state for each given atom.  The nonbonded
+interaction state, or just <i>state</i>, is used to scale or disable
+nonbonded interactions between classes of atoms.
+This function can be used on arbitrarily nested vectors.
+
+<pre>
+aSetState [atom_keys, state_numbers]
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aSetTether"></a><tt>aSetTether</tt>
+<td valign="baseline">
+Sets the tether data of each atom in <tt>atom_keys</tt>.
+The tether data has the form <tt>[[x,y,z], weight, lo, hi]</tt>
+where <tt>[x(i),y(i),z(i)]</tt> is the target position of the tether,
+<tt>weight(i)</tt> is the force constant, <tt>lo(i)</tt> and
+<tt>hi(i)</tt> define the range to which the atom's distance to the
+target position belongs results in a force of zero.
+
+<pre>
+aSetTether [atom_keys, [x,y,z], weight, lo, hi]
+</pre>
+
+<tr>
+<td valign="baseline">
+<a name="aSetWall"></a><tt>aSetWall</tt>
+<td valign="baseline">
+Sets the wall flag for each atom in the argument.  The wall flag indicates
+whether the atom will be affected by Wall restraints.
+
+</table>
+
+<!-- ENDDESC -->
+
+<h2>See Also</h2>
+
+<p>
+<a class="svl" href="mm.htm">MM</a><br />
+<a class="svl" href="meters.htm">Meters</a><br />
+<a class="svl" href="restrain.htm">Restraints</a><br />
+<a class="svl" href="rconstraint.htm">rConstraints</a><br />
+</p>
+
+<p>
+<a href="measure.htm"><span class="nobr">Molecular
+    System Measure Functions</span></a><br />
+<a href="potfcn.htm"><span class="nobr">Potential
+    Energy Functions</span></a><br />
+<a href="../pot.htm"><span class="nobr">MOE Potential
+    Energy Model</span></a>
+</p>
+
+<p>
+<a href="atom.htm">Atom&nbsp;Functions</a><br />
+<a href="atom_d.htm">Atom&nbsp;Display&nbsp;Functions</a><br />
+<a href="bond.htm">Bond&nbsp;Functions</a><br />
+<a href="residue.htm">Residue&nbsp;Functions</a><br />
+<a href="chain.htm">Chain&nbsp;Functions</a><br />
+<a href="obj.htm">Object&nbsp;Functions</a><br />
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

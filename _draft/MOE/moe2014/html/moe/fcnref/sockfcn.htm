@@ -1,0 +1,304 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	sockfcn.htm			CTAB functions
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions socket_open>
+<meta functions socket_key>
+<meta functions socket_close>
+<meta functions socket_wait>
+<meta functions socket_eof>
+<meta functions socket_read>
+<meta functions socket_readline>
+<meta functions socket_write>
+<meta functions socket_flush>
+
+<title>Socket Functions</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    key = <a class="fcnlink" href="#socket_open">socket_open</a> url
+    key = <a class="fcnlink" href="#socket_open">socket_open</a> [ipaddr, port]
+    key = <a class="fcnlink" href="#socket_open">socket_open</a> key
+    
+    <a class="fcnlink" href="#socket_close">socket_close</a> key
+    
+    key = <a class="fcnlink" href="#socket_key">socket_key</a> key
+    
+    flag = <a class="fcnlink" href="#socket_wait">socket_wait</a> [key, timeout]
+    
+    flag = <a class="fcnlink" href="#socket_eof">socket_eof</a> key
+    
+    data = <a class="fcnlink" href="#socket_read">socket_read</a> [key, nbytes]
+    data = <a class="fcnlink" href="#socket_read">socket_read</a> [key, nbytes, nbflag]
+    
+    data = <a class="fcnlink" href="#socket_readline">socket_readline</a> key
+    
+    <a class="fcnlink" href="#socket_write">socket_write</a> [key, data]
+    
+    <a class="fcnlink" href="#socket_flush">socket_flush</a> key
+</pre>
+
+<p><a name="socket_open"></a></p><p><a name="socket_open"></a></p><p><a name="socket_open"></a></p><h2>Description</h2>
+
+<p>The socket functions are used to open a two-way TCP/IP stream and connect it
+to a specified port on a host server, which must be accessible from the current
+network. If the connection is established successfully, bytes may be read from
+and written to the stream for as long as it remains open at both ends.
+
+<!-- ...................................................................... -->
+
+<p><a name="socket_open"></a></p><hr noshade="noshade" />
+
+<pre>
+key = <span class="fcndef"><span class="fcndef">socket_open</span></span> url
+key = <span class="fcndef"><span class="fcndef">socket_open</span></span> [ipaddr, port]
+key = <span class="fcndef"><span class="fcndef">socket_open</span></span> key
+</pre>
+
+<p>Initiates a connection with the given host, and returns a key which is used
+with the other socket functions. The destination can be specified as a URL
+token, e.g.:
+
+<pre>
+    key = socket_open 'http://www.chemcomp.com';
+    key = socket_open 'http://localhost:8888'
+    key = socket_open 'ftp://192.168.0.5'
+</pre>
+
+<p>Or it can be specified by providing the address and port separately, e.g.:
+
+<pre>
+    key = socket_open ['www.chemcomp.com', 80]
+    key = socket_open ['localhost', 8888]
+    key = socket_open ['192.168.0.5', 21]
+</pre>
+
+<p>If the connection fails for any reason, an error is emitted.
+
+<p>The function can also be used to reopen the socket, which increases its
+reference count. The socket key should be closed the same number of times that
+it was opened, e.g.:
+
+<pre>
+    key = socket_open url;
+    key = socket_open key;
+    socket_close key;
+    // (socket is still valid)
+    socket_close key;
+    // (socket is no longer valid)
+</pre>
+
+<!-- ...................................................................... -->
+
+<p><a name="socket_close"></a></p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">socket_close</span> key
+</pre>
+
+<p>For each call to <tt>socket_open</tt>, there must be a corresponding
+call to <tt>socket_close</tt>.
+The last call to <tt>socket_close</tt> shuts down the socket and prevents any
+further reading or writing. The contents of the input buffer will be discarded,
+and any remaining bytes in the output queue will be flushed.
+
+<p>Once the key has been closed for the last time, it becomes invalid, and using
+it will generate an error for all functions, except <tt>socket_key</tt>.
+If <tt>key</tt> is <tt>0</tt>, this function has no effect.
+
+<!-- ...................................................................... -->
+
+<p><a name="socket_key"></a></p><hr noshade="noshade" />
+
+<pre>
+key = <span class="fcndef">socket_key</span> key
+</pre>
+
+<p>Returns the value of <tt>key</tt> if the socket key is valid, or <tt>0</tt>
+if it is not.
+
+<!-- ...................................................................... -->
+
+<p><a name="socket_wait"></a></p><hr noshade="noshade" />
+
+<pre>
+flag = <span class="fcndef">socket_wait</span> [key, timeout]
+</pre>
+
+<p>Waits for one of the following events to occur:
+
+<ul>
+
+<p><li>If a byte is available in the input buffer, returns <tt>1</tt>.
+</li></p>
+<p><li>If end-of-file has been reached and there are no more bytes in the input
+buffer, returns <tt>0</tt>.
+</li></p>
+<p><li>If the timeout (in seconds) is reached and neither of the
+above events has occurred, returns <tt>0</tt>.
+</li></p>
+</ul>
+
+<p>A non-zero return value guarantees that there is at least one byte
+available in the input buffer, so a blocking read of a single byte will return
+immediately.
+
+<!-- ...................................................................... -->
+
+<p><a name="socket_eof"></a></p><hr noshade="noshade" />
+
+<pre>
+flag = <span class="fcndef">socket_eof</span> key
+</pre>
+
+<p>Returns <tt>1</tt> if the last byte has been read from the input
+stream. This state only occurs when the other end of the socket has been
+explicitly closed from the other end, and it is only triggered <i>after</i>
+all of the bytes have been read out of the input buffer.
+
+<!-- ...................................................................... -->
+
+<p><a name="socket_read"></a></p><hr noshade="noshade" />
+
+<pre>
+data = <span class="fcndef">socket_read</span> [key, nbytes]
+data = <span class="fcndef">socket_read</span> [key, nbytes, nbflag]
+</pre>
+
+<p>Attempts to read <tt>nbytes</tt> from the socket input stream.
+
+<p>By default, the reading mode is blocking (<tt>nbflag</tt> is <tt>0</tt>),
+which means that the function
+will not return until either <tt>nbytes</tt> have been read or
+end of file has been reached.
+
+<p>If <tt>nbflag</tt> is set to <tt>1</tt>, the function operates in
+non-blocking mode and will attempt to read <tt>nbytes</tt> from
+the input buffer only, after which it returns immediately.
+If fewer than <tt>nbytes</tt> are in the input buffer, the function still
+returns immediately, with as many bytes as there are in the input buffer.
+
+<p>The number of bytes returned will never be greater than <tt>nbytes</tt>,
+but it is always possible that the number of bytes returned will be less,
+even in blocking mode, since end of file may occur before <tt>nbytes</tt>
+are collected.
+
+<!-- ...................................................................... -->
+
+<p><a name="socket_readline"></a></p><hr noshade="noshade" />
+
+<pre>
+data = <span class="fcndef">socket_readline</span> key
+</pre>
+
+<p>Reads a line of characters from the input stream. This function blocks
+until either the end of line character is received or
+end of file is signaled.
+
+<p>The line terminator is character 10 (LF or "\n"). Carriage returns (CR or
+"\r") are stripped out, and neither of these characters are included in the
+result, which makes the function invariant to DOS or Unix style text streams.
+
+<!-- ...................................................................... -->
+
+<p><a name="socket_write"></a></p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">socket_write</span> [key, data]
+</pre>
+
+<p>Writes the provided data into the output stream. The <tt>data</tt> parameter
+must be a flat vector of characters (i.e. raw byte data).
+
+<p>It should be assumed that the output stream operates with a small buffer, so
+this function is potentially blocking, but it is not guaranteed that the content
+will be transmitted immediately.
+
+<!-- ...................................................................... -->
+
+<p><a name="socket_flush"></a></p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">socket_flush</span> key
+</pre>
+
+<p>Forces the output buffer to be flushed, so that any residual bytes are
+transmitted immediately.
+
+<h2>Example</h2>
+
+<p>The following code snippet opens a socket connection to a webserver and
+sends a <tt>GET</tt> request for the default page. Each line of the HTTP
+header is read and parsed, one of which should be the content length. When
+the header has been read, the specific number of bytes indicated by the
+content length is read.
+
+<pre>
+    local url = 'http://localhost';
+    local key = socket_open url;
+
+    socket_write [key, "GET /\n"];
+    socket_flush key;
+
+    local blksz = 0;
+    while not socket_eof key loop
+    	local line = socket_readline key;
+	if keep [line, 16] === "Content-Length: " then
+	    blksz = atoi token drop [line, 16];
+	endif
+	if isnull line then break; endif
+    endloop
+
+    local webpage = socket_read [key, blksz];
+
+    socket_close key;
+</pre>
+
+
+<h2>See Also</h2>
+
+<p>
+<a class="svl" href="../../svl/fcnref/url.htm">url_open</a><br />
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions db_CreateField>
+<meta functions db_Delete>
+<meta functions db_DeleteField>
+<meta functions db_Write>
+
+<title>MOE Database Create/Delete Functions</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+
+<h2>Syntax</h2>
+
+<pre>
+    <a class="fcnlink" href="#db_CreateField">db_CreateField</a> [ mdb_key, 'fieldname', 'fieldtype' ]
+    <a class="fcnlink" href="#db_CreateField">db_CreateField</a> [ 'mdb_name', 'fieldname', 'fieldtype' ]
+
+    entry_key = <a class="fcnlink" href="#db_Write">db_Write</a> [ mdb_key, entry_key, entry_record ]
+    entry_key = <a class="fcnlink" href="#db_Write">db_Write</a> [ 'mdb_name', entry_key, entry_record ]
+
+    <a class="fcnlink" href="#db_Delete">db_Delete</a> [ mdb_key, entry_keys ]
+    <a class="fcnlink" href="#db_Delete">db_Delete</a> [ 'mdb_name', entry_keys ]
+
+    <a class="fcnlink" href="#db_DeleteField">db_DeleteField</a> [ mdb_key, ['fieldname1', 'fieldname2',... ] ]
+    <a class="fcnlink" href="#db_DeleteField">db_DeleteField</a> [ 'mdb_name', ['fieldname1', 'fieldname2',... ] ]
+</pre>
+
+
+<p><a name="db_CreateField"></a></p>
+<h2>Description</h2>
+
+<pre>
+<span class="fcndef">db_CreateField</span> [ mdb_key, 'fieldname', 'fieldtype' ]
+<span class="fcndef">db_CreateField</span> [ 'mdb_name', 'fieldname', 'fieldtype' ]
+</pre>
+
+<p>Creates a new data field in a given
+molecular database (specified by key or filename). 
+
+<dl>
+
+<dt><tt>mdb_key</tt> or <tt>'mdb_name'</tt>
+<dd>Key or name of the molecular database in which to create a new field.
+
+<p><dt><tt>'fieldname'</tt>
+<dd>Name of the field to create expressed as a token. The field name must
+be unique within the database.
+
+<p><dt><tt>'fieldtype'</tt>
+<dd>Token indicating the kind of data to be stored. Legal values 
+(as specified by <a class="svl" href="moe_const.htm">DB_FIELD_TYPES</a>) are: 
+<ul>
+  <li><tt>'int'</tt>: signed 32-bit integer data</li>
+  
+  <li><tt>'float'</tt>: 4-byte IEEE floating point data</li>
+  <li><tt>'double'</tt>: 8-byte IEEE floating point data</li>
+
+  <li><tt>'char'</tt>: ASCII character data</li>
+  <li><tt>'byte'</tt>: signed 8-bit integer data</li>
+  <li><tt>'molecule'</tt>: molecular data</li>
+</ul>
+
+<p>All types except <tt>'molecule'</tt> are vector quantities. In other words, a vector of integers, float or characters can be stored as field
+data.
+</dl>
+
+<p>For example, to create a new field called <tt>'pKa'</tt> in an
+existing database file called <tt>'csfbrot.mdb'</tt>: 
+
+<pre>
+    db_CreateField [ 'csfbrot.mdb', 'pKa', 'float' ];
+</pre>
+
+<p>Or equivalently (note that the following commands must be entered on the
+same line at the CLI):
+
+<pre>
+    key = db_Open 'csfbrot.mdb';
+    db_CreateField [key, 'pKa', 'float'];
+    db_Close key;
+</pre>
+
+<p>In this last example, the three commands have been written as though found
+inside a function. At the command line, they must all be entered on the
+same line since, if the <tt>db_Open</tt> command is entered separately
+from the <tt>db_CreateField</tt> command, the database will be opened but
+immediately closed during the command line task associated with the
+<tt>db_Open</tt>.  This leaves the database key invalid when the
+<tt>db_CreateField</tt> command is issued, resulting in an error.
+
+<p><a name="db_Write"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+entry_key = <span class="fcndef">db_Write</span> [ mdb_key, entry_key, entry_record ]
+entry_key = <span class="fcndef">db_Write</span> [ 'mdb_name', entry_key, entry_record ]
+</pre>
+
+
+<p>Creates and updates entries in the molecular database identified either by
+<tt>mdb_key</tt> or by filename.  Returns the value of the new entry key
+if one is created or the current key if writing into an existent entry.
+
+
+<p><dl>
+<dt><tt>mdb_key</tt> or <tt>'mdb_name'</tt>
+<dd>Molecular database in which entries will be written.
+
+<p><dt><tt>entry_key</tt>
+<dd>Identifies the entry to update; if 0, then a new entry is created
+and appended to the molecular database entry list. </p>
+
+
+<p><dt><tt>entry_record</tt>
+<dd>Vector of field values each tagged by field name. 
+It is an error to attempt to write a value in a non-existent field.
+
+</dl>
+
+<p><i>Example</i>: Suppose a molecular database has fields
+<tt>energy</tt> and <tt>compound</tt>. Then,
+
+<pre>
+    local value = [energy:3.5, compound:"aspirin"]; 
+    db_Write [mdb_key, entry_key, value];
+</pre>
+
+<p>will update the entry specified by <tt>entry_key</tt>. Only the
+fields specified in <tt>entry_record</tt> are updated (fields not
+specified retain their values). Note that <tt>entry_key</tt> must be
+a scalar, i.e. only one entry can be written at a time. 
+
+<p><i>Example</i>: The function <tt>update_entry</tt> updates
+entry number <tt>n</tt> in the database specified by <tt>filename</tt>:
+ 
+<pre>
+    local function update_entry [ filename, n, values ]
+	local mdb_key = db_Open [ filename, 'read-write' ];
+	local entry_keys = db_Entries mdb_key;
+	db_Write [ mdb_key, entry_keys(n), values ];
+	db_Close mdb_key; 
+    endfunction
+
+    local function do_something [...]
+	... 
+	local newvalue = [ T:273.0, P:1.0 ];
+	update_entry [ 'md.mdb', 1, newvalue ];
+	... 
+    endfunction 
+</pre>
+
+
+
+<p><a name="db_Delete"></a></p>
+<p><hr noshade="noshade" />
+
+
+<pre>
+<span class="fcndef">db_Delete</span> [ mdb_key, entry_keys ]
+<span class="fcndef">db_Delete</span> [ 'mdb_name', entry_keys ]
+</pre>
+
+<p>Deletes entries from a specified database.
+
+<p><dl>
+<dt><tt>mdb_key </tt> or <tt>'mdb_name'</tt>
+<dd>Key (returned by <tt>db_Open</tt>) or filename of the database from
+which to delete entries.
+
+<p><dt><tt>entry_keys</tt> 
+<dd>Vector of the keys of
+the entries to delete.  Any number of entries can be deleted in the same
+call. The keys of the entries in the database can be determined using
+<tt>db_Entries</tt>.
+</dl>
+
+
+<p>For example: 
+
+
+<p>The following function deletes the entries
+specified by entry number in a database specified by filename:
+
+<pre>
+    global function delete_entries [ filename, entry_numbers ]
+        local mdb_key = db_Open [ filename, 'read-write' ];
+        local keys = db_Entries mdb_key;
+        db_Delete [ mdb_key, keys[entry_numbers] ];
+        db_Close mdb_key;
+    endfunction
+</pre>
+
+<p>At the command line, enter the following to delete the first 3 entries
+in the database <tt>md.mdb</tt>:
+
+<pre>
+    svl&gt; delete_entries [ 'md.mdb', [1,2,3] ]
+</pre>
+
+Note that this function does not check if the values in <tt>entry_numbers</tt> 
+fall
+within the range of entries in the given database.  An out-of-range value 
+will result in an error.
+
+<p><a name="db_DeleteField"></a></p>
+<p><hr noshade="noshade" />
+
+
+<pre>
+<span class="fcndef">db_DeleteField</span> [ mdb_key, ['fieldname1', 'fieldname2',... ]
+<span class="fcndef">db_DeleteField</span> [ 'mdb_name', ['fieldname1', 'fieldname2',... ]
+</pre>
+
+<p>Deletes fields with the given field names (and all associated data)
+from a molecular database. 
+
+<p><dl>
+<dt><tt>mdb_key </tt> or <tt>'mdb_name'</tt>
+<dd>Key (returned by <tt>db_Open</tt>) or filename of the database from
+which to delete entries.
+
+<p><dt><tt>['fieldname1', 'fieldname2',...]</tt> 
+<dd>
+Vector of field name tokens specifying the fields 
+to be deleted.
+</dl>
+
+The following command will delete the field named <tt>energy</tt>
+from the database file <tt>md.mdb</tt>.
+
+<pre>
+    svl&gt; db_DeleteField ['md.mdb', 'energy']
+</pre>
+
+Specifying a non-existent field has no effect.
+
+<hr noshade="noshade" />
+<p><b>Caution!</b> These functions erase data from the database file on
+disk. Once deleted, the data cannot be recovered! No temporary
+backups are made. To be safe, make backups on your own, or when opening a
+Database Viewer.</p>
+
+
+
+<h2>See Also</h2>
+   <a href="introdb.htm">Database Functions</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

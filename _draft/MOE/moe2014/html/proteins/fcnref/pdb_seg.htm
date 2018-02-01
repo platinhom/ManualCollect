@@ -1,0 +1,207 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+
+<meta keywords>
+<meta functions pdb_SegmentMatch>
+<title>Protein Functions: pdb_SegmentMatch</title>
+
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+
+<h2>Syntax</h2>
+
+<pre>
+    data = <a class="fcnlink" href="#pdb_SegmentMatch">pdb_SegmentMatch</a> [ ca_pos, x_ca, options ]
+
+    options = [
+	n_top:num,
+	n_superpose:num,
+	sidechain:flag,
+	N:[x,y,z],
+	C:[x,y,z],
+	O:[x,y,z],
+	x_fetch:res_indices,
+	res_in:['name:'name_tokens', x:res_pos],
+	res_out:[name:'name_tokens', x:res_pos]
+    ]
+</pre>
+
+<h2>Description</h2>
+
+<p>Searches the MOE protein database for
+polypeptide fragments (segments) whose backbone atoms best superpose onto
+the submitted alpha-carbon positions <tt>ca_pos</tt>.
+
+<p>A two-pass search is used: 
+<ol>
+<li>The database is searched using the
+Root Mean Square Distance (RMSD) of the inter alpha-carbon distances as a
+preliminary filter.
+<li>Then a user-specified number of top-ranked segments
+are re-ranked according to the RMSD of the optimal point set superposition
+of each segment onto the submitted alpha carbon positions.
+</ol>
+
+<p>Arguments used by <tt>pdb_SegmentMatch</tt> are:
+
+<dl>
+<dt><tt>ca_pos</tt> 
+<dd>Alpha-carbon coordinates to be matched in the search.
+
+<p><dt><tt>x_ca</tt> 
+<dd>Relative residue alignment positions to be associated
+with the alpha-carbon positions.
+
+<p><dt><tt>options</tt> 
+<dd>Tagged vector of optional parameters.
+Arguments are attribute-value colon-separated pairs:
+
+
+<dl>
+<p><dt><tt>n_top:num</tt>
+<dd>Number of top-ranked fragments to return.
+The default is 1.
+
+<p><dt><tt>n_superpose:num</tt>
+<dd>Number of fragments to accept
+from the first pass (alpha-carbon distance filtering) of the
+search.  These will be re-ranked by superposition.
+The default is 500.
+
+<p><dt><tt>sidechain:flag</tt>
+<dd> Set to 1 to include sidechain atoms in returned
+molecular data (<tt>mol</tt>).  The default is 0 (exclude sidechain
+atoms).
+
+<p><dt><tt>N:[x,y,z]</tt>
+<dd>Mainchain nitrogen [<i>x</i>,<i>y</i>,<i>z</i>]
+positions for superposition.
+
+<p><dt><tt>C:[x,y,z]</tt>
+<dd>Mainchain carbonyl carbon  [<i>x</i>,<i>y</i>,<i>z</i>]
+positions for superposition.
+
+<p><dt><tt>O:[x,y,z]</tt>
+<dd>Mainchain oxygen [<i>x</i>,<i>y</i>,<i>z</i>]
+positions for superposition.
+
+<p><dt><tt>x_fetch:res_indices</tt>
+<dd>Indices of residues to return (relative to
+<tt>x_ca</tt>).  The default is [ ] (return none).
+
+<p><dt><tt>res_in:[name:'name_tokens', x:res_pos]</tt>
+<dd>Tagged vector specifying the residue name filter and
+alignment positions for the residue inclusion filter.  Both
+the <tt>name</tt> and <tt>x</tt> tags must be specified.  It is an
+error to specify one without the other.  Both vectors must be of the
+same length.
+
+<dl>
+<p><dt><tt>name</tt>
+<dd>Residue name filter.  Only fragments
+having residues of a certain name at a specified position
+will be considered.
+
+<p><dt><tt>x</tt>
+<dd>Alignment positions for residue name filter.  Specifies the positions at
+which the residue name restrictions are applied.  The positions are
+relative to <tt>x_ca</tt>.
+</dl>
+
+<p><dt><tt>res_out:[name:'name_tokens', x:res_pos]</tt>
+<dd>Same as <tt>res_in</tt> except that the filter is
+for excluding residues.
+
+</dl>
+
+<p>Example of a set of options:
+
+<pre>
+n_top = 10;            // top 10 segments returned 
+n_superpose = 100;     // top 100 segments re-ranked by superposition
+x_ca = [3,4,6];        // consider database segments of length 4,
+                       // and match ca_pos against first, second
+                       // and last c positions thereof
+res_in.name = 'PRO';   // consider only segments with 'PRO' ... 
+res_in.x = 5;          // ... in the gap position
+x_fetch:[1,2]          // fetch data from 2 residues immediately
+                       // preceding matched database segments.
+</pre>
+
+</dl>
+
+<h2>Return Values</h2>
+
+<p>The return value, <tt>data</tt>, is a tagged vector containing the
+following tags and values:
+
+<dl>
+
+<dt><tt>codes</tt> 
+<dd>PDB accession codes (with chain identifiers) of
+the top-ranked fragments.
+
+<p><dt><tt>x</tt> 
+<dd>Index vectors which specify the residues constituting
+the top-ranked fragments.  The indices refer to the source chains of
+the fragments.
+
+<p><dt><tt>mol</tt> 
+<dd><a href="../../moe/fcnref/extract.htm">MOE format</a>
+molecular data vectors of the top-ranked fragments.
+
+<p><dt><tt>rms</tt> 
+<dd>RMSD used to rank the fragments.
+
+</dl>
+
+
+<h2>See Also</h2>
+
+<a href="intropro.htm">Protein Functions</a>
+<p>
+<a class="svl" href="../../moe/fcnref/extract.htm">mol_Extract</a><br />
+<a class="svl" href="pdb.htm">pdb_Read</a><br />
+<a class="svl" href="pro_mod.htm">pro_HomologyModel</a>
+</p>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+
+

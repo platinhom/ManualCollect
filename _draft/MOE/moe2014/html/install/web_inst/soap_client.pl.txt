@@ -1,0 +1,39 @@
+#!/usr/bin/perl
+# ==========================================================================
+# Sample program to call a MOE/Web SOAP service.
+# It uses the SOAP::Lite module, please check
+# http://search.cpan.org/~phred/SOAP-Lite/lib/SOAP/Lite.pm for details.
+# Tested with Perl 5.10.1 + SOAP::Lite 0.710.10 on Linux.
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY.
+# ==========================================================================
+use SOAP::Lite;
+use strict;
+use warnings;
+
+my $moeweburl = 'http://localhost:8888';	# MOE/Web home URL
+my $soapfunction = 'SMILESToMol';	# SOAP service that will be called
+
+# Set up server endpoint to which the client is going to connect.
+
+my $soap = SOAP::Lite->new(
+    proxy => $moeweburl . "/soap/" . $soapfunction
+);
+
+# Send SOAP request and wait for result.
+
+my $result = $soap->call($soapfunction,
+    SOAP::Data->name('smiles')->value('C(=O)C'),
+    SOAP::Data->name('v3000')->value(0)
+);
+
+# Report error information.
+
+if ($result->fault) {
+     die "Error: " . $result->faultstring;
+}
+
+# Returned XML is parsed into an SOAP::SOM object for
+# easy access to the values contained in SOAP Response.
+
+print "Result: \n", $result->valueof('//[1]/molecule'), "\n";

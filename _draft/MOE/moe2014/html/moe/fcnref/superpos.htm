@@ -1,0 +1,222 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--	superpos.htm
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions Superpose, Superpose_m_uniq>
+<title>Superposition Functions</title>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    [msd, R, t] = <a class="fcnlink" href="#Superpose">Superpose</a> [X, w, V]
+    mask = <a class="fcnlink" href="#Superpose_m_uniq">Superpose_m_uniq</a> [X, msd_tol, w, class]
+    mask = <a class="fcnlink" href="#Superpose_m_uniq">Superpose_m_uniq</a> [X, msd_tol, w, class, nbrlist]
+</pre>
+
+<h2>Description</h2>
+
+<p>Let <i>X</i><sub>1</sub>,...,<i>X<sub>m</sub></i>, denote <i>m</i>
+matrices each of dimension 3 by <i>n</i>. Let <i>x<sub>ki</sub></i> denote
+the <i>i'</i>th column of the matrix <i>X<sub>k</sub></i>.
+The matrix <i>X<sub>k</sub></i> is to be interpreted as a collection of
+<i>n</i> points in 3D.  Let <i>w</i> be an <i>n</i>-vector of non-negative
+weights such that the sum of the {<i>w<sub>i</sub></i>} is one.
+Let <i>V</i> be a symmetric <i>m</i> by <i>m</i> matrix of positive
+weights with zero diagonal such that the sum of the elements of <i>V</i> is
+1/2.  Define the function <i>F</i> as follows:
+<p>
+<center><img src="superpos/supfcn.png"></center>
+<p>
+where <i>R<sub>k</sub></i> denotes a 3 by 3 rotation matrix and
+<i>t<sub>k</sub></i> denotes a translation vector.  <i>F</i> is the smallest
+sum of squared distances between corresponding points in the <i>m</i> point
+sets over all solid body rotations and translations.  The value of <i>F</i> is
+called the <i>weighted superposition distance</i> of the <i>m</i> point
+collections. When <i>m</i>&nbsp;=&nbsp;2 then the value of <i>F</i> is called
+the <i>weighted mean square distance</i> between the two point sets.
+When the {<i>w<sub>i</sub></i>} are all equal the value of <i>F</i> is called
+the <i>mean square distance</i> between the point sets and its square root
+is called the <i>root mean square distance</i> (RMSD) between the point sets.
+
+<p><a name="Superpose"></a></p><p><hr noshade="noshade" />
+<pre>[msd, R, t] = <span class="fcndef">Superpose</span> [X, w, V]</pre>
+
+<p><tt>Superpose</tt> accepts three arguments <tt>[X,w,V]</tt> as follows:
+<dl>
+<dt><tt>X</tt>
+<dd>
+<tt>X</tt> is an <i>m</i>-vector
+such that <tt>X(k)</tt> is the matrix <i>X<sub>k</sub></i> in the definition
+of <i>F</i> above.  <tt>X(k)</tt> has the form <tt>[x,y,z]</tt> which are
+the coordinates of the <i>k</i>'th point set.  Unit extension applies to all
+elements of <tt>X</tt>.
+<p><dt><tt>w</tt>
+<dd>
+<tt>w</tt> is an <i>n</i>-vector such that
+<tt>w(i)</tt> is the value of <i>w<sub>i</sub></i> in the definition of
+<i>F</i> above.  If <tt>w</tt> is null then all points are given equal weight.
+Unit extension applies.  If the elements of <tt>w</tt> do not sum to one then
+<tt>w</tt> is replaced with <tt>w&nbsp;/&nbsp;add&nbsp;w</tt>.
+<p><dt><tt>V</tt>
+<dd>
+<tt>V</tt> is an <i>m</i> by <i>m</i> matrix such that <tt>V(k)(l)</tt> is
+the value of <i>V<sub>kl</sub></i> in the definition of <i>F</i> above.  If
+<tt>V</tt> is null then all off-diagonal entries of <tt>V</tt> are taken to
+be one.
+If the elements of <tt>V</tt> do not sum to 1/2 then <tt>V</tt> is replaced
+with <tt>0.5&nbsp;*&nbsp;V&nbsp;/&nbsp;add&nbsp;V</tt>.
+</dl>
+
+<p><tt>Superpose</tt> computes the value of <i>F</i> defined above as well
+as the collection of rotation matrices and translation vectors that give
+rise to the value of <i>F</i>.  <tt>Superpose</tt> returns a vector
+<tt>[msd,R,t]</tt> of length 3:
+
+<dl>
+<p><dt><tt>msd</tt>
+<dd>
+The value of <i>F</i> defined above.  If <tt>X</tt> is of length 2 then
+<tt>msd</tt> is the mean square distance between the two point sets and
+<tt>sqrt&nbsp;msd</tt> is the RMSD between the two point sets.
+<p><dt><tt>R</tt>
+<dd>
+The set of rotation matrices that give rise to <tt>msd</tt>.  <tt>R(k)</tt>
+is the rotation matrix used to transform <tt>X(k)</tt> to the position
+that gives rise to the value of <i>F</i>.  The length of <tt>R</tt> is
+equal to the length of <tt>X</tt>.  <tt>R(1)</tt> is always the identity
+matrix.
+<p><dt><tt>t</tt>
+<dd>
+The set of translation vectors that give rise to <tt>msd</tt>.  <tt>t(k)</tt>
+is the translation vector used to transform <tt>X(k)</tt> to the position
+that gives rise to the value of <i>F</i>. The length <tt>t</tt> is equal
+to the length of <tt>X</tt>.
+</dl>
+
+<p>To transform the <i>k</i>'th point set to the position that gives rise to
+the value of <i>F</i> the following code can be used.
+<pre>    app add (R(k) * [X(k) - t(k)]);
+</pre>
+<p>Suppose that <tt>A</tt> and <tt>B</tt> are the positions of the atoms
+of two conformations of a molecule.  To optimally superpose the second
+conformation onto the first, the following code can be used.
+<pre>    local [msd,R,t] = Superpose [[A,B]];
+    B = app add (R(2) * [B - t(2)]) + t(1);
+</pre>
+
+<p><a name="Superpose_m_uniq"></a></p><p><hr noshade="noshade" />
+<pre>mask = <span class="fcndef">Superpose_m_uniq</span> [X, msd_tol, w, class]
+mask = Superpose_m_uniq [X, msd_tol, w, class, nbrlist]</pre>
+<p>
+<tt>Superpose_m_uniq</tt> computes the set of unique point sets where
+two point sets are considered equal if the weighted mean square distance
+between them is less than or equal to <tt>msd_tol</tt> calculated over all
+permutations of the point sets that preserve the identities of the points
+given by a vector of equivalence classes.
+<tt>Superpose_m_uniq</tt> is similar in spirit to the <tt>m_uniq</tt>
+function.  Its arguments are
+<dl>
+<p><dt><tt>X</tt>
+<dd>
+<tt>X</tt> is an <i>m</i>-vector
+such that <tt>X(k)</tt> is the matrix <i>X<sub>k</sub></i> in the definition
+of <i>F</i> above.  <tt>X(k)</tt> has the form <tt>[x,y,z]</tt> which are
+the coordinates of the <i>k</i>'th point set.  Unit extension applies to all
+elements of <tt>X</tt>.
+<p><dt><tt>msd_tol</tt>
+<dd>
+Two point sets are considered equal if they superpose to a weighted mean
+square distance less than or equal to <tt>msd_tol</tt>.
+<p><dt><tt>w</tt>
+<dd><tt>w</tt> is an <i>n</i>-vector such that
+<tt>w(i)</tt> is the value of <i>w<sub>i</sub></i> in the definition of
+<i>F</i> above.  If <tt>w</tt> is null then all points are given equal weight.
+Unit extension applies.  If the elements of <tt>w</tt> do not sum to one then
+<tt>w</tt> is replaced with <tt>w&nbsp;/&nbsp;add&nbsp;w</tt>.
+<p><dt><tt>class</tt>
+<dd>
+<tt>class</tt> is an <i>n</i>-vector such that
+<tt>class(i)</tt> is equivalence class identifier (usually an integer)
+of the <i>i</i>'th point in the point sets.  If <tt>class</tt> is null then
+all points are given unique equivalence classes.  Unit extension applies.
+The value of <i>F</i> is calculated over all permutations of the point
+sets such that the equivalence class vector remains the same.
+<p><dt><tt>nbrlist</tt>
+<dd>
+<tt>nbrlist</tt> is an optional list of graph neighbors, in the same format
+as used by the <tt>graph_xxx</tt> functions.  Unit extension does <i>not</i>
+apply to this argument. The presence of the argument indicates that
+the elements of each of the input point sets correspond to vertices
+of a graph (the same graph for each set), and, when comparing the input
+points sets, only those permutations should be considered that yield an
+isomorphic graph.  If <tt>nbrlist</tt> is null or missing, then all
+permutations (preserving the class equivalence) are considered.
+For example, in the symmetric molecule 'C12(CC1)(CC2)', exchanging the third
+and the fourth C is not a graph-isomorphic permutation and is considered
+to be a duplicate only if the <tt>nbrlist</tt> argument is missing.
+</dl>
+
+<p>
+<b>Warning!</b> The <tt>dmatch</tt> function is used to compute the permutations
+of the point sets in the calculation.  Therefore, for best performance,
+the point sets should not be too large nor should they contain many symmetries.
+<p>
+Suppose that <tt>pos</tt> is a vector of conformations of a molecule so that
+<tt>pos(i)</tt> is the coordinates of the atoms of the <i>i</i>'th conformation.
+Suppose that <tt>E</tt> is a vector of energies so that <tt>E(i)</tt> is
+the energy of the <i>i</i>'th conformation.
+Suppose that <tt>aclass</tt> contains the equivalence class identifiers
+for each of the atoms (e.g. as obtained by <tt>aPrioZQH</tt>).  To
+calculate the set of unique conformations up to an RMSD of 1.5 taking
+symmetries into account, the following code can be used.
+<pre>    [pos,E] = apt get [[pos,E],[x_sort E]];                   // sort by E
+    local mask = Superpose_m_uniq [pos, sqr 1.5, 1, aclass];  // unique mask
+    [pos,E] = [pos,E] || [mask];                              // filter duplicates
+</pre>
+
+<h2>See Also</h2>
+<p>
+    <a class="svl" href="../../svl/fcnref/dmatch.htm">dmatch_open</a><br />
+    <a class="svl" href="../../svl/fcnref/uniqetc.htm">m_uniq</a><br />
+    <a class="svl" href="../../svl/fcnref/graphlib.htm">graph_xxx</a><br />
+    <a class="svl" href="../../proteins/fcnref/pro_sup.htm">pro_Superpose</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

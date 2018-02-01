@@ -1,0 +1,182 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Creating Fingerprints Using SVL</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<p>
+Fingerprint calculation is handled in MOE
+by a module that searches the system for
+functions that satisfy a specific naming convention. In order for MOE to
+detect a specific fingerprinting system, the file where it is defined must be
+loaded in the system. Adding a fingerprint involves writing a file containing
+SVL functions for registering and calculating the fingerprint value, and then
+loading that file into the system.
+
+<p>Here is an example of a fingerprint file:
+
+<dir>
+<pre>
+#set title	'Fingerprint: MyFingerprint'
+#set class	'MOE:fingerprint'
+
+    // Custom fingerprint example. This fingerprint system
+    // creates a fingerprint with 4 features: Has-C, Has-H
+    // Has-O, Has-N. If a feature is present in
+    // a compound, its indicator will be an integer > 0 equal
+    // to the number of such atoms in the molecule.
+    // ex: [ 4, 4, 1, 0] is the fingerprint of furan.
+
+    // The function ComputeMyFingerprint will be used by
+    // the system to compute the fingerprint. A fingerprint function will
+    // always be given as argument the atom keys of the compound under
+    // scrutiny.
+
+global function ComputeMyFingerprint atoms
+    return freq [['C','H','O','N'], aElement atoms];
+endfunction
+
+    // Definition of a similarity metric for the fingerprint system.
+    //
+    // Each feature contributes 25% to the overall similarity. 
+    // We first transpose the two fingerprints to get 4 pairs
+    // [x.Has-C,y.Has-C],[x.Has-H,y.Has-H],[x.Has-O,y.Has-O],
+    // [x.Has-N,y.Has-N] with tr [x,y]. We then sort each pair
+    // with app sort so the smallest number in the pair is the
+    // first element. Once this is done, we get a similarity 
+    // coefficient for each feature by applying app div to each pair.
+    // div divides its first argument by the second. Each of these
+    // coefficients is then scaled to contribute 25% to the overall
+    // similarity metric.
+
+global function MySim1 [x,y]
+    return add ([0.25,0.25,0.25,0.25] * app div app sort tr [x,y]);
+endfunction
+
+    // This second similarity metric works the same way as MySim1
+    // but we are only interested in the Has-O and Has-N features.
+    
+global function MySim2 [x,y]
+    return add ([0,0,0.50,0.50] * app div app sort tr [x,y]);
+endfunction
+
+    // Fingerprint system definition vector
+
+global function ph4_fp_MyFingerprint [] = [
+    'FP: MyFP',			    // Identifier
+    'My own fingerprint system',    // Description
+    'ComputeMyFingerprint',	    // Name of the function
+
+	// Similarity metrics
+
+    tr [  
+
+	// id          Description    		       Function
+
+	[ 'Average',  'Each feature contributes 25%',  'MySim1' ],
+	[ 'Weighted', '50% O 50% N',                  'MySim2' ]
+    ],
+
+    0 // is_3d flag
+];
+</pre>
+</dir>
+
+<p>The <tt>set title</tt> directive determines what appears in the <a
+href="../moe/gui/modtasks.htm">Modules and Tasks</a> panel, which is where all
+loaded modules and all running tasks are listed.  It should contain a short
+description of the file contents.  The module's class should be set to
+MOE:fingerprint.  This ensures that all fingerprint modules will be listed
+together on the same page in the Modules and Tasks panel.
+
+<p>The descriptor file must contain a global function of the form ph4_fp_XXX
+that returns the fingerprint definition vector.  <tt>XXX</tt> can be any set of
+characters, however, it must be unique.  This function takes no arguments.  The
+format of the definition vector is as follows:
+
+<pre>   ['code', 'description', 'function', similarity_metrics, is_3d]</pre>
+
+<p>where
+<ul>
+<li><tt>'code'</tt> is a fingerprint identifier unique in the system. It
+    is used to name the database field which will contain the calculated
+	fingerprint.
+
+<li><tt>'description'</tt> is a short description of the fingerprint,
+    which will appear when all fingerprinting systems are displayed in a
+    list.
+
+<li><tt>'function'</tt> is the name of the svl function which computes the
+    fingerprint.  This function is iteratively called for each molecule in
+    a database.  The parameter to this function is a vector composed of
+    all atom keys in a given molecule. The function must return a vector
+    of integers.
+
+<li><tt> similarity_metrics </tt> is a vector enumerating all similarity
+    metrics available for the fingerprint systems. The format of this
+    vector is:
+
+    <pre>    tr ['sim_code', 'sim_desc', 'sim_fcn' ]</pre>
+
+    <p>The similarity_metrics vector is a vector of 3 lists:
+    codes, descriptions and function name.  We specify the table in the
+    transposed format to make it easier to read and then use the <tt>tr</tt>
+    function to convert it to the desired structure.
+    <ul>
+    <li><tt>'sim_code'</tt> is the similarity metric identifier.
+    <li><tt>'sim_desc'</tt> is a short description of the metric. 
+    <li><tt>'sim_fcn'</tt> is the name of the svl function which calculates
+	the metric. This function will be given two parameters,
+	fingerprint A and fingerprint B and must return as result a
+	number between 0 and 1.
+    </ul> 
+
+<li><tt> is_3d </tt> is flag indicating whether or not the fingerprint
+    requires 3D atomic coordinates.
+
+</ul>
+
+
+<h2>See Also</h2>
+
+<a href="ph4calc.htm">Calculating Fingerprints</a><br>
+<a href="ph4intro.htm">Overview of Molecular Fingerprints</a>
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

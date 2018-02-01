@@ -1,0 +1,387 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	dbpca.htm	Principal Components Analysis chapter
+!!-->
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Principal Components Analysis</title>
+<meta panel Principal Components Analysis>
+<meta index entry="principal components analysis">
+<meta index entry="PCA">
+<meta index entry="analysis" subentry="principal components">
+<meta index entry="condition" subentry="principal components analysis">
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+  <li><a href="#Theory">Formulation and Theory</a>
+  <li><a href="#Run">Running the Calculation</a>
+  <li><a href="#Output">Analyzing the Report</a>
+  <li><a href="#SVL">SVL Commands</a>
+</ul>
+
+<p><a name="Theory"></a><h2>Formulation and Theory</h2>
+
+<p>The purpose of Principal Components Analysis (PCA) is to reduce the
+dimensionality of a set of 
+<a href="../quasar/descr.htm">molecular descriptors</a> 
+by linearly transforming the data.  Often, a table of
+molecular descriptors contains columns that are correlated and differ in
+relative scale. This can be a problem for distance-based diversity
+analysis since a Euclidean metric cannot be used directly (without
+over-emphasizing some subset of the descriptors).  PCA is capable of
+calculating a new table of descriptors, often smaller, that are
+uncorrelated and normalized (mean 0 and variance 1).
+
+<p>
+Suppose that we are given <i>m</i> molecules each of which is described by
+an <i>n</i>-vector of real numbers
+<i>x<sub>i</sub></i>=(<i>x</i><sub><i>i</i>1</sub>,...,<i>x<sub>in</sub></i>),
+consisting of the descriptors for molecule <i>i</i>. Further, suppose that each
+molecule has an associated importance weight, <i>w<sub>i</sub></i>, a
+non-negative real number.  These weights can be thought of as the relative
+probability that the associated molecule will be encountered and are usually
+all equal to 1; however, in some applications, unequal weights are used.
+Let <i>W</i> denote the sum of all the weights.
+
+<p>
+Dimension reduction through <i>principal component analysis</i> can be
+interpreted in the following manner.  Let <i>X</i> denote a random
+<i>n</i>-vector and let <i>Z</i> denote a random <i>p</i>-vector with mean 0
+and covariance matrix equal to the identity matrix.  If we assume that
+<i>X</i>=<i>RZ</i>+<i>x</i><sub>0</sub> for some <i>n</i> by <i>p</i> linear
+transform <i>R</i> and some <i>n</i>-vector <i>x</i><sub>0</sub> then PCA is
+the estimation of the <i>Z</i> vectors from a sample of <i>X</i> vectors.
+
+<p>
+If we integrate both sides of the supposed affine transform we obtain:
+
+<p align="center"><img src="dbpca/mean.png"></p>
+
+<p>which shows that <i>x</i><sub>0</sub> is the mean of the distribution of
+the <i>X</i> vectors. Turning to the covariance of the <i>X</i> vectors, we
+observe that:</p>
+
+<p align="center"><img src="dbpca/cov.png"></p>
+
+<p>
+These equations suggest the following method for estimating the <i>Z</i>
+vectors. We use the sampled data to approximate both <i>E</i>(<i>X</i>) and
+Cov(<i>X</i>):</p>
+
+<p align="center"><img src="dbpca/est.png"></p>
+
+<p>
+The sample covariance matrix, <i>S</i>, is now symmetric semi-definite; hence,
+all of its eigenvalues are real and non-negative. We can therefore diagonalize
+<i>S</i> so that:</p>
+
+<p align="center"><img src="dbpca/diag.png"></p>
+
+<p>
+where <i>Q</i> is orthogonal and <i>D</i> is diagonal-sorted in descending
+order from top left to bottom right. Let <i>p</i> be the number of non-zero
+diagonal values in <i>D</i> (the square roots of the eigenvalues of <i>S</i>).
+We can estimate <i>R</i> as the first <i>p</i> columns of <i>Q<sup>T</sup>D</i>
+and say that the <i>X</i> vectors have <i>p</i> principal components. In
+practice, we restrict the selection of <i>p</i> further by limiting the
+<i>condition</i> of the estimated <i>R<sup>T</sup>R </i>matrix; that is, we
+choose <i>p</i> so that the largest eigenvalue divided by the smallest
+eigenvalue is less than some specified threshold.</p>
+
+<p>
+<b>Algorithm Summary</b>. The foregoing considerations are integrated into
+the PCA computational procedure:
+
+<ol>
+<li>Calculate the sample average vector <i>x</i><sub>0</sub> and covariance
+matrix <i>S</i>.
+<li>Diagonalize <i>S</i>.
+<li>Remove all components associated with zero eigenvalues.
+<li>Remove all components that exceed the matrix condition.
+<li>Remove all components above the minimum variance threshold.
+<li>Remove all components past the component limit.
+<li>Form the PCA transform <i>Q</i> from the <i>p</i> remaining
+components so that
+<i>Z</i>=<i>Q</i>(<i>x</i>-<i> x</i><sub>0</sub>) has identity covariance
+and zero mean.
+<li>For each <i>i</i> write the <i>p-</i>vector <i>z<sub>i</sub></i> =
+Q(<i>x<sub>i</sub></i>-<i> x</i><sub>0</sub>) to the output.
+</ol>
+
+<p>The procedure has the following parameters (explained in the foregoing
+equations):
+
+<ul>
+<li><tt>maxcond</tt> : the maximum condition of the <i>Q<sup>T</sup>Q</i>
+transform.
+<li><tt>minvar</tt> : the minimum percentage of the original variance
+to retain.
+<li><tt>maxcomp</tt> : the maximum number of components (the maximum value
+of <i>p</i>).
+</ul>
+
+<a name="Run"></a><h2>Running the Calculation</h2>
+
+<p>To run Principal Components Analysis, use the Database Viewer menu command
+
+<blockquote>
+<b><span class="nobr">DBV | Compute | Descriptors |
+Principal Components</span></b>
+</blockquote>
+
+The following panel appears:
+
+<p align="center">
+<img src="dbpca/panel.png" alt="Principal Components Analysis Panel" />
+</p>
+
+
+<p><table width="100%" cellpadding="5" cellspacing="5">
+<tr>
+<td valign="top"><b>Database</b>
+<td>
+Name of the database that contains the fields to be
+analyzed. 
+
+<p>If <b>Use Selected Entries Only</b> is turned on, only the
+database entries that are selected in the Database Viewer
+will be used in the calculation. A warning will be displayed
+if there are no selected entries in 
+the database.
+
+<tr>
+<td valign="top"><b>Autoscale&nbsp;Fields</b>
+<td>
+If on, the data in each field will be scaled prior to
+the PCA calculation so that the field has unit variance.
+If off, no such scaling is done.
+
+<tr>
+<td valign="top"><b>Weight Field</b>
+<td>
+Name of the field that will be used to weight individual entries of the
+database. These weights should be non-negative; negative weights will be set
+to zero for the calculation. If the Weight Field is set to (NONE), then all
+entries will have a weight of 1.
+
+<tr>
+<td valign="top"><b>Fields</b>
+<td>
+List of all the numeric fields in the database. 
+If fields are selected in the list, then the selected
+fields will be used in the calculation and the unselected fields will be
+ignored.  
+If no fields
+are selected, then all numeric fields (except the Weight Field) will be
+used in the calculation. 
+
+
+<tr>
+<td valign="top"><b>Prefix</b>
+<td>
+When <b>OK</b> is pressed, the calculated principal component
+coordinates will be written to the database each named with the Prefix
+followed by an integer in order of decreasing importance.  For example,
+the default prefix is &quot;PCA&quot;; if there are four principal
+components, these values will be written in fields PCA1, PCA2, PCA3
+and PCA4.
+
+<tr>
+<td valign="top"><b>Component Limit</b>
+<td>
+Limit on the number of principal components selected. A value of
+zero means that no limit is set; otherwise, at most, the specified number of
+largest principal components will be used.
+
+<tr>
+<td valign="top"><b>Condition Limit</b>
+<td>
+Maximum condition (see Formulation and Theory) number of the principal
+component transform.
+
+<tr>
+<td valign="top"><b>Minimum&nbsp;Variance</b>
+<td>
+Number of principal components in terms of the percentage
+of variance of the original data set to retain.  For example, if Minimum
+Variance is set to 95, then sufficient components will be retained so that
+95% of the original variance will be in the transformed data set.
+
+<tr>
+<td valign="top"><b>OK</b>
+<td valign="top">Runs the principal components analysis and writes
+the transformed fields to the database.
+The calculation may take a few minutes depending on the size of the
+database.
+
+
+<tr>
+<td valign="top"><b>Report</b>
+<td valign="top">Produces a report in an SVL Text Editor but
+does not modify the database.
+
+</table>
+
+
+<p><b>Note:</b> If there are no numeric fields in the database, 
+the <b>OK</b> and <b>Report</b> buttons will both be grayed out.</b>
+
+
+<a name="Output"></a><h2>Analyzing the Report</h2>
+
+<p>
+The Principal Components Analysis application prints a report to the SVL
+Commands window or, optionally (if the Report button is pressed), writes
+the report to a MOE SVL Text Editor.  In either case, the report is
+structured as follows:
+
+<p>
+<b>Header.</b>  The first part of the report consists of a header detailing
+the version, date, parameters, and database fields of the calculation.  For
+example:
+
+<blockquote>
+<pre>db_PrincipalComponents
+    version   : 1998.12
+    date      : Sat Dec 26 17:13:22 1998
+    database  : c:/u/paul/svl/logp.mdb
+    selected  : no
+    weight    : <none>
+    maxcond   : 1000
+    minvar    : 95
+    maxcomp   : 0
+
+Database Fields:
+['a_don','chi0','chi0_C','chi0v','chi0v_C','chi1','chi1_C','chi1v','chi1v_C']
+</pre>
+</blockquote>
+
+<p>
+<b>Eigenvalue Table.</b>  This table indicates
+the effect of the various eigenvectors (principal components) on the condition
+and the variance.  The table is prepared independently of any filtering options
+and can be used to subsequently set these options.  For example:
+
+<blockquote>
+<pre>
+ #PC   Deviation         Condition        % Var
+
+   1   1.01875373e+001   1.00000000e+000   89.830
+   2   2.67053468e+000   1.45526466e+001   96.002
+   3   1.57560732e+000   4.18063687e+001   98.151
+   4   1.02175239e+000   9.94138978e+001   99.055
+   5   8.11564261e-001   1.57576917e+002   99.625
+   6   4.92902339e-001   4.27185662e+002   99.835
+   7   3.74743628e-001   7.39043345e+002   99.957
+   8   2.21072997e-001   2.12357219e+003   99.999
+   9   3.47967174e-002   8.57159954e+004  100.000
+</pre>
+</blockquote>
+
+<p>
+The columns in the table are: 
+<table cellpadding=5>
+<tr>
+<td valign="top">#PC 
+<td valign="top">Principal component number. 
+<tr>
+<td valign="top">Deviation 
+<td valign="top">Square root of the eigenvalue of the covariance matrix
+corresponding to the principal component, i.e. the standard deviation of
+the data along the principal component vector.  
+<tr>
+<td valign="top">Condition 
+<td valign="top">Condition number of the covariance matrix if the principal component
+list were terminated at that row.  
+
+<tr>
+<td valign="top">%Var 
+<td valign="top">Percentage of the variance
+retained if the component list were truncated at that row.
+</table>
+
+<p>
+<b>Filter</b>.  This section details how the principal
+component list is truncated according to the specified limits on number,
+condition and variance.  For example:
+
+<blockquote>
+<pre>
+Initial components  : components:9, cond=8.57159954e+004, var=100.000
+Condition test      : components:7, cond=7.39043345e+002, var=99.957
+Variance test       : components:2, cond=1.45526466e+001, var=96.002
+</pre>
+</blockquote>
+
+<p>
+<b>Transforms.</b>  This part of the report includes a set of expressions
+indicating how each principal component coordinate is calculated from the
+original data set, i.e. the PCA transform matrix.  It consists of
+several expressions of the form:
+
+<blockquote>
+<pre>PCA1   = -2.37761032e+000
+         -7.51094713e-004 * a_don
+         -4.81006498e-002 * chi0
+         -3.88278048e-002 * chi0_C
+         -4.17099212e-002 * chi0v
+         -3.62899867e-002 * chi0v_C
+         -3.30244312e-002 * chi1
+         -2.37561237e-002 * chi1_C
+         -2.62174418e-002 * chi1v
+         -2.03563794e-002 * chi1v_C
+       ;
+</pre>
+</blockquote>
+
+<a name="SVL"></a><h2>SVL Commands</h2>
+
+<a class="svl" href="../moe/fcnref/dbpca.htm">db_PrincipalComponents</a>
+
+
+<h2>See Also</h2>
+
+<a href="../quasar/cluster.htm">QuaSAR-Cluster</a><br>
+<a href="../tutorials/quasar_tut.htm">QuaSAR Tutorial</a>
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+
+

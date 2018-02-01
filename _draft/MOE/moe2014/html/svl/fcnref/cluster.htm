@@ -1,0 +1,314 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions hclust_tree>
+<meta functions hclust_id>
+<meta functions hclust_list>
+<meta functions hclust_info>
+
+<title>Clustering Functions</title>
+
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+<pre>
+htree        = <a class="fcnlink" href="#hclust_tree">hclust_tree</a> ['method', dist_data, opt]
+
+cluster_list = <a class="fcnlink" href="#hclust_list">hclust_list</a> [htree, maxscore]
+cluster_id   = <a class="fcnlink" href="#hclust_id">hclust_id</a> [htree, maxscore]
+
+info         = <a class="fcnlink" href="#hclust_info">hclust_info</a> ['operation', htree, opt]
+
+</pre>
+
+
+<h2>Description</h2>
+
+<p>These functions provide a low-level interface for clustering arbitrary
+data.  Data to be clustered can be represented in one of three ways:
+as a square distance matrix, with element <i>(i, j)</i> giving the distance
+between items <i>i</i> and <i>j</i>; as a symmetric neighbor list and
+corresponding set of distances; or as a laminated vector of triplets
+<i>(i, j, d)</i> where <i>d</i> gives the distance between items <i>i</i> and
+<i>j</i>.  If the data provided in any of the three formats is non-symmetric,
+the minimum distance given for each pair will be used.  Self-distances are
+always zero, regardless of what the input data state.
+</p>
+<p>
+Several agglomerative hierarchical clustering methods are provided.  All such
+methods result in a dendrogram.  For a set V = [v<sub>1</sub>, v<sub>2</sub>,
+ .. v<sub>N</sub>], a dendrogram
+is a set of subsets c<sub>k</sub>, and corresponding distances d<sub>k</sub>,
+such that:
+<ol>
+<li>Any two sets are either distinct or one is a proper subset of the other</li>
+<li>For any two c<sub>i</sub>, c<sub>j</sub>, if c<sub>i</sub> is a subset of
+c<sub>j</sub> then d<sub>i</sub>&lt;d<sub>j</sub></li>
+<li>The sets cover V, i.e. the union of all c<sub>k</sub>s is [v<sub>1</sub>,
+v<sub>2</sub>, .. v<sub>N</sub>]</li>
+</ol>
+A dendrogram tree consists of tree nodes and leaf nodes.  Leaf nodes represent
+the clustered objects.  Each tree node has exactly two children, which can
+be either tree or leaf nodes.  Each tree node is labelled with a score which is
+the distance or 'dissimilarity' between its two child nodes.  When the children
+are both leaves, this distance is the distance between the two objects they
+represent, in the input data.  Otherwise this distance is computed in a way
+that is dependent on the clustering method employed but is a function of the
+child leaf nodes.
+</p>
+
+<p>
+</p><p><a name="hclust_tree"></a></p>
+<p></p><hr noshade="noshade">
+
+<pre>htree = <span class="fcndef">hclust_tree</span> ['method', dist_data, opt]
+</pre>
+
+<p>
+
+This is the main clustering function, returning a dendogram of the
+clustered items.  When the data is sparse - that is, the distance between
+many pairs of items is large (effectively infinite) - <tt>dist_data</tt>
+should be provided in the neighbor list or edge list format.  When the
+distances between all items are already known or most distances
+are expected to be below the desired cutoff, the full matrix can be
+provided. The Lance-Williams [Lance&nbsp;1967] matrix-update formulae
+are used to merge two columns into a single column/row and update the
+matrix accordingly based on the clustering method.
+
+</p>
+
+<p>Four different hierarchical agglomerative methods are supported:
+<ul>
+
+<li><b>single-linkage</b>.  Any two items within the distance cutoff are
+placed within the same cluster, i.e. no two items from two distinct clusters
+are within the cutoff distance.  Tends to produce long noodly clusters.
+This is also called nearest neighbor clustering.
+
+</li>
+
+<li><b>complete-linkage</b>.  All pairs of items within a given cluster
+are within the cutoff distance from each other.  Tends to produce tight,
+compact clusters.
+
+</li>
+
+<li><b>average-linkage</b>.  Generally results in clusters larger than those
+of complete-linkage clustering but smaller than those of
+single-linkage clustering.
+
+</li>
+
+<li><b>ward</b> [Ward&nbsp;1963].  Similar to average-linkage but tries
+to produce homogeneous clusters, minimizing variation inside the clusters.
+
+</li>
+</ul>
+</p>
+
+<p><tt>method</tt> must be one of: <tt>'single'</tt>, <tt>'complete'</tt>,
+<tt>'average'</tt> or <tt>'ward'</tt>.
+</p>
+
+<p><tt>dist_data</tt> should be one of:
+<ul><li>A nested NxN matrix of pairwise distances between the N items being
+clustered.  For non-symmetric entries, the smaller distance will be used.</li>
+
+<li>A vector v of length two.  The first element should be a vector of length
+N, with the <i>i</i>th element listing the indices of all the neighbors of
+item <i>i</i> (i.e. those with less than infinite distance).  The second
+element of v should be a vector of distances having the same shape as
+the neighbor list, giving the distance between each corresponding pair.
+The distance from each item to itself is assumed to be zero and need not
+be given explicitly.  For non-symmetric or repeated entries, the smallest
+distance will be used.</li>
+
+<li>A vector v of length three.  The first two elements together form a
+list of pairs or edges, specified as indices of corresponding items that are
+'close'; the third element gives the corresponding distances between
+each pair.  The distance from each item to itself is assumed to be zero
+and need not be given explicitly.  For non-symmetric or repeated entries,
+the smallest distance will be used.</li>
+
+</ul>
+</p>
+
+<p>
+The options given in <tt>opt</tt> are as follows:
+</p>
+
+<dl>
+<dt><tt>nclusters : n</tt>
+<dd>Stops the agglomeration procedure once the number of remaining clusters
+is n.  This can be used to exit early.  The default value is 1
+(i.e. run to completion).
+</dd></dt>
+
+<dt><tt>maxsize : s</tt>
+<dd>Stops the agglomeration procedure once the number of elements in the
+largest cluster reaches s.  This can be used to exit early.  The default value
+is N, the number of elements (i.e. run to completion).
+</dd></dt>
+
+<dt><tt>maxscore : cutoff_value</tt>
+<dd>Determines the dissimilarity cutoff for clustering.  Any items which are
+within this distance are considered to be neighbors, while those
+further apart are not.  Larger cutoffs will result in fewer, larger clusters
+and generally longer computation time.  The default is infinity.
+</dd></dt>
+
+<dt><tt>progress : prog_fcn</tt>
+<dd>If given, the specified function will be called once each iteration, with
+a tagged vector argument consisting of:
+<ul>
+<li><b>curstep</b> - the current step number</li>
+<li><b>totstep</b> - the total number of steps assuming running to completion
+of the full dendrogram</li>
+<li><b>curscore</b> - score of the most recently joined nodes</li>
+</ul>
+
+<pre>local function prog_fcn prog
+    write ['Step {n:}/{n:}\n', prog.curstep, prog.totstep];
+endfunction
+</pre>
+</dd></dt>
+
+<dt><tt>verbose : flag</tt>
+<dd>If non-zero, progress messages will be printed out to the SVL
+Commands window.
+</dd></dt>
+
+<dt><tt>htree : htree</tt>
+<dd>If given, resumes clustering from a previously built tree, which must be
+the return value from an earlier call to this function.  This allows one to
+change the clustering method partway through, for example.
+</dd></dt>
+
+<p>
+</p><p><a name="hclust_list"></a></p>
+<p><a name="hclust_id"></a></p>
+<p></p><hr noshade="noshade">
+
+<pre>cluster_list = <span class="fcndef">hclust_list</span> [htree, maxscore]
+cluster_id = <span class="fcndef">hclust_id</span> [htree, maxscore]
+</pre>
+
+<p><tt>hclust_list</tt> and <tt>hclust_id</tt> return the clustered items.
+These take as parameters a dendrogram, <tt>htree</tt>, as returned by
+<tt>hclust_tree</tt>, and a <tt>maxscore</tt> distance which will determine
+the number of clusters actually produced.  Only items nearer to each other
+than this cutoff distance will be considered to be neighbors.  Note that
+if <tt>maxscore</tt> or one of the other early stopping conditions was
+used when building the tree, the tree will already be cut accordingly.
+Thus, specifying a value equal to or greater than the previous cutoff will
+have no further effect, although specifying a smaller cutoff may result in
+additional clusters being created in this case.</p>
+
+<p>The only difference between the two functions is that <tt>hclust_list</tt>
+returns a vector that is a list of indices split up by cluster, so that
+<tt>clusters(i)</tt> gives the indices of the members of the <i>i</i>th cluster.
+Each index from 1 up to N appears in exactly one cluster.  On the other hand,
+<tt>hclust_id</tt> returns a flat vector of length N giving the cluster
+number to which the <i>i</i>th element belongs.  The cluster numbers are
+arbitrary but start at 1 and increase consecutively.</p>
+
+<p>
+</p><p><a name="hclust_info"></a></p>
+<p></p><hr noshade="noshade">
+
+<pre>info = <span class="fcndef">hclust_info</span> ['operation', htree, opt]
+</pre>
+
+<p>Allows for the extraction of various types of information
+from the <tt>htree</tt> data structure used by the clustering
+functions.  <tt>htree</tt> should be the return value from a call to
+<tt>hclust_tree</tt>, while <tt>operation</tt> is a token that specifies the
+type of information desired.  <tt>opt</tt> may be used to pass in additional
+information required for some of the operations.  The valid operations are:
+
+<dl><dt><tt>score</tt>
+<dd>Returns a vector giving, for each non-leaf node of the tree,
+the distance between its immediate children.  If the clustering was terminated
+early, only the distances for the nodes clustered up to the stopping point
+will be returned.
+</dd></dt>
+
+<dt><tt>size</tt>
+<dd>Returns a vector giving, for each non-leaf node of the tree,
+the number of leaf nodes below it.  If the clustering was terminated
+early, only the counts for the nodes clustered up to the stopping point
+will be returned.
+</dd></dt>
+
+<dt><tt>nleafs</tt>
+<dd>Returns a scalar giving the total number of objects clustered.
+</dd></dt>
+</dl>
+</p>
+
+<p>
+<h2>See Also</h2>
+
+<a href="../../svl/fcnref/graphlib.htm">Graph Functions</a>
+
+<p>
+<h2>References</h2>
+
+<p>
+</p><table cellpadding="5" width="100%">
+<tbody>
+<tr>
+<td valign="top">[Ward&nbsp;1963]
+</td><td valign="top">
+Ward, J.H.;
+Hierarchical Grouping to Optimize an Objective Function;
+<i>J. Amer. Statist. Assoc. 58</i> (<b>1963</b>) 236-244.
+</td></tr>
+<tr>
+<td valign="top">[Lance&nbsp;1967]
+</td><td valign="top">
+Lance, G.N., Williams, W.T.;
+A General Theory of Classificatory Sorting Strategies.  1. Hierarchical Systems;
+<i>Computer J. 9</i> (<b>1967</b>) 373.
+</td></tr>
+</tbody></table>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

@@ -1,0 +1,698 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	mfss.htm		MultiFragment Search
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>MultiFragment Search</title>
+
+<meta panel MultiFragment Search>
+
+<meta main_keywords fragment, MFS, belly distance />
+
+<meta keywords active site, de novo, average forcesi, full, class />
+<meta keywords structure-based design, energy minimization, library />
+<meta keywords constrain, receptor, forcefield, binding />
+<meta keywords interaction, solvent exposed, RMSD, copies, binding pocket />
+<meta keywords RMS gradient />
+
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Overview">Overview</a>
+<li><a href="#Running">Running MultiFragment Search</a>
+<li><a href="#Analyzing">Analyzing the Output</a>
+<li><a href="#NewFragLib">Creating a Fragment Library</a>
+<li><a href="#DefFragLib">Default Fragment Library</a>
+<li><a href="#References">References</a>
+</ul>
+
+<!-- OVERVIEW -->
+
+<a name="Overview"></a>
+<h2>Overview</h2>
+
+<p>
+The purpose of MultiFragment Search (MFS) is to help understand the
+interactions between chemical functional groups (referred to as fragments)
+with the active site of a receptor.  MFS uses a 3D structural model of the
+receptor, making it a structure-based ligand design methodology.
+Structure-based design is a term used to describe the design of an active
+ligand from scratch (<i>de novo</i> design) or the improvement of a known
+(structurally) active ligand.  This document describes the individual
+steps of MFS as well as its input and output.
+
+<p>
+The fundamental idea behind MultiFragment Search is to place a relatively
+large number of copies of a fragment, say 200 copies of ethane, into the
+receptor's active site.  
+The fragments are placed randomly around the
+active site atoms and are assumed not to interact with each
+other; no regard is paid to fragment overlap.  Next, a special energy
+minimization protocol is used to refine the initial placement: the receptor
+atoms feel the <i>average forces</i> of the fragments, while each fragment
+feels the <i>full force</i> of the receptor but not of the other fragments. 
+
+<p><center>
+<img src="mfss/idea.gif" width=306 height=136 alt="Schematic of
+Energy Minimization of Fragments in the Active Site of a Receptor">
+</center>
+
+<p>
+The above diagram depicts the energy minimization of a collection of
+fragments (represented as white discs) inside the active site of a
+receptor (blue region).  In a real calculation, more than one type of
+fragment would be used; for example, 200 copies of ethane, 200 copies of
+water and 200 copies of dimethylsulfone.  Even though more than one
+fragment class is used, the basic principle remains the same.  The flow of
+operations of MultiFragment Search is depicted below (it is assumed that
+the molecular system currently loaded in MOE is the receptor and that the
+atoms of the active site are selected):
+
+<p>
+<center>
+<img src="mfss/flow.jpg" height=307 width=394
+    alt="Flow of Operations of the MultiFragment Search">
+</center>
+
+<p>
+Processing begins by saving the original molecular system into the file
+<tt>mfss_orgsys.moe</tt>.  This is done because the molecular system will be
+heavily processed and modified.  Next, many (potentially tens of thousands)
+small molecular fragments are randomly placed around the active site atoms.
+The initial placement of the fragments together with the receptor will be saved
+as <tt>mfss_orgcop.moe</tt> (the original copies).  The final preparatory step
+is to fix most or all of the receptor, i.e. constrain the receptor so
+that no movement is possible.  This is done for reasons of computational
+efficiency and also to prevent gross motion of the receptor's atoms.
+
+<p>
+After preparation, the calculation begins.  In turn, each of
+the fragment classes (i.e. all chemically identical fragments) are
+energy minimized, while the other fragments and the receptor are held fixed.
+During this energy minimization, fragments interact only with the receptor
+and not with any other fragments.  This is followed by the energy
+minimization of the receptor atoms with the fragment atoms held fixed.
+The receptor is subjected to the mean force of the fragments.  This energy
+minimization protocol is repeated until convergence within a user-defined
+RMS gradient.
+
+<p>
+Once the receptor and fragment atoms have converged, fragment copies are
+deleted, leaving only uniquely placed fragments. If the positions of two
+chemically identical fragments are within the RMSD tolerance specified by the 
+Copies RMSD parameter, one of the copies is deleted.  
+The resulting unique fragments and receptor are saved to the
+file <tt>mfss_mincop.moe</tt> (the minimized copies).  Next, the
+individual fragments are written out to the molecular database called
+<tt>mfss_output.mdb</tt> along with interaction energy information.  Once
+written to the database, the fragments are deleted from the MOE system.
+The resulting minimized receptor (without fragments) is saved as
+<tt>mfss_minrec.moe</tt> which completes the calculation.
+
+<p>
+The most important output files are the minimized receptor 
+(<tt>mfss_minrec.moe</tt>) and the fragment
+database containing the interaction energies (<tt>mfss_output.mdb</tt>).
+These fragments may be inspected in order to identify those fragments and
+conformations that exhibit the best binding energies.  In this way, a
+collection of "preferred" functional groups can be calculated for a
+particular receptor.
+
+<!-- RUNNING -->
+
+<a name="Running"></a>
+<h2>Running MultiFragment Search</h2>
+
+<p>
+To start MultiFragment Search, perform the following steps:
+
+<ol>
+<li>Load a receptor molecule into MOE.  This receptor <b>must</b> be
+prepared for MultiFragment Search by adding all hydrogens and calculating
+suitable partial charges. If necessary, minimize the energy of the 
+receptor atoms.
+<p>
+<li>Configure the forcefield.  Use the Potential Setup panel to
+choose an appropriate forcefield for receptor-ligand interactions.  MMFF94
+is a reasonable choice.  Decide if the solvation term will be used in
+the energy minimization; using it will significantly slow down the
+calculation.  Also, decide on the use of non-bonded cutoffs and choose
+a dielectric constant.
+<p>
+<li>Select the atoms of the active site.  This step is necessary if
+fragments are to be generated.  Try to pick only the solvent exposed
+atoms of the active site (to improve the speed of fragment generation).
+<p>
+<li>Choose 
+<span class="nobr"><b>Compute | Fragments | MultiFragment Search</b></span>
+in the MOE Window to open the MultiFragment Search panel.
+</ol>
+
+<p>
+The MultiFragment Search panel
+consists of a number of pages, each of which describes or configures a
+portion of the MultiFragment Search procedure.  These pages are described
+below.
+
+<h4>Step 1: Fragment Generation</h4>
+
+<p>
+The Ligand Fragments page allows you to specify the fragments to generate
+around the active site atoms of the receptor.  The list of available
+fragments is read from a molecular database file and is displayed in the
+page.  The default collection of fragments is described below.  You can
+add more fragments by creating your own fragment database and specifying
+it in the Fragments field of the page.
+
+<p><center>
+<img src="mfss/pgfrag.png" alt="Ligand Fragments Page">
+</center>
+
+<p>
+
+<table border="0" width="100%" cellpadding="5">
+<tr>
+<td valign="top"><b>Fragments</b>
+<td valign="top">Name of the molecular database file containing the
+fragments displayed in the list.  To load a different list, enter the
+filename in the text field and press the Load button.
+
+</tr><tr>
+<td valign="top"><b>Copies</b>
+<td valign="top">Number of copies of each fragment to generate.  For each
+fragment selected in the list, an attempt will be made to generate the given
+number of copies.  In some cases, less copies will result due to steric
+clashes.
+</tr><tr>
+<td valign="top"><b>Copies&nbsp;RMSD</b>
+<td valign="top">
+Two chemically identical fragments will be considered to be in the same
+position if the Root Mean Square Distance of their coordinates is less than
+the given value.  This duplicate test applies to initial fragment generation
+as well as to post-minimization duplicate removal.
+</tr><tr>
+<td valign="top"><b>Fragment&nbsp;List</b>
+<td valign="top">
+Select the fragments to generate from the list.  The list displays the
+name of the fragment, its class (residue name) and a string representing its
+chemical formula.  <b>Note:</b> If no fragments are selected, none will be
+generated.  Also, generated fragments are placed in the vicinity of 
+selected atoms in the MOE window. Thus, the receptor atoms around the
+binding pocket must be selected for fragments to be placed.
+</tr>
+</table>
+
+<p>
+Press the <b>Next</b> button to proceed to the next page.
+
+<h4>Step 2: Energy Minimization Parameters</h4>
+
+
+<p>
+Fundamentally, the MFS calculation is that of repeated energy minimization.
+Although the receptor and fragment class atoms are minimized in turn, each
+energy minimization step will terminate when the <b>Root Mean Square (RMS)
+Gradient</b> falls below a given threshold.  At the default level of 0.01,
+the coordinates of fragments are such that a comparison for duplicates
+can be effected with very little chance that the resulting cluster will
+diverge with subsequent minimization.  The RMS gradient is set on the
+Minimization Options page depicted below.
+
+<p>
+<center>
+<img src="mfss/pgmin.png" alt="Minimization Options Page">
+</center>
+
+<p>
+The <b>Belly Distance</b> controls the extent to which the receptor
+atoms will be frozen at their initial positions.  For each atom <i>i</i> in
+the receptor, let <i>d<sub>i</sub></i> denote the distance to the closest
+atom in any fragment.  Receptor atom <i>i</i> will be held fixed if
+<i>d<sub>i</sub></i> is greater than or equal to the given Belly Distance.
+If the value of Belly Distance is zero, all atoms in the receptor will
+be held fixed for the duration of the calculation.  If the Belly Distance
+is, say, 10, then all receptor atoms farther than 10 angstroms 
+from a fragment
+atom will be held fixed while closer receptor atoms will be allowed to move.
+
+<p>
+Press the <b>Next</b> button to proceed to the next page.
+
+
+<h4>Step 3: Assigning Output Files</h4>
+
+<p>
+The Start Simulation page contains text fields for specifying the names
+of the output files.  
+
+<p><center>
+<img src="mfss/pgfile.png" alt="Start Simulation Page">
+</center>
+
+<p>
+All MFS output files begin with a common prefix; the default is <tt>mfss</tt>.
+You can either leave the default prefix as is or supply a new one.  This prefix
+will be prepended to each of the subsequent files in the page.  The output
+files are (along with their default values):
+
+<p>
+<center><table class="titlebar">
+<tr>
+<th>Contents</th>
+<th>Filename</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="top"><b>Original&nbsp;System</b>
+<td valign="top"><i>prefix</i><tt>_orgsys.moe</tt>
+<td valign="top">
+Molecular system prior to fragment generation (written in MOE format).
+</tr><tr>
+<td valign="top"><b>Original&nbsp;Copies</b>
+<td valign="top"><i>prefix</i><tt>_orgcop.moe</tt>
+<td valign="top">
+Molecular system after fragment generation but prior to energy minimization
+(written in MOE format).
+</tr><tr>
+<td valign="top"><b>Minimized&nbsp;Receptor</b>
+<td valign="top"><i>prefix</i><tt>_minrec.moe</tt>
+<td valign="top">
+Receptor atoms after energy minimization: no fragment atoms are written
+(written in MOE format).
+</tr><tr>
+<td valign="top"><b>Minimized&nbsp;Copies</b>
+<td valign="top"><i>prefix</i><tt>_mincop.moe</tt>
+<td valign="top">
+Receptor atoms and fragment atoms after energy minimization
+(written in MOE format).
+</tr><tr>
+<td valign="top"><b>Output&nbsp;Database</b>
+<td valign="top"><i>prefix</i><tt>_output.mdb</tt>
+<td valign="top">
+Each fragment and interaction energy information (written in Molecular
+Database file format).
+</tr><tr>
+<td valign="top"><b>Log&nbsp;File</b>
+<td valign="top"><i>prefix</i><tt>_log.txt</tt>
+<td valign="top">
+Log of the command line output (written in ASCII format).
+</tr>
+</table></center>
+
+<h4>Starting the Calculation</h4>
+
+<p>
+Finally, press the <b>Start</b> button to begin the MFS calculation. Depending
+on the size of the receptor and the number of fragments around the active
+site atoms, the MFS calculation may take up to several hours to complete.
+When done, the specified output files will be available for analysis.
+
+
+<!-- ANALYZING -->
+
+<a name="Analyzing"></a>
+<h2>Analyzing the Output</h2>
+
+<p>
+The primary output of the MultiFragment Search is the fragment database
+(by default, <tt>mfss_output.mdb</tt>).  This database contains the unique
+chemical fragments at the end of the energy minimization.  For each
+fragment, individual fragment-receptor interaction energies are calculated
+and stored.  The following fields are stored in the database:
+
+<table border="0" cellpadding="5">
+<tr>
+<td valign="top"><b>mol</b>
+<td valign="top">Fragment structure and coordinates.
+</tr></tr>
+<td valign="top"><b>name</b>
+<td valign="top">Name of the fragment.
+</tr></tr>
+<td valign="top"><b>dU</b>
+<td valign="top">Interaction potential (without solvent model) calculated
+as <nobr>U(complex) - U(receptor) - U(fragment)</nobr>.  All other fragments are ignored.
+Values are in kcal/mol.
+</tr></tr>
+<td valign="top"><b>dE</b>
+<td valign="top">Interaction energy (with solvent model) calculated
+as <nobr>E(complex) - E(receptor) - E(fragment)</nobr>.  All other fragments are ignored.
+Values are in kcal/mol.
+</tr></tr>
+<td valign="top"><b>dU(class)</b>
+<td valign="top">Value of dU for each fragment minus the minimum dU taken
+over all chemically identical fragments.
+Values are in kcal/mol.
+</tr></tr>
+<td valign="top"><b>dE(class)</b>
+<td valign="top">Value of dE for each fragment minus the minimum dE taken
+over all chemically identical fragments.
+Values are in kcal/mol.
+</tr>
+</table>
+
+<p>
+The Database Viewer sort facility <nobr><b>(Compute | Sort)</b></nobr> can be used to
+select fragments.  By sorting on different energy fields, different selection
+criteria can be used:
+
+<ul>
+<li><b>Best binding:</b>  Sort Up on the dE field to bring to the top of the
+database the fragments with the best overall binding energy (including
+solvation effects).
+<p>
+<li><b>Lowest potential:</b>  Sort Up on the dU field to bring to the top
+of the database the fragments with the lowest interaction potential energy
+(ignoring solvation effects).
+<p>
+<li><b>Best binding in fragment class:</b>  Sort Up on the dE(class) to bring to
+the top of the database the best binding fragments (including solvation effects)
+within each fragment class.  <b>Note:</b> The best in each class will have a
+dE(class) value of zero.
+<p>
+<li><b>Lowest potential in fragment class:</b>  Sort Up on the dU(class)
+to bring to the top of the database the fragments with the lowest
+interaction potential (ignoring solvation effects) within each fragment
+class.  <b>Note:</b> The best in each class will have a dU(class) value of
+zero.
+
+</ul>
+
+<p>
+The Browser in the Database Viewer <nobr><b>(File | Browse...)</b></nobr> can be
+used to step through each of the output fragments.  If the receptor atoms
+are still loaded, each fragment will be placed in the receptor context.
+
+<!-- CREATING A FRAGMENT LIBRARY -->
+
+<a name="NewFragLib"></a>
+<h2>Creating a Fragment Library</h2>
+
+<p>
+MultiFragment Search uses a precalculated fragment library to populate a
+receptor with fragment copies.  In principle, any molecular structure can
+be used as a fragment; however, small rigid units are best (otherwise,
+multiple conformations should be put into the fragment library).  Perform
+the following steps to create a new fragment library.
+
+<ol>
+<li>Create a new molecular database with <b>File&nbsp;|&nbsp;New | Database</b>.
+<p>
+<li>In the Database Viewer, use <b>Edit&nbsp;|&nbsp;New&nbsp;|&nbsp;Field...</b> to create four database fields: 
+<br><b>mol</b> of type molecule
+<br><b>name</b> of type char
+<br><b>formula</b> of type char
+<br><b>rname</b> of type char
+
+<p>
+<li>Use <nobr><b>Edit | New | Entry</b></nobr> to add an entry to the database for each fragment structure.  
+
+<p>The fragment structure should be built in the MOE Window
+and energy minimized.  Make sure that partial charges have been calculated
+for each atom because MultiFragment Search does not calculate fragment
+charges.  Put the full name of the fragment in the Header field of the
+chain (use the Atom Manager).  Make sure that the fragment has a single
+residue name and give it a reasonable three-letter code.
+
+</ol>
+
+<p>
+Once the library has been created, it can be specified in the MultiFragment
+Search panel and loaded.
+
+<!-- DEFAULT FRAGMENT LIBRARY -->
+
+<a name="DefFragLib"></a>
+<h2>Default Fragment Library</h2>
+
+<p>
+The MOE installation provides a default fragment library for use with
+MultiFragment Search.  The file is located in <tt>$MOE/lib/mfssfrag.mdb</tt>
+and contains the following molecular fragments:
+
+<p>
+<center><table class="titlebar">
+<tr>
+<th align="center">Structure</th>
+<th align="center">Name</th>
+<th align="center">Formula</th>
+<th align="center">Residue Name</th>
+</tr><tr>
+<td align="center" valign="center">CH<sub>4</sub></td>
+<td align="center">methane</td>
+<td align="center">CH4</td>
+<td align="center">CH4</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/h2o.gif"></td>
+<td align="center">water</td>
+<td align="center">H2O</td>
+<td align="center">WAT</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/ethane.gif"></td>
+<td align="center">ethane</td>
+<td align="center">CH3CH3</td>
+<td align="center">ETH</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/methanol.gif"></td>
+<td align="center">methanol</td>
+<td align="center">CH3OH</td>
+<td align="center">COH</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/methamm.gif"></td>
+<td align="center">methylammonium</td>
+<td align="center">CH3NH3+</td>
+<td align="center">MAM</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/propyne.gif"></td>
+<td align="center">propyne</td>
+<td align="center">CH3C#CH</td>
+<td align="center">PRY</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/acnitrile.gif"></td>
+<td align="center">acetonitrile</td>
+<td align="center">CH3C#N</td>
+<td align="center">CCN</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/acetald.gif"></td>
+<td align="center">acetaldehyde</td>
+<td align="center">CH3CH=O</td>
+<td align="center">ALD</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/propane.gif"></td>
+<td align="center">propane</td>
+<td align="center">CH3CH2CH3</td>
+<td align="center">PRA</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/coc.gif"></td>
+<td align="center">dimethylether</td>
+<td align="center">CH3OCH3</td>
+<td align="center">COC</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/ethanol.gif"></td>
+<td align="center">ethanol</td>
+<td align="center">CH3CH2OH</td>
+<td align="center">EOH</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/metthiol.gif"></td>
+<td align="center">methylthiol</td>
+<td align="center">CH3SH</td>
+<td align="center">CSH</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/ccl.gif"></td>
+<td align="center">methylchloride</td>
+<td align="center">CH3Cl</td>
+<td align="center">MCL</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/bty.gif"></td>
+<td align="center">2-butyne</td>
+<td align="center">CH3C#CCH3</td>
+<td align="center">BTY</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/bte.gif"></td>
+<td align="center">2-butene</td>
+<td align="center">CH3CH=CHCH3</td>
+<td align="center">BTE</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/bta.gif"></td>
+<td align="center">butane</td>
+<td align="center">CH3CH2CH2CH3</td>
+<td align="center">BTA</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/bti.gif"></td>
+<td align="center">isobutane</td>
+<td align="center">CH(CH3)3</td>
+<td align="center">BTI</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/coo.gif"></td>
+<td align="center">acetate ion</td>
+<td align="center">CHC=OO-</td>
+<td align="center">COO</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/nmf.gif"></td>
+<td align="center">n-methylformamide</td>
+<td align="center">CH=ONHCH3</td>
+<td align="center">NMF</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/acm.gif"></td>
+<td align="center">acetamide</td>
+<td align="center">CH3C=ONH2</td>
+<td align="center">ACM</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/cnn.gif"></td>
+<td align="center">methylamidinium</td>
+<td align="center">CH3C=NH2NH2+</td>
+<td align="center">CNN</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/tmn.gif"></td>
+<td align="center">trimethylammonium</td>
+<td align="center">(CH3)3NH+</td>
+<td align="center">TMN</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/ethiol.gif"></td>
+<td align="center">ethylthiol</td>
+<td align="center">CH3CH2SH</td>
+<td align="center">CCS</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/cf3.gif"></td>
+<td align="center">trifluoromethane</td>
+<td align="center">CHF3</td>
+<td align="center">CF3</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/cmc.gif"></td>
+<td align="center">n-methylacetamide</td>
+<td align="center">CH3C=ONHCH3</td>
+<td align="center">CMC</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/gdn.gif"></td>
+<td align="center">methylguanadinium</td>
+<td align="center">CH3NH=C(NH2)2+</td>
+<td align="center">GDN</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/benzene.gif"></td>
+<td align="center">benzene</td>
+<td align="center">C6H6</td>
+<td align="center">BEN</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/imc.gif"></td>
+<td align="center">5-methylimidazole</td>
+<td align="center">[nH]1cncc1C</td>
+<td align="center">IMC</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/mtr.gif"></td>
+<td align="center">methyltetrazolium</td>
+<td align="center">CH3CN4-</td>
+<td align="center">MTR</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/cyclohex.gif"></td>
+<td align="center">cyclohexane</td>
+<td align="center">C6H12</td>
+<td align="center">CHX</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/thz.gif"></td>
+<td align="center">thiazole</td>
+<td align="center">C3H3NS</td>
+<td align="center">THZ</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/ppp.gif"></td>
+<td align="center">piperidinium</td>
+<td align="center">C5H10NH2+</td>
+<td align="center">PPP</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/c3m.gif"></td>
+<td align="center">n,n-dimethylacetamide</td>
+<td align="center">CH3C=ON(CH3)2</td>
+<td align="center">C3M</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/phenol.gif"></td>
+<td align="center">phenol</td>
+<td align="center">C6H5OH+</td>
+<td align="center">PHE</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/c2so2.gif"></td>
+<td align="center">dimethylsulfone</td>
+<td align="center">(CH3)2SO2</td>
+<td align="center">DSP</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/cso3.gif"></td>
+<td align="center">methylsulfonate</td>
+<td align="center">CH3SO3-</td>
+<td align="center">MST</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/cso2n.gif"></td>
+<td align="center">methylsulfonamide</td>
+<td align="center">CH3SO2NH2</td>
+<td align="center">MSM</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/mpr.gif"></td>
+<td align="center">1,2-dimethylpyrrolidine</td>
+<td align="center">CH3-C4H7N-CH3</td>
+<td align="center">MPR</td>
+</tr><tr>
+<td align="center" valign="center"><img src="mfss/min.gif"></td>
+<td align="center">3-methylindole</td>
+<td align="center">c12ccccc1[nH]cc2C</td>
+<td align="center">MIN</td>
+</tr>
+</table></center>
+
+<!-- REFERENCES -->
+
+<a name="References"></a>
+<h2>References</h2>
+
+<p><table width="100%">
+<tr>
+<td valign="top">[Miranker&nbsp;1991]
+<td valign="top">
+Miranker, A., Karplus, M.;
+Functionality Maps of Binding Sites:
+A Multiple Copy Simultaneous Search Method;
+<i>Proteins: Structure, Function, and Genetics</i> <i>11</i> (<b>1991</b>)
+29&ndash;34.
+
+</table>
+
+
+<h2>See Also</h2>
+
+<a href="../moe/gui/mainwin.htm">MOE Window</a><br />
+<a href="../moe/gui/atommgr.htm">Atom Manager</a><br/>
+<a href="../mdb/db.htm">Database Viewer</a><br/>
+<a href="../moe/molsystems/build.htm">Builder</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

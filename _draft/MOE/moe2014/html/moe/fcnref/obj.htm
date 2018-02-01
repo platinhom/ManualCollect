@@ -1,0 +1,449 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	obj.htm		oXXX fcnref
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta functions oChildCount, oCreate, oDestroy, oParent>
+<meta functions oType, oValid, oChildren>
+<meta functions oReparent, oIndex>
+<meta functions Atoms, nAtoms, Residues, nResidues, Chains, nChains>
+<meta functions oAtoms, oResidues, oChains>
+<meta functions SystemOpen, SystemClose, SystemCurrent>
+<meta functions SystemPush, SystemPop, SystemValid>
+<meta functions SystemNonviewState, SystemTopologyState>
+<meta functions oSerialNumber, oSetSerialNumber>
+
+<meta intro Molecular Object and System Functions>
+
+<title>Molecular Object and System Functions</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    skey      = <a class="fcnlink" href="#SystemOpen">SystemOpen</a> []
+    skey      = <a class="fcnlink" href="#SystemOpen">SystemOpen</a> sys_key
+    old_skey  = <a class="fcnlink" href="#SystemCurrent">SystemCurrent</a> skey
+                <a class="fcnlink" href="#SystemClose">SystemClose</a> skey
+    [sk1,sk2] = <a class="fcnlink" href="#SystemPush">SystemPush</a> []
+                <a class="fcnlink" href="#SystemPop">SystemPop</a> [sk1,sk2]
+    flags     = <a class="fcnlink" href="#SystemValid">SystemValid</a> skeys
+
+    atom_keys = <a class="fcnlink" href="#Atoms">Atoms</a> []
+    natoms = <a class="fcnlink" href="#nAtoms">nAtoms</a> []
+
+    residue_keys = <a class="fcnlink" href="#Residues">Residues</a> []
+    number_of_residues = <a class="fcnlink" href="#nResidues">nResidues</a> []
+
+    chain_keys = <a class="fcnlink" href="#Chains">Chains</a> []
+    num_chains = <a class="fcnlink" href="#nChains">nChains</a> []
+
+    atom_key_lists  = <a class="fcnlink" href="#oAtoms">oAtoms</a>      obj_keys
+    chain_key_lists = <a class="fcnlink" href="#oChains">oChains</a>     obj_keys
+    nchildren       = <a class="fcnlink" href="#oChildCount">oChildCount</a> obj_keys
+    child_lists     = <a class="fcnlink" href="#oChildren">oChildren</a>   obj_keys
+    new_keys        = <a class="fcnlink" href="#oCreate">oCreate</a>     parent_keys
+    flags           = <a class="fcnlink" href="#oDestroy">oDestroy</a>    obj_keys
+    indices         = <a class="fcnlink" href="#oIndex">oIndex</a>      obj_keys
+    parent_keys     = <a class="fcnlink" href="#oParent">oParent</a>     obj_keys
+    old_parent_keys = <a class="fcnlink" href="#oReparent">oReparent</a>   [obj_keys, new_parent_keys]
+    res_key_lists   = <a class="fcnlink" href="#oResidues">oResidues</a>   obj_keys
+    type_tokens     = <a class="fcnlink" href="#oType">oType</a>       obj_keys
+    flags           = <a class="fcnlink" href="#oValid">oValid</a>      obj_keys
+    
+    ser = <a class="fcnlink" href="#oSerialNumber">oSerialNumber</a> obj_keys
+    <a class="fcnlink" href="#oSetSerialNumber">oSetSerialNumber</a> [obj_keys, ser]
+
+    tick = <a class="fcnlink" href="#SystemNonviewState">SystemNonviewState</a> []</a>
+    tick = <a class="fcnlink" href="#SystemTopologyState">SystemTopologyState</a> []</a>
+</pre>
+
+<h2>Description</h2>
+
+<p><img align=right src="../molsystems/molrep/hierarchy.gif"
+alt="Molecular Hierarchy">
+
+<p>
+In MOE, molecular data is organized as a hierarchy of <i>molecular objects</i>
+or <i>objects</i>.  A molecular <i>system</i> consists of zero or more chains,
+and each chain consists of zero or more residues.
+A residue consists of zero or more atoms.
+A molecule may consist of one or more chains and one or more residues.  
+
+<p>Each molecular object (atom, residue, chain) has its own unique
+identifying <i>key</i>. This key is valid during the lifetime of the
+object, and is not maintained from one MOE session to the next.  The key
+is used to reference the molecular object in order to obtain or modify
+the object's properties.
+
+<p>
+MOE stores chain, residue and atom information in separate
+internal data structures.  These structures have fixed parental-filial
+relationships: chains are parents of residues, and residues are
+parents of atoms, but chains are never parents of atoms even if a chain
+consists of a single residue consisting of a single atom. Similarly, atoms
+are the children of residues, and residues are the children of chains.
+Chains and residues can be empty. The parent of all chains is the system.
+
+<p>
+MOE maintains a global system which is always displayed in the MOE window.
+New systems can be created in SVL programs which are not displayed.  These
+new systems are &quot;owned&quot; by the SVL task that created them and
+will be automatically destroyed when the creating SVL task terminates.
+An SVL task has an associated &quot;current&quot; system which is, by default,
+the system displayed in the MOE window.  Other than certain system
+functions, all molecular object functions apply to the current system.
+
+<p>
+The <tt>SystemOpen</tt> function creates new systems and the
+<tt>SystemClose</tt> function destroys them.  An SVL program will
+typically create a new system with code similar to:
+
+<blockquote><pre>
+local sys = <span class="fcndef">SystemOpen</span> [];          // create a new system
+local oldsys = <span class="fcndef">SystemCurrent</span> sys;   // make it the current system
+
+// ... application code ...
+
+<span class="fcndef">SystemCurrent</span> oldsys;               // restore old system
+<span class="fcndef">SystemClose</span> sys;                    // destroy the created system
+</pre></blockquote>
+
+<p>
+The <tt>application code</tt> can now create atoms, perform energy
+minimizations, etc. without interfering with the system in the MOE window.
+This code fragment is used so often that shorthand functions
+<tt>SystemPush</tt> and <tt>SystemPop</tt> are provided; the above example
+is equivalent to
+
+<blockquote><pre>
+local pdata = SystemPush [];        // create system and make current
+
+// ... application code ...
+
+SystemPop pdata;                    // destroy system and restore previous
+</pre></blockquote>
+
+<p>
+The following table describes the fundamental system and object functions.
+
+<!-- DESC -->
+
+<p><table class="titlebar" border="1" cellpadding="3" width="100%">
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="baseline">
+<a name="Atoms"></a>
+<a name="nAtoms"></a><tt>Atoms</tt><br /><tt>nAtoms</tt>
+<td valign="baseline">
+<tt>Atoms</tt> returns a vector of keys, one for each atom in the current
+system;  <tt>nAtoms</tt> returns the number of atoms.
+<tr>
+<td valign="baseline">
+<a name="Chains"></a>
+<a name="nChains"></a><tt>Chains</tt><br /><tt>nChains</tt>
+<td valign="baseline">
+<tt>Chains</tt> returns a vector of keys, one for each chain in the current
+system;  <tt>nChains</tt> returns the number of chains.
+<tr>
+<td valign="baseline">
+<a name="oAtoms"></a><tt>oAtoms</tt>
+<td valign="baseline">
+Returns a list of descendent atom keys
+for each object specified by a key in <tt>obj_keys</tt>. 
+If any key passed to <tt>oAtoms</tt> is that of an atom, the
+function will return the atom key itself.
+Objects with no atoms will have a corresponding return value of null. 
+The objects that the <tt>keys</tt> refer to need not all be of the same type.
+The length of the return vector is always equal to the length of the
+argument vector.
+<tr>
+<td valign="baseline">
+<a name="oChains"></a><tt>oChains</tt>
+<td valign="baseline">
+Returns a list of chain keys
+for each object specified by a key in <tt>obj_keys</tt>. 
+For atom or residue keys, the parent chain is returned.
+For chain keys, the function will return the chain key itself.
+The objects that the <tt>keys</tt> refer to need not all be of the same type.
+The length of the return vector is always equal to the length of the
+argument vector.
+<tr>
+<td valign="baseline">
+<a name="oChildCount"></a><tt>oChildCount</tt>
+<td>
+For each object in the argument, returns the number of children it has.
+Atoms always have 0 children.
+This function can be used on arbitrarily nested vectors.
+<tr>
+<td valign="baseline">
+<a name="oChildren"></a><tt>oChildren</tt>
+<td>
+For each object in the argument, returns a list of its children (in the form
+of object keys).  The system object returns a list of all chains, a chain
+object returns a list of its component residues, and a residue object returns
+a list of its component atoms.  This function applies to flat vectors only.
+<tr>
+<td valign="baseline">
+<a name="oCreate"></a><tt>oCreate</tt>
+<td>
+Creates new molecular objects.  Each key in the
+<tt>parent_keys</tt> vector can refer to the system (key 0), a chain, or a
+residue (other objects produce an error).  For each parent key, a new child
+will be created and its key returned in the corresponding position in the
+<tt>new_keys</tt> return vector.  If the parent is 0, a new chain will be
+created at the end of the current set of chains.  If the parent is a chain,
+a new residue will be created after the last residue in that chain.
+If the parent is a residue, a new atom will be created and appended to
+the list of atoms already in the residue.
+This function can be used on arbitrarily nested vectors.
+<tr>
+<td valign="baseline">
+<a name="oDestroy"></a><tt>oDestroy</tt>
+<td>
+Destroys the objects in the <tt>obj_keys</tt> argument.  The children
+of each object are also destroyed.  If the object keys do not correspond to
+existing objects, nothing is done and a zero is returned in the returned flags;
+otherwise, a value of 1 is returned.
+This function can be used on arbitrarily nested vectors.
+<tr>
+<td valign="baseline">
+<a name="oIndex"></a><tt>oIndex</tt>
+<td>
+For each object in the argument,
+returns the object's index in the list of the children (as
+returned by <tt>oChildren</tt>) of its parent.
+It is an error to attempt to obtain the
+index of the system.
+This function can be used on arbitrarily nested vectors.
+<tr>
+<td valign="baseline">
+<a name="oParent"></a><tt>oParent</tt>
+<td>
+For each object in the argument, returns the key of the parent object.
+The parent of a residue is a chain, and that of an atom, a residue.  The
+parent of a chain is the system, which is identified by a key value of 0.
+It is an error to try to obtain the parent of the system.  This function
+can be used on arbitrarily nested vectors.
+
+<tr>
+<td valign="baseline">
+<a name="oReparent"></a><tt>oReparent</tt>
+<td>
+Moves objects in the hierarchy.  Each object in
+<tt>obj_keys</tt> will be reparented to the corresponding object in
+<tt>new_parent_keys</tt>.  In each case, the parent of the object in
+<tt>obj_keys</tt> prior to the move is returned.  It is an error to attempt
+to reparent the system object or a chain object.  New parents for residues
+must be chains or residues. If the parent is a chain, the reparented residue
+is appended to this chain. If the parent is a residue, the reparented
+residue is inserted before the parent residue.
+New parents for atoms must be residues.
+This function can be used on arbitrarily nested vectors.
+
+<tr>
+<td valign="baseline">
+<a name="oResidues"></a><tt>oResidues</tt>
+<td>
+Returns a list of residue keys
+for each object specified by a key in <tt>obj_keys</tt>. 
+
+For atom keys, the parent residue is returned.  For residue keys,
+the residue key itself is returned.  For chain keys, the child residues
+are returned.
+Objects with no residues associated with it will have a corresponding
+return value of null.  The objects that the <tt>keys</tt> refer to need
+not all be of the same type.
+The length of the return vector is always equal to the length of the
+argument vector.
+
+<tr>
+<td valign="baseline">
+<a name="oType"></a><tt>oType</tt>
+<td>
+For each object in the argument, returns a token indicating
+the type of the object.  The possible returned types are given in the
+constant <tt>O_TYPES</tt> and consist of <tt>'system'</tt>,
+<tt>'chain'</tt>, <tt>'residue'</tt> and <tt>'atom'</tt>.  The null token
+<tt>''</tt> is returned for objects that do not exist.
+This function can be used on arbitrarily nested vectors.
+
+<tr>
+<td valign="baseline">
+<a name="oValid"></a><tt>oValid</tt>
+<td>
+For each object in the argument, returns a value of 1
+if the key refers to an existing molecular object; otherwise, returns zero.
+This function can be used on arbitrarily nested vectors.
+
+<tr>
+<td valign="baseline">
+<a name="oSerialNumber"></a><tt>oSerialNumber</tt><br />
+<a name="oSetSerialNumber"></a><tt>oSetSerialNumber</tt>
+</td>
+
+<td>
+Each molecular object has its own unique serial number, which can be used as an
+alternative to the object key when referencing objects. The serial number has a
+more well defined interpretation than the object key. For example, if an
+application deletes an atom then creates another one, the new atom could
+potentially have the same atom key as the atom which was deleted. The new atom
+will, however, have a new and unique serial number. In some cases, it may be
+desirable to be able to delete and add atoms, and indicate that they are still
+the same (e.g. undo/redo). This can be accomplished by storing serial numbers
+and reapplying them with <tt>oSetSerialNumber</tt>.
+<br />
+<span class="tip">Note:</span> These functions are intended for use in
+implementing undo functionality and should not otherwise be used.
+</td>
+</tr>
+
+<tr>
+<td valign="baseline">
+<a name="Residues"></a>
+<a name="nResidues"></a><tt>Residues</tt><br /><tt>nResidues</tt>
+<td valign="baseline">
+<tt>Residues</tt> returns a vector of keys, one for each residue in the current
+system;  <tt>nResidues</tt> returns the number of residues.
+
+<tr>
+<td valign="baseline">
+<a name="SystemCurrent"></a><tt>SystemCurrent</tt>
+<td valign="baseline">
+When passed a system key, <tt>SystemCurrent</tt> makes that system
+current and returns the key of the previously current system.
+When passed a null argument, <tt>SystemCurrent</tt> returns the
+key of the current system.
+
+
+</tr>
+
+<tr>
+<td valign="baseline">
+<a name="SystemOpen"></a>
+<a name="SystemClose"></a><tt>SystemOpen</tt><br /><tt>SystemClose</tt>
+<td valign="baseline">
+If the argument is null then a new system is created and its key is
+returned.  Otherwise
+the argument must be a previously created system key and in this case
+the system is &quot;re-opened&quot;.
+When a created system is no longer needed it must be closed with
+<tt>SystemClose</tt>.  A system will be destroyed when <tt>SystemClose</tt>
+has been called for each <tt>SystemOpen</tt> applied to the system.
+<tr>
+
+<td valign="baseline">
+<a name="SystemPush"></a>
+<a name="SystemPop"></a><tt>SystemPush</tt><br /><tt>SystemPop</tt>
+<td valign="baseline">
+<tt>SystemPush</tt> creates a new system and makes it current.  The return
+value is a vector of two system keys <tt>[o,n]</tt> where <tt>o</tt> is the
+previously current system and <tt>n</tt> is the newly created system.
+<tt>SystemPop</tt> reverses the effect of <tt>SystemPush</tt> when given
+the <tt>[o,n]</tt> return value of <tt>SystemPush</tt>.  The <tt>o</tt>
+system is made current and the <tt>n</tt> system is closed.
+
+<tr>
+<td valign="baseline">
+<a name="SystemValid"></a><tt>SystemValid</tt>
+<td valign="baseline">
+For each key in the argument vector a flag is returned indicated whether
+or not the key corresponds to a valid open system.
+
+
+</tr>
+
+<tr>
+<td valign="baseline">
+<a name="SystemNonviewState"></a><tt>SystemNonviewState</tt><br />
+<a name="SystemTopologyState"></a><tt>SystemTopologyState</tt>
+</td>
+<td valign="baseline">
+Both of these functions return a counter, which is incremented by 1 each time a
+particular class of system property is changed. The <tt>SystemNonviewState</tt>
+counter is the more inclusive of the two, and is incremented whenever any
+molecular object's properties are changed. Interactive properties such as the
+angle and zoom of the display do not trigger an increment, but transient
+changes, such selecting atoms or changing atom rendering style, do cause the
+counter to be incremented.
+
+<p>The <tt>SystemTopologyState</tt> counter is incremented when changes are made
+which may affect the bond order, which includes making or breaking bonds, and
+modification of atom geometry or ionic charge. Modifications such as adjusting
+atom positions do not cause this counter to increment, since they do not
+directly affect the bonding topology.
+</p>
+
+<p>These functions are particularly useful in background monitor tasks, where a
+potentially calculation-intensive update can be avoided by testing to see if the
+appropriate counter has remained unchanged.
+</p>
+</td>
+</tr>
+
+</table>
+
+<!-- ENDDESC -->
+
+<h2>See Also</h2>
+<p>
+   <a class="svl" href="achain.htm">aChain</a>
+   <a class="svl" href="achain.htm">aResidue</a><br />
+   <a class="svl" href="ratrch.htm">rAtoms</a>
+   <a class="svl" href="ratrch.htm">rChain</a><br />
+   <a class="svl" href="catoms.htm">cAtoms</a>
+   <a class="svl" href="catoms.htm">cResidues</a>
+</p>
+
+<p>
+<a href="atom.htm">Atom&nbsp;Functions</a><br />
+<a href="residue.htm">Residue&nbsp;Functions</a><br />
+<a href="chain.htm">Chain&nbsp;Functions</a><br />
+<a href="collect.htm">Molecular Object Collection Functions</a><br />
+<a href="../molsystems/molrep.htm">Representation of Molecular Systems
+in MOE</a>
+</p>
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+

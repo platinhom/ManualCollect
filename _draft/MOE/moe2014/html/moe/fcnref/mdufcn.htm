@@ -1,0 +1,520 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	mdufcn.htm			dynamics utilities function reference
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<title>Molecular Dynamics Trajectory File I/O</title>
+<meta functions md_MassCenter, md_RemoveAngularVelocity>
+<meta functions md_BoltzmannVelocity, md_KineticEnergy>
+<meta functions md_WrapWaterData, md_WrapWater>
+<meta functions md_Constraint, md_ConstraintMatrix, md_ConstraintError>
+<meta functions md_ConstraintPos, md_ConstraintVel, md_ConstraintAcc>
+<meta functions md_ConstraintScale>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    pos     = <a class="fcnlink" href="#md_MassCenter">md_MassCenter</a>            [pos, imass]
+    vel     = <a class="fcnlink" href="#md_RemoveAngularVelocity">md_RemoveAngularVelocity</a> [pos, vel, imass]
+    K       = <a class="fcnlink" href="#md_KineticEnergy">md_KineticEnergy</a>         [vel, imass]
+    vel     = <a class="fcnlink" href="#md_BoltzmannVelocity">md_BoltzmannVelocity</a>     [pos, imass, kT, opt]
+
+    wrap    = <a class="fcnlink" href="#md_WrapWaterData">md_WrapWaterData</a> [atoms, imass]
+    pos     = <a class="fcnlink" href="#md_WrapWater">md_WrapWater</a>     [pos, wrap, cell, origin]
+
+    cons    = <a class="fcnlink" href="#md_Constraint">md_Constraint</a>       [imass, xA, xB, lenAB]
+    p       = <a class="fcnlink" href="#md_ConstraintScale">md_ConstraintScale</a>  [cons, R, p]
+    [B,Br]  = <a class="fcnlink" href="#md_ConstraintMatrix">md_ConstraintMatrix</a> [cons, p, cell]
+    [eP,eV] = <a class="fcnlink" href="#md_ConstraintError">md_ConstraintError</a>  [cons, p, v, cell]
+    [a,y]   = <a class="fcnlink" href="#md_ConstraintAcc">md_ConstraintAcc</a>    [cons, B, a]
+    [v,a,y] = <a class="fcnlink" href="#md_ConstraintVel">md_ConstraintVel</a>    [cons, B, v, a, dt]
+    [p,v]   = <a class="fcnlink" href="#md_ConstraintPos">md_ConstraintPos</a>    [cons, B, p, v, dt, cell]
+</pre>
+
+<h2>Description</h2>
+
+<p>
+The functions described here are related to molecular dynamics simulations.
+These functions are useful in a variety of contexts, some for user interface
+and some for simulations code.
+
+<p><a name="md_BoltzmannVelocity"></a></p>
+<p><a name="md_KineticEnergy"></a></p>
+<p><a name="md_RemoveAngularVelocity"></a></p>
+<p><a name="md_MassCenter"></a></p>
+<p><hr noshade></p>
+<pre>
+com = <span class="fcndef">md_MassCenter</span> [pos, imass]
+vel = <span class="fcndef">md_RemoveAngularVelocity</span> [pos, vel, imass]
+K   = <span class="fcndef">md_KineticEnergy</span> [vel, imass]
+vel = <span class="fcndef">md_BoltzmannVelocity</span> [pos, imass, kT, opt]
+</pre>
+
+<p>
+The above functions are intended for creating and manipulating
+(laminated) velocity vectors in molecular dynamics simulations. 
+All of them require the input of the <i>inverse mass</i> of each
+of the atoms, <tt>imass</tt> (i.e. 1/<i>m<sub>i</sub></i> for
+each atom <i>i</i>).  In this form, fixed
+atoms have an inverse mass of zero corresponding to an infinite mass.
+Typically, the units of mass are g/mol, although these routines to
+not assume this.
+
+<p>
+<tt>md_MassCenter</tt> calculates and returns the center of mass
+[<i>x<sub>c</sub></i>,
+<i>y<sub>c</sub></i>,
+<i>z<sub>c</sub></i>]
+of the given coordinates.  The center of mass is
+the mass-weighted average of the coordinates unless there are fixed
+atoms (indicated by zeroes in <tt>imass</tt>),
+in which case the return value is the
+simple average of the atom coordinates of the fixed atoms.
+This function can also be employed to remove linear
+momentum from atomic velocities:
+
+<blockquote><pre>
+    vel = vel - md_MassCenter [vel, imass]
+</pre></blockquote>
+
+<p>
+This operation corresponds to a least-action perturbation of the velocities
+to remove linear momentum and will preserve angular momentum without affecting
+holonomic distance constraints.
+
+<p>
+<tt>md_RemoveAngularVelocity</tt> calculates a least-action perturbation
+of the given velocity vector to produce a velocity vector with zero
+angular momentum.  This operation will preserve the total linear momentum
+and will not affect any holonomic distance constraints.
+The calculation involves the diagonalization of the 3x3 moment of inertia
+matrix and will correctly handle velocities with one, two, or more fixed atoms
+(indicated by zeroes in <tt>imass</tt>).
+
+<p>
+<tt>md_KineticEnergy</tt> calculates the kinetic energy of a given
+velocity vector, which is returned as a scalar value.
+The kinetic energy is calculated as
+the sum of <i>m<sub>i</sub></i>|<i>v<sub>i</sub></i>|<sup>2</sup>
+over all of the atoms, with special handling for fixed atoms.
+If fixed atoms are present,
+their velocities are taken to be 0 (otherwise
+an infinite kinetic energy would result).
+
+<p>
+<tt>md_BoltzmannVelocity</tt> calculates a random velocity vector sampled
+from a Maxwell-Boltzmann distribution (a normal distribution with variance
+<i>kT/m<sub>i</sub></i> for each atom).  The <tt>kT</tt> and <tt>imass</tt>
+parameters determine the resulting units.  The position argument <tt>pos</tt>
+is used only for the removal of angular velocity (if enabled
+in <tt>opt</tt>) and can
+otherwise be given as <tt>[0,0,0]</tt>.
+The <tt>opt</tt> argument contains options that affect the resulting
+velocities:
+
+<blockquote><dl>
+<dt><tt>lmom :</tt> <i>flag</i>
+<dd>
+If non-zero, any total linear momentum in the generated velocities will
+be retained; otherwise, total linear momentum will be removed.
+The default is 1.
+<p>
+<dt><tt>amom :</tt> <i>flag</i>
+<dd>
+If non-zero, any total angular momentum in the generated velocities will
+be retained; otherwise, total angular momentum will be removed.
+The default is 1.
+<p>
+<dt><tt>dof :</tt> <i>number</i>
+<dd>
+The degrees of freedom in a system of <i>n</i> atoms.  If the given value
+is less than zero then the degrees of freedom are taken to be
+3(<i>n</i>&nbsp;&ndash;&nbsp;<i>f</i>) where <i>f</i> is the number
+of fixed atoms (i.e. atoms with <tt>imass</tt> = 0).
+The default is -1.
+<p>
+<dt><tt>scale :</tt> <i>flag</i>
+<dd>
+If non-zero, the resulting velocities will be scaled so that the
+temperature will be exactly <i>T</i>.  The <tt>dof</tt> option is
+used in the calculation less 3 if <tt>lmom</tt> is zero and less 3
+if <tt>amom</tt> is zero.  The default is 0.
+<p>
+<dt><tt>maxit :</tt> <i>number</i>
+<dd>
+If <tt>scale</tt> is non-zero then <tt>maxit</tt> is the number of
+attempts that will be made to generate a velocity vector with the
+given temperature.  The default is 20.
+</dl></blockquote>
+
+<p>
+For example, to generate a random velocity vector for the atoms in the
+current system with no total linear or angular momentum, scaled to 300K
+one could use:
+
+<blockquote><pre>
+local pos = aPos atoms;
+local imass = inv aMass atoms;
+md_BoltzmannVelocity [pos, imass, KBOLTZ*300, [lmom:0,amom:0,scale:1]];
+</pre></blockquote>
+
+<p><a name="md_WrapWater"></a></p>
+<p><a name="md_WrapWaterData"></a></p>
+<p><hr noshade></p>
+<pre>
+wrap = <span class="fcndef">md_WrapWaterData</span> [atoms, imass]
+pos  = <span class="fcndef">md_WrapWater</span>     [pos, wrap, cell, origin]
+</pre>
+
+<p>
+In periodic simulations it is often desirable to &quot;wrap&quot; the
+water molecules, ions and other small molecules so that they are always
+inside the simulation unit cell.  As a result, if a molecule leaves one
+side of the unit cell, for example, a copy of it appears on the other side.
+The above functions provide a means
+to do this, whether during a simulation or as part of a post-processor.
+<p>
+<tt>md_WrapWaterData</tt> accepts a vector of atom keys and the inverse
+mass for each atom.  The atoms are examined and information is calculated
+for subsequent calls to <tt>md_WrapWater</tt>.  Disconnected molecules
+with at most one heavy atom, no fixed atoms and no 1-4 interactions will 
+be wrapped.  The returned vector is intended to be opaque and subject to
+change with future versions of MOE; i.e. no attempt should be made
+to manually alter the contents of the return value.
+<p>
+<tt>md_WrapWater</tt> accepts a position vector (in the same atom order
+as in the <tt>atoms</tt> vector given to <tt>md_WrapWaterData</tt>).
+If a wrap molecule's center of mass is outside the periodic cell
+(given by <tt>cell</tt>), its coordinates are translated so that its
+center of mass lies inside the cell centered at <tt>origin</tt>.  The
+periodic cell is specified in the format of
+<a class="svl" href="cellfcn.htm">CellParameters</a>.
+If <tt>cell</tt> is <tt>[]</tt> or the <tt>cell</tt> spacegroup
+is the empty token <tt>''</tt>, the system is aperiodic and
+the coordinates are not modified (i.e. there is no wrapping).
+A typical use of these functions is as follows:
+
+<blockquote><pre>
+local atoms = Atoms [];
+lcoal pos = aPos atoms, imass = inv aMass atoms;
+local wrapData = md_WrapWaterData [atoms, imass];
+local cell = CellParameters [];
+
+loop
+    ...
+    pos = md_WrapWater [pos, wrapData, cell, [0,0,0]];
+    ...
+endloop
+</pre></blockquote>
+
+<p>
+The <tt>[0,0,0]</tt> could be replaced with the center of mass of
+a solute in which case the waters will be wrapped around the solute
+center of mass instead of the center of the cell.
+
+<p><a name="md_ConstraintPos"></a></p>
+<p><a name="md_ConstraintVel"></a></p>
+<p><a name="md_ConstraintAcc"></a></p>
+<p><a name="md_ConstraintError"></a></p>
+<p><a name="md_ConstraintMatrix"></a></p>
+<p><a name="md_ConstraintScale"></a></p>
+<p><a name="md_Constraint"></a></p>
+<p><hr noshade></p>
+<pre>
+cons    = <span class="fcndef">md_Constraint</span>       [imass, xA, xB, lenAB]
+p       = <span class="fcndef">md_ConstraintScale</span>  [cons, R, p]
+[B,Br]  = <span class="fcndef">md_ConstraintMatrix</span> [cons, p, cell]
+[eP,eV] = <span class="fcndef">md_ConstraintError</span>  [cons, p, v, cell]
+[a,y]   = <span class="fcndef">md_ConstraintAcc</span>    [cons, B, a]
+[v,a,y] = <span class="fcndef">md_ConstraintVel</span>    [cons, B, v, a, dt]
+[p,v]   = <span class="fcndef">md_ConstraintPos</span>    [cons, B, p, v, dt, cell]
+</pre>
+
+<p>
+Bond lengths are often constrained in molecular dynamics simulations.
+This is accomplished by modifying the potential function <i>U</i>(<b>r</b>)
+by adding a holonomic constraint function <i>G</i>(<b>r</b>) along with
+Lagrange multipliers, <b>y</b>, used to enforce
+<i>G</i>(<b>r</b>)&nbsp;=&nbsp;0 at all time steps (or approximately so).
+The constraint function <i>G</i> is defined to be
+
+<p align=center>
+<i>G</i> = (<i>g</i><sub>1</sub>,...,<i>g</i><sub><i>k</i></sub>),
+&nbsp;&nbsp;&nbsp;
+<i>g<sub>i</sub></i> =
+| <b>r</b><sub><i>a<sub>i</sub></i></sub>
+    - <b>r</b><sub><i>b<sub>i</sub></i></sub> |
+    - <i>d<sub>i</sub></i>
+</p>
+
+<p>
+where <i>d<sub>i</sub></i> is the length to which the bond between
+atoms <i>a<sub>i</sub></i> and <i>b<sub>i</sub></i> must be constrained.
+The <tt>md_Constraint</tt> function accepts the inverse mass vector
+of all of the atoms in the system, the atom indices <tt>xA(i)</tt>
+and <tt>xB(i)</tt> of two atoms whose distance is to be constrained
+to be equal to <tt>lenAB(i)</tt>.  The return value, <tt>cons</tt>,
+is a vector that contains the information required for the solution
+of constrained molecular dynamics and must be given to the other bond
+constraint functions described here.  The <tt>cons</tt> vector is
+intended to be opaque and may change in future version of MOE; i.e.
+no attempt should be made to manually alter the contents of the
+return value.
+</p>
+
+<p>
+The <tt>md_ConstraintScale</tt> function is used to scale the coordinates
+of the atoms, usually in constant pressure simulations.  When there are
+fixed atoms or distance constraints it is important in some integration
+algorithms to scale the coordinates while preserving the holonomic constraints
+and the fixed atom positions.  This is done by scaling the centers
+of mass of the groups
+of connected constrained atoms and not the individual atoms themselves.
+The <tt>p</tt> argument contains the laminated coordinate vector
+to be scaled and <tt>R</tt> is the scale factor.  Fixed atoms are not moved
+and neither are constrained atoms in the same connected constraint component
+as the fixed atom (i.e. indirectly fixed).
+
+<p>
+Define <b>B</b><sub><i>ij</i></sub> =
+d<i>g<sub>i</sub></i>&nbsp;/&nbsp;d<i>r<sub>j</sub></i>,
+where <i>r<sub>j</sub></i> denotes the <i>j</i>'th coordinate in a 3<i>N</i>
+vector. Because of the particular form of the constraint functions, we
+have that <i>G</i>(<b>r</b>)&nbsp;=&nbsp;<b>Br - d</b>. 
+The <tt>md_ConstraintMatrix</tt> function accepts the current
+atomic positions, <b>r</b>, in argument <tt>p</tt> as well as
+periodic cell information <tt>cell</tt> in the format of
+<a class="svl" href="cellfcn.htm">CellParameters</a>.
+If <tt>cell</tt> is <tt>[]</tt> or the <tt>cell</tt>
+spacegroup is the empty token
+<tt>''</tt>, the system is aperiodic and periodicity
+will be ignored.  The return value of <tt>md_ConstraintMatrix</tt>
+is the resulting matrix <b>B</b> encoded as the normalized (periodic) vectors
+between constrained atoms and the actual (periodic) distance between
+the constrained atoms <b>Br</b>.  Typically, this function is called
+at each time step after the positions are determined
+
+<blockquote><pre>
+loop
+    ...
+    p = p + dt * v;
+    ...
+    [B,Br] = md_ConstraintMatrix [cons, p, cell];
+    ...
+endloop
+</pre></blockquote>
+
+<p>
+Under the constrained equations of motion, the time derivatives of the
+constraint function are zero; that is,
+
+<p align=center>
+<b>G</b> = <b>Br - d</b> = 0<br>
+d<b>G</b>/d<i>t</i> = (d<b>G</b>/d<b>r</b>) (d<b>r</b>/d<i>t</i>)
+                    = <b>Bv</b> = 0<br>
+d<sup>2</sup><b>G</b>/d<i>t</i><sup>2</sup>
+    = <b>B</b> d<sup>2</sup><b>r</b>/d<i>t</i><sup>2</sup>
+	+ (d<b>B</b>/d<i>t</i>) <b>v</b>
+    = <b>B</b> d<sup>2</sup><b>r</b>/d<i>t</i><sup>2</sup>
+    = 0 
+
+</p>
+
+<p>
+The <tt>md_ConstraintError</tt> function calculates the maximum absolute
+error of the constraint equations for the given positions and velocities.
+This function is typically used for diagnostics.  The returned position
+error <tt>eP</tt> is the maximum absoute value in <b>Br&nbsp;&ndash;&nbsp;d</b>
+and the returned error in the velocities <tt>eV</tt>
+is the maximum absolute value in <b>Bv</b>.
+ 
+<p>
+The function of the Lagrange multipliers, <b>y</b>, is to constrain the
+atomic system according to the principle of least action so that 
+
+d<sup>2</sup><b>r</b>/d<i>t</i><sup>2</sup> =
+    <b>M</b><sup>-1</sup> [<b>f</b> + <b>B</b><sup>T</sup> <b>y</b>].
+
+Combining the formulae involving the second time derivative of <b>r</b>, we
+obtain <b>B</b> <b>M</b><sup>-1</sup> <b>B</b><sup>T</sup> <b>y</b>
++ <b>B</b> <b>M</b><sup>-1</sup> <b>f</b> = 0.
+Let <b>Z</b> = (<b>BM</b><sup>-1</sup><b>B</b><sup>T</sup>)<sup>-1</sup>
+so that the Lagrange multipliers are
+
+<p align=center>
+<b>y</b> = &ndash; <b>Z</b> <b>B</b> <b>M</b><sup>-1</sup> <b>f</b>
+</p>
+
+<p>
+The <b>Z</b> matrix is a square matrix with 1/<i>m<sub>a</sub></i>
++ 1/<i>m<sub>b</sub></i>
+on the diagonal; the off-diagonal elements are only non-zero when two
+constraints are connected, in which case the element is
+cos <i>x</i>&nbsp;/&nbsp;<i>m<sub>c</sub></i> where <i>m<sub>c</sub></i> is
+the mass of the atom connecting the two constrained bonds and <i>x</i> is
+the angle between the bonds. If we define the diagonal matrix
+<b>S</b> such that
+<b>S</b> = diag (..., sqrt(1/<i>m<sub>a</sub></i> + 1/<i>m<sub>b</sub></i>),
+...) we can write 
+
+<b>Z</b> = <b>SS</b><sup>-1</sup> <b>Z S</b><sup>-1</sup> <b>S</b>
+= <b>S</b> (<b>I &ndash; A</b>)<sup>-1</sup> <b>S</b>.
+
+The matrix <b>A</b> is symmetric and sparse and has zeros on the diagonal.
+Except for cases of highly triangulated constraints, all of its eigenvalues
+are less than one; hence, a power series can be used to invert <b>A</b>.
+In this way, only matrix-vector multiplies are required [Hess&nbsp;1997].
+
+<p>
+The <tt>md_ConstraintAcc</tt> function calculates the correction to
+an acceleration vector, <b>a</b>&nbsp;=&nbsp;<b>M</b><sup>-1</sup><b>f</b>.
+The input argument <tt>B</tt> corresponds to
+<b>B</b> and <tt>acc</tt> is the acceleration vector.
+The return values are the corrected acceleration
+<b>a</b>&nbsp;+&nbsp;<b>M</b><sup>-1</sup><b>B</b><sup>T</sup><b>y</b>,
+and the Lagrange multipliers, <b>y</b>.
+Due to its linearity, this function can be used in some molecular dynamics
+algorithms to correct velocity vectors and simultaneously calculate the
+contribution to the virial of the constraints using finite differences:
+
+<blockquote><pre>
+loop
+    ...
+    v = v + dt/2 * a;
+    [v,y] = md_ConstraintAcc [cons, B, v];
+    W = W - add (y * Br);
+    ...
+endloop
+</pre></blockquote>
+
+<p>
+The <tt>md_ConstraintVel</tt> function calculates the correction to
+a velocity vector,
+&Delta;<b>v</b>&nbsp;=&nbsp;<b>M</b><sup>-1</sup><b>B</b><sup>T</sup><b>ZBv</b>.
+This is a least-action correction to a velocity vector that will satisfy
+the constraints.  The function will also correct the given acceleration
+vector by returning <tt>a</tt> + &Delta;<tt>v</tt> / <tt>dt</tt>.  Passing
+<tt>a=[0,0,0]</tt> and <tt>dt=1</tt> will result
+in the function returning &Delta;<tt>v</tt>.  The Lagrange multipliers
+used in the calculation are returned as <tt>y</tt>.  This function
+may be used in integration algorithms including the correction to the
+virial, <tt>W</tt>, due to the constraints.
+
+<blockquote><pre>
+loop
+    ...
+    v = v + dt/2 * a;
+    [v,a,y] = md_ConstraintVel [cons, B, v, a, dt/2];
+    W = W - add (y * Br) / (dt/2);
+    ...
+endloop
+</pre></blockquote>
+
+<p>
+The <tt>md_ConstraintPos</tt> function calculates the correction to
+a position vector <tt>p</tt> corresponding to a least-action perturbation
+to satisfy the constraints.  This is done by iteratively solving the
+constraint equations when given the <b>B</b> matrix corresponding to
+the positions prior to any addition of velocities in a molecular dynamics
+simulation.  The function will also calculate the corresponding
+correction to the velocities &Delta;<tt>v</tt> under a given time step
+<tt>dt</tt> and add them to the input velocities <tt>v</tt>.
+Periodicity information is given in <tt>cell</tt> but is ignored if
+the spacegroup is <tt>''</tt> or <tt>cell</tt> is <tt>[]</tt>
+(aperiodic system).
+The function will typically be used as follows:
+
+<blockquote><pre>
+loop
+    ...
+    p = p + dt * v;
+    [p,v] = md_ConstraintPos [cons, B, p, v, dt];
+    ...
+endloop
+</pre></blockquote>
+
+<p>
+The <tt>md_Constraint</tt> functions are quite specialized and intended to
+be used together in a molecular dynamics simulation.  The prototypical
+use is the following constrained NVE integration algorithm.
+
+<blockquote><pre>
+local cell   = CellParameters [];
+local imass  = inv aMass atoms;
+local cons   = md_Constraint [atoms, ... ];
+
+function potential p = [ - imass * EnergyGradient p, virial ];
+
+local p      = aPos atoms;
+local v      = md_BoltzmannVelocity [p, imass, KBOLTZ*300];
+local [a,W]  = imass * potential;
+local [B,Br] = md_ConstraintMatrix [cons, p, cell];
+local y;
+
+loop
+    v = v + dt/2 * a;
+
+    [p,v] = md_ConstraintPos [cons, B, p + dt * v, v, dt, cell];
+    [B,Br] = md_ConstraintMatrix [cons, p, cell];
+    [a,W] = potential p;
+
+    [v,a,y] = md_ConstraintVel [cons, B, v + dt/2 * a, a, dt/2];
+    W = W - add (y * Br) / (dt/2);
+endloop
+</pre></blockquote>
+
+<h2>References</h2>
+
+<p><table cellpadding=3>
+<tr>
+<td valign=top>[Hess&nbsp;1997]
+<td valign=top>
+Hess, B., Bekker, H., Berendsen, H.J.C., Fraaije, J.G.E.M.; LINCS: A
+Linear Constraint Solver for Molecular Simulations;
+<i>J. Comp. Chem. 18</i> (<b>1997</b>) 1463&ndash;1472. 
+</table>
+
+<h2>See Also</h2>
+
+<a class="svl" href="cellfcn.htm">CellParameters</a>
+<br /><br />
+<a href="../pot.htm">Potential Setup</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+
+

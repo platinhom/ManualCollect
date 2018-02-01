@@ -1,0 +1,926 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	mutanal.htm	Mutation Analysis Manual Page
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+<meta panel Mutation Analysis />
+<meta main_keywords Mutation Analysis />
+
+<style type="text/css">
+td { vertical-align: top; }
+</style>
+
+<!-- *** These are for the old equations, that are now done with MathJax. ***
+<style type="text/css">
+.subsup_f { line-height: 1.8; }
+.subsup_f sub { margin-right: 1ex; }
+.subsup_f sup { margin-left: -1ex; }
+</style>
+-->
+
+<title>Mutation Analysis</title>
+
+</head>
+
+<body>
+<div id="useMathJax"></div>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+
+<ul>
+    <li><a href="#Introduction">Introduction</a></li>
+    <li><a href="#Methodology">Methodology Overview</a>
+    <ul>
+    <li><a href="#MutationFrequencies">Using Mutation Frequencies
+    to Design Focused Mutational Libraries</a></li>
+    <li><a href="#MutationProbabilties">Predicting Mutation Probabilities
+    </a></li>
+    </ul>
+
+    <li><a href="#Run">Running Mutational Analysis</a></li>
+    <ul>
+    <li><a href="#Generating_ProteinDesign">Generating Input from Protein Design for
+	Mutation Analysis</a></li>
+    <li><a href="#Generating_Exp">Using Mutation Analysis to Analyze
+	Experimental or Other Data</a></li>
+    <li><a href="#Panel">The Mutation Analysis Panel</a></li>
+    </ul>
+    <li><a href="#References">References</a></li>
+    <li><a href="#See_Also">See Also</a></li>
+</ul>
+
+<div class="floatleft">
+<a href="mutanal/intro.png">
+<img src="mutanal/intro_thumb.png" alt="Intro Pretty Pic" />
+</a>
+</div>
+
+<a name="Introduction"></a>
+<h2>Introduction</h2>
+
+<p>
+Protein engineering seeks to modify a protein sequence to
+modulate various properties such as binding affinity, 
+thermostability, solubility, etc. Typically, these mutant 
+search spaces are very large, making an exhaustive search 
+impractical. To become viable, the search space needs to be reduced
+by using <i>a priori</i> knowledge that reduces the number of sites and
+the number of amino acids per site in the search space.
+
+<p>
+Current experimental techniques can explore a maximum of 11 &ndash; 12 sites
+in a single experiment by randomly searching the sequence space, and multiple
+rounds of Directed Evolution experiments can take months to perform.
+A result from these experiments is a structure-activity summary, which
+indicates the frequency that a mutation appears in an "active" 
+(desirable protein), and provides a profile of mutations that are
+likely to lead to better actives.
+
+<br clear="all">
+
+<a name="Methodology"></a>
+<h2>Methodology Overview</h2>
+
+<div class="floatright">
+<a href="mutanal/hgh_phage_sar.png">
+<img src="mutanal/hgh_phage_sar_thumb.png" alt="HGH Phage Results SAR Table" />
+</a>
+</div>
+
+<a name="MutationFrequencies"></a>
+<h3>Using Mutation Frequencies to Design Focused Mutational Libraries</h3>
+
+<p>
+A focused library of mutants can be constructed from a profile
+generated from experimental results. For example, the phage display of
+hGH/hGHR summarizes the mutants of the 20 amino acids at 6 sites
+<nobr>[Pal 2006],</nobr> and after accumulating statistics on mutation
+frequencies can yield a Mutation Frequency table (shown on right).
+In this table, for each site mutations are ranked according to their
+mutation frequencies, with higher frequency mutation given higher
+ranks. Additionally, the cell of each mutation is colored according to
+its mutation frequency. For example, arginine at site R178 is colored red, which signifies
+that its experimental mutation frequency falls in the range of 60-70%.
+The information in this table can then be used to design a focused library.
+
+<p>
+For example, assume that the goal is to generate a library under 250 mutants.
+One would, upon reviewing the data, eliminate the "conserved" site R178, as it
+is likely that only its top two ranked amino acids will be involved
+in any mutations. One can also eliminate "promiscuous" sites D26
+and Y42, as they provide no information gain when using various
+amino acids. Of the three remaining sites, one can reduce their
+amino acids by using only those ranked with an experimental frequency
+&#x2265; 1/20. This gives a focused library of (FLMVYGS at Y28), (PVSAF at P61),
+and (SDANGM at D171), resulting in 7 x 5 x 6 = 210 mutants to explore.
+
+<div class="floatleft">
+<a href="mutanal/entropic_count.png">
+<img src="mutanal/entropic_count_thumb.png" alt="Entropic Count" />
+</a>
+</div>
+
+<p>
+Entropic count measures the information content of a site and provides
+another, more conservative, way to create a focused library. With <span class="LaTeX">\( p_j \)</span>
+representing the probability (frequency) of amino acid <span class="LaTeX">\( j \)</span>, the entropy 
+is given by <span class="LaTeX">\( H \)</span> (defined below), and the entropic count is <span class="LaTeX">\( 10^H \)</span> rounded to
+the nearest integer. The entropic count gauges the "flatness"
+of a distribution and provides a basis for the number of amino acid
+"choices" at a site (see figure at left).
+Its maximum value is the number of amino acids,
+and its minimum is 1. 
+
+<blockquote>
+<span class="LaTeX">\[
+\text {Entropic Count} = 10 ^ H
+
+\quad \text{Where:} \quad
+
+H = - \sum_{j=1}^{20} p_j \log_{10} p_j
+
+\]</span>
+</blockquote>
+
+<p>
+When using entropic count to form a focused library, very high (promiscuous)
+and very low (conserved) counts are excluded. In the hGH/hGHR example, this
+gives a focused library of 11, 6, and 9 amino acids to use at sites Y28, P61,
+and D171, respectively, resulting in 11 x 6 x 9 = 594 mutants to explore.
+
+<br clear="all">
+
+<a name="MutationProbabilties"></a>
+<h3>Predicting Mutation Probabilities</h3>
+
+<div class="floatleft">
+<a href="mutanal/method_outline.png">
+<img src="mutanal/method_outline_thumb.png" alt="Method Outline" />
+</a>
+</div>
+
+<p>
+Our computational approach starts with a crystal structure and
+creates random mutations by changing amino acid side chains and
+repacking nearby residues. A scoring function is used to calculate
+<span class="LaTeX">\( \Delta \Delta G _{calc} \)</span>. This mutated structure and 
+<span class="LaTeX">\( \Delta \Delta G _{calc} \)</span> is calculated using the
+<a href="../apps/prodesign.htm">Protein Design
+</a> application. The generated mutants and associated
+<span class="LaTeX">\( \Delta \Delta G _{calc} \)</span> values can be used to
+gather statistics from the mutation space that was generated and/or searched, 
+and then output a Mutation Probability Table. 
+
+<a name="error_model"></a>
+<a name="naive_count"></a>
+<p>
+Experimentally frequencies can be gathered by simply counting
+the number of times a particular mutation appears in an active.
+
+<span class="LaTeX">\[
+\text{if } Pr( \Delta \Delta G _{exp} \lt 0),
+\quad
+n_{ij} \leftarrow n_{ij} + 1
+\]</span>
+<p>
+Computationally the same thing can be done, where we naively count
+the number of times a mutation appears in an active (when
+<span class="LaTeX">\( \Delta \Delta G _{calc} \lt 0 \)</span> ).
+<span class="LaTeX">\[
+\text{if } Pr( \Delta \Delta G _{calc} \lt 0),
+\quad
+n_{ij} \leftarrow n_{ij} + 1
+\]</span>
+
+<p>
+One of the challenges raised with this naive counting is that there is an
+error associated with <span class="LaTeX">\( \Delta \Delta G _{calc} \)</span>. For example, when
+<span class="LaTeX">\( \Delta \Delta G _{calc} = -0.1 \)</span> and the active cutoff = 0, when
+using naive counting this would be considered 100% active when in truth
+it should be consider close to 50%, determined by the error of
+your scoring function. For our method, then, instead of using
+a naive count (where <span class="LaTeX">\(c\)</span> = 1 or 0), an error model is used to calculate
+the probability of activity (<span class="LaTeX">\(c\)</span>), given <span class="LaTeX">\( \Delta \Delta G _{calc} = x \)</span> .
+<span class="LaTeX">\[
+\text{if } Pr( \Delta \Delta G _{exp} \lt 0 |  \Delta \Delta G_{calc} = x),
+\quad
+n_{ij} \leftarrow = n_{ij} + c
+\]</span>
+
+<div class="floatright">
+<a href="mutanal/error_function.png">
+<img src="mutanal/error_function_thumb.png" alt="Error Function" />
+</a>
+</div>
+
+<p>
+The error model is trained on an error distribution
+that is centered on <span class="LaTeX">\( \Delta \Delta G _{calc} \)</span> and integrated
+from -<span class="LaTeX">\( \infty \)</span> to the activity cutoff. This yields a more robust
+mutant count <span class="LaTeX">\(c\)</span>, which updates the accumulated counts <span class="LaTeX">\(n_{ij} \)</span>
+of amino acid <span class="LaTeX">\(j\)</span> at site <span class="LaTeX">\(i\)</span>.
+
+
+<h6>Thermostability</h6>
+<p>
+For thermostability, we use an AMBER/GBVI-based scoring function that
+uses the <span class="LaTeX">\( \Delta \Delta G \)</span> of folding between mutants and wildtypes,
+trained on 3,422 mutations (see
+<a href="../apps/prodesign.htm#Scoring">Scoring Changes in Thermostability</a>). <span class="LaTeX">\( \Delta \Delta G _{exp} \)</span> &lt; 0 
+denotes an experimentally "active" (desirable) protein. When creating
+an error model for this scoring function, the training resulted in 
+a 2-Gaussian conditional model, with different Gaussians best fitting
+the data for positive and negative <span class="LaTeX">\( \Delta \Delta G _{calc} \)</span>.
+
+<span class="LaTeX">\[
+
+c =
+\frac {1}{\sigma \sqrt {2 \pi}}
+\int _{- \infty}^0e^{ - \frac {(z - \mu - x )^2}{2 \sigma ^2}} dz
+
+\quad \text {Where:} \quad
+
+\sigma , \mu = 
+
+\left \{ 
+  \begin{array}{l l}
+    \sigma^+, \mu^+ & \quad \text{if} \: x \lt 0 \\
+    \sigma^-, \mu^- & \quad \text{if} \: x \ge 0
+  \end{array}
+\right.
+
+\]</span>
+
+<p>
+In the above equation
+
+<blockquote>
+<table border="0" cellpadding="5">
+
+<tr>
+<td valign="top"><span class="mathvar">x</span></td>
+<td valign="top">
+Is the <span class="LaTeX">\( \Delta \Delta G _{calc} \)</span> from
+our thermostability scoring function.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><span class="mathvar">z</span></td>
+<td valign="top">
+Represents the desired cutoff that is used to determine if a calculated 
+<span class="LaTeX">\( \Delta \Delta G \)</span> is "active". In the above cases (and typically)
+the cutoff is set to 0.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><span class="mathvar">&sigma;</span></td>
+<td valign="top">
+Is an empirically trained conditional variable used to set
+the width of the Gaussian error model. It is approximately
+equal to the standard deviations of the signed error of
+the positive and negative predictions of the
+thermostability training set.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><span class="mathvar">&mu;</span></td>
+<td valign="top">
+Is an empirically trained conditional variable used to set the center of the Gaussian
+error model. It is approximately equal to the mean signed errors
+of the positive and negative predictions of the thermostability
+training set.</td>
+</tr>
+
+</table>
+</blockquote>
+
+
+<h6>Affinity</h6>
+<p>
+For affinity, we use an MM/GBVI scoring function that has been validated on a
+set of 171 single-point mutations in Antibody-Antigen complexes with mutation
+in the Fv and antigen (see 
+<a href="../apps/prodesign.htm#affinity_opt">Affinity Scoring</a>).
+For small molecules,
+<a href="../apps/docking.htm#Scoring">GBVI/WSA dG</a> [Corbeil 2012], an 
+AMBER/GBVI-based scoring function that has been trained on a set of 99
+protein-ligand complexes, is used.
+
+<p>
+As with thermostability, an experimentally "active" 
+(desirable) protein is defined as one where  <span class="LaTeX">\( \Delta \Delta G _{exp} \)</span> 
+&lt; 0. When creating an error model for this scoring function, however,
+a 2-Gaussian conditional model, similar to that of the
+thermostability function, could not be created. Training resulted in  
+a single function Cauchy model, with fitting of all the data
+from the 171 data points of the training set.
+
+<span class="LaTeX">\[
+c =
+
+\frac {1}{\pi}
+\int _{- \infty}^0 \frac {1}{\sigma - (z - \mu - x )^2} dz
+
+\]</span>
+
+<p>
+Where:
+
+<blockquote>
+<table border="0" cellpadding="5">
+
+<tr>
+<td valign="top"><span class="mathvar">x</span></td>
+<td valign="top">
+Is the <span class="LaTeX">\( \Delta \Delta G _{calc} \)</span> from
+our affinity scoring function.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><span class="mathvar">z</span></td>
+<td valign="top">
+Represents the desired cutoff that is used to determine if a calculated 
+<span class="LaTeX">\( \Delta \Delta G \)</span> is "active". In the above cases (and typically)
+the cutoff is set to 0.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><span class="mathvar">&sigma;</span></td>
+<td valign="top">
+Is an empirically trained conditional variable used to set the width of the Cauchy error model.
+It is approximately equal to the standard deviation
+of the signed error the training set.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><span class="mathvar">&mu;</span></td>
+<td valign="top">
+Is an empirically trained conditional variable used to set the center of the Cauchy
+error model. It is approximately equal to the mean signed error of the
+training set.
+</td>
+</tr>
+
+
+</table>
+</center>
+</blockquote>
+
+<p>
+Other properties or calculated values in the MDB (even calculated
+values not generated by Protein Design) can also be used to
+calculate mutation probabilities. In these cases, since the application
+has no information about the associated error with these values
+an <a href="#error_model">error model</a> cannot be used. In these
+cases <a href="#naive_count">naive counting</a> (with <span class="mathvar">c</span>  = 1 or 0 ) is
+used to calculate these properties.
+
+<p>
+An issue arises when using calculated properties other than
+thermostability by themselves (such as affinity, solubility, etc.).
+Simulations will always yield a value for a property which does not
+account for the stability of the protein. Therefore it is necessary
+to account for this when calculating mutation probabilities. In this case,
+<span class="mathvar">c</span> (the count for an individual mutation for a property, other than
+<i>dStability</i>) is defined as:
+
+<span class="LaTeX">\[
+c = 
+ Pr ( \Delta \Delta G_{exp} ^ {Stable} \lt 0 |
+\Delta \Delta G _{calc} ^ {Stable} = x )
+
+\times
+
+Pr ( \Delta \Delta G_{exp} ^ {Property} \lt 0 |
+\Delta \Delta G _{calc} ^ {Property} = x )
+\]</span>
+
+
+<p>
+Ideally, the process continues cycling, with creating another random mutation, and calculating
+<span class="LaTeX">\( \Delta \Delta G \)</span>
+and <span class="mathvar">c</span>.
+The cycle stops when we have enough samples, N, to reach the
+desired accuracy, which is proportional to the inverse root of N. In
+general, 10,000 samples is sufficient to produce 2 decimal digits in
+<span class="LaTeX">\(p_{ij} \)</span>. With the statistics gathered, a normalized probability
+table is then created via:
+
+<span class="LaTeX">\[
+p_{ij}= \frac {(n_{ij}+1)}{ \sum _{k=1}^j (n_{ik}+1) }
+\]</span>
+
+
+
+<div class="floatleft">
+<a href="mutanal/generating_panel.png">
+<img src="mutanal/generating_panel.png" alt="Sample Sequence Panel" />
+</a>
+</div>
+
+
+<a name="Run"></a>
+<h2>Running Mutational Analysis</h2>
+
+<a name="Generating_ProteinDesign"></a>
+<h3>Generating Input from Protein Design for Mutation Analysis</h3>
+
+<p>
+The Mutation Analysis application has been designed to analyze output from the
+<a href="../apps/prodesign.htm#SampleSequenceMethod">Sample Sequence</a>
+variant of Protein Design.
+The goal is to ascertain protein structure activity information
+from large mutation spaces that would not be accessible using the
+<a href="../apps/prodesign.htm#ResidueScanMethod">Residue Scan</a>
+variant. While the Sample Sequence and Residue Scan methods
+are very similar, their main difference is in how they
+search the mutation space.
+
+<p>
+Residue Scan enumerates the entire mutation
+space. When  <b>Site Limit</b> increases this becomes unfeasible,
+both due to the time required to do all of the mutations and due to 
+amount of data produced. For example, if enumerating 20 amino acids
+for each of 6 residues (<b>Site Limit</b> = 6), using
+Residue Scan would result in 64,000,000 sequences. 
+
+<p>
+In the case of the
+<a href="../apps/prodesign.htm#SampleSequenceMethod">Sample Sequence</a>
+variant, a set of random mutations (the size of the set is controlled by the 
+<a href="../apps/prodesign.htm#SampleSequence"><b>Sequences</b></a>
+option in the Sample Sequence Panel) is created by randomly sampling the
+mutation space. Typically 10,000 mutants are needed for computational
+experiments with less than 10 residues. If more than 10 residues will
+be searched simultaneously (<b>Site Limit</b> &gt; 10) it is recommended
+to split the residue space into multiple Sample Sequence runs. If only
+one computational experiment is desired, then it is possible to
+increase the <b>Sequences</b> option (Note: The search space increases
+exponentially with each additional residue). The output from 
+the Sample Sequence variant is recommended to be used by the
+Mutation Analysis panel.
+
+<a name="Generating_Exp"></a>
+<h3>Using Mutation Analysis to Analyze Experimental or Other Data</h3>
+
+<p>
+The Mutation Analysis application can be used to analyze and generate
+mutation probabilities for MDBs that have not been generated from
+Protein Design (see <a href="../apps/prodesign.htm#Output">Protein
+Design Output</a>). The sole requirement is that they have a mutation field
+similar in format to the field <i>mutation</i> in the 
+<a href="../apps/prodesign.htm#Output">Protein Design output MDBs</a>.
+
+<blockquote>
+<p>
+The mutation field is used to define the mutation for that entry
+in the MDB. The mutation is defined as follows for the example of 1:Y61N.
+
+<ul>
+<li><i>1</i> = Chain number
+<li><i>Y</i> = Wild Type Single letter residue name
+<li><i>61</i> = Residue UID and insertion code
+<li><i>Asn</i> = Single letter mutation name
+</ul>
+Multiple point mutations will have mutations defined by a comma separated
+list (such as 1:Y61N,1:N65R). 
+
+</blockquote>
+
+<p>
+When a <i>dStability</i> (difference in thermostability between the parent
+and mutant protein) is not present, it is assumed that all mutations are
+stable. The resulting mutation probabilities (the default values when the
+panel starts) are direct counts of the appearance of mutations (frequency
+counts, also referred to as <a href="#naive_count">naive counting</a>).<br />
+
+<span class="note">Note:</span> The counts are initialized at 1, so mutations
+that may not appear could have a non-zero value.
+
+<p>
+If there are any other float/double values in the MDB, then these will be
+automatically read when the Mutation Analysis application starts
+and they can be used to calculate mutation probabilities based
+on the <a href="#naive_count">naive counting</a> of these properties.
+
+<p>
+For help with formating external data for Mutational Analysis, please
+contact <a href="mailto:support@chemcomp.com">support@chemcomp.com</a>.
+
+<a name="Panel"></a>
+<h3>The Mutation Analysis Panel</h3>
+
+To use the Mutation Analysis application, select
+<span class="menu">DBV | Compute | Mutation Analysis</span>.
+
+<p>
+<center>
+<a href="mutanal/mutation_analysis_panel.png">
+<img src="mutanal/mutation_analysis_panel.png" alt="Mutation Analysis Panel" />
+</a>
+</center>
+
+<h4>Probability Display</h4>
+
+<p>
+<a href="mutanal/probability_display.png">
+<img src="mutanal/probability_display.png" alt="Probability Display" />
+</a>
+
+<p>
+<table border="0" cellpadding="5">
+
+<tr>
+<td valign="top"><b>Ranking</b></td>
+<td valign="top">
+When this option is selected, the mutations for each mutation site
+are ranked according to the calculated mutation probabilities. Mutations
+with higher mutation probabilities are ranked higher.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Probability</b></td>
+<td valign="top">
+When this option is selected, the calculated mutation probability
+is displayed for each mutation for a given mutation site.
+</td>
+</tr>
+</table>
+
+<h4>Mutation Probability Table and Sliders</h4>
+
+<p>
+<div class="floatright">
+<a href="mutanal/probability_table.png"></a>
+<img src="mutanal/probability_table_thumb.png" alt="Probability Table" />
+</div>
+
+<p>
+The table section of the Mutation Analysis panel displays either the
+rankings or probabilities for each of the mutation sites. The color
+of the cell indicates the range of the the mutation probability. The
+table legend for the cell color will appear if you hover over the table.
+Cells that are dimmed (grayed-out) correspond to amino acids and
+mutation sites that will be excluded from a theoretical library
+defined by the Library Options of the Mutation Analysis panel. 
+
+<p>
+<center>
+<img src="mutanal/probability_table_legend.png" alt="Table Legend" />
+</center>
+
+<p>
+The sliders on the far right and bottom of the Mutation Table
+will become sensitized if there are more columns (additional mutation 
+sites) or rows (additional mutations/rankings) that are not being displayed. The arrows
+above/below the sliders can be used to traverse the list one row/column
+at a time. The arrows with the bar can be used go back to the beginning or end
+of a row/column.
+
+<p>
+
+<br clear="all">
+
+<h4>Mutation Probability Table Display Options</h4>
+
+<p>
+<div class="floatleft">
+<img src="mutanal/probability_display_option.png" alt="Display Options" />
+</div>
+
+<p>
+Pressing the Settings icon
+<img src="mutanal/settings.png"/>
+will raise the popup menu shown at left.
+
+<p>
+<table border="0" cellpadding="5">
+
+<tr>
+<td valign="top"><b>Font Size</b></td>
+<td valign="top">
+Sets the font size of the text in the mutation
+probability table.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Show All Data</b></td>
+<td valign="top">
+Automatically calculates the optimum font size so
+that all rows and columns will be shown.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Color</b></td>
+<td valign="top">
+Changes the color of the &gt; 0.50 mutation probability; this is then
+used as the maximum value of the color gradient for the 
+mutation probability table cell coloring.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Dim non-library sites/mutations</b></td>
+<td valign="top">
+When checked, sites and amino acids which are not part of the theoretical 
+library defined by the Library Options are dimmed (grayed-out).
+When cleared, no sites will be dimmed.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Show only chosen sites</b></td>
+<td valign="top">
+When checked, display only Mutation Sites that are being used in the theoretical
+library defined by the Library options. Mutation sites can be selected by
+using the <b>Residues...</b> button.
+</td>
+</tr>
+
+</table>
+
+<h4>Mutation Probability Options</h4>
+
+<p>
+<img src="mutanal/probability_options.png" alt="Probability Options" />
+
+<p>
+<table border="0" cellpadding="5">
+
+<tr>
+<td valign="top"><b>Property</b></td>
+<td valign="top">
+By default all mutations must be stable. Therefore <i>dStability</i>
+is always considered when calculating mutation probabilities.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><nobr><b>dStability Cutoff</b></nobr></td>
+<td valign="top">
+This is used to determine which <i>dStability</i> values will be considered
+as active. The text will turn to red when a incompatible cutoff is defined.
+The following formats are allowed for the <b>dStability Cutoff</b>.
+<ul>
+<li><i><b>operator value</b></i> where allowed <i>operators</i> are &gt; and &lt;, and 
+<i>value</i> is any number (for example: <b>&lt; 0</b>; <b>&gt; 2</b>).
+</li>
+<li><i><b>[lower bound, upper bound]</b></i> is used to define a range of
+values that will be defined as active (for example: <b>[0, 2.5]</b>, <b>[-10, 10]</b>).
+</li>
+</ul>
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>And:</b></td>
+<td valign="top">
+The <b>And:</b> option is used to define a second property that will be used to
+define an "active". In these cases the Mutation Probability
+is the sum of the products of the probability that the mutation is stable
+<span class="LaTeX">\( Pr ( \Delta \Delta G_{exp} ^ {Stable} \lt 0 |
+\Delta \Delta G _{calc} ^ {Stable} = x ) \)</span>
+and the probability that the second property is active 
+<span class="LaTeX">\( Pr ( \Delta \Delta G_{exp} ^ {Property} \lt 0 |
+\Delta \Delta G _{calc} ^ {Property} = x ) \)</span>
+. For more information see <a href="#error_model">
+How to calculate the probability of activity</a>.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>And Property Cutoff</b></td>
+<td valign="top">
+This is used to determine which <i>dProperty</i> values will be considered
+as active. The text will turn to red when a incompatible cutoff is defined.
+The following formats are allowed for the <b>And Property Cutoff</b>.
+<ul>
+<li><i><b>operator value</b></i> where allowed <i>operators</i> are &gt; and &lt;, and 
+<i>value</i> is any number (for example: <b>&lt; 0</b>; <b>&gt; 2</b>).
+</li>
+<li><i><b>[lower bound, upper bound]</b></i> is used to define a range of
+values that will be defined as active (for example: <b>[0, 2.5]</b>, <b>[-10, 10]</b>).
+</li>
+</ul>
+</td>
+</tr>
+
+<tr>
+<td valign="top"><nobr><b>Group By:</b></nobr></td>
+<td valign="top">
+
+<div class="floatleft">
+<img src="mutanal/group_by.png" alt="Group By Options" />
+</div>
+
+Instead of listing or ranking mutation probabilities by amino acid,
+amino acid groupings are used. The probability for a group
+is the sum of the probabilities of its members. In cases where
+amino acids can be split across multiple groups, the probability is
+split evenly across all groups. If an amino acid (such as
+a non-natural amino acid) was used and does not appear in any of the
+groups, it will automatically be assigned to an <i>Other</i> group.
+The group definitions are as follows:
+
+<p>
+<ul>
+<li><b>Non-Polar:</b> Ala, Gly, Ile, Leu, Met, Phe, Pro, Trp, Tyr, Val</li>
+<li><b>Polar:</b> Arg, Asn, Asp, Cys, Gln, Glu, His, Lys, Ser, Thr</li>
+<li><b>Charged:</b> Arg, Lys, Asp, Glu</li>
+<li><b>Hyd (Hyrophobic):</b> Ala, Gly, Ile, Leu, Met, Pro, Val</li>
+<li><b>Aro (Aromatic):</b> Phe, Trp, Tyr</li>
+<li><b>+ (Positive):</b> Arg, Lys</li>
+<li><b>- (Negative):</b> Asp, Glu</li>
+</ul>
+
+</td>
+</tr>
+
+</table>
+
+<h4>Mutation Library Options</h4>
+
+<p>
+<img src="mutanal/library_options.png" alt="Library Options" />
+
+<p>
+<table border="0" cellpadding="5">
+
+<tr>
+<td valign="top"><nobr><b>Library Size</b></nobr></td>
+<td valign="top">
+The theoretical library size defined by the Mutation Probability cutoff
+and chosen residues. The Library Size is equal to the product of the number of
+mutations for the chosen library sites.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Mutation</b></td>
+<td valign="top">
+Select the mutations for the library by either <i>pMut</i> (Mutation Probability)
+or <i>Top N</i> (Top <i>N</i> ranking mutations).
+</td>
+</tr>
+
+<tr>
+<td valign="top"><nobr><b>Choose:</b> Residues...</nobr></td>
+<td valign="top">
+<div class="floatleft">
+<img src="mutanal/choose_residues.png" alt="Choose Residues" />
+</div>
+A listbox popup will appear that lists all the sites in the Mutation Probability
+Table. Each site is listed with their chain, residue name, residue UID, and Entropic
+Count. Selecting a site will indicate that the site
+should be used in the theoretical library. All non-selected sites
+will be excluded from the theoretical library and will be dimmed in the table
+if the <b>Dim non-library sites/mutations</b> option was checked in the display options. 
+When no sites are selected, all sites are used for the library. 
+</td>
+</tr>
+
+</table>
+
+<h4>Mutation Analysis Panel Buttons</h4>
+
+<p>
+<img src="mutanal/mutanal_panel_buttons.png" alt="Main Panel Buttons" />
+
+<p>
+<table border="0" cellpadding="5">
+
+<tr>
+<td valign="top"><b>Library...</b></td>
+<td valign="top">
+Enables the enumeration of the theoretical library
+using the Residue Scan variant of Protein Design. Using this option
+will load the original input structure and will start the Residue
+Scan variant of Protein Design with the same options used to
+generate the database for Mutation Analysis.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Print...</b></td>
+<td valign="top">
+Opens the <a href="../apps/print.htm">Print Panel</a> to print all rows and columns.
+From the Print Panel the options available are:
+<ul>
+<li><b>Font Size:</b> Sets the font size of the table text.</li>
+<li><b>Legend:</b> When checked, the legend will be included at the bottom
+of the page when printing.</li>
+<li><b>Grayscale:</b> When checked, prints the current table in grayscale.
+</ul>
+</td>
+</tr>
+
+<tr>
+<td valign="top"><nobr><b>Export Image...</b></nobr></td>
+<td valign="top">
+Exports the table that is currently shown in the Mutation Probability table section
+into a common image format such as PNG, JPG,
+GIF, BMP, etc.
+The presented Export Panel allows for specification of
+the required graphic format, image resolution, width, and
+height. The table legend is automatically included in the image.<br />
+<span class="note">Note:</span> Only the columns and rows currently shown will be exported.
+For all columns/rows to be included, first click on the
+<b>Table Display Options</b> and click on <b>Show All Data</b> to
+automatically set the font size. This will ensure that all
+rows/columns are displayed and can be exported to an image.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><nobr><b>Copy Data...</b></nobr></td>
+<td valign="top">
+Copies all data from currently shown table to the clipboard.
+The data can then be imported into an external application
+for further evaluation.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b>Close</b></td>
+<td valign="top">
+Closes the Mutation Analysis Panel
+</td>
+</tr>
+
+</table>
+
+<a name="References"></a>
+<h2>References</h2>
+<table border="0" cellpadding="5">
+
+<tr>
+<td valign="top"><b><nobr>[Pal 2006]</nobr></b></td>
+<td valign="top">
+Pal, G.; Kouadio, J.-L. K.; Artis, D. R.; Kossiakoff, A. a;
+Sidhu, S. S.
+<i>J. Biol. Chem.</i> (<b>2006</b>), <i>281</i>, 22378-22385.
+</td>
+</tr>
+
+<tr>
+<td valign="top"><b><nobr>[Corbeil 2012]</nobr></b></td>
+<td valign="top">
+Corbeil, C. R.; Williams, C. I.; Labute, P.
+<i>J. Comput. Mol. Des.</i>
+(<b>2012</b>), <i>26</i>, 775-786.
+</td>
+</tr>
+
+</table>
+
+
+
+<a name="See_Also"></a>
+<h2>See Also</h2>
+
+<a href="../apps/prodesign.htm">Protein Design</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

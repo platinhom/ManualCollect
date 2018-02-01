@@ -1,0 +1,408 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ 
+<!--
+!!	bctfcn.htm	Binary Classification Tree
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions bct_CreateTreeMDB>
+<meta functions bct_Tree>
+<meta functions bct_PredictMDB>
+<title>Binary Classification Tree Functions</title>
+
+</head>
+ 
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    <a class="fcnlink" href="#bct_Tree">bct_Tree</a> [
+	mdb		: mdb,
+	pred		: 'pred_field',
+	use_sel		: flag,
+	treefile	: 'filename'
+    ];
+
+    <a class="fcnlink" href="#bct_PredictMDB">bct_PredictMDB</a> [
+	mdb	: mdb,
+	pred	: 'pred_field',
+	use_sel	: flag,
+	treefile: 'filename'
+    ];
+
+    <a class="fcnlink" href="#bct_CreateTreeMDB">bct_CreateTreeMDB</a> [
+	learnmdb	: 'filename' (or db_key),
+	testmdb		: 'filename' (or db_key),
+	classfd		: 'field_name',
+	fields		: ['field1','field2', ...],
+	use_cv		: flag,
+	same_db		: flag,
+	rand_set	: flag,
+	rand_set_size	: learning_size,
+	rand_set_iter	: niter,
+	learnsel	: flag,
+	testsel		: flag,
+	nsubsets	: num_cv_subsets,
+	cvrand		: flag,
+	nmin		: node_size,
+	do_subsample	: flag,
+	maxsamplesize	: ssize,
+	maxdepth	: n,
+	nordered	: thresh,
+	usepriors	: flag,
+	numsd		: num_stderr,
+	savefile	: 'treefile',
+	reportfile	: 'reportfile'
+    ];
+</pre>
+
+<p><b>Note</b>: <tt>$MOE/lib/svl/run/qbct.svl</tt> must be loaded
+in order to use these functions.
+
+<p><a name="bct_Tree"></a></p>
+<h2>Description</h2>
+
+<pre>
+<span class="fcndef">bct_Tree</span> [
+    mdb	      : mdb,
+    pred      : 'pred_field',
+    use_sel   : flag,
+    treefile  : 'filename'
+];
+</pre>
+
+<p>Opens a panel for creating and
+displaying binary classification trees,
+and for performing class predictions using classification trees.
+This function does nothing when called in MOE batch.
+
+<p>The optional arguments are given as a tagged vector with
+the following possible fields:
+
+<p>
+
+<dl>
+<dt><tt>mdb:mdb</tt> 
+<dd>Specifies a MOE database (given
+as either a token or a database key)
+which can be used for building a classification tree, or on which
+class predictions can be performed.
+The default is <tt>''</tt>.
+
+<p><dt><tt>pred:'pred_field'</tt> 
+<dd>Specifies that the predicted classes are
+to be written to the database <tt>mdb</tt> in
+a field called <tt>'pred_field'</tt>, given as a field
+name token.  If a field of this name already exists, it is overwritten;
+otherwise, a new field of this name is created.  The default is
+<tt>'$PRED'</tt>.
+ 
+<p><dt><tt>use_sel:flag</tt> 
+<dd>If <tt>flag</tt> is non-zero, specifies that class
+predictions are to be made for only selected entries in the database.
+The value of the flag is ignored in MOE batch; when running
+in batch, predictions are made for all entries.  The default is 0.
+ 
+<p><dt><tt>treefile:'filename'</tt> 
+<dd>Specifies that the classification
+tree stored in the tree file <tt>'filename'</tt>
+is to be used for making class predictions.  <tt>'filename'</tt>
+must be a token.  The default is <tt>''</tt>.
+
+</dl>
+
+<p><a name="bct_PredictMDB"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">bct_PredictMDB</span> [
+    mdb      : mdb,
+    pred     : 'pred_field',
+    use_sel  : flag,
+    treefile : 'filename'
+];
+</pre>
+
+<p>Performs class prediction on the MOE database
+<tt>mdb</tt>, specified as either a name token or a database key.
+
+<p>The optional arguments are given as a tagged vector with the following
+possible fields:
+
+<p>
+<dl>
+<dt><tt>mdb:mdb</tt>
+<dd>Specifies the database on which predictions are to be
+made using the tree loaded from the specified tree file.  If the database
+contains a field of the same name as the class field that was used to
+build the tree, the misclassification (error) rate of the predictions
+is calculated.  If QuaSAR descriptor fields used in the tree node
+splitting rules are missing from the database, they are calculated
+if a molecule field is present.  Otherwise, missing fields
+used in node splitting are substituted with zeroes.
+
+<p><dt><tt>pred:'pred_field'</tt> 
+<dd>Specifies that the predicted classes are
+to be written to a field called <tt>'pred_field'</tt>, given as a field
+name token.  If a field of this name already exists, it is overwritten;
+otherwise, a new field of this name is created.
+The default is <tt>'$PRED'</tt>.
+
+<p><dt><tt>use_sel:flag</tt> 
+<dd>If <tt>flag</tt> is non-zero, specifies that class
+predictions are to be made for only selected entries in the database.
+In batch MOE, if non-zero, no predictions are made.
+The default is 0.
+
+<p><dt><tt>treefile:'filename'</tt> 
+<dd>Specifies that the classification
+tree stored in the tree file <tt>'filename'</tt>
+is to be used for making class predictions.
+The default is <tt>''</tt>.
+
+</dl>
+
+<p><a name="bct_CreateTreeMDB"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">bct_CreateTreeMDB</span> [
+    learnmdb	  : 'filename' (or db_key),
+    testmdb	  : 'filename' (or db_key),
+    classfd	  : 'field_name',
+    fields	  : ['field1','field2', ...],
+    use_cv	  : flag,
+    same_db	  : flag,
+    learnsel	  : flag,
+    testsel	  : flag,
+    nsubsets	  : num_cv_subsets,
+    cvrand	  : flag,
+    nmin	  : node_size,
+    do_subsample  : flag,
+    maxsamplesize : ssize,
+    maxdepth	  : n,
+    nordered	  : thresh,
+    usepriors	  : flag,
+    numsd	  : num_stderr,
+    savefile	  : 'treefile',
+    reportfile	  : 'reportfile'
+];
+</pre>
+
+<tt>bct_CreateTreeMDB</tt> creates a binary classification tree.
+
+
+
+<p>The optional arguments are given as a tagged vector with the following
+possible fields:
+
+<p>
+
+<dl>
+
+<dt><tt>learnmdb:'filename'</tt> 
+<dd>
+Name of the learning database.  A valid learning database must be provided
+for a tree to be created.  The default is <tt>''</tt>.
+
+<p>
+<dt><tt>testmdb:'filename'</tt> 
+<dd>
+Name of the test database.  If no test database file is specified, then no
+test data is used.  The default is <tt>''</tt>.
+This option has no effect if either <tt>cv:1</tt> (cross-validation) or
+<tt>same_db:1</tt> (same learning and test databases) has been specified.
+In these cases, the test data are drawn from the learning database.
+
+<p>
+<dt><tt>classfd:'classfield'</tt> 
+<dd>
+Name of the class data field in the learning database.  Class data
+should comprise a small set of categorical values.  If the class field
+does not exist in the test database, then no test data will be used.  The
+default is <tt>'class'</tt>.
+
+<p>
+<dt><tt>fields:['field1',...]</tt> 
+<dd>
+Names of the learning database fields to be used for tree creation.
+Any specified fields missing from the test database are either
+calculated (if they are QuaSAR descriptor fields) or substituted with 0.
+The class field is automatically excluded from the set of candidate
+fields.  If no fields are specified, no tree is created.  The default is
+<tt>[]</tt>.
+
+<p>
+<dt><tt>cv:flag</tt> 
+<dd>
+If <tt>flag</tt> is non-zero, specifies that cross-validation be used in
+the tree creation process.  The default is 0.
+
+<p>
+<dt><tt>same_db:flag</tt> 
+<dd>
+If <tt>flag</tt> is non-zero, specifies that both learning and test data
+are to be drawn from the same database. The learning data comprises all
+selected entries, and the test data all unselected entries.  It is
+permissible to have all entries selected (i.e. no test data).  The
+default is 1.  This option has no effect if <tt>cv:1</tt> is specified.
+In MOE/batch no tree is created when <tt>flag</tt> is non-zero (and
+<tt>cv:0</tt>).
+
+<p>
+<dt><tt>rand_set:flag</tt> 
+<dd>
+If <tt>flag</tt> is non-zero, specifies that the learning set is to
+be drawn as a random sample from the source database.  This option has
+effect only when <tt>same_db</tt> is non-zero.  The default is 0.
+
+<p>
+<dt><tt>rand_set_size:learning_size</tt> 
+<dd>
+The size of the learning set that is randomly drawn from the source database.
+This option has effect only when <tt>rand_set</tt> is non-zero.  The default
+is 100.
+
+<p>
+<dt><tt>rand_set_iter:niter</tt> 
+<dd>
+The number of random trees that are built.  This option has effect only
+when <tt>same_db</tt> is non-zero.  The default is 50.
+
+<p>
+<dt><tt>learnsel:flag</tt> 
+<dd>
+If <tt>flag</tt> is non-zero, specifies that only selected entries from
+the learning database constitute the learning data set.  If the Database
+Viewer is not open, no tree is created.  The default is 0.
+
+<p>
+<dt><tt>testsel:flag</tt> 
+<dd>
+If <tt>flag</tt> is non-zero, specifies that only selected entries from
+the test database constitute the test data set.  If the Database Viewer is
+not open, no test data is used.
+This option has no effect if either <tt>cv:1</tt> (cross-validation) or
+<tt>same_db:1</tt> (same learning and test databases) has been specified.
+The default is 0.
+
+<p>
+<dt><tt>nsubsets:num_cv_subsets</tt> 
+<dd>
+Number of subsets to use in cross-validation.  This option has no
+effect if cross-validation is not being used (<tt>cv:0</tt>).  The default
+is 2.
+
+<p>
+<dt><tt>cvrand:flag</tt> 
+<dd>
+If <tt>flag</tt> is non-zero, specifies that the cross-validation subsets
+will be randomly drawn rather than sequentially divided up.  The default
+is 1.
+This option has no effect if cross-validation is not used (<tt>cv:0</tt>).
+
+<p>
+<dt><tt>nmin:node_size</tt>
+<dd>
+Node size beyond which no splitting will take place. In other words, if
+the size of a node is less than or equal to <tt>node_size</tt>, the node
+becomes a leaf of the tree.  The default is 10.
+
+<p>
+<dt><tt>do_subsample:flag</tt>
+<dd>
+If <tt>flag</tt> is non-zero, then if a node has size larger than
+<tt>maxsamplesize</tt>, a randomly drawn data subset of size
+<tt>maxsamplesize</tt> is used for determining the node splitting rule.
+The default is 1.
+
+<p>
+<dt><tt>maxsamplesize:ssize</tt>
+<dd>
+Maximum data sample size that will be used to determine a node
+splitting rule.
+The default is 255.
+This option has no effect if <tt>do_subsample</tt> is 0.
+
+<p>
+<dt><tt>maxdepth:n</tt>
+<dd>
+Maximum tree depth during the tree-growing phase.  The root has depth
+0.  The default is 10.
+
+<p>
+<dt><tt>nordered:thresh</tt>
+<dd>
+Number of unique values a field of numbers or characters must contain
+for the field data to be considered ordered.  If the field contains less
+than <tt>thresh</tt> unique values, the data is considered to be
+categorical.  Tokens are always taken to be categorical.  The default is
+4.
+
+<p>
+<dt><tt>usepriors:flag</tt>
+<dd>
+If <tt>flag</tt> is non-zero, then the data classes will be weighted so
+that all classes have equal importance during the tree-building phase;
+otherwise, they are not weighted.  The default is 1.
+
+<p>
+<dt><tt>numsd:num_stderr</tt>
+<dd>
+Number of standard errors away from the minimum cost subtree that
+the output tree will be.  The default is 1.
+
+<p>
+<dt><tt>savefile:'treefile'</tt> 
+<dd>
+Filename of the file in which to save the newly created tree.  If no
+filename is specified, the tree is not saved.  The default is
+<tt>'tree.bct'</tt>.
+
+<p>
+<dt><tt>reportfile:'reportfile'</tt> 
+<dd>
+Filename of the file in which to write a tree report.
+If no filename is specified, a report is not written.
+The default is <tt>'tree.rep'</tt>.
+
+</dl>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+
+

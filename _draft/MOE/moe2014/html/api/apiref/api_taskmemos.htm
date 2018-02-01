@@ -1,0 +1,187 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions svl_TaskMemoAllocE, svl_TaskMemoFree, svl_TaskMemoFreeAll>
+
+
+<title>API Task Memo Functions: svl_TaskMemoAllocE, ...</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    svl_error <a class="fcnlink" href="#svl_TaskMemoAllocE">svl_TaskMemoAllocE</a>(
+        svl_task task,
+        void *memo_data,
+        svlTaskMemoProc memo_cb
+    );
+
+    void <a class="fcnlink" href="#svl_TaskMemoFree">svl_TaskMemoFree</a>(
+        svl_task task,
+        void *memo_data,
+        svlTaskMemoProc memo_cb,
+        int reason
+    );
+
+    void <a class="fcnlink" href="#svl_TaskMemoFreeAll">svl_TaskMemoFreeAll</a>( 
+        svl_task task,
+        void *memo_data,
+        svlTaskMemoProc memo_cb,
+        int reason
+    );
+</pre>
+
+<p><a name="svl_TaskMemoAllocE"></a></p>
+
+<h2>Description </h2>
+<pre>
+svl_error svl_TaskMemoAllocE(
+    svl_task task,
+    void *memo_data,
+    svlTaskMemoProc memo_cb
+);
+</pre>
+
+
+<p>Registers a callback routine, <tt>memo_cb</tt>,
+and associated callback data, <tt>memo_data</tt>,
+with the specified task.
+
+The callback routine <tt>memo_cb</tt> will be called when the task
+finishes or forks.</p> <tt>
+
+<p>task</tt> is the handle of the current task, <tt>memo_data</tt> 
+is a pointer to private data to be passed to <tt>memo_cb</tt> when
+it is called,  and <tt>memo_cb</tt> is a pointer to the callback
+routine.  The call back routine takes three arguments: a task,
+private data and an information structure. Its definition
+is of type <tt>svlTaskMemoProc</tt>: </p>
+
+<pre>
+    typedef void (*svlTaskMemoProc) (
+        svl_task task,
+        void *memo_data,
+        svlTaskMemoInfo *memo_info
+    );
+</pre>
+
+<p>The information structure, <tt>svlTaskMemoInfo</tt>, is of
+the following form:</p>
+
+<pre>
+    typedef struct {
+       int code;    /* command code: reason for the call */
+    
+#      define SVL_TASKMEMO_FREE	...
+#      define SVL_TASKMEMO_DUP 	...
+
+            /* union u gives specific information about the
+            ** callback, e.g.,the handle of the forked task. */
+
+       union {
+           struct {
+               svl_error error;     /* error path */
+               svl_task newtask;    /* forked task */
+           } memo_dup;
+
+           struct {
+               int reason;          /* 0 when task terminates */
+           } memo_free;
+       } u;
+    } svlTaskMemoInfo;</pre>
+
+<p>When <tt>task</tt> is finished, <tt>memo_info-&gt;code</tt> is 
+set to <tt>SVL_TASKMEMO_FREE</tt>.
+When <tt>task</tt> forks, <tt>memo_info-&gt;code</tt> is 
+set to <tt>SVL_TASKMEMO_DUP</tt>.</p>
+
+<p><a name="svl_TaskMemoFree"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+void svl_TaskMemoFree(
+    svl_task task,
+    void *memo_data,
+    svlTaskMemoProc memo_cb,
+    int reason
+);
+</pre>
+
+<p>Detaches the given callback routine, <tt>memo_cb</tt>,
+and associated callback data, <tt>memo_data</tt>, from the task.
+
+It also causes <tt>memo_cb</tt> to be called with
+<tt>memo_info-&gt;code</tt> set to <tt>SVL_TASKMEMO_FREE</tt>.  The last
+argument, <tt>reason</tt>, is passed to the callback as a field of the
+<tt>svlTaskMemoInfo</tt> structure.
+
+The caller of the <tt>svl_TaskMemoFree()</tt> function can use this
+argument to communicate with the callback routine and instruct it
+to free the attached resources in alternative ways.
+
+When the task is destroyed, the callback routine is called with
+the value of the <tt>reason</tt> field set to <tt>0</tt>.
+
+<p><a name="svl_TaskMemoFreeAll"></a></p>
+<p><hr noshade="noshade" />
+
+<pre>
+void svl_TaskMemoFreeAll( 
+    svl_task task, 
+    void *memo_data,
+    svlTaskMemoProc memo_cb,
+    int reason
+);
+</pre>
+
+<p>Causes all callbacks of a 
+given <tt>memo_cb</tt> and <tt>memo_data</tt> to be detached 
+from a task. When <tt>task</tt> is <tt>NULL</tt>, the command
+applies to all tasks.</p>
+
+<h2>See Also</h2>
+<p>
+    <a class="svl" href="api_taskvar.htm">svl_TaskVar</a><br />
+    <a class="svl" href="api_taskvar.htm">svl_Procall</a><br />
+    <a class="svl" href="api_taskvar.htm">svl_TaskId</a>
+</p>
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

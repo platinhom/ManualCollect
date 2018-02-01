@@ -1,0 +1,2059 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	extprog.htm	Interfacing to 3rd-party codes
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Interfacing to External Programs</title>
+
+<meta keywords povray />
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<p>MOE can be interfaced to a variety of external programs.
+In certain MOE applications, third party software is seamlessly
+integrated as one of the accessible computational methods,
+for example, GOLD in docking or NAMD in molecular dynamics.
+In other cases, the clipboard is used as a medium for
+data transfer.
+This chapter describes how to set up for running MOE with
+external programs.
+</p>
+
+<p>In some cases, all that is required is to 
+specify the location of the executable program
+by setting a variable
+in the MOE <i>resource configuration</i> (RC) file,
+<tt>$HOME/.moe-rc</tt>.  RC variables are commonly
+set by entering the appropriate commands
+at the <a href="gui/svlcommands.htm">SVL Command
+Line Interface</a> (CLI).  The prefix
+</p>
+
+<pre>
+    svl&gt;
+</pre>
+
+<p>is used to indicate the CLI; do not enter these
+four characters when typing the command.
+When a MOE session terminates normally, any RC variables
+set during the session are saved to the local
+<tt>.moe-rc</tt> file.
+</p>
+
+<p><span class="tip">Tip&nbsp;</span>
+The RC file can be edited directly using a text editor.
+Lines in the RC file are of the form
+</p>
+
+<pre>
+    rc.variable=<i>value</i>
+</pre>
+
+<p>For example,</p>
+
+<pre>
+    mopac2007.license=/home/user/mopac_pm6
+</pre>
+
+<p>
+Note that when a MOE session terminates normally,
+it overwrites the local <tt>.moe-rc</tt> file.  Therefore,
+prior to editing <tt>.moe-rc</tt>, be sure that all MOE sessions
+are closed (i.e. do not edit the <tt>.moe-rc</tt> file from
+within MOE).
+</p>
+
+<ul>
+<li><a href="#ConformationGeneration">Conformation Analysis</a>
+    <ul>
+    <li><a href="#Omega">Omega Conformations</a></li>
+    <li><a href="#Corina">Corina Conformations</a></li>
+    <li><a href="#Mogul">Mogul</a></li>
+    </ul>
+</li><li><a href="#Docking">Docking</a>
+    <ul>
+    <li><a href="#GOLD">GOLD</a></li>
+    <li><a href="#FlexX">FlexX</a></li>
+    </ul>
+</li><li><a href="#MD">Molecular Dynamics</a>
+    <ul>
+    <li><a href="#NAMD">NAMD</a></li>
+    </ul>
+</li><li><a href="#QM">Quantum Mechanics</a>
+    <ul>
+    <li><a href="#MOPAC">MOPAC</a></li>
+    <li><a href="#Gaussian">Gaussian</a></li>
+    <li><a href="#GAMESS">GAMESS</a></li>
+    <li><a href="#ADF">Amsterdam Density Functional</a></li>
+    </ul>
+</li><li><a href="#Rendering">Rendering and Animation</a>
+    <ul>
+    <li><a href="#PovRay">Pov-Ray Ray Tracer</a></li>
+    <li><a href="#Word">Export to Word, PowerPoint</a></li>
+    <li><a href="#MPlayer">MPlayer, Windows Media Player,
+    Apple QuickTime Player</a></li>
+    </ul>
+</li><li><a href="#2DSketchers">2D Sketchers</a>
+    <ul>
+    <li><a href="#2DSketchers">Isis/Draw</a></li>
+    <li><a href="#2DSketchers">Symyx Draw</a></li>
+    <li><a href="#2DSketchers">ChemDraw</a></li>
+    <li><a href="#2DSketchers">MarvinSketch</a></li>
+    <li><a href="#2DSketchers">JDraw</a></li>
+    </ul>
+</li><li><a href="#Pipelining">Pipelining</a>
+    <ul>
+    <li><a href="#PPilot">Pipeline Pilot</a></li>
+    <li><a href="#KNIME">KNIME</a></li>
+    </ul>
+</li><li><a href="#RelDatabases">Relational Databases</a>
+    <ul>
+    <li><a href="#RelDatabases">Oracle</a></li>
+    <li><a href="#RelDatabases">Microsoft SQL Server</a></li>
+    <li><a href="#RelDatabases">IBM DB2</a></li>
+    <li><a href="#RelDatabases">PostgreSQL</a></li>
+    <li><a href="#RelDatabases">MySQL</a></li>
+    </ul>
+</li>
+
+</ul>
+
+<p>
+Chemical Computing Group Inc. (CCG) makes no copyright, confidentiality,
+or other intellectual property rights claim regarding any of the
+programs listed below.
+CCG has limited its activities in relation to these programs to providing
+executables for various computer platforms and authoring interoperability
+software.
+CHEMICAL COMPUTING GROUP INC. AND ITS AFFILIATES DISCLAIM ALL WARRANTIES WITH
+REGARD TO EXTERNAL PROGRAMS, INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="ConformationGeneration"><h2>Conformation Generation</h2></a>
+
+<a name="Omega"><h3>Omega Conformations</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+OMEGA
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+<td style="vertical-align: top;">
+<a href="http://www.eyesopen.com/omega">OpenEye Scientific Software</a>
+distributes OMEGA commercially.
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+Molecular conformation generation software.
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>The OMEGA program must be obtained, installed, and run to produce
+OEB files having extension <tt>.oeb</tt> or <tt>.oeb.gz</tt>.
+</p>
+
+<p>A special extractor program, <tt>oeb2sdconf</tt>, is needed by MOE
+to interpret the OEB files.  This extractor converts the OEB data into
+an SD format with a special convention on conformation and energy
+encoding.  The extractor program is part of the OMEGA distribution
+and is not included as part of the MOE distribution; it must be
+installed in a location accessible to the MOE executable.
+</p>
+
+<p>The name of the extractor program is by default
+<tt>oeb2sdconf</tt>.  If the program has a different name,
+the <tt>oe_omega</tt> RC variable must be set to
+instruct MOE to use that name.  For example, if the program
+name is actually <tt>new_oeb2sdconf</tt>, issue the following command:
+
+<pre>
+    svl&gt; SetRC ['oe_omega', 'new_oeb2sdconf']
+</pre>
+
+<p>The extractor must be located either in a directory that is part of
+the system <tt>PATH</tt> (<tt>$PATH</tt> on Unix-type systems,
+<tt>%PATH%</tt> on Windows) or in the <tt>bin</tt> subdirectory of
+the OMEGA directory which is specified by the <tt>OE_DIR</tt> environment
+variable; i.e. <tt>$OE_DIR/bin</tt> on Linux or
+<tt>%OE_DIR%/bin</tt> on Windows.
+</p>
+
+<h4>Running with MOE</h4>
+
+<p>MOE's <a href="../apps/ph4_search.htm">Pharmacophore Search</a>
+application accepts OEB files as input, and transparently operates on
+them.  There are no special options for OEB files.  OEB files are
+interpreted as 1 molecule per SD entry, i.e. an &quot;unpacked&quot; format.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="Corina"><h3>Corina Conformations</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+Corina
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+<td style="vertical-align: top;">
+<a href="http://www.molecular-networks.com">Molecular Networks GmbH</a>
+distributes Corina commercially.
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+3D structure generator.
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>Corina must be purchased and installed on an appropriate workstation.
+</p>
+
+<p>By default, the Corina executable is expected to be named
+<tt>corina</tt>, and to be found in the current search path
+(defined by the environment variable PATH, whose value is accessed as
+<tt>$PATH</tt> on Unix, <tt>%PATH%</tt> on Windows).
+If this is not the case, then
+the full directory path of the Corina executable, including the name of
+the binary executable, must be specified using
+the <tt>corina.exe</tt> RC variable, e.g.
+
+<pre>
+    svl&gt; SetRC ['corina.exe', '/usr/local/bin/corina']
+</pre>
+
+<h4>Running with MOE</h4>
+
+<p>Corina can be invoked by MOE's
+<a href="../mdb/wash.htm">Database Wash</a> panel to generate and 
+refine 3D structures.
+Open a database in MOE using
+</p>
+
+<blockquote>
+<span class="menu">MOE | File | Open</span>
+</blockquote>
+
+<p>Open the Wash panel from the Database Viewer:
+</p>
+
+<blockquote>
+<span class="menu">DBV | Compute | Molecule | Wash</span>
+</blockquote>
+
+<p>
+<center>
+<img src="../mdb/wash/wash_Corina.png" width="500" alt="Wash panel with Corina highlighted" />
+</center>
+</p>
+
+<p>After the <b>Coordinates</b> box is checked, the user can specify which 
+representation will be used. Among the choices, <b>Corina</b> can be selected 
+to rebuild and refine 3D structures; for example, to convert SMILES or 2D 
+structures to 3D.
+</p>
+
+<h4>SVL Commands</h4>
+
+<p>The <a class="svl" href="fcnref/corinafcn.htm">CorinaTest</a> function
+is used to verify the installation of the Corina program.
+</p>
+
+<pre>
+    svl&gt; CorinaTest []
+</pre>
+
+<p>If the function returns the empty token <tt>''</tt>, the installation
+appears correct, and Corina will likely function correctly.
+Otherwise, a diagnostic error message will be returned.
+</p>
+
+<p>The remaining <a class="svl" href="fcnref/corinafcn.htm">Corina*</a>
+functions are used to generate 3D coordinates for input molecules.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="Mogul"><h3>Mogul</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+Mogul
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+<td style="vertical-align: top;">
+The <a href="http://www.ccdc.cam.ac.uk/pages/Home.aspx">
+Cambridge Crystallographic Data Center</a>
+distributes Mogul commercially.
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+3D structure analysis software
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>Mogul must be purchased and installed on an appropriate machine.  It
+provides a graphical user interface when run outside MOE, it can be run
+as a MOE application
+or as a SOAP service of MOE/web.  For instructions on how to set up MOE/web,
+please see
+<a href="../install/web_inst.htm#ServerA">Preparing the Web Server</a>.
+</p>
+
+<p>The full directory path of the Mogul executable, or URL of the Mogul
+SOAP service, must be specified using either the <tt>mogul.exe</tt>
+RC variable, e.g.
+
+<pre>
+    svl&gt; SetRC ['mogul.exe', 'C:/Program Files/CCDC/Mogul 1.5/mogul.exe']
+</pre>
+
+or the environment variable <tt>MOGUL_EXE</tt>.  The value of the
+<tt>mogul.exe</tt> RC variable can be set with the
+<a href="../apps/mogul.htm#Settings">Mogul Analysis Settings Panel</a>.
+Please consult the Mogul User's Guide for the exact name and location
+of the Mogul executable for your operating system.
+
+<h4>Running with MOE</h4>
+
+<p>Mogul can be invoked by MOE's
+<a href="../apps/mogul.htm#Panel">Mogul Analysis</a> application.
+Load a structure into MOE using
+</p>
+
+<blockquote>
+<span class="menu">MOE | File | Open</span>
+</blockquote>
+
+<p>and start Mogul Analysis with:
+</p>
+
+<blockquote>
+<span class="menu">MOE | Compute | Conformations | Mogul Analysis</span>
+</blockquote>
+
+<p>
+<center>
+<img src="../apps/mogul/mogulpanel.png" alt="Mogul Analysis Panel" />
+</center>
+</p>
+
+<p>Select at least two adjacent heavy atoms and press <b>Run</b> to start
+the Mogul analysis.  A message appears in the main MOE window while Mogul
+is running.  Upon completion, the structural information is loaded into
+the Mogul Analysis panel.
+Mogul information can also be shown in the <b>Profile</b> button in the
+<a href="../moe/gui/mainwin.htm#Footer">MOE Window Footer</a>.
+
+<p>For further details about Mogul, please see its documentation.  For
+further details about Mogul Analysis, please see its
+<a href="../apps/mogul.htm">documentation</a>.
+
+<hr noshade="noshade" />
+
+<a name="Docking"><h2>Docking</h2></a>
+
+<a name="GOLD"><h3>GOLD</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+GOLD (Genetic Optimizer for Ligand Docking)
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+<td style="vertical-align: top;">
+<a href="http://www.ccdc.cam.ac.uk">Cambridge Crystallographic
+Data Centre</a> (CCDC)
+distributes GOLD commercially.
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+Protein-ligand docking software.
+<td style="vertical-align: top;">
+
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>GOLD must be purchased and installed on an appropriate workstation.</p>
+
+<p>The location of the GOLD executable, along with various options
+specific to the GOLD program are set in the
+<a href="../apps/docking.htm#GOLD"</a>Configure GOLD Placement</a>
+panel, shown in the section below.
+</p>
+
+<h4>Running with MOE</h4>
+
+<p>The GOLD program is accessible through MOE's
+<a href="../apps/docking.htm">Dock</a> application, which
+can be opened using:
+</p>
+
+<blockquote>
+<span class="menu">MOE | Compute | Simulations | Dock</span>
+</blockquote>
+
+<p>When <b>Placement</b> is set to <b>GOLD</b>, the GOLD docking
+engine will be invoked by MOE to generate bound poses.
+To configure the GOLD executable and
+GOLD-specific docking options, press <b>Configure</b>, which
+will open the Configure GOLD Placement panel:
+</p>
+
+<p>
+<center>
+<img src="../apps/docking/gold2.png" alt="GOLD Configuration" />
+</center>
+</p>
+
+<p>The full directory path must be specified in the
+<b>Executable</b> text field; either type the name or
+press <b>Browse</b> to select the binary file using
+a file browser.  GOLD requires a temporary work area for
+storing intermediate data.  By default, this is
+the directory pointed to by the environment variable
+<tt>TMP</tt> (<tt>$TMP</tt> on Unix, <tt>%TMP%</tt> on
+Windows).  Otherwise, the full directory location
+of this must be provided in the <b>Working Dir</b> text field.
+</p>
+
+<p>The executable location and working directory can be saved
+in the MOE RC file under the RC entries
+<tt>gold_exe</tt> and <tt>gold_dir</tt>, respectively, so that they can be
+used without having to be re-entered in subsequent docking sessions.
+For example, if the executable <tt>gold</tt> is in the directory
+<tt>/opt/goldsuite-5.0</tt> and the working directly is pointed to
+by the environment variable <tt>TMP</tt>:
+</p>
+
+<pre>
+    svl&gt; SetRC ['gold_exe', '/opt/goldsuite-5.0/bin/gold_auto']
+    svl&gt; SetRC ['gold_dir', TMP]
+</pre>
+
+<p>Note that <tt>TMP</tt> is a built-in SVL constant that points
+to the MOE temporary directory.  If a different environment variable
+is to be used, its value can be obtained using
+<a class="svl" href="../svl/fcnref/getenv.htm">getenv</a>:
+</p>
+
+<pre>
+    svl&gt; SetRC ['gold_dir', getenv 'MY_TMP']	// both Unix and Windows
+</pre>
+
+<p>Press <b>Test GOLD</b> to verify that GOLD has been properly
+installed.  The test may take a few seconds.  Any errors will
+be printed to the <a href="gui/svlcommands.htm">SVL Commands
+window</a>.
+</p>
+
+<p>For details about GOLD-specific running options, please
+see the <a href="../apps/docking.htm#GOLD">Docking</a> chapter.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="FlexX"><h3>FlexX</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+FlexX
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+<td style="vertical-align: top;">
+<a href="http://www.biosolveit.de">BioSolveIT GmbH</a> distributes
+FlexX commercially.
+</td>
+</tr>
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+Protein-ligand docking software.
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>FlexX must be purchased and installed on an appropriate workstation.</p>
+
+<p>The location of the FlexX executable, along with various options
+specific to the FlexX program are set in the
+<a href="../apps/docking.htm#FlexStar"</a>Configure Flex* Placement</a>
+panel, shown in the section below.
+</p>
+
+
+
+<h4>Running with MOE</h4>
+
+<p>The FlexX program is accessible through MOE's
+<a href="../apps/docking.htm">Dock</a> application, which
+can be opened using:
+</p>
+
+<blockquote>
+<span class="menu">MOE | Compute | Simulations | Dock</span>
+</blockquote>
+
+<p>When <b>Placement</b> is set to <b>FlexX</b>, the FlexX docking
+engine will be invoked by MOE to generate bound poses.
+To configure the FlexX executable and
+FlexX-specific docking options, press <b>Configure</b>, which
+will open the Configure Flex* Placement panel:
+</p>
+
+<p>
+<center>
+<img src="../apps/docking/flex.png" alt="FlexX Configuration" />
+</center>
+</p>
+
+<p>The full directory path must be specified in the
+<b>Executable</b> text field; either type the name or
+press <b>Browse</b> to select the binary file using
+a file browser.  FlexX requires a configuration file
+to run; the full directory path of this location
+must be specified in the
+<b>Config File</b> text field.  For information on
+how to setup this file, please refer to documentation
+provided by <a href="http://www.biosolveit.com">BioSolveIT</a>.
+</p>
+
+<p>FlexX also requires a temporary work area for
+storing intermediate data.  By default, this is
+the directory pointed to by the environment variable
+<tt>TMP</tt> (<tt>$TMP</tt> on Unix, <tt>%TMP%</tt> on
+Windows).  Otherwise, the full directory location
+of this must be provided in the <b>Working Dir</b> text field.
+</p>
+
+<p>The executable location, configuration file,
+and working directory all can be saved
+in the MOE RC file under the RC entries <tt>bsit_exe</tt>,
+<tt>bsit_cfg</tt>, and <tt>bsit_dir</tt>, respectively,
+so that they can be used without having to be re-entered
+in subsequent docking sessions.
+For example:
+</p>
+
+<pre>
+    svl&gt; SetRC ['bsit_exe', '/opt/bsit/lnux/leadit']
+    svl&gt; SetRC ['bsit_cfg', '/opt/bist/lnux/settings.pxx']
+    svl&gt; SetRC ['bsit_dir', TMP]
+</pre>
+
+<p>Note that <tt>TMP</tt> is a built-in SVL constant that points
+to the MOE temporary directory.  If a different environment variable
+is to be used, its value can be obtained using
+<a class="svl" href="../svl/fcnref/getenv.htm">getenv</a>:
+</p>
+
+<pre>
+    svl&gt; SetRC ['bsit_dir', getenv 'MY_TMP']	// both Unix and Windows
+</pre>
+
+<p>Press <b>Test Flex*</b> to verify that FlexX has been properly
+installed.  The test may take a few seconds.  Any errors will
+be printed to the <a href="gui/svlcommands.htm">SVL Commands
+window</a>.
+</p>
+
+<p>For details about FlexX-specific running options, please
+see the <a href="../apps/docking.htm#FlexStar">Docking</a> chapter.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="MD"><h2>Molecular Dynamics</h2></a>
+
+<a name="NAMD"><h3>NAMD</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+NAMD2 (Not (just) Another Molecular Dynamics program)
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b>
+</td>
+<td style="vertical-align: top;">
+The Theoretical and Computational Biophysics (TCB) Group
+at the
+<a href="http://www.ks.uiuc.edu/Research/namd">University of Illinois</a>
+provides NAMD at no cost.
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+A molecular dynamics simulation package written using the
+Charm++ parallel programming model.
+
+<p>
+<b>Reference:</b>
+</p>
+
+<p>
+Nelson, M., Humphrey, W., Gursoy, A., Dalke, D., Kal&eacute;, L.,
+Skeel, R.D., Schulten, K.;
+NAMD &ndash; A Parallel, Object-oriented Molecular Dynamics Program,
+<i>J. Supercomputing App. 10</i> (<b>1996</b>) 251&ndash;268.
+</p>
+
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>NAMD2 must be obtained and installed on the appropriate
+workstation(s).
+</p>
+
+<p>
+It is best to put the directory of the <tt>namd2</tt>
+executable in the system <tt>PATH</tt> environment
+variable:
+
+</p>
+
+<p>On Linux, concatenate the directory containing <tt>namd2</tt>
+to the current <tt>PATH</tt> using
+<pre>
+    unix&gt; setenv PATH $PATH;<i>namd_directory</i>
+</pre>
+or, for some Mac OS and Linux systems,
+<pre>
+    unix&gt; export PATH=$PATH;<i>namd_directory</i>
+</pre>
+</p>
+
+<p>On Windows, start a command prompt window using
+<blockquote>
+    <span class="menu">Start | Run | <tt>cmd</tt></span>
+</blockquote>
+At the command line, enter
+<pre>
+    C:\&gt; set PATH=%PATH%;<i>namd_directory</i>
+</pre>
+</p>
+
+<h4>Running with MOE</h4>
+
+<p>The NAMD program is run from within MOE using the
+<a href="../apps/md.htm">Molecular Dynamics</a>
+application and setting <b>Algorithm</b> in the panel
+to <b>NAMD</b>.
+</p>
+
+<p>
+<center>
+<img src="extprog/md_namd.png"
+alt="MOE | Compute | Simulations | Dynamics" />
+</center>
+</p>
+
+<p>
+When this algorithm is selected, a text field appears;
+the name of the executable must be entered here.
+The full path specification of the location of the
+NAMD program must also be entered here if it is not
+part of the system search path.
+</p>
+
+<p>Please refer to the chapter on
+<a href="../apps/md.htm">Molecular Dynamics</a>
+for details on how the set up and run a molecular dynamics
+simulation using NAMD.
+</p>
+
+<h4>SVL Commands</h4>
+
+<p>
+<a class="svl" href="fcnref/mdfcn.htm">NAMD_Initialize</a>
+is used to prepare for a NAMD dynamics run, performing some
+initialization operations.
+<br />
+<a class="svl" href="fcnref/mdfcn.htm">MD_Import</a> is used
+to import NAMD trajectory data into a MOE database.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="QM"><h2>Quantum Mechanics</h2></a>
+
+<p>MOE's <a href="../apps/scf.htm">Database SCF Calculation</a>
+can interface with a variety of semi-empirical and QM packages.
+Once the external software packages are installed and configured,
+they become available in the panel's <b>SCF Engine</b> menu.
+</p>
+
+<p>
+<center>
+<img src="../apps/scf/setup1.png"
+alt="MOE | Compute | Simulations | SCF Calculation" />
+</center>
+</p>
+
+<br />
+<hr noshade="noshade" />
+
+<a name="MOPAC"><h3>MOPAC</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;"><b>Software:</b></td>
+<td style="vertical-align: top;">MOPAC 7, MOPAC2007/2009</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;"><b>Distributor:</b></td>
+<td style="vertical-align: top;">
+<a href="http://openmopac.net">Stewart Computational Chemistry</a>
+distributes
+MOPAC2007/2009 commercially and MOPAC 7 as public domain software.
+MOPAC 7 is provided as part of the MOE distribution.
+
+<p>
+CHEMICAL COMPUTING GROUP INC. AND ITS AFFILIATES DISCLAIM ALL WARRANTIES WITH
+REGARD TO THE MOPAC PROGRAM, INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS: THE MOPAC PROGRAM IS PROVIDED "AS-IS".
+</p>
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;"><b>Description:</b></td>
+<td style="vertical-align: top;">
+A semi-empirical molecular orbital software program.
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>MOPAC 7 is generally fully functional without any special configuration
+steps.</p>
+
+<p>MOPAC2007/2009 is a modern version of MOPAC 7, with MOPAC2009 being
+MOPAC2007 plus the MOZYME function.  The software must be purchased
+and installed on an appropriate workstation.
+Both MOPAC2007 and MOPAC2009 are
+configured identically.
+</p>
+
+<p>Because MOPAC2007/2009 is not a default part of MOE,
+it is necessary to
+specify the location of the executable program, which must be installed
+separately. The executable location is stored in the RC file, and can be
+configured using the <tt>SetRC</tt> command, e.g.:
+</p>
+
+<pre>
+    svl&gt; SetRC ['mopac2007.exe', '/opt/mopac/mopac.exe']
+</pre>
+
+<p>Some editions of MOPAC2007/2009 require a license file in
+order to run.
+The recommended way to ensure that this file is available is to set the
+corresponding value in the RC file to the directory (no
+trailing '<tt>/</tt>') in which the license
+file is found, e.g.:
+</p>
+
+<pre>
+    svl&gt;SetRC ['mopac2007.license', '/opt/mopac']
+</pre>
+
+<p>If the system environment variable <tt>MOPAC_LICENSE</tt> is set before MOE
+is run, then this step is optional. Similarly it may not be necessary to specify
+the location of the license file if the current working directory is the
+location of the MOPAC2007/2009 executable.
+</p>
+
+<p>
+Additional details can be found in the chapter
+on <a href="../apps/scf.htm#MOPAC">SCF Wavefunctions</a>.
+</p>
+
+<h4>Running with MOE</h4>
+
+<p>The MOPAC semi-empirical engine can be run on a database in MOE.
+Open the database using:
+</p>
+
+<blockquote>
+<span class="menu">MOE | File | <a href="gui/fileopen.htm">Open</a></span>
+</blockquote>
+
+<p>MOPAC is accessed through MOE's Database SCF Calculation:
+</p>
+
+<blockquote>
+<span class="menu">DBV | Compute | Molecule |
+<a href="../apps/scf.htm">SCF Calculation</a></span>
+</blockquote>
+
+<p>In the panel, select <span class="menu">SCF Engine: MOPAC</span>.
+</p>
+
+<h4>SVL Commands</h4>
+
+<p>The <tt>mopac_*</tt> functions are described on the
+<a href="fcnref/mopacfcn.htm">MOPAC Functions</a> reference
+page.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="Gaussian"><h3>Gaussian</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+Gaussian
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+
+<td style="vertical-align: top;">
+<a href="http://www.gaussian.com">Gaussian, Inc.</a>
+distributes Gaussian as commercial software.
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+An <i>ab initio</i> quantum chemistry package.
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>A version of Gaussian must be purchased and installed on the
+appropriate workstation in order to perform calculations using this engine.
+</p>
+
+<p>In order to execute Gaussian from MOE, two RC entries must be set:
+<tt>gaussian.dir</tt> and <tt>gaussian.exec</tt>, the former being the full path
+of the executable files, and the latter the main entrypoint. For example,
+if the Gaussian executable <tt>g98</tt> has been installed in the directory
+<tt>/opt/g98</tt>:
+</p>
+
+<pre>
+    svl&gt; SetRC ['gaussian.dir',  '/opt/g98']
+    svl&gt; SetRC ['gaussian.exec', 'g98']
+</pre>
+
+<h4>Running with MOE</h4>
+
+<p>The Gaussian QM engine can be run on a molecule in MOE.
+Load a molecule into MOE using:
+</p>
+
+<blockquote>
+<span class="menu">MOE | File | <a href="gui/fileopen.htm">Open</a></span>
+</blockquote>
+
+<p>or use the
+<span class="menu">MOE | RHS |
+	<a href="molsystems/build.htm">Builder</a></span>
+to build a small molecule.
+</p>
+
+<p>Gaussian is invoked using:
+</p>
+
+<blockquote>
+<span class="menu">MOE | Compute | Simulations |
+    <a href="../apps/scf.htm">SCF Calculation</a></span>
+</blockquote>
+
+<p>The Gaussian QM engine can be also run on a database in MOE.
+Open the database using:
+</p>
+
+<blockquote>
+<span class="menu">MOE | File | <a href="gui/fileopen.htm">Open</a></span>
+</blockquote>
+
+<p>Gaussian is accessed through MOE's Database SCF Calculation:
+</p>
+
+<blockquote>
+<span class="menu">DBV | Compute | Molecule |
+<a href="../apps/scf.htm">SCF Calculation</a></span>
+</blockquote>
+</p>
+
+<p>In the panel, select <span class="menu">SCF Engine: Gaussian</span>.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="GAMESS"><h3>GAMESS</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+GAMESS
+(General Atomic and Molecular Electronic Structure System)
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+<td style="vertical-align: top;">
+The Gordon research group at
+<a href="http://www.msg.chem.iastate.edu/gamess">Iowa State University</a>
+distributes GAMESS at no cost but with a site license.
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+An <i>ab initio</i> quantum chemistry package.
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>GAMESS must be obtained and installed on an appropriate workstation.
+The August 2011 version introduced changes for the Windows version and moved
+the file <tt>ericfmt.dat</tt>.  These are described below.
+</p>
+
+<p>For Windows, the user must specify the name of the script that executes
+GAMESS, the particular version to use (determined while building GAMESS),
+the directory where restart files
+will be written and the location of the <tt>ericfmt.dat</tt> file.  For
+example, if GAMESS has been installed in <tt>/opt/gamess</tt>, the
+following are the corresponding MOE RC variables:
+
+<pre>
+    SetRC ['gamess.exec',    '/opt/gamess/rungms.bat']
+    SetRC ['gamess.version', '11-32']
+    SetRC ['gamess.restart', '/opt/gamess/scr']
+    SetRC ['gamess.ericfmt', '/opt/gamess/auxdata/ericfmt.dat']
+</pre>
+
+<p>
+Only the <tt>gamess.exec</tt> RC variable
+need be set, provided that <tt>scr</tt> and <tt>ericfmt.dat</tt> are
+located in the same directory.  The directory path
+specified in <tt>gamess.exec</tt>
+is then used to deduce the location of the other files.
+Note, however, that to run the latest version of GAMESS
+on Windows, <tt>gamess.version</tt> <b>must</b> also
+be specified.
+</p>
+
+<p>For other (Linux, Sun, Mac OS) systems, the user must
+specify the name of the GAMESS executable,
+the location of the <tt>ddikick.x</tt> program and the location of
+<tt>ericfmt.dat</tt> file.
+The corresponding MOE RC entries are
+<tt>gamess.exec</tt>, <tt>gamess.ddikick</tt> and
+<tt>gamess.ericfmt</tt>,
+each of which is a full path to an executable file. For
+example, if GAMESS and its files have been installed in
+the directory <tt>/opt/gamess</tt>:
+</p>
+
+<pre>
+    SetRC ['gamess.exec',    '/opt/gamess/gamess.01.x']
+    SetRC ['gamess.ddikick', '/opt/gamess/ddikick.x']
+    SetRC ['gamess.ericfmt', '/opt/gamess/auxdata/ericfmt.dat']
+</pre></p>
+
+<p>
+If the executables are all located in the same directory,
+only <tt>gamess.exec</tt> is required; its location
+will be used to deduce the location of the other files.
+</p>
+
+<p>
+During execution, the GAMESS application must be instructed as to
+where to find its input, output and temporary storage data. This is
+done through automatically-generated
+environment variables containing directory paths which are
+constructed based on the value of the
+<a class="svl" href="../install/install.htm#TMP">TMP</a>
+environment variable.
+</p>
+
+<h4>Running with MOE</h4>
+
+<p>The GAMESS QM engine can be run on a molecule in MOE.
+Load a molecule into MOE using:
+</p>
+
+<blockquote>
+<span class="menu">MOE | File | <a href="gui/fileopen.htm">Open</a></span>
+</blockquote>
+
+<p>or use the
+<span class="menu">MOE | RHS |
+	<a href="molsystems/build.htm">Builder</a></span>
+to build a small molecule.
+</p>
+
+<p>GAMESS is invoked using:
+</p>
+
+<blockquote>
+<span class="menu">MOE | Compute | Simulations |
+    <a href="../apps/scf.htm">SCF Calculation</a></span>
+</blockquote>
+
+</p>
+<p>The GAMESS QM engine can also be run on a database in MOE.
+Open the database using:
+</p>
+
+<blockquote>
+<span class="menu">MOE | File | <a href="gui/fileopen.htm">Open</a></span>
+</blockquote>
+
+<p>GAMESS is accessed through MOE's Database SCF Calculation:
+</p>
+
+<blockquote>
+<span class="menu">DBV | Compute | Molecule |
+<a href="../apps/scf.htm">SCF Calculation</a></span>
+</blockquote>
+</p>
+
+<p>In the panel, select <span class="menu">SCF Engine: GAMESS</span>.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="ADF"><h3>Amsterdam Density Functional</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+Amsterdam Density Functional (ADF)
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+
+<td style="vertical-align: top;">
+<a href="http://www.scm.com">Scientific Computing &amp; Modelling</a>
+distributes ADF as commercial software.
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td>
+An <i>ab initio</i> quantum chemistry package.
+</td>
+</tr>
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>ADF must be purchased and installed on an appropriate workstation.
+</p>
+
+<p>The following RC variables must be set in order
+to run the executable files:
+
+<pre>
+    svl&gt; SetRC ['adf.home',      '/opt/adf'];
+    svl&gt; SetRC ['adf.bin',       '/opt/adf/bin'];
+    svl&gt; SetRC ['adf.resources', '/opt/adf/atomicdata'];
+    svl&gt; SetRC ['adf.license',   '/opt/adf/license/license.txt'];
+    svl&gt; SetRC ['adf.nproc',     '1'];
+</pre>
+
+<p>Only the first of these entries is mandatory for a conventional installation
+of ADF. The subdirectories default to derivatives
+of <tt>adf.home</tt>.  <tt>adf.nproc</tt>
+(number of simultaneous processors) defaults to 1.
+</p>
+
+<h4>Running with MOE</h4>
+
+<p>The ADF QM engine can be run on a molecule in MOE.
+Load a molecule into MOE using:
+</p>
+
+<blockquote>
+<span class="menu">MOE | File | <a href="gui/fileopen.htm">Open</a></span>
+</blockquote>
+
+<p>or use the
+<span class="menu">MOE | RHS | <a href="molsystems/build.htm">Builder</a></span>
+to build a small molecule.
+</p>
+
+<p>ADF is invoked using:
+</p>
+
+<blockquote>
+<span class="menu">MOE | Compute | Simulations |
+    <a href="../apps/scf.htm">SCF Calculation</a></span>
+</blockquote>
+
+<p>The ADF QM engine can also be run on a database in MOE.
+Open the database using:
+</p>
+
+<blockquote>
+<span class="menu">MOE | File | <a href="gui/fileopen.htm">Open</a></span>
+</blockquote>
+
+<p>ADF is accessed through MOE's Database SCF Calculation:
+</p>
+
+<blockquote>
+<span class="menu">DBV | Compute | Molecule |
+<a href="../apps/scf.htm">SCF Calculation</a></span>
+</blockquote>
+</p>
+
+<p>In the panel, select <span class="menu">SCF Engine: ADF</span>.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="Rendering"><h2>Rendering and Animation</h2></a>
+
+<a name="PovRay"><h3>Pov-Ray Ray Tracer</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+POV-Ray (Persistence of Vision Raytracer)
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+<td style="vertical-align: top;">
+<a href="http://www.povray.org">Persistence of Vision Raytracer Pty. Ltd.</a>
+distributes POV-Ray as commercial software.
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+A high-quality 3D graphics rendering engine.
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>POV-Ray must be purchased and installed on an appropriate workstation.
+Version 3.7 or higher is required for full compatibility with MOE.
+</p>
+
+<p>To use POV-Ray, MOE must be given the location of the
+POV-Ray executable.  This can be provided in the
+<a href="../apps/filesave.htm#RTrace">Ray Tracing Settings</a>
+panel shown in the next section.
+</p>
+
+<h4>Running with MOE</h4>
+
+<p>To render images of the MOE Window using POV-Ray, open
+the Save panel from either the MOE Window or the Sequence Editor using
+</p>
+
+<blockquote>
+<span class="menu">Files | 
+<a href="../apps/filesave.htm">Save</a></span>
+</blockquote>
+
+<p>
+In the panel, choose
+</p>
+
+<blockquote>
+<span class="menu">Save | Picture</a></span>
+</blockquote>
+
+<p>The bottom part of the panel will change to present options
+related to graphics file formats, for example,
+</p>
+
+<p>
+<center>
+<img src="extprog/save_pic.png" alt="Save Picture" />
+</center>
+</p>
+
+<p>In the <b>Options</b> bank, turning on <b>Render with POV-Ray</b>
+will cause the MOE image to be rendered using POV-Ray, which can then
+be saved in the file format chosen from the <b>Format</b> pulldown menu.
+One of the available formats is <b>POV-Ray Scene File (.pov)</b>,
+which results in a native POV-Ray file being written.
+</p>
+
+<p>The <b>Render with POV-Ray</b> checkbox becomes available
+(undimmed) when MOE is instructed as to the whereabouts of the
+POV-Ray executable.  This is done using the Ray Tracing Settings
+panel which is opened by pressing <b>POV-Ray Settings</b>.
+</p>
+
+<p>
+<center>
+<img src="../apps/filesave/rtset.png" alt="Ray Tracing Settings" />
+</center>
+</p>
+
+<p>Enter the full path of the POV-Ray executable, including the
+name of the binary executable file, in the <b>POV-Ray Path</b>
+text field.
+</p>
+
+<p>Other POV-Ray configuration options can be set using this panel
+as well.  For more details, please refer to
+<a href="../apps/filesave.htm#RTrace">Using POV-Ray</a>.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="Word"><h3>Export to Word, PowerPoint</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+Microsoft Office Word, Microsoft Office PowerPoint
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+
+<td style="vertical-align: top;">
+<a href="http://www.microsoft.com">Microsoft Corporation</a>
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+Word processing and presentation software.
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>The software must be purchased and installed on the appropriate
+workstation.</p>
+
+<p>No special configuration is required.</p>
+
+<h4>Running with MOE</h4>
+
+<p>Images of the MOE Window can be exported to presentation
+software such as Word and PowerPoint (on Windows)
+via the clipboard.  In MOE, choose
+</p>
+
+<blockquote>
+<span class="menu">MOE | Edit | Copy As |
+<a href="gui/mainwin.htm#Copy">Picture</a></span>
+</blockquote>
+
+<p>This will open the Copy Picture to Clipboard panel:
+</p>
+
+<p>
+<center>
+<img src="gui/mainwin/copy_pic.png" alt="Copy Picture to Clipboard" />
+</center>
+</p>
+
+<p>which provides options for setting image format type, dimension,
+resolution, as well as quality settings.
+</p>
+
+<p>The image is put on the clipboard where it is directly accessible
+to external programs.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="MPlayer"><h3>MPlayer, Windows Media Player,
+Apple QuickTime Player</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+MPlayer, Windows Media Player, QuickTime
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+<td style="vertical-align: top;">
+MPlayer is distributed under the GNU General Public License by
+the <a href="http://www.mplayerhq.hu">MPlayer</a> team.
+Windows Media Player is commercial software distributed
+by <a href="http://www.microsoft.com">Microsoft Corporation</a> as
+part of its Microsoft Windows suite.  QuickTime is
+distributed at no cost by <a href="http://www.apple.com">Apple Inc.</a>
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+Movie playing software.
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>The appropriate software must be obtained and installed on an
+appropriate
+workstation.  The software you are using typically depends on the
+operating system you are running:
+</p>
+
+<p><b>MPlayer</b>.  MPlayer is a movie player for Linux that
+plays Xvid codec
+format files stored in an Audio-Video Interleave (AVI) container.
+The Xvid video codec must be installed on your computer;
+it is freely available from <a href="http://www.xvid.org">www.xvid.org</a>.
+</p>
+
+<p><b>Windows Media Player</b>. Windows Media Player plays
+files encoded using the Windows Media Video (WMV) codec and stored
+in an AVI container.
+</p>
+
+<p><b>QuickTime</b>.  QuickTime plays files encoded with the
+Motion JPEG codec and stored in a QuickTime movie container.
+</p>
+
+<p>To save movies files, MOE uses an intermediary software called
+MEncoder, which is a component of MPlayer.  MOE must be instructed
+as to the location of the MEncoder executable as well as a
+temporary working directory in which movie frames may be stored.
+The configuration is done in the 
+<a href="../apps/moevie.htm#menctest">MOEvie Settings</a> panel shown
+in the next section.
+</p>
+
+<h4>Running with MOE</h4>
+
+<p>Movies are created in MOE using the MOEvie panel.
+This can be opened using
+</p>
+
+<blockquote>
+<span class="menu">MOE | File | New |
+<a href="../apps/moevie.htm">MOEvie</a></span>
+</blockquote>
+
+<p>
+<center>
+<img src="../apps/moevie/moevie.png" alt="MOEvie Maker" />
+</center>
+</p>
+
+<p>The desired output file format is selected using the
+<b>File Encoding</b> buttons.  To configure MEncoder,
+press <b>Setup</b>.  This will open the MOEvie Settings panel:
+
+<p>
+<center>
+<img src="../apps/moevie/settings.png" alt="MOEvie Settings" />
+</center>
+</p>
+
+<p>The full path to the MEncoder program, including the name of the
+binary executable, must be entered at <b>MEncoder Path</b>.
+This path is save in the MOE resource configuration file, which
+may be accessed by other machines; it is therefore recommended
+to avoid using absolute pathnames, and rather use pathnames
+derived from an environment variable (e.g. <tt>$MPLAYER</tt>).
+</p>
+
+<p>Press <b>Test</b> to verify the MEncoder is properly configured.</p>
+
+<p>
+A working directory is also required for storing movie frames
+before they are assembled into the final movie file.  The amount
+of disk space needed is proportional to the number of frames.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="2DSketchers"><h2>2D Sketchers</h2></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+ISIS/Draw, ChemDraw, Symyx Draw, MarvinSketch, JDraw
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+<td style="vertical-align: top;">
+Isis/Draw is no-fee software published by
+<a href="http://www.mdli.com">MDL Information Systems</a>, now
+a subsidiary of <a href="http://www.symyx.com">Symyx Technologies</a>
+which has since merged with
+<a href="http://www.accelrys.com">Accelrys Inc.</a>
+Symyx Draw is also distributed free of cost
+by Symyx Technologies.
+ChemDraw is distributed commercially by
+<a href="http://www.cambridgesoft.com">CambridgeSoft Corporation</a>.
+MarvinSketcher is no-fee software published by 
+<a href="https://www.chemaxon.com">ChemAxon Ltd</a>.
+JDraw is also no-fee for academic and non-commercial use, published by 
+<a href="http://www.accelrys.com">Accelrys Inc</a>.
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+Chemical structure drawing programs.
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>The software must be obtained and installed on an appropriate
+workstation.
+</p>
+
+<p>The <tt>CLASSPATH</tt> environment variable
+must be properly set for MOE to
+connect to MarvinSketcher(Java) & JDraw through the <b>Sketch</b> button.  
+For details, please see <a href="sketcher.htm">2D Sketcher
+Programs</a>.
+</p>
+
+<h4>Running with MOE</h4>
+
+<p>Chemical structures can be imported directly into MOE via the clipboard
+by using
+</p>
+
+<blockquote>
+<span class="menu">MOE | Edit |
+<a href="gui/mainwin.htm#Copy">Paste</a></span>
+</blockquote>
+
+<p>The structures will be created as molecules in the MOE system.</p>
+
+<p>Reactions drawn using 2D sketchers can be imported into MOE by
+saving them as RXN files.
+MOE's <a href="../tutorials/medchemtrns_tut.htm">MedChem Transformations</a>
+application can read these files directly.  The files can also
+be assembled into a MOE database file and browsed.
+</p>
+
+<p>
+<center>
+<img src="../tutorials/medchemtrns_tut/db_rxn.png"
+alt="Browse transformations" />
+</center>
+</p>
+
+<p>
+For details, please see
+<a href="../tutorials/medchemtrns_tut.htm#CreateTrans">Create
+Transformations</a>.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="Pipelining"><h2>Pipelining</h2></a>
+
+<a name="PPilot"><h3>Pipeline Pilot</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+Pipeline Pilot
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+<td style="vertical-align: top;">
+<a href="http://www.accelrys.com">Accelrys Inc.</a> distributes
+Pipeline Pilot commercially.
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+Program to connect software from different vendors into
+a data flow (pipeline).
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up and Running with MOE</h4>
+
+<p>Pipeline Pilot must be purchased and installed on an appropriate
+workstation.
+</p>
+
+<p>Applications external to Pipeline Pilot can be integrated
+into Pipeline Pilot data flows
+through Pipeline Pilot's Web Services interface.
+Communication is effected using <a href="http://www.w3.org/TR/wsdl">WSDL</a>
+(Web Services Description Language), an XML format for
+describing network services in which endpoints, network protocol,
+and message format are specified.
+In this particular case, the network protocol used
+is <a href="http://www.w3.org/TR/soap">SOAP</a>
+(Simple Object Access Protocol).
+</p>
+
+<p>MOE applications can be provided as web services to Pipeline Pilot
+by generating an appropriate WSDL page and then feeding the URL of
+that page into Pipeline Pilot.
+WSDL pages are generated for MOE applications by MOE/web.
+</p>
+
+<p>
+For instructions on how to setup MOE/web, please see
+<a href="../install/web_inst.htm#ServerA">Preparing the Web Server</a>.
+</p>
+
+<p>The conversion of MOE applications,
+which are provided as <a href="../tutorials/mpgtut.htm">SVL</a> functions,
+into the appropriate
+SOAP/WSDL format is performed transparently by MOE/web.
+To create a web service, all that is required is
+to create a file containing the
+appropriate function and then load the file
+into MOE/web by invoking MOE/web using the
+<a class="svl" href="../install/web_inst.htm#Configuring">-load</a>
+command line switch.  For example
+</p>
+
+<pre>
+    $MOE/bin/moeweb -load soapfunc.svl
+</pre>
+
+<p>will load the file <tt>soapfunc.svl</tt> in MOE/web on startup.
+For an example of a web service application, please
+see <a href="../install/web_inst.htm#SOAPService">Creating a
+SOAP Web Service</a>.
+</p>
+
+<p>
+SVL functions providing web services must obey strict
+conventions.  For example,
+the function name must be prefixed by <tt>soapfcn_</tt>.
+The <a href="../svl/fcnref/soapfcn.htm">SOAP Functions</a>
+reference page describes in detail the requirements that
+must be satisfied by an SVL function in order to be
+loaded successfully by the MOE/web application server.
+</p>
+
+<p>Note: MOE/web must be running and accessible to Pipeline Pilot
+at the time that the web service is required by Pipeline Pilot.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="KNIME"><h3>KNIME</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+KNIME (Konstanz Information Miner)
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+<td style="vertical-align: top;">
+KNIME is distributed as an open source program under the
+GNU General Public License by
+<a href="http://www.knime.org">KNIME.com GmbH</a>.
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+Java-based data flow (pipeline) creator that supports
+plugins and wrappers for external code.
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>KNIME accesses MOE applications in the form of
+MOE plugins, which once installed can be used like
+normal KNIME nodes.  A MOE KNIME node is an
+SVL function that calls
+special <tt>knime*</tt> SVL functions which will
+communicate with KNIME.  These functions are
+not part of the standard MOE distribution but are
+available in the MOE Extensions for KNIME.
+Special Java wrapper classes are generated at
+execution time to perform the actual communication,
+which is done entirely via standard I/O pipes
+(<tt>stdin</tt>, <tt>stdout</tt>, and <tt>stderr</tt>).
+When a MOE node is run,
+a MOE/batch session is started to execute the
+associated code.
+</p>
+
+<p>The <i>MOE Extensions for KNIME</i> project
+serves to integrate KNIME+MOE, and consists of
+the Node Development Kit and Java classes which allow specially
+written MOE SVL programs to be executed from within KNIME. 
+The MOE Extensions for KNIME are available in two versions. The standalone 
+version contains only pre-built nodes and can be installed using the KNIME
+Update manager.
+The Node Development Version consists of a jar file (Node Development Kit), 
+some Java classes and SVL files, the sources of the pre-built nodes, 
+templates for new nodes and documentation. 
+The documentation describes system requirements, configuration,
+and usage.
+</p>
+
+<p>To obtain the MOE Extensions for KNIME, please contact
+<a href="http://www.chemcomp.com/Support-Customer_Support.htm">Chemical
+Computing Group</a>.
+</p>
+
+<hr noshade="noshade" />
+
+<a name="RelDatabases"><h3>Relational Databases</h3></a>
+
+<blockquote>
+<table border="0">
+
+<tr>
+<td style="vertical-align: top;">
+<b>Software:</b>
+</td>
+<td style="vertical-align: top;">
+    Oracle,
+    Microsoft SQL Server,
+    IBM DB2,
+    PostgreSQL,
+    MySQL
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Distributor:</b> 
+</td>
+
+<td style="vertical-align: top;">
+Oracle is distributed commercially by
+<a href="http://www.oracle.com">Oracle Corporation</a>.
+Microsoft SQL Server is distributed commercially by
+<a href="http://www.microsoft.com">Microsoft Corporation</a>.
+IBM DB2 is distributed commercially by
+<a href="http://www.ibm.com">IBM</a> (International Business Machines).
+PostgreSQL is open source software available for download
+from <a href="http://www.postgresql.org">www.postgresql.org</a>.
+MySQL is also open source software, available for download from
+<a href="http://www.mysql.com">www.mysql.com</a>.
+</td>
+</tr>
+
+<tr>
+<td style="vertical-align: top;">
+<b>Description:</b>
+</td>
+<td style="vertical-align: top;">
+Relational database / data management software.
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+<h4>Setting Up</h4>
+
+<p>The software must be purchased and installed on the appropriate
+workstation.</p>
+
+<p>In order for MOE to communicate with external databases,
+Java must be installed and the appropriate Java-related
+environment variables set.
+Please see <a href="../install/install.htm#Java">Installing Java</a>
+for details.
+</p>
+
+<p>MOE uses the Java Database Connectivity (JDBC) protocol for
+making the connection to external databases.  A JDBC driver
+corresponding to the type of database you wish to access must
+be installed.  JDBC drivers are not included with MOE, however,
+since JDBC is a common standard, JDBC drivers are available
+for free download from the websites of all the most popular
+database vendors.
+</p>
+
+<p>Acquire the JDBC driver corresponding to the desired
+external database type and install it on the appropriate
+workstation.  Once the driver has been installed, update
+the <a class="svl" href="../install/install.htm#SVL_JVM">CLASSPATH</a>
+variable to include:
+the driver installation directory, the <tt>$MOE/java</tt>
+directory, as well as the directory paths of all
+necessary <tt>jar</tt> files.
+</p>
+
+<p>Once the driver is installed, use the
+<a href="../appendix/moeconfig.htm">Configuration Options</a> panel
+to define the explicit JDBC database connections.  This panel can be
+opened with:
+</p>
+
+<p>
+<center>
+<blockquote>
+<span class="menu">MOE | Window | Options</span>
+</blockquote>
+</center>
+</p>
+
+<p>In the panel, choose the <b>JDBC Database Connections</b> page:</p>
+
+<p>
+<center>
+<img src="../appendix/samples/jdbc_config.png"
+alt="Define JDBC Database Connections" />
+</center>
+</p>
+
+<p>Up to four database connections can be defined.
+</p>
+
+<p>
+The <b>Alias</b> field is used to specify an arbitrary name
+which is used to refer to given database in the
+<a href="../appendix/samples.htm#JDBCViewer">JDBC Database Viewer</a>
+application; if the field is left empty, the database URL will
+be used.
+</p>
+
+<p>
+The URL (uniform resource locator) specifies the database to which
+to connect, and must be entered in the <b>URL</b> text field.
+Note that the exact format of the URL is driver-specific and
+will be described in the driver documentation; in all cases,
+the URL begins with the protocol string <tt>jdbc:</tt>.
+</p>
+
+<p>The JDBC driver class file used to communicate with the
+database server is specified in the <b>Driver</b> field.
+Please refer to the driver documentation for the exact string
+to enter.
+</p>
+
+<p>The user account used to connect to the server is specified
+in the <b>Username</b> field, and the password in the <b>Password</b>
+field.
+</p>
+
+<p>Press <b>Validate Connection</b> to verify that
+the connection to the database has been made properly.
+</p>
+
+<h4>Running with MOE</h4>
+
+<p>Data from third party relational database applications
+can be viewed and imported into MOE using the JDBC Database Viewer.
+This application is opened using:
+</p>
+
+<pre>
+    svl&gt; run '$MOE/samples/jdbcview.svl'
+</pre>
+
+<p>In this panel, the desired database connection is chosen
+using the <b>Database Alias</b> pulldown menu.  To make the
+actual connection, press <b>Connect</b>.
+The <b>SQL</b> field is used to enter SQL commands for
+specifying which tables to view.
+</p>
+
+<p>To import the data into a MOE database, press
+<b>Save as MDB</b>.  The created database will open
+automatically into a MOE Database Viewer.
+</p>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

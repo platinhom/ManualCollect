@@ -1,0 +1,937 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<meta panel Protein Align />
+<meta panel Protein Align Settings />
+<meta panel Protein Similarity Monitor />
+<meta panel Residue Alignment Constraints />
+
+<title>Multiple Sequence and Structure Alignment</title>
+
+<meta main_keywords alignment constraint, align />
+<meta main_keywords protein similarity />
+</head>
+
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#INTRO">Introduction</a>
+<li><a href="#METHODOLOGY">Methodology</a>
+<li><a href="#HOWTO">Running Protein Align</a>
+<li><a href="#SETTINGS">Protein Align Settings</a>
+<li><a href="#Monitor">Protein Similarity Monitor</a>
+<li><a href="#CONSTRAINTS">Creating Alignment Constraints</a>
+<li><a href="#ManagingConstraints">Managing Alignment Constraints</a>
+<li><a href="#SVLCommands">SVL Commands</a>
+<li><a href="#REFERENCES">References</a>
+<li><a href="#ASearch">Appendix: A* Search Algorithm</a>
+</ul>
+
+<h2><a name="INTRO">Introduction</a></h2>
+
+<p>Alignment determines the correspondences between residues of two or more
+protein chains.  An underlying assumption is that the chains to be
+aligned are all related.  MOE's protein alignment tool, Protein Align, can
+align any number of protein sequences.  In addition to using
+<i>sequence-only</i> information (i.e. residue identities),
+it employs <i>sequence-derived</i> information (e.g.
+predicted secondary structure) as well as <i>structure-based</i>
+information when computing a multiple-sequence alignment.  Moreover, the
+structure-based information can be used even in situations where
+structural information is not available for every protein chain &mdash;
+Protein Align can handle mixed sets of structural and sequence-only
+information data.  Finally, an alignment can be fine-tuned in MOE
+using alignment constraints and manual re-positioning of residues.
+
+<p><span class="tip">Tip</span>&nbsp;&nbsp;It is also possible
+to manually align sequences in the Sequence Editor. For instance, to slide
+an entire chain, position the cursor over the first or any other residue
+in the chain to move. Press <tt>Ctrl</tt> and drag the middle mouse button
+right or left depending on the new alignment position.  As the chain is
+being moved, the cursor changes to a crosshair and a red box is drawn
+around the residue that was clicked on. For more information, see the
+section entitled Moving Residues in 
+<a href="../moe/gui/se.htm">Sequence Editor</a>.
+
+
+<h2><a name="METHODOLOGY">Methodology</a></h2>
+
+<p>Protein Align implements a modified version of the alignment methodology
+originally introduced into molecular biology by [Needleman 1970]. In
+this approach, alignments are computed by optimizing a function based on
+residue similarity scores (obtained from applying an amino acid
+substitution matrix to pairs of aligned residues) and gap penalties.
+Penalties are imposed for introducing and extending gaps in one sequence
+with respect to another.  The final optimized function value is
+referred to as the <i>alignment score</i>.  When aligning multiple
+sequences, Protein Align attempts to optimize the so-called <i>sum of
+pairs</i> score, i.e. the sum of all the separate pairwise
+(one chain against one chain) alignment scores.
+
+<p>The basis of sequence-only alignment is the <i>amino acid substitution
+matrix</i>. MOE includes matrices derived directly from families of aligned
+proteins, as well as matrices derived by application of an evolutionary model
+to a set of closely related matrices. These matrices reside in the
+directory <tt>$MOE/lib/matrix</tt>. 
+
+<p>Protein Align is capable of computing alternate similarity matrices for
+use in the Needleman-Wunsch procedure, as well as position-specific gap
+penalties. For example, Protein Align can adjust the similarity matrix and gap
+penalties using either secondary structure predictions or actual secondary
+structure assignments (Kabsch and Sander's DSSP assignments, as calculated
+by MOE).
+
+<p>While the Needleman-Wunsch approach to sequence alignment permits, in
+principle, the simultaneous alignment of an arbitrary number of chains,
+calculations become computationally impractical once the number of chains
+exceeds four.  Therefore, multiple alignment protocols are generally built
+upon the repeated pairwise alignment of groups of aligned chains. However,
+a theoretical difficulty arises in the scoring of new gaps whenever there
+are pre-existing gaps in one or both of the alignment groups. Protein Align
+correctly calculates the gap scores in group to group alignments using a
+novel application of the 
+<nobr><a href="#ASearch">A* search technique</a></nobr>.
+
+<p>Protein Align performs multiple sequence alignment in
+four stages, all of which are parameterized in the Protein Alignment Settings
+panel:
+
+<ol>
+<li><b>Initial pairwise build-up.</b>
+
+The initial estimate of the alignment can be calculated
+in one of two ways :
+
+<p>
+<ul>
+<p><li><b>Progressive</b>. Aligns chains 1 and 2, then aligns chain 3 to
+the resulting alignment. This continues until all chains have been processed.
+This method may be sensitive to chain order.
+</li></p>
+
+<p><li><b>Tree-based</b>. Pre-calculates all the alignment scores between
+each pair of chains. The alignment is built by aligning the chain or
+chains with the highest pairwise score. The pairwise score between two
+groups is defined as the maximum of all scores between their respective
+chains.  This method is not sensitive to chain order, but does involve a
+higher computational overhead.
+</li></p>
+</ul></p>
+
+<p><li><b>Round-robin realignment.</b>
+The initial estimate of the alignment (or current alignment, if stage 1 was
+skipped) is refined by a single round-robin series of realignments,
+wherein each chain in succession is extracted from the global alignment
+and re-aligned against the remaining chains.
+</li></p>
+
+<p><li><b>Randomized iterative refinement.</b>
+The results of the initial and round-robin stages of the
+alignment process can be sensitive to the order in which the chains are
+processed. To reduce this sensitivity, a series of realignments can be
+performed in which the group of aligned chains is randomly partitioned
+into two groups, and a two-way alignment of the subsets is performed. If
+the new alignment improves the alignment score, it is accepted; otherwise
+it is rejected.
+</li></p>
+
+<p><li><b>Structure-based realignment.</b>
+Chains that possess coordinates for all their alpha carbons can be
+realigned taking into account their structure.  From the current initial
+estimate of the correct alignment, a new similarity matrix is generated
+using the relative alpha carbon coordinates that result from a
+multi-body superposition.  This matrix is used to realign just these
+alpha carbon populated chains. This procedure is then repeated until the
+Root Mean Square Distance (RMSD) of the superposition fails to improve. At
+this point, the structured chains are re-introduced as an indivisible unit
+among the unstructured chains, and steps 1 through 3 are repeated.
+</li></p>
+
+</ol>
+
+<h2><a name="HOWTO">Running Protein Align</a></h2>
+
+<p>The Protein Alignment panel can be opened from either the MOE window or the Sequence Editor by choosing:
+
+<ul>
+<li><nobr><b>MOE | Proteins | Align</nobr></b> or
+<li><nobr><b>SE | Alignment | Align</nobr></b>
+</ul>
+
+
+<p><center>
+<img src="align/align.png" alt="Protein Alignment Panel">
+</center>
+
+<p>
+The Protein Align panel presents a listbox containing all protein chains in
+the system. The list selection mirrors the chain selection in the sequence
+editor. The controls at the top of the panel allow for the assignment of
+selected protein chains to groups for purposes of group-to-group or
+sequence-to-group alignment, or to allow specified chains to be excluded
+altogether from the alignment calculation.
+
+Chains in the "*" group are treated as individual sequences, and are not grouped
+with any other chains. Chains in the "i" group will be ignored by the
+alignment operation. Chains marked with "A","B","C","D" or "E" will
+be grouped with other chains with the same letter and treated as a block in
+the alignment operation. Press the <b>Align</b> button to assign all selected
+chains to the "*" group, and all unselected chains to the "i" group. Press
+the <b>Partition</b> button to assign the selected and unselected chains
+to different groups, thus allowing group-to-group alignment between the
+unselected and selected chains. Press the <b>Freeze</b> button to
+assign the selected chains to one group, and the unselected chains to the
+"*" group.
+
+<p>The remaining options in the panel are:
+
+
+<table cellpadding="5" cellspacing="5" width="100%">
+<tbody>
+
+<tr>
+<td valign="top">
+<b>Align&nbsp;Selected Residues Only:</b> 
+<td valign="top">
+If on, only selected residues will be aligned. The alignment
+positions of unselected residues with respect to each other will
+not be disturbed.
+</tr>
+
+<tr>
+<td valign="top">
+<b>Protect Gaps in Reference Group:</b> 
+<td valign="top">
+If on, pre-existing gaps in the chains in the first group in the chain list
+will only be allowed to grow; they will not be permitted to collapse.
+</tr>
+
+<tr>
+<td valign="top">
+<b>Action:</b> 
+<td valign="top">
+The default protein alignment action is to perform the complete
+<b>Sequence & Structure Alignment</b>
+procedure as described in the Methodology section. To omit the
+structure alignment step, choose <b>Sequence Alignment Only</b>. To perform only
+structure-based alignment, beginning from the current 3D superposition,
+choose <b>Match Alignment to Current Superposition</b>.
+</tr>
+
+
+
+<tr>
+<td valign="top"><b>Superpose Chains:</b> 
+<td valign="top">
+If on, the aligned proteins will be superposed in the MOE Window once the
+alignment calculation is complete.
+</tr>
+
+</table>
+
+
+<p>Press <b>OK</b> or <b>Apply</b> to perform the protein alignment.
+Once the alignment procedure is completed, a matrix of percentage
+residue identity values is written to the 
+<a href="../moe/gui/svlcommands.htm">SVL Commands window</a>. 
+The values in each column represent the
+percentage of the chain's residues which are paired with identical
+residues in the chains of each row in the final alignment. Press <b>Table</b>
+to write the percentage identity table into an SVL Text Editor 
+without re-calculating the alignment.
+
+<p><center>
+<img src="align/align_table.png" alt="Protein Alignment Table">
+</center>
+
+
+
+<h2><a name="SETTINGS">Protein Align Settings</a></h2>
+
+<p>Pressing the <b>Settings</b> button raises the Settings panel which controls
+various parameters used in the Protein Alignment calculation.
+
+<p align="center">
+<img src="align/align_settings.png" alt="Alignment Settings Panel">
+</p>
+
+
+<table width="100%" cellpadding="5">
+
+<tr>
+<td valign="top"><b>Matrix</b>,
+<b>Gap&nbsp;Start</b>,&nbsp;<b>Gap&nbsp;Extend:</b>
+<td valign="top">Parameters used by low-level group-to-group Needleman-Wunsch
+calculations.
+</tr>
+
+<tr>
+<td valign="top"><b>Build-up:</b> 
+<td valign="top">Select either the tree-based strategy or the
+progressive strategy to build the initial alignment.
+</tr>
+
+<tr>
+<td valign="top"><b>Iteration Limit</b>,<br /><b>Failure Limit:</b>  
+<td valign="top">Parameters
+used to control the randomized iterative refinement procedure
+(discussed in the methodology section above).
+</tr>
+
+<tr>
+<td valign="top"><b>Secondary&nbsp;Structure:</b> 
+<td valign="top">Options to allow for modification of
+similarity scores and gap penalties on a position-by-position basis, in
+light of the actual secondary structure assignments or of the predicted
+secondary structure probabilities (see 
+<a href="propred.htm">Secondary Structure and Solvent Accessibility Prediction</a>).
+</tr>
+
+<tr>
+<td valign="top"><b>Structural&nbsp;Alignment:</b>
+<td valign="top">Allows for enabling or disabling the structural realignment
+procedure as described in Step 4 above.
+</tr>
+
+<tr>
+<td valign="top"><b>Refine with Gaussian&nbsp;Distance&nbsp;Weights:</b>
+<td valign="top">
+If on, an iterative
+algorithm with dynamic residues weights [Damm&nbsp;2006] is used to 
+improve the superposition at each stage of the structural alignment
+procedure.
+</tr>
+
+<tr>
+<td valign="top"><b>Gap&nbsp;Start</b>,&nbsp;<b>Gap&nbsp;Extend:</b>
+<td valign="top">Gap penalties pertaining to the structural realignment phase.
+</tr>
+</table>
+
+ 
+<h2><a name="Monitor">Protein Similarity Monitor</a></h2>
+
+
+
+
+<p>To start the Protein Similarity Monitor, choose
+<b>SE | Alignment | Similarity</b>. The Similarity Monitor calculates
+all-against-all sequence identity, similarity and CA-RMSD distance matrices,
+and displays them as either color-coded heatmaps
+or trees calculated
+using the UPGMA (average distance) clustering algorithm. The heatmaps and
+trees can be exported to a variety of graphics formats, and the
+distance matrices and alignments from which they were derived can be written
+to a text file. The input data for the calculations can be either an entire
+alignment (excluding hidden chains) or restricted
+to selected residues. 
+
+
+<p align="center">
+<img src="align/similarity.png" alt="Identity Matrix" />
+<img src="align/similarity_tree.png" alt="Identity Tree" />
+</p>
+
+
+The pairwise matrix plots and dendrograms may be either
+exported into a
+common image format or printed by pressing the <b>Export</b> button,
+which opens the
+<a href="../apps/print.htm#GraphicExportPanel">Export Image</a> panel.
+The <b>Order Chains</b> button is used to
+reorder the chains in the Sequence Editor to correspond
+to the plot. If a matrix
+is displayed, the chains will renumbered according to the values
+in the first column &ndash; that is, they will be ordered according to
+their similarity to the first chain. If the plot is a dendrogram, the
+chains will be renumbered  from top to bottom.
+Press <b>Report</b>
+to write the current matrix and the associated alignment into
+an SVL Text Editor. If the calculation is restricted to
+selected residues, the entire alignment still appears in the editor,
+but with the selection set highlighted in uppercase.
+
+
+<p>
+The options for the Similarity Monitor are as follows:
+</p>
+
+
+<table border="0" cellpadding="5">
+
+<tr>
+<td valign="top">
+<b>Metric</b> 
+</td>
+<td valign="top">
+Specifies the all-against-all distances to be calculated. The matrix values
+(<i>i</i>, <i>j</i>) for the percentage <b>Identity</b> and <b>Similarity</b>
+metrics are equal to the number of sequence matches between chains <i>i</i> and
+<i>j</i>, divided by the number of residues in chain <i>i</i>.
+Residues are considered identical if their single-letter code is the
+same (e.g. MSE and MET are &quot;identical&quot;). Residues are
+&quot;similar&quot; if
+their BLOSUM62 substitution score is greater than zero. The upper triangular
+values of the <b>RMSD</b> matrix are equal to the 
+RMSD between all aligned &alpha;-Carbons of chains <i>i</i> and <i>j</i>;
+the lower triangular
+values are calculated using those &alpha;-Carbons in positions with no gaps
+in any of the chains in the alignment.
+</td>
+
+</tr><tr>
+<td valign="top">
+<b>Display</b> 
+</td>
+<td valign="top">
+if <b>Matrix</b> is chosen, the distance matrix is presented as a color-coded
+heat map. If  <b>Tree</b> is chosen, a dendrogram is drawn. In the
+case of sequence-based scores, the distance between two chains is taken
+to be the number of matches divided by the longer chain length. The RMSD
+distances are taken from the lower triangle of the distance matrix.  
+</td>
+</tr>
+
+<tr>
+<td valign="top">
+<b>Chains</b> 
+</td>
+<td valign="top">
+Specifies which protein chains will be included in the calculations.
+Choose <b>First in Tag</b> to consider only the first chain (in Sequence
+Editor order) in a contiguous block of chains with same (non-empty) tag.
+This option makes it easy to exclude protein ligands.
+Choose <b>Group by Tag</b> to, in effect, treat
+contiguous blocks of chains with the same (non-empty) tag as single chains
+for comparison purposes. For example, if antibodies are loaded and aligned
+(heavy-chain to heavy chain and light-chain to light-chain), this
+option will implicitly catenate the chains so as to compare the entire
+proteins.
+
+<br /><br />
+Note that chains hidden in the Sequence Editor are always ignored.
+</td>
+</tr>
+
+<tr>
+<td valign="top">
+<b>Monitor&nbsp;Selected Residues</b> 
+</td>
+<td valign="top">
+If on, the calculation will be restricted to alignment positions with
+at least one selected residue.
+</td>
+</tr>
+
+<tr>
+<td valign="top">
+<img src="../moe/hellomoe/gear_wheel.png"
+style="vertical-align:middle;" />
+<i>Settings</i>
+</td>
+<td valign="top">
+
+
+<img src="align/prosimopt.png" alt="Heatmap Options"
+class = "floatright" />
+
+These items apply to the heatmap only. Enable <b>Values</b> to
+write the numerical data into the heatmap cells. Enable <b>Chain Names</b>
+to label the heatmap rows with chain names, and enable <b>Chain Numbers</b>
+to label the heatmap columns and rows with chain numbers.<p>
+The heatmap can be rendered in color or <b>Grayscale</b>, and the
+heatmap color <b>Legend</b> can optionally be drawn to the right of 
+the matrix.
+</td>
+</tr>
+
+</table>
+<br clear="both" />
+
+<h2><a name="CONSTRAINTS">Creating Alignment Constraints</a></h2>
+
+<p>MOE provides tools to create and manage alignment constraints.  In MOE,
+a single alignment constraint is maintained as a set of residues.  There
+are no restrictions to the size or composition of the residue set
+constituting the constraint -- residues may belong to any combination of
+chains in the system.  When performing an alignment, Protein Align attempts to
+minimize the number of constraint violations. A constraint violation
+occurs whenever a pair of residues in a constraint are not aligned in the
+same column.
+
+<p>Alignment constraints are created in the Sequence Editor by choosing:
+<blockquote>
+<span class="menu">
+    SE | Alignment | Constraints | Constrain Residues
+</span>
+</blockquote>
+A prompt appears in the CLI of the Sequence Editor, asking you to select
+residues to be constrained. Click on residues to add them to the current
+constraint.  Residues belonging to a constraint are linked by a blue line.
+
+<p><center>
+<iMG SRC="align/c2.png" alt="Constraints Drawn in the Sequence Editor">
+</P></center>
+
+<p>Press New Constraint (in the CLI prompt) to end the current
+constraint and begin a new one. To remove the constraint prompt, press
+<tt>ESC</tt> .
+
+<p>New constraints can also be created from within the <b>Residue
+Alignment Constraint</b> panel as described below.
+
+
+<p>The <nobr><b>SE | Alignment | Constraints | Unconstrain Residues</nobr></b>
+command removes the residues selected in the
+Sequence Editor from all constraints to which they belong.
+
+
+<h2><a name="ManagingConstraints">Managing Alignment Constraints</a></h2>
+
+<p>The Residue Alignment Constraints panel shows existing constraints and
+the positions of their residues. It acts somewhat like a manager in that
+it can be used to view and modify constraints (by adding or removing
+residues), and to create new ones.
+This panel can also be used to select residues
+belonging to constraints, making it possible
+to quickly find specific constraints
+in the Sequence Editor.
+
+<p>The Residue Alignment Constraints panel is opened by choosing:
+<p class="indent_novspace">
+<span class="menu">
+    <b>SE | Alignment | Constraints | Manage Constraints</b>
+</span></span></p>
+
+<p align="center">
+<img src="align/conwin.png" alt="Residue Alignment Constraints Panel">
+</p>
+
+<p>For every "shown" constraint, the panel gives the alignment positions
+of the constrained residues as well as the names and positions of
+individual residues. <b>Shown/Hidden</b> indicate the visibility status of
+constraints.  When a constraint is shown, it is drawn (in blue) in the
+Sequence Editor, and its residues are listed in the above panel.
+Conversely, a hidden constraint is not drawn in the Sequence Editor, nor
+are its residues listed in the panel. You can toggle the visibility of
+each constraint by double-clicking on its Shown/Hidden line. To control
+the visibility of all constraints, use the Hide All and Show All buttons
+(see below).
+
+
+<p><table width="100%" cellpadding="5">
+
+<tr>
+<td valign="top"><b>Select</b> 
+<td valign="top">Residues selected in the panel are selected in the Sequence
+Editor. This button is grayed out
+if no residue is selected in the panel.
+</tr>
+<tr>
+<td valign="top"><b>Create</b>
+<td valign="top">Creates a new constraint based on residues 
+selected in the Sequence Editor.  
+This button is grayed out if no residue is selected in the Sequence Editor.
+</tr>
+<tr>
+<td valign="top"><b>Delete</b>
+<td valign="top">Removes entire constraints, or selected residues from a
+constraint. Deleting all residues of a constraint deletes the constraint
+itself.  This button is grayed out if no constraint or residue is selected
+in the panel.
+
+</tr>
+<tr>
+<td valign="top"><b>Hide&nbsp;All</b>
+<td valign="top">Hides all constraints in the Sequence Editor and compresses list of constraints in panel (only constraints are listed, residues are hidden).
+</tr>
+<tr>
+<td valign="top"><b>Show&nbsp;All</b>
+<td valign="top">Shows all constraints in the Sequence Editor and expands list of constraints in panel (constraints and residues appear in list).</tr>
+</table>
+
+
+<h2><a name="SVLCommands">SVL Commands</a></h2>
+<a href="fcnref/pro_alig.htm" class="svl">pro_Align</a><br />
+<a href="fcnref/pro_sup.htm" class="svl">pro_Superpose</a><br />
+<a href="../moe/fcnref/residue.htm" class="svl">rPosSE</a><br />
+<a href="../moe/fcnref/rconstraint.htm" class="svl">rConstraints</a><br />
+<a href="../moe/fcnref/rconstraint.htm" class="svl">rConstraintSet</a><br />
+<a href="../moe/fcnref/rconstraint.htm"
+    class="svl">rConstraintDisplay</a><br />
+<p><a href="fcnref/intropro.htm">Protein Functions</a>
+
+<h2><a name="REFERENCES">References</a></h2>
+
+<p><table width="100%" cellpadding="5" border="0">
+<tr>
+<td valign="top">[Berger&nbsp;1991]
+<td valign="top">Berger, M.P. and Munson, P.J.;
+A Novel Randomized Iterative Strategy for Aligning Multiple Protein Sequences;
+<i>CABIOS 7</i> (<b>1991</b>) 479&ndash;484.
+
+<tr>
+<td valign="top">[Dayhoff&nbsp;1978]
+<td valign="top">
+Dayhoff, M.O., Schwartz, R.M., and Orcutt, B.C.;
+A Model of Evolutionary Change in Proteins;
+In <i>Atlas of Protein Sequence and Structure</i>; Dayhoff, M.O. (Ed.)
+National Biomedical Research Foundation, Washington D.C.
+<i>5 <i>Suppl.</i> 3</i> 1978 pp 345&ndash;353.
+
+<tr>
+<td valign="top">[Damm&nbsp;2006]
+</td><td valign="top">
+Damm, K., Carlson, H.; 
+Gaussian-Weighted RMSD Superposition of Proteins: A Structural
+Comparison for Flexible Proteins and Predicted Protein Structures;
+<i>Biophys J 90</i> (<b>2006</b>) 4558&ndash;4573.
+
+<tr>
+<td valign="top">[Fischer&nbsp;1996]
+<td valign="top">Fischer, D. and Eisenberg, D.; Protein
+Fold Recognition Using Sequence-Derived Predictions;
+<i>Protein Science 5</i>
+(<b>1996</b>) 947&ndash;955.
+
+<tr>
+<td valign="top"> [Gonnet&nbsp;1992]
+<td valign="top"> Gonnet G.H., Cohen M.A., and Benner S.A.;
+Exhaustive Matching of the Entire Protein Sequence Database;
+<i>Science 256</i> (<b>1992</b>) 1433&ndash;1445.
+
+<tr>
+<td valign="top"> [Gotoh&nbsp;1993]
+<td valign="top">Gotoh, O.;
+Optimal Alignment Between Groups of Sequences and its Application to Multiple
+Sequence Alignment;
+<i>CABIOS 9</i> (<b>1993</b>) 361&ndash;370.
+
+
+<tr>
+<td valign="top"> [Henikoff&nbsp;1992]
+<td valign="top"> Henikoff S., Henikoff, J.G.; <i>Proc. Natl. Acad. Sci.
+U.S.A. 89</i> (<b>1992</b>) 10915&ndash;10919.
+
+<tr>
+<td valign="top"> [Hirosawa&nbsp;1995]
+<td valign="top"> Hirosawa <i>et al</i>.;
+Comprehensive Study on Iterative Algorithms of Multiple Sequence Alignment;
+<i>CABIOS 11</i> (<b>1995</b>) 13&ndash;18.
+
+<tr>
+<td valign="top">[Needleman&nbsp;1970]
+<td valign="top"> Needleman, Wunsch.;
+A General Method Applicable to the Search for Similarities in the Amino Acid
+Sequences of Two Proteins;
+<i>Journal of Molecular Biology 48</i>
+(<b>1970</b>) 443&ndash;453.
+</table>
+
+
+<p><a name="ASearch"><h2>Appendix: A* Search Algorithm</a></h2>
+<p>
+The A* Search algorithm is a procedure to find the best path in a directed
+acyclic graph with associated edge scores.  It is a best-first search algorithm
+that makes use of a heuristic to evaluate the score of unsearched portions of
+the graph.  It has been extensively studied in the context of tree searches;
+however, all of its graph search properties are not generally known.
+Therefore, in this section, we will outline the algorithm and offer proofs of
+its correctness and properties.
+
+<p>Let <i>G</i>* be a directed acyclic graph specified by a collection of
+nodes, or vertices, <i>V</i>, and a collection of edges each specified by
+an ordered pair of nodes (<i>m</i>,<i>n</i>) and a positive score <i>s</i>
+(we say that the edge from <i>m</i> to <i>n</i> has score <i>s</i>).  This
+definition does not exclude the possibility that more than one score can
+be associated between nodes <i>m</i> and <i>n</i>.  A <i>path</i> in
+<i>G</i>* is a sequence of edges with the property that each edge (except
+the first) has its &quot;from&quot; node equal to the &quot;to&quot; node
+of the preceding edge.  The <i>score</i> of a path is the product of the
+edge scores of the edges in the path.  (Note that by taking logarithms in
+all subsequent formulae, the A* search can be applied to summation-based
+scoring mechanisms).  A path from <i>m</i> to <i>n</i> is called
+<i>optimal</i> if its score is greater than or equal to all other paths
+from <i>m</i> to <i>n</i>.
+
+<p>We distinguish two distinct nodes in <i>V</i>, the <i>source node</i>,
+<i>r</i>, and the <i>destination node</i>, <i>f</i>. We define a <i>complete
+path</i> to be a path that originates at <i>r</i> and terminates at <i>f</i>.
+The primary objective of the search is to find an optimal complete path.  As
+we shall see, the A* search algorithm solves this problem and has the useful
+property of being able to produce all best paths.
+
+<p>For each node <i>n</i> in <i>G</i>*, define the <i>forward score</i>,
+<i>A</i>(<i>n</i>) to be 1 if <i>n&nbsp;=&nbsp;r</i> and the score of an
+optimal path from <i>r</i> to <i>n</i> otherwise.  Similarly, we define the
+<i>backward score</i>, <i>B</i>(<i>n</i>) to be 1 if <i>n&nbsp;=&nbsp;f</i>
+and the score of an optimal path from <i>n</i> to <i>f</i> otherwise.  Note
+that the quantity <i>A</i>(<i>n</i>)<i>B</i>(<i>n</i>) is the score of an
+optimal complete path through <i>n</i>.
+
+<p>The A* search algorithm assumes the existence of a <i>heuristic</i>
+<i>backward score</i>; that is, for each node <i>n</i> an estimate<i>
+b</i>(<i>n</i>) of <i>B</i>(<i>n</i>) with the property that
+<i>b</i>(<i>n</i>)&nbsp;&gt;=<i>&nbsp;B</i>(<i>n</i>).  In the context of
+a graph search, the A* algorithm assumes the existence of a
+<i>monotone</i> heuristic.  A monotone heuristic has the property that for
+every edge (<i>m</i>,<i>n</i>,<i>s</i>) from node <i>m</i> to node
+<i>n</i>, <i>b</i>(<i>m</i>)&nbsp;&gt;=&nbsp;<i>sb</i>(<i>n</i>).
+
+<p>We now describe the A* search algorithm in detail.  The algorithm
+constructs subgraph, <i>G</i>, of <i>G</i>* with the property that
+<i>G</i> will contain all of the &quot;best&quot; paths of <i>G</i>* (the
+notion of best will be discussed below).  The algorithm maintains two sets
+of nodes: the set <i>O</i> of <i>open</i> nodes (nodes yet to be
+searched), and the set <i>C</i> of <i>closed</i> nodes (nodes that have
+been searched).  All nodes in <i>G</i> are either open or closed.  During
+the course of the search each node <i>n</i> in <i>G</i> will contain an
+estimate <i>a</i>(<i>n</i>) of <i>A</i>(<i>n</i>).  The A* search
+algorithm proceeds as follows.  
+
+<p>
+
+<ol>
+<li>
+[<b>Initialization</b>] Initially, <i>G</i> contains <i>r</i> and no edges.
+Set <i>C&nbsp;=&nbsp;</i>{}, <i>O</i>&nbsp;=&nbsp;{<i>r</i>},
+<i>a</i>(<i>r</i>)&nbsp;=&nbsp;1.  Fix a constant <i>t</i>&nbsp;&gt;&nbsp;0
+(this controls the termination criteria).
+<p>
+<li>
+[<b>Selection</b>] Let <i>m</i> be a node in <i>O</i> with maximal heuristic
+score <i>a</i>(<i>m</i>)<i>b</i>(<i>m</i>) over all other nodes in <i>O</i>.
+Set <i>C=C+</i>{<i>m</i>} and <i>O</i>=<i>O</i>&#173;{<i>m</i>}.
+<p>
+<li>
+[<b>Termination</b>] If <i>f</i>  is in <i>C</i> and
+<i>a</i>(<i>m</i>)<i>b</i>(<i>m</i>)&nbsp;&lt;&nbsp;<i>ta</i>(<i>f</i>)
+then terminate the algorithm.
+<p>
+<li>
+[<b>Expansion</b>]  For each edge (<i>m</i>,<i>n</i>,<i>s</i>) in <i>G</i>*
+(all edges originating from <i>m</i>) add <i>n</i> and the edge
+(<i>m</i>,<i>n</i>,<i>s</i>) to <i>G</i>.  If <i>n</i> is in <i>O</i> set
+<i>a</i>(<i>n</i>)=max{<i>a</i>(<i>n</i>),<i>sa</i>(<i>m</i>)}; otherwise if
+<i>n</i> is not in <i>C</i> then set <i>a</i>(<i>n</i>)=<i>sa</i>(<i>m</i>)
+and <i>O</i>=<i>O</i>+{<i>n</i>}.  Go to Step 2.
+</ol>
+
+<p>
+The construction in the Expansion step of the algorithm guarantees that
+<i>a</i>(<i>n</i>) is the score of some path from <i>r</i> to <i>n</i>;
+however, the path is not necessarily optimal in <i>G</i>* or even in <i>G</i>.
+Therefore, in general, <i>a</i>(<i>n</i>)&nbsp;&lt;=&nbsp;<i>A</i>(<i>n</i>).
+
+<p>
+The proof of correctness will require a number of lemmas each of which is
+interesting on its own and provide insight into the behavior of the A*
+algorithm.
+
+<p>
+<blockquote>
+<b>Lemma 1</b>.  <i>Let p be a node
+in G</i>*<i>.  If m and n are two nodes on an optimal
+path in G</i>*<i> from r to p in which m precedes n then A</i>(<i>m</i>)<i>b</i>(<i>m</i>)&nbsp;&gt;=&nbsp;<i>A</i>(<i>n</i>)<i>b</i>(<i>n</i>).
+
+<p>
+<b>Proof</b>.  It is enough to
+prove the case where <i>m</i> is the immediate predecessor of
+<i>n</i> on an optimal path.
+
+<p>
+Consider such an optimal path from <i>r</i> to <i>p</i>
+and let <i>s</i> be the score of the edge in the path joining
+<i>m</i> to <i>n</i>.  By truncating the given path to <i>p</i>
+at <i>n</i> one obtains an optimal path from <i>r</i> to <i>n</i>.
+ If this were false, then one could find a better path from <i>r</i>
+to <i>p</i> than the given one contradicting the fact that the
+given path is optimal.  The same remark applies to <i>m</i> and
+so <i>A</i>(<i>n</i>)&nbsp;=&nbsp;<i>A</i>(<i>m</i>)<i>s</i>;
+hence, using the monotone property
+
+<p>
+<center><i>A</i>(<i>n</i>)<i>b</i>(<i>n</i>)&nbsp;=&nbsp;<i>A</i>(<i>m</i>)<i>sb</i>(<i>n</i>)&nbsp;&lt;=&nbsp;<i>A</i>(<i>m</i>)<i>b</i>(<i>m</i>)</center>
+<p>
+as required.
+</blockquote>
+
+<p>
+This lemma states that along an optimal path, the monotone heuristic property
+guarantees that the upper bound on the score of an optimal complete path
+<i>decreases</i>.  The second lemma concerns the forward score estimate
+<i>a</i>(<i>n</i>) of <i>A</i>(<i>n</i>).  Recall that, in general,
+<i>a</i>(<i>n</i>)&nbsp;&lt;=&nbsp;<i>A</i>(<i>n</i>); however, equality is
+assured at specific points in the algorithm.
+
+<p>
+<blockquote>
+<b>Lemma 2</b>.  <i>On every iteration of the A* search algorithm, a node n in
+the open set O with maximal a</i>(<i>n</i>)<i>b</i>(<i>n</i>)<i> (in particular,
+the node selected for expansion) has the property that
+a</i>(<i>n</i>)&nbsp;=&nbsp;<i>A</i>(<i>n</i>).
+
+<p>
+<b>Proof</b>.  The proof is by induction on the iteration number of the
+algorithm.  On the first iteration, <i>O</i>&nbsp;=&nbsp;{<i>r</i>} and since,
+by definition, <i>A</i>(<i>r</i>)&nbsp;=&nbsp;1&nbsp;=&nbsp;<i>a</i>(<i>r</i>)
+the property holds.
+
+<p>
+Suppose that there exists a <i>k</i> such that after each iteration less that
+or equal to <i>k</i> the property held and consider iteration
+<i>k&nbsp;</i>+&nbsp;1.
+
+<p>
+Suppose that prior to expansion node <i>n</i> in <i>O</i> has maximal
+<i>a</i>(<i>n</i>)<i>b</i>(<i>n</i>).  Since <i>k</i>&nbsp;&gt;&nbsp;1 it must
+be that <i>n</i>&nbsp;&lt;&gt;&nbsp;<i>r</i>.  Consider an optimal path in
+<i>G</i>* from <i>r</i> to <i>n</i>.  Let <i>p</i> be the first node in
+<i>O</i> on this path and let <i>m</i> be its immediate predecessor (<i>m</i>
+is necessarily in <i>C</i>).  Since <i>m</i> was selected for expansion on some
+prior iteration, it must have had a maximal heuristic score and hence the
+induction hypothesis implies that for <i>m</i>,
+<i>a</i>(<i>m</i>)&nbsp;=&nbsp;<i>A</i>(<i>m</i>).
+
+<p>
+During the expansion of <i>m</i>, the node <i>p</i> was either closed or added
+to <i>O</i>.  If <i>p</i> was closed then it was expanded on some prior
+iteration and, like <i>m</i>, <i>a</i>(<i>p</i>)&nbsp;=&nbsp;<i>A</i>(<i>p</i>).
+If <i>p</i> was not closed, then it was added to <i>O</i> with
+<i>a</i>(<i>p</i>)&nbsp;=&nbsp;<i>a</i>(<i>m</i>)<i>s</i>; hence
+
+<p>
+<center><i>a</i>(<i>p</i>)&nbsp;=&nbsp;<i>a</i>(<i>m</i>)<i>s</i>&nbsp;=&nbsp;<i>A</i>(<i>m</i>)<i>s</i>&nbsp;=&nbsp;<i>A</i>(<i>p</i>)
+</center>
+
+<p>
+since <i>m</i> is the immediate predecessor of <i>p</i> on an optimal path
+from <i>r</i> to <i>p</i> (by the argument in Lemma 1).  Since both
+<i>a</i>(<i>m</i>)&nbsp;=&nbsp;<i>A</i>(<i>m</i>) and
+<i>a</i>(<i>p</i>)&nbsp;=&nbsp;<i>A</i>(<i>p</i>), we have that
+
+<p>
+<center>
+<i>a</i>(<i>p</i>)<i>b</i>(<i>p</i>)&nbsp;=&nbsp;<i>A</i>(<i>p</i>)<i>b</i>(<i>p</i>)&nbsp;&gt;=&nbsp;<i>A</i>(<i>n</i>)<i>b</i>(<i>n</i>)&nbsp;&gt;=&nbsp;<i>a</i>(<i>n</i>)<i>b</i>(<i>n</i>)
+</center>
+
+<p>
+where the first inequality follows from Lemma 1 and the second from the fact
+that, in general, <i>a</i>(<i>n</i>)&nbsp;&lt;=&nbsp;<i>A</i>(<i>n</i>).  Since
+both <i>m</i> and <i>n</i> are in <i>O</i>, and <i>n</i> has maximal heuristic
+score, we have
+<i>a</i>(<i>n</i>)<i>b</i>(<i>n</i>)&nbsp;&gt;=&nbsp;<i>a</i>(<i>p</i>)<i>b</i>(<i>p</i>); therefore
+
+<p>
+<center>
+<i>a</i>(<i>p</i>)<i>b</i>(<i>p</i>)&nbsp;&gt;=&nbsp;<i>A</i>(<i>n</i>)<i>b</i>(<i>n</i>)&nbsp;&gt;=&nbsp;<i>a</i>(<i>n</i>)<i>b</i>(<i>n</i>)&nbsp;&gt;=&nbsp;<i>a</i>(<i>p</i>)<i>b</i>(<i>p</i>)
+</center>
+
+<p>
+which implies that <i>a</i>(<i>n</i>)&nbsp;=&nbsp;<i>A</i>(<i>n</i>) as
+required.
+</blockquote>
+
+<p>
+The preceding lemma states, in particular, that when the algorithm terminates,
+<i>a</i>(<i>f</i>)&nbsp;=&nbsp;<i>A</i>(<i>f</i>); i.e. that the score of the
+optimal complete path is, in fact, computed by the algorithm.  The correctness
+of the A* search algorithm is given by the following
+
+<p>
+<blockquote>
+<b>Theorem</b>.  <i>When the A* algorithm terminates, every complete path with
+a score greater than or equal to tA</i>(<i>f</i>)<i> is contained in G, the
+subgraph built by the algorithm</i>.
+
+<p>
+<b>Proof</b>.  On termination <i>f</i>  is in <i>C</i>, and every node,
+<i>p</i>, in <i>O</i> is such that
+<i>a</i>(<i>p</i>)<i>b</i>(<i>p</i>)&nbsp;&lt;&nbsp;<i>tA</i>(<i>f</i>).
+(By Lemma 2, since <i>f</i>  is in <i>C</i>, it must be that
+<i>a</i>(<i>f</i>)&nbsp;=&nbsp;<i>A</i>(<i>f</i>); hence
+<i>a</i>(<i>p</i>)<i>b</i>(<i>p</i>)&nbsp;&lt;&nbsp;<i>tA</i>(<i>f</i>).)
+
+<p>
+Consider a complete path in <i>G</i>* with a score
+<i>S</i>&nbsp;&gt;=&nbsp;<i>tA</i>(<i>f</i>).  Suppose, in order to
+produce a contradiction, that this path does not exist in <i>G</i> upon
+termination.  It must, then, be that one of the nodes on the path is
+open.  Let <i>n</i> be such an open node.  Necessarily,
+<i>n</i>&nbsp;&lt;&gt;&nbsp;<i>r</i> since <i>r</i> was expanded on the
+first iteration.  Let <i>p</i> be the first open node on an optimal path
+from <i>r</i> to <i>n</i> and let <i>m</i> be its immediate predecessor on
+that optimal path.  (<i>m</i> is necessarily closed).  Let <i>s</i> be the
+score of the highest scoring edge connecting <i>m</i> and <i>p</i>.
+
+<p>Using Lemma 2, the update formula of the expansion of node <i>m</i> and
+the fact that <i>m</i> and <i>p</i> are on an optimal path it must be that
+
+<p>
+<center>
+<i>A</i>(<i>p</i>)&nbsp;&gt;=&nbsp;<i>a</i>(<i>p</i>)&nbsp;&gt;=&nbsp;<i>sa</i>(<i>m</i>)&nbsp;=&nbsp;<i>sA</i>(<i>m</i>)&nbsp;=&nbsp;<i>A</i>(<i>p</i>);
+</center>
+
+<p>hence <i>A</i>(<i>p</i>)&nbsp;=&nbsp;<i>a</i>(<i>p</i>).  Since
+<i>p</i> is open,
+<i>tA</i>(<i>f</i>)&nbsp;=&nbsp;<i>ta</i>(<i>f</i>)&nbsp;&gt;&nbsp;<i>a</i>(<i>p</i>)<i>b</i>(<i>p</i>)&nbsp;=&nbsp;<i>A</i>(<i>p</i>)<i>b</i>(<i>p</i>).
+From Lemma 1 and the fact that the backward estimate is an overestimate,
+we obtain
+
+<p>
+<center>
+<i>A</i>(<i>p</i>)<i>b</i>(<i>p</i>)&nbsp;&gt;=&nbsp;<i>A</i>(<i>n</i>)<i>b</i>(<i>n</i>)&nbsp;&gt;=&nbsp;<i>A</i>(<i>n</i>)<i>B</i>(<i>n</i>).
+</center>
+
+<p>But the score, <i>S</i>, of the particular path through <i>n</i> under
+consideration is less than the score of the optimal complete path through
+<i>n</i>; therefore
+
+<p>
+<center>
+<i>S</i>&nbsp;&gt;=&nbsp;<i>tA</i>(<i>f</i>
+)&nbsp;&gt;&nbsp;<i>A</i>(<i>n</i>)<i>B</i>(<i>n</i>)&nbsp;&gt;=&nbsp;<i>S</i>
+</center>
+
+<p>
+which is absurd.
+</blockquote>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

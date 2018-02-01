@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:MadCap="http://www.madcapsoftware.com/Schemas/MadCap.xsd" lang="en-US" xml:lang="en-US" data-mc-search-type="Stem" data-mc-help-system-file-name="Documentation.xml" data-mc-path-to-help-system="../" data-mc-target-type="WebHelp2" data-mc-runtime-file-type="Topic" data-mc-preload-images="false" data-mc-in-preview-mode="false" data-mc-toc-path="Command References|MacroModel Command Reference|MacroModel Command File Examples|Command File Examples for Embrace">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link href="../Skins/Default/Stylesheets/Slideshow.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/TextEffects.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Topic.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Components/Styles.css" rel="stylesheet" type="text/css" data-mc-generated="True" /><title>MacroModel Example: Distributed Embrace Calculations</title>
+        <link href="../Resources/Stylesheets/docs.css" rel="stylesheet" />
+        <script src="../Resources/Scripts/custom.modernizr.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/jquery.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.config.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/foundation.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/plugins.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/MadCapAll.js" type="text/javascript">
+        </script>
+    </head>
+    <body><a name="aanchor1529"></a>
+        <MadCap:concept term="Command Reference" /><a name="aanchor1530"></a>
+        <MadCap:concept term="MacroModel" /><a name="mmod_command_examples_1066535316_746848"></a>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="mmod_command_examples_embrace_csearch_copyalgn.htm" xrefformat="{paratext}">Embrace MCMM Conformation Search With COPY/ALGN</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="macromodel_command_referenceTOC.htm" xrefformat="{paratext}">MacroModel Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="mm_protein_loop.htm" xrefformat="{paratext}">Protein Loop Construction with MacroModel</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+        <h1 class="Title">MacroModel Example: Distributed Embrace Calculations</h1>
+        <p>Any Embrace job may be distributed across a number of processors. There are two methods for distributing Embrace jobs: by specifying multiple processors when running the job (external distribution), or by adding an <span class="CodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_nprc">NPRC</a></span> opcode to the <code>.com</code> file (internal distribution). Specifying multiple processors requires no changes to the <code>.com</code> file. The examples in this section are for the use of the <span class="CodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_nprc">NPRC</a></span> opcode.</p>
+        <p>To distribute an Embrace job with <span class="CodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_nprc">NPRC</a></span>, add the <span class="CodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_nprc">NPRC</a></span> opcode early in the <code>.com</code> file, such as immediately above the <code>FFLD</code> line. See the description of the <span class="CodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_nprc">NPRC</a></span> opcode for more information. For example,</p><pre>
+ NPRC       2     16      0      0     0.0000     0.0000     0.0000     0.0000
+</pre>
+        <p>would run the job on two processors with 16 ligands processed in each subjob. </p>
+        <p>For energy difference Embrace calculations, the receptor is processed first within the parent process prior to starting up any child processes.</p>
+        <p>There are two restrictions on distributed Embrace jobs. First, the output structure mode, which is controlled by arg3 of the <span class="CodeLink"><a href="opcodes_embrace.htm#opcodes_509685220_mbae">MBAE</a></span> opcode, must be either 0 (complexes only) or 1 (ligands only) and not 2 (receptor, ligands and complexes). Second, distributed Embrace runs may not contain <span class="CodeLink"><a href="opcodes_coordinate.htm#opcodes_509685220_copy">COPY</a></span> and <span class="CodeLink"><a href="opcodes_coordinate.htm#opcodes_509685220_algn">ALGN</a></span> commands to pre-position the ligands. Instead the pre-positioning of the ligands must be accomplished in a separate non-distributed calculation. The output from that calculation is then used as input for the distributed Embrace conformational search calculation.</p>
+        <p>An example command file to align ligands prior to an Embrace conformational search calculation is given below. </p><pre>
+&#160;
+embrace_input.mae
+algn_pv-out.mae
+ READ       0      0      0      0     0.0000     0.0000     0.0000     0.0000
+ WRIT       0      0      0      0     0.0000     0.0000     0.0000     0.0000
+ READ       0      0      0      0     0.0000     0.0000     0.0000     0.0000
+ COPY       0      0      0      0     0.0000     0.0000     0.0000     0.0000
+ BGIN       0      0      0      0     0.0000     0.0000     0.0000     0.0000
+ READ       0      0      0      0     0.0000     0.0000     0.0000     0.0000
+ ALGN       3      1      5      0     0.0000     0.0000     0.0000     0.0000
+ END        0      0      0      0     0.0000     0.0000     0.0000     0.0000
+</pre>
+        <p><span class="CodeLink"><a href="opcodes_file.htm#opcodes_509685220_read">READ</a></span>: The first <span class="CodeLink"><a href="opcodes_file.htm#opcodes_509685220_read">READ</a></span> reads in the receptor.</p>
+        <p><span class="CodeLink"><a href="opcodes_file.htm#opcodes_509685220_writ">WRIT</a></span>: Record the receptor structure in the output structure file.</p>
+        <p><span class="CodeLink"><a href="opcodes_file.htm#opcodes_509685220_read">READ</a></span>: The second <span class="CodeLink"><a href="opcodes_file.htm#opcodes_509685220_read">READ</a></span> reads in the first (reference) ligand.</p>
+        <p><span class="CodeLink"><a href="opcodes_coordinate.htm#opcodes_509685220_copy">COPY</a></span>: Copy the current structure to the reference storage area for use in aligning the ligands.</p>
+        <p><span class="CodeLink"><a href="opcodes_flowcontrol.htm#opcodes_509685220_bgin">BGIN</a></span>: Loop over all remaining ligands in the input structure file.</p>
+        <p><span class="CodeLink"><a href="opcodes_file.htm#opcodes_509685220_read">READ</a></span>: Read in the next ligand structure.</p>
+        <p><span class="CodeLink"><a href="opcodes_coordinate.htm#opcodes_509685220_algn">ALGN</a></span>: Align the current structure with the reference structure by center of mass and moments of inertia (arg1 = 3), weighting atom positions by mass (arg2=1), and write all 4 such alignments to the output structure file (arg3 = 5).</p>
+        <p><span class="CodeLink"><a href="opcodes_flowcontrol.htm#opcodes_509685220_end">END</a></span>: End of loop for aligning the ligands.</p>
+        <p>An example command file is given below for a distributed Embrace conformational search that uses the output of the separate <span class="CodeLink"><a href="opcodes_coordinate.htm#opcodes_509685220_copy">COPY</a></span><code>/</code><span class="CodeLink"><a href="opcodes_coordinate.htm#opcodes_509685220_algn">ALGN</a></span> job above. The file is available at:</p><pre>
+$SCHRODINGER/macromodel-v<i class="UserReplace">version</i>/samples/Examples/dist_algn_embrace_mcmm.com
+</pre>
+        <p>The descriptions of most of the opcodes may be read from the corresponding opcodes in the MCMM conformational search example given above, in <a class="TopicLink MCXref xref xrefTopicLink" href="mmod_command_examples_embrace_csearch_MCMM.htm#mmod_command_examples_1066535316_746612" xrefformat="{paratext}">Embrace MCMM Conformational Search</a>.</p><pre>
+dist_algn_embrace_mcmm.mae
+dist_algn_embrace_mcmm-out.mae
+# arg2 of NPRC must be a multiple of 4 since each search is seeded by 4 structures
+ NPRC       2      4      0      0     0.0000     0.0000     0.0000     0.0000
+ FFLD      11      1      0      0     1.0000     0.0000     0.0000     0.0000
+ SOLV       3      1      0      0     0.0000     0.0000     0.0000     0.0000
+ EXNB       0      0      0      0     0.0000     0.0000     0.0000     0.0000
+ BDCO       0      0      0      0    89.4427 99999.0000     0.0000     0.0000
+ MSYM       0      0      0      0     0.0000     0.0000     0.0000     0.0000
+#Turn on MBAE Conformational Searching (arg2 = 1) 
+# in Energy Difference mode (arg1 = 1) 
+ MBAE       1      1      1      0     0.0000     0.0000     0.0000     0.0000
+#Each search will have 12 steps in it.
+ MCMM      12      0      0      0     0.0000     0.0000     0.0000     0.0000     
+#Change a relatively small number of torsions (between 1 and 4) in each move.
+ MCNV       1      4      0      0     0.0000     0.0000     0.0000     0.0000
+ MCSS       2      0      0      0   500.0000     0.0000     0.0000     0.0000
+#For MCOP 
+# arg1 = 1 means printout something for each conformation generated
+# arg3 is set to a large value to avoid spurious lines
+#      in the table at the end of the log file.
+# arg6 = 1.0 means save only the lowest energy receptor structure.
+ MCOP       1      0  10000      0     0.0000     1.0000     0.0000     0.0000
+ DEMX       0      0      0      0  1000.0000     0.0000     0.0000     0.0000
+# Note that unlike the combined COPY/ALGN-MBAE job SUBS arg2 is 0 since we 
+# have not issued a RWND command
+ SUBS       0      0      0      0     0.0000     0.0000     0.0000     0.0000
+ READ       0      0      0      0     0.0000     0.0000     0.0000     0.0000
+#Use AUTO to set up the MCMM conformational search but arg6 must be 0.0
+# or absent because the search of the receptor is not regarded as 
+# part of a serial search.
+ AUTO       0      0      0      0     0.0000     0.0000     0.0000     0.0000
+ MINI       1      0   2000      0     0.0000     0.0000     0.0000     0.0000
+#Prepare for searches of ligands and complexes.
+#Use AUTO to set up the MCMM conformational search but arg6 must be 1.0
+# because the searches for each ligand and each ligand-receptor complex
+# is regarded as part of a serial search. 
+ AUTO       0      0      0      0     0.0000     1.0000     0.0000     0.0000
+# Optional search command for ligands and complexes.
+# Each search will have 12 steps in it (it may differ from the previous one).
+ MCMM      12      0      0      0     0.0000     0.0000     0.0000     0.0000     
+ BGIN       0      0      0      0     0.0000     0.0000     0.0000     0.0000
+#For MCOP 
+# arg1 = 1 means printout something for each conformation generated
+# arg3 is set to a large value to avoid spurious lines
+#      in the table at the end of the log file.
+# arg6 = 2.0 means save structures for the 2 lowest energy conformers 
+#      for each complex.
+# arg7 = 4.0 means use the 4 input poses from the COPY/ALGN proceedure
+#        to seed the search for each ligand.
+ MCOP       1      0  10000      0     0.0000     2.0000     4.0000     0.0000
+ READ       0      0      0      0     0.0000     0.0000     0.0000     0.0000
+ MINI       1      0   2000      0     0.0000     0.0000     0.0000     0.0000
+ END        0      0      0      0     0.0000     0.0000     0.0000     0.0000
+#turn MBAE off.
+ MBAE      -1      0      0      0     0.0000     0.0000     0.0000     0.0000
+</pre>
+        <p><span class="CodeLink"><a href="opcodes_misc_debug.htm#opcodes_509685220_nprc">NPRC</a></span>: Distribute the calculation. Arg1 is the number of processors to use and arg2 is the number of input structures to process in each subjob. Arg2 should be a multiple of 4 for ligands prepared with <span class="CodeLink"><a href="opcodes_coordinate.htm#opcodes_509685220_algn">ALGN</a></span> so that all four alignments of each ligand are sent to the same child process.</p>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft"><span class="NavText">◀ <a class="NavLink MCXref xref xrefNavLink" href="mmod_command_examples_embrace_csearch_copyalgn.htm" xrefformat="{paratext}">Embrace MCMM Conformation Search With COPY/ALGN</a></span>
+                </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="macromodel_command_referenceTOC.htm" xrefformat="{paratext}">MacroModel Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="mm_protein_loop.htm" xrefformat="{paratext}">Protein Loop Construction with MacroModel</a> ▶</span>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

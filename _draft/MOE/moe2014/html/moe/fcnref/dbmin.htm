@@ -1,0 +1,199 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	dbmin.htm	db_Minimize fcnref
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions db_Minimize, dbv_Minimize>
+
+<meta obsolete db_ComputeMinimize, dbv_ComputeMinimize>
+
+<title>Database Energy Minimization</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>   
+    <a class="fcnlink" href="#db_Minimize">db_Minimize</a> [ 'filename', 'src_field', options ]
+
+    where options is:
+
+    [
+        esel		: flag,     // use selected entries only
+        dst_field	: 'field',  // destination molecule field
+        gtest		: num,      // RMS gradient test
+        rebuild		: 'method', // rebuild molecules
+        keep_chirality	: flag,     // preserve existing chirality
+        add_h		: flag      // add H's to minimized mol
+        pot_charge	: flag      // calculate forcefield partial charges
+    ]
+
+    <a class="fcnlink" href="#dbv_Minimize">dbv_Minimize</a> 'mdb_filename'
+
+</pre>
+
+<a name="db_Minimize"></a>
+
+<h2>Description</h2>
+
+<p><tt><span class="fcndef">db_Minimize</span></tt>
+performs potential energy minimization on each
+molecule in a molecular database.  The currently loaded forcefield is used.
+The function can also reconstruct molecules from connection tables.
+All structures are minimized using the <a class="svl" href="mm.htm">MM</a>
+function which also computes the forcefield partial charges.
+
+<p>Arguments to <tt>db_Minimize</tt> are:
+
+<dl>
+
+<dt><tt>'filename'</tt>
+<dd>Filename of the database to be operated
+upon.
+
+<p><dt><tt>'src_field'</tt>
+<dd>Name of the database field that contains the molecules to minimize.
+The type of the field can be <tt>'molecule'</tt> or
+<tt>'char'</tt>.  If the type is <tt>'char'</tt>, it is assumed that
+the field contains valid SMILES strings.
+
+<p><dt><tt>options</tt>
+<dd>Tagged vector with optional attribute-value pairs:
+
+<dl>
+
+<p><dt><tt>esel:flag</tt>
+
+<dd>Determines which entries in the database to operate upon.  If the
+flag is non-zero, only entries that are selected in the Database Viewer
+will be minimized.  If no Database Viewer is open on the given database,
+this flag is ignored.  If the flag is 0, all entries are minimized.
+The default value is 0 (minimize all entries).
+
+<p><dt><tt>dst_field:'field'</tt>
+
+<dd>Specifies the name of the database field into which the minimized
+molecules will be written.  If passed an empty token (<tt>''</tt>),
+the destination field is the same as <tt>src_field</tt>.  If the source
+data type is a SMILES string, the destination field name <i>must</i>
+be different from the source field name.  The default is the empty token
+(overwrite the source field).
+
+<p><dt><tt>gtest:num</tt>
+<dd>Specifies the gradient test to use in energy minimization.
+If the Root Mean Square gradient falls below the given value, energy
+minimization will terminate.  The default value is 1.
+
+<p><dt><tt>rebuild:'method'</tt>
+
+<dd>Specifies the method for rebuilding structures from the molecule's
+connection table.  The possible choices are:
+
+<p>
+<table border="0" cellpadding="5">
+<tr>
+<td><tt>'Minimize'</tt></td>
+<td>Use current 3D coordinates as the starting point.</td>
+</tr>
+<tr>
+<td><tt>'Rebuild3D'</tt></td>
+<td>Rebuild 3D coordinates from scratch.  Current geometry
+is ignored except, perhaps, to establish chirality.</td>
+</tr>
+<tr>
+<td><tt>'Depict2D'</tt></td>
+<td>Rebuild coordinates in 2D using a flat layout algorithm.
+Current geometry is ignored except, perhaps, to establish chirality.</td>
+</td>
+</tr>
+<tr>
+<td><tt>'Corina'</tt></td>
+<td>Use the Corina external program to create 3D coordinates.</td>
+</tr>
+</table>
+
+<p><dt><tt>keep_chirality:flag</tt>
+
+<dd>Dictates whether or not chirality will be preserved.  If the flag is
+non-zero, chiral constraints will be added to the system so as to preserve
+the current chirality of all chiral centers.  The default value is 1
+(preserve chirality).
+
+<p><dt><tt>add_h:flag</tt>
+
+<dd>If the flag is non-zero, hydrogen atoms will be added to the structures
+before minimization.  If the source data type is a SMILES string, hydrogens
+will always be added; i.e. this flag applies only to source fields
+of type <tt>'molecule'</tt>.  The default value is 1 (add hydrogens).
+
+<p><dt><tt>pot_charge:flag</tt>
+
+<dd>If the flag is non-zero, the partial charge of every atom will be
+calculated using the partial charge method appropriate to the current
+forcefield.  The default is 0 (do not calculate charges).
+
+</dl>
+
+</dl>
+
+<p><a name="dbv_Minimize"></a></p><p><hr noshade="noshade" />
+
+<pre>
+<span class="fcndef">dbv_Minimize</span> 'mdb_filename'
+</pre>
+
+<p>Displays the Database Minimize panel which is used to run the
+<tt>db_Minimize</tt> function.  If the given filename is null or an empty
+token, the user is prompted to select a database.
+
+<p><b>Important!</b> <tt>db_Minimize</tt> and <tt>dbv_Minimize</tt>
+replace the functions <tt>db_ComputeMinimize</tt> and
+<tt>dbv_ComputeMinimize</tt> which are now obsolete.
+
+<h2>See Also</h2>
+   <a href="../../apps/emin.htm">Energy Minimization</a>
+
+<p>
+   <a class="svl" href="mm.htm">MM</a><br />
+   <a class="svl" href="potfcn.htm">Potential</a>
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+

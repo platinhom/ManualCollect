@@ -1,0 +1,785 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!    /proteins/proprop.htm        Protein Properties Calculator
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Protein Properties Calculator</title>
+<meta panel Protein Properties Calculator>
+
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<ul>
+<li><a href="#Overview">Overview and Methods</a>
+</li><li><a href="#Props">Listing of Calculated Protein Properties</a>
+</li><li><a href="#Run">Running the Application</a>
+  <ul>
+    <li><a href="#settings">Application Settings</a>
+    </li><li><a href="#report">Report</a>
+    </li>
+  </ul>
+
+</li><li><a href="#Ref">References</a>
+</li>
+</ul>
+
+<p>The MOE Protein Properties application calculates a set of key
+physicochemical protein properties that are of interest in protein
+engineering applications.
+</p>
+
+<h2>Overview and Methods</h2>
+<a name="Overview"></a>
+In many protein engineering applications one seeks to optimize or control the
+physical chemical properties of a protein under a given set of conditions.
+The quantification of some key properties such as &zeta; potential, isoelectric
+point, size and dipole moment are routinely performed in biochemical
+laboratories as an aid to understanding the fundamental behavior of a particular
+protein. However, these measurements are often time-consuming, expensive and
+highly dependent on parameters such as temperature, pH, viscosity and ionic
+strength of the solution.  In order to provide some estimates on the properties
+in question using computational methods, the parameters are generally reduced
+to a measure of the protein size and the net charge <i>Q</i> using classic
+electrostatic theory derived for spheres.
+<p>
+The electrostatic properties play a key role in solution solubility or
+electrophoretic mobility of a given protein and are governed both by the
+protein charge distribution and by the nature of the solvent in the electric
+double layer. This concept was introduced by Helmholtz and arises from the
+presence of surface charges on the protein that is balanced by an excess of
+oppositely charged ions (counter-ions).  As one moves farther away from the
+surface, the ion distribution
+becomes increasingly homogeneous until it behaves
+as a bulk solvent. The layer of counter-ions also acts
+to screen or attenuate surface charges felt further out in solution. Because of
+these effects, the inner layer of solvent molecules and counter-ions surrounding
+the protein are tightly bound and move in concert.  Furthermore, there exists
+an equilibrium distance at which there is a balance between ions that are held
+by electrostatic forces and those that are sheared away due to Brownian motion.
+This characteristic distance is known as the Debye screening length
+[Debye&nbsp;1924].  The Debye length
+is typically on the order of
+tens of angstroms and depends on the ionic strength <i>I</i> of the
+dissolved salts in solution, the permittivity of free space,
+<i>&epsilon;<sub>0</sub></i>, the dielectric constant,
+<i>&epsilon;<sub>r</sub></i>, and the absolute temperature, <i>T</i>:</p>
+
+<div align="center" style="padding:20px 0px 10px 0px;">
+    <img src="proprop/eqn1.png" alt="Formula Debye Length" />
+</div>
+
+where <i>N<sub>A</sub></i> is Avogadro's number, <i>k</i> is the
+Boltzmann constant, and <i>e</i> is
+the electron charge. Additionally, the ionic
+strength <i>I</i> is defined as:
+
+<div align="center" style="padding:20px 0px 10px 0px;">
+    <img src="proprop/eqn2.png" alt="Formula Ionic Strength" />
+</div>
+
+<p>where <i>m<sub>i</sub></i>
+is the mass concentration of the <i>i</i><sup>th</sup> ionic
+species and <i>z<sub>i</sub></i> its valency.
+</p>
+
+<p>
+The Debye length is also called the thickness of the double layer, and
+declines rapidly with increasing ionic concentration.
+For thick double layers, the electrophoretic velocity, <i>U</i>, of a rigid
+particle of radius <i>a</i> in an applied electric field of strength <i>E</i> is
+</p>
+
+<div align="center" style="padding:20px 0px 10px 0px;">
+    <img src="proprop/eqn3.png" alt="Thick layer lectrophoretic mobility" />
+</div>
+
+<p>
+which is the Debye-H&uuml;ckel approximation [Debye and H&uuml;ckel&nbsp;1924].
+<i>&zeta;</i> is the uniform surface potential of the particle, and
+<i>&epsilon;</i> and <i>&eta;</i> are the dielectric permittivity and the
+viscosity of the fluid, respectively. For very thin double layers, the
+limiting approximation is from the Helmholtz-Smoluchowski theory
+[von Smoluchowski&nbsp;1924]:</p>
+
+<div align="center" style="padding:20px 0px 10px 0px;">
+    <img src="proprop/eqn4.png" alt="Thin layer lectrophoretic mobility" />
+</div>
+
+<p>The transition between the two limiting approximations
+is given by Henry's formula
+[Henry&nbsp;1931], valid for all values of the double layer thickness:</p>
+
+<div align="center" style="padding:20px 0px 10px 0px;">
+    <img src="proprop/eqn5.png" alt="Henry function" />
+</div>
+
+<p>where the Henry function f<sub>l</sub> is a function of the
+Debye parameter, <i>&Kappa;</i>, and increases monotonically from
+2/3 to 1.</p>
+
+<p>
+From the Gouy-Chapman-Stern model, the &zeta; potential of a charged particle
+may be determined by estimating the electrostatic potential at the slipping
+plane in the diffuse layer.  The position of this plane depends on the
+mathematical model and on particle size [Yoon&nbsp;1991], assuming it to be one
+Debye length <i>&Kappa;<sup>-1</sup></i> away from the center of the protein.
+Within the commonly used approximation from classic electrostatic theory that
+treats macromolecules as nonconducting spheres with a uniform surface charge,
+the &zeta; potential may be calculated as [Tanford&nbsp;1961]:</p>
+
+<div align="center" style="padding:20px 0px 10px 0px;">
+    <img src="proprop/eqn6.png" alt="Isotropic Zeta potential" />
+</div>
+
+<p>with &epsilon; representing the solvent dielectric, <i>e</i> the electron
+charge, <i>r</i> the salt radius, <i>q</i> the net charge of the molecule, and
+<i>a</i> the radius of the macromolecule.
+</p>
+
+<p>
+The dipole moment &mu; of the protein is computed at a given
+pH-appropriate state as:</p>
+
+<div align="center" style="padding:20px 0px 10px 0px;">
+    <img src="proprop/eqn7.png" alt="Dipole moment calculation" />
+</div>
+
+<p>where <i>q<sub>i</sub></i> is the partial charge of the <i>i</i><sup>th</sup>
+atom and
+<i>r<sub>i</sub></i> is the distance in &Aring; from the protein center of mass.
+The multiplicative constant is used to convert the dipole moment to units of
+Debye.  The partial charge settings are dependent on the charges as assigned by
+the current MOE forcefield settings.
+</p>
+
+
+
+<!-- ====================== Property Listing ============================= -->
+
+<h2>List of Calculated Protein Properties</h2>
+<a name="Props"></a>
+
+<p>The following lists all protein properties calculated by
+the Protein Properties application:</p>
+
+<p>
+<center>
+<table cellpadding="5" cellspacing="5" width="90%" class="titlebar">
+ <tr>
+    <th>Property</th>
+    <th>Units</th>
+    <th>Description</th>
+ </tr>
+ <tr>
+    <td>Protein Mass</td>
+    <td>kDa</td>
+    <td>&nbsp;</td>
+ </tr>
+ <tr>
+    <td valign="top">Debye Screening Length &Kappa;<sup>-1</sup></td>
+    <td valign="top">&Aring;</td>
+    <td>Dependent on the type of salt, the salt concentration,
+        the charge assignment and temperature settings [Debye&nbsp;1924]
+        [Everett&nbsp;1979].
+    </td>
+ </tr>
+ <tr>
+    <td valign="top">Sequence-based pI</td><td valign="top">pH</td>
+    <td>Calculated from the protein sequence according to
+    [Sillero&nbsp;1991] (<i>see also
+    http://isoelectric.ovh.org/files/practise-isoelectric-point.html</i>).
+    </td>
+ </tr>
+ <tr>
+    <td valign="top">Coordinate-based pI</td><td valign="top">pH</td>
+    <td>Calculated using a modification to the algorithm
+      of [Sillero&nbsp;1991]
+      in that individual amino acid group pKa's estimated from 3D
+      coordinates and local hydrogen bond networks are used. The pKa values
+      are calculated according to the PROPKA algorithm [Li&nbsp;2005].
+    </td>
+ </tr>
+
+ <tr>
+    <td valign="top">Extinction Coefficient</td>
+    <td valign="top">M<sup>-1</sup>cm<sup>-1</sup></td>
+    <td>Optical extinction coefficient at 280 nm based on
+      the method described by
+      Gill and von Hippel [Gill&nbsp;1989].
+    </td>
+ </tr>
+
+ <tr>
+    <td valign="top">Radius of Gyration</td>
+    <td valign="top">&Aring;</td>
+    <td>Calculated as the root mean square
+     distance of the molecule atoms from the center of mass of the protein.
+    </td>
+ </tr>
+
+ <tr>
+    <td valign="top">Hydrodynamic Radius</td><td valign="top">&Aring;</td>
+    <td>Calculated from the diffusional properties of the
+    macromolecule, and is indicative of the apparent size of the dynamic
+    hydrated/solvated particle.
+    </td>
+ </tr>
+
+ <tr>
+    <td valign="top">Sedimentation Constant</td><td valign="top">s</td>
+    <td>Used to characterize
+      sedimentation processes such as centrifugation and has the dimension
+      of time (in seconds) expressed in svedbergs. One svedberg is defined
+      to be
+      10<sup>-13</sup> seconds.  This quantity assumes a fixed buoyancy in water
+      [Noggle&nbsp;1989].
+    </td>
+ </tr>
+
+ <tr>
+    <td valign="top">Eccentricity</td><td>&nbsp;</td>
+    <td> A shape descriptor based on the ratio of the two principal components.
+    A value of 1.0 represents a perfect sphere, a value of 0, a linearized
+    protein.
+    </td>
+ </tr>
+
+ <tr>
+    <td valign="top">Helicity</td><td>%</td>
+    <td> Percentage of residues with helical secondary structure assignment.
+    </td>
+ </tr>
+
+ <tr>
+    <td valign="top">VdW Surface Area</td>
+    <td valign="top">&Aring;<sup>2</sup></td>
+    <td>Water accessible surface area of a protein.</td>
+ </tr>
+
+ <tr>
+    <td valign="top">Hydrophobic Surface Area</td>
+    <td valign="top">&Aring;<sup>2</sup></td>
+    <td>Water accessible surface area of hydrophobic atoms of a protein.</td>
+ </tr>
+ <tr>
+    <td valign="top">Hydrophilic Surface Area</td>
+    <td valign="top">&Aring;<sup>2</sup></td>
+    <td>Water accessible surface area of hydrophilic atoms of a protein.</td>
+ </tr>
+ <tr>
+    <td valign="top">VdW Volume</td>
+    <td valign="top">&Aring;<sup>3</sup></td>
+    <td>Estimate of the protein volume including a water solvation shell.</td>
+ </tr>
+
+ <tr>
+    <td valign="top">Mobility</td>
+    <td valign="top">cm<sup>2</sup>/Vs</td>
+    <td>Indicative of the
+      velocity of migration of the protein during an electrophoretic separation
+      for a given electric potential.  It is dependent on the &zeta;
+      potential, the Henry constant, and solvent viscosity and dielectric
+      [Morrison&nbsp;1970].
+    </td>
+ </tr>
+
+ <tr>
+    <td valign="top">Henry Function</td><td valign="top">&nbsp;</td>
+    <td>Typically calculated to be
+    1.5*f<sub>l</sub>(&Kappa;&alpha;) and computed
+    according to the method described in Yoon [Yoon&nbsp;1991].
+    </td>
+ </tr>
+
+  <tr>
+    <td valign="top">Frictional Coefficient</td><td valign="top">kg/s</td>
+    <td>The frictional drag coefficient of an individual molecule.
+      This quantity depends on protein size and viscosity
+      [Noggle&nbsp;1989].
+    </td>
+ </tr>
+
+  <tr>
+    <td valign="top">Diffusion Coefficient</td>
+    <td valign="top">cm<sup>2</sup>/s</td>
+    <td>The Stokes-Einstein Diffusion coefficient.  This quantity
+      depends on temperature, protein size and viscosity.
+    </td>
+ </tr>
+
+  <tr>
+    <td valign="top">Net Charge</td>
+    <td valign="top">&nbsp;</td>
+    <td>The formal charge on the protein at a given pH.</td>
+ </tr>
+
+  <tr>
+    <td valign="top">Apparent Charge</td>
+    <td valign="top">&nbsp;</td>
+    <td>The charge on the protein as seen at one
+    Debye length. This property will
+    depend on pH, and salt and ionic strength.
+    </td>
+ </tr>
+
+  <tr>
+    <td valign="top">Dipole Moment</td>
+    <td valign="top">Debye</td>
+    <td>Based on non-uniform distributions of positive and negative charges on
+    the various atoms in a protein. The calculations are dependent on the
+    charges assigned by the forcefield in use.
+    </td>
+ </tr>
+
+  <tr>
+    <td valign="top">Dipole Direction</td>
+    <td valign="top">&nbsp;</td>
+    <td>A unit vector in Cartesian coordinates relative to the center of mass
+    of the system.  This vector points in the direction of the dipole moment.
+    </td>
+ </tr>
+
+ <tr>
+    <td valign="top">Hydrophobicity Moment</td>
+    <td valign="top">&nbsp;</td>
+    <td>Kyte-Doolittle hydrophobicity moment.  A weighted moment calculation
+      where residues are assigned quantities that relate to their intrinsic
+      hydrophobicity [Kyte&nbsp;1982].
+    </td>
+ </tr>
+
+ <tr>
+    <td valign="top">Hydrophobicity Direction</td>
+    <td valign="top">&nbsp;</td>
+    <td>A unit vector in Cartesian coordinates relative to the center of mass
+    of the system that points in the direction of the hydrophobicity moment
+    [Noggle&nbsp;1989].
+    </td>
+ </tr>
+
+ <tr>
+    <td valign="top">Zeta Potential</td>
+    <td valign="top">mV</td>
+    <td>Calculated according to Tanford [Tanford&nbsp;1961].
+      A value of zero indicates aggregation propensity.
+      Typically, values are between -50 and +50 mV.  Values around
+      +/-120 mV indicate that the protein will be stable under the given
+      conditions [Hunter&nbsp;1981].
+    </td>
+ </tr>
+ <tr>
+    <td valign="top">Zeta Dipole Moment</td>
+    <td valign="top">mV</td>
+    <td>Magnitude of the dipole moment of the &zeta; potential
+      [Hunter&nbsp;1981].  This quantity may
+      be estimated experimentally by direct observation of the angular velocity
+      in rotational electrophoresis.  It is a measure of the charge uniformity
+      at the surface of a solvated protein and may be used as a further
+      indicator of particle stability especially when the &zeta; potential is
+      ~0 mV.
+    </td>
+ </tr>
+ <tr>
+    <td valign="top">Zeta Quadrupole Moment</td>
+    <td valign="top">mV</td>
+    <td>Magnitude of the quadrupole moment of the &zeta; potential.  See
+      [Velegol&nbsp;2000] for details.
+      This quantity is on the order of 1 mV and affects linear
+      electrophoresis.
+    </td>
+ </tr>
+</table>
+</center>
+</p>
+
+<p>In addition to protein properties, MOE also calculates properties that
+are relevant on a residue level.  For each residue in the protein, the
+water-accessible surface area
+is calculated and compared to ideal surface area values
+as determined from Gly_X_Gly triplets.  Charges on the individual residues are
+set using the Henderson-Hesselbach equation given their estimated pKa values
+[Campselle&nbsp;1986][Li&nbsp;2005]. This ensures a zero net charge at the
+isoelectric point and allows for smooth transitions as the pH is varied.  It
+should be mentioned that charges assigned in this manner are not suitable for
+molecular mechanics minimization or dynamics.</p>
+
+<!-- ============================ RUNNING ================================ !-->
+
+<h2>Running the Application</h2>
+<a name="Run"></a>
+<p>To open the Protein Properties panel, select
+<span class="menu">MOE | Protein | Properties</span></p>
+
+<div align="center" style="padding-top:15px;padding-bottom:15px;">
+  <img src="proprop/propmain.png" alt="Protein Properties Panel" />
+  <br /><br /><i>Protein Properties Panel</i>
+</div>
+<p>
+The Protein Properties panel provides a graphical interface to
+the protein property
+calculations.  To begin, the protein in question must be specified.
+The property calculations are then initiated by pressing <b>Calculate</b>.
+By default, properties are calculated for
+all proteins available in the system (<b>Receptor</b>).
+The calculated protein and residue properties are displayed
+in the panel in a list, and may be written out as a text file
+by pressing the <b>Report</b> button.  <b>Note:</b> Since the
+protein properties <tt>Net Charge, Dipole Moment, Zeta Potential,
+Zeta Dipole and Zeta Quadrupole</tt> are strongly dependent on the charge
+assignment, they can only be evaluated effectively within a pH scan (press
+the <b>Titrate</b> button).
+By default, MOE performs a titration scan over a pH range of 3 to 13 in 0.5
+step increments.  This protocol may be changed in the <b>Settings</b> panel.
+The results of the pH-dependent properties are shown as plots within the
+specified pH range.</p>
+
+<p>
+<a name="main"></a></p>
+<table width="100%" border="0" cellspacing="5" cellpadding="5">
+<tr>
+ <td valign="top"><b>Chains</b></td>
+ <td valign="top">
+    Specifies the protein
+    chain(s) for which properties are to be calculated.
+    The application screens the current MOE system for possible candidates
+    and lists the individual chain names in the option widget along with chain
+    tags and the collection of all protein chains in the system
+    (<tt>Receptor</tt>).  Inert or non-protein chains are excluded from the
+    calculations. The chain number is shown in case there is no chain
+    name available.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Property</b></td>
+<td valign="top"> Specifies which set of
+properties is to be displayed.
+Scalar properties are listed one per line, with units indicated.
+pH-dependent properties are shown as plots.
+In the latter case, the second <b>Property</b> option menu
+becomes available for choosing which specific plot to display.
+<p>The residue properties are listed in a table:</p>
+<p><img src="proprop/resprops.png" alt="Residue Properties Table" /></p>
+
+  <table cellpadding="5" cellspacing="5">
+    <tr valign="top"><td width="40px">&nbsp;</td>
+      <td><b>Chain</b></td><td>Chain name</td>
+    </tr>
+    <tr valign="top"><td width="40px">&nbsp;</td>
+      <td><b>Res</b></td><td>Residue name as a 3-letter code</td>
+    </tr>
+    <tr valign="top"><td width="40px">&nbsp;</td>
+      <td><b>UID</b></td><td>Residue UID number</td>
+    </tr>
+    <tr valign="top"><td width="40px">&nbsp;</td>
+      <td><b>Type</b></td><td>Residue type:
+        polar, acidic, basic, or hydrophobic (hyd)</td>
+    </tr>
+    <tr valign="top"><td width="40px">&nbsp;</td>
+      <td><b>ASA</b></td><td>
+        Accessible surface area of the residue in square angstroms</td>
+    </tr>
+
+    <tr valign="top"><td width="40px">&nbsp;</td>
+      <td><b>Exp</b></td><td>Exposure of the residue compared to the ideal
+      surface as determined from Gly_X_Gly triplets. The value is given as a
+      percentage.</td>
+    </tr>
+    <tr valign="top"><td width="40px">&nbsp;</td>
+      <td><b>Charge</b></td><td>Residue charge as determined using the
+	  Henderson-Hesselbach equation.</td>
+    </tr>
+    <tr valign="top"><td width="40px">&nbsp;</td>
+      <td><b>pKa</b></td><td>Residue pKa as estimated by the PROPKA method.</td>
+    </tr>
+  </table>
+</td></tr>
+<tr>
+  <td><b>Show Dipole Direction</b></td>
+  <td>If on, then the dipole direction vector is shown in the MOE Window as a
+    blue arrow.
+  </td>
+</tr>
+
+<tr><td colspan="2">
+<div align="center" style="padding-top:15px;padding-bottom:15px;">
+  <img src="proprop/vectors.png" alt="Dipole/Hydrophobicity Direction Vectors" />
+</div>
+</td></tr>
+<tr>
+  <td><b>Show Hydrophobicity Direction</b></td>
+  <td>If on, then the hydrophobicity direction vector is shown in
+    the MOE Window as a green arrow.
+  </td>
+</tr>
+<tr><td colspan="2">
+  The following section describes parameters that drive the values of many of
+  the calculated protein properties. It is therefore recommended to recalculate
+  the property values if these parameters are changed.
+<div align="center" style="padding-top:15px;padding-bottom:15px;">
+  <img src="proprop/conditions.png" alt="Protein Properties Conditions" />
+</div>
+
+</td></tr>
+<tr>
+  <td><b>Salt</b></td>
+  <td>Specifies valid formulae for simple alkaline salts, e.g.
+    'NaCl' or 'MgCl'. </td>
+</tr>
+<tr>
+  <td><b>Salt Concentration</b></td>
+  <td>The molar salt concentration of implicit solvent.</td>
+</tr>
+<tr>
+  <td><b>Temperature</b></td>
+  <td>The temperature, in Kelvin.  The default is 298 K.</td>
+</tr>
+<tr>
+  <td><b>pH</b></td>
+  <td>The pH at which the protein properties are calculated. The default
+  pH is 7.4.</td>
+</tr>
+<tr>
+  <td><b>Viscosity</b></td>
+  <td>The viscosity of the solvent in centipoise (cP).
+    The default is 0.89.</td>
+</tr>
+<tr>
+  <td><b>Dielectric</b></td>
+  <td>The dielectric constant of the implicit solvent.
+   The default is 78 for H<sub>2</sub>O.</td>
+</tr>
+</table>
+
+<p>The status line at the bottom of the panel informs the user
+if changes in the system would require
+recalculation of the properties as presented in the list.</p>
+
+<p style="height:20px;" />
+<a name="settings"></a><h3>Settings</h3>
+
+<p>
+The <b>Protein Properties Settings</b> panel is opened by pressing
+<b>Settings</b> in the bottom of the Protein Properties panel.
+The Settings panel gives access to
+parameters that influence the protein titration scan.
+</p>
+
+<div align="center" style="padding-top:15px;padding-bottom:15px;">
+  <img src="proprop/propsettings.png" alt="Protein Properties Settings" />
+  <br /><br /><i>Protein Properties Settings</i>
+</div>
+
+<table width="100%" border="0" cellspacing="5" cellpadding="5">
+  <tr><td valign="top"><b>Database:</b></td>
+  <td>
+  Specify the output database of the titration scan.  The default
+    is <tt>titration.mdb</tt>.
+  </td>
+  </tr>
+
+  <tr><td><b>Start:</b></td>
+  <td>Specify the starting pH of the titration scan.  The default is 3.0.</td>
+  </tr>
+
+  <tr><td><b>End:</b></td>
+  <td>Specify the end pH of the titration scan. The default is 13.0.</td>
+  </tr>
+
+  <tr><td><b>Step:</b></td>
+  <td>Specify the pH increment for each titration step. The default is
+  0.5.</td>
+  </tr>
+</table>
+
+<a name="report"></a><h3>Report</h3>
+<p>
+A detailed report of all calculated protein and residue properties is
+generated by pressing the <b>Report</b> button.</p>
+
+<div align="center" style="padding-top:15px;padding-bottom:15px;">
+  <img src="proprop/propreport.png" alt="Protein Properties Report" />
+  <br /><br /><i>Properties Report</i>
+</div>
+
+<h2>See Also</h2>
+<p>
+<a href="../moe/pot.htm">Polymer Property Prediction</a><br />
+<a href="../apps/residuepka.htm">Residue pKa and Protonation State Prediction</a>
+</p>
+
+<h2>References</h2>
+<a name="Ref"></a>
+
+<table cellpadding="5" width="100%">
+
+<tr>
+<td valign="top">[Campselle&nbsp;1986]</td>
+<td valign="top">
+Campselle, J.C., Ribeiro, J.M., Sillero, A.;
+Derivation and Use of a Formula to Calculate the Net Charge of Acid-Base
+Compounds. Its Application to Amino Acids, Proteins and Nucleotides;
+<i>Biochem. Edu. 14</i> (<b>1986</b>) 14&ndash;131.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Debye&nbsp;1924]</td>
+<td valign="top">
+Debye, P., and E. H&uuml;ckel;
+Bemerkungen zu einem Satze &uuml;ber die kataphoretische
+Wanderungsgeschwindigkeit suspendierter Teilchen;
+<i>Physik 25</i> (<b>1924</b>) 49&ndash;52.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Everett&nbsp;1979]</td>
+<td valign="top">
+Everett, D.H.;
+Basic Principles of Colloid Science;
+<i>Royal Soc. Chem.</i> (<b>1979</b>) Chapter 3.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Gill&nbsp;1989]</td>
+<td valign="top">
+Gill, S.C., von Hippel, P.H.;
+Calculation of Protein Extinction Coefficients from Amino Acid Sequence Data;
+<i>Analytical Biochemistry 182</i> (<b>1989</b>) 319&ndash;326.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Henry&nbsp;1931]</td>
+<td valign="top">
+Henry, D.C.;
+The cataphoresis of suspended particles. I. The equation of cataphoresis.;
+<i> Proc. R. Soc. A. 133</i> (<b>1931</b>) 106&ndash;129.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Hunter&nbsp;1981]</td>
+<td valign="top">
+Hunter, R.J.;
+Zeta Potential in Colloid Science:  Principles and Applications;
+<i>New York: Academic Press</i> (<b>1981</b>).
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Kyte&nbsp;1982]</td>
+<td valign="top">
+Kyte, J., Doolittle, R.F.;
+<i>J. Mol. Biol.</i> (<b>1982</b>) 105&ndash;132.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Li&nbsp;2005]</td>
+<td valign="top">
+Li, H., Robertson, A.D., Jensen, J.H.;
+Very Fast Empirical Prediction and Rationalization of Protein pKa Values;
+<i>Proteins 61</i> (<b>2005</b>) 704&ndash;721.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Morrison&nbsp;1970]</td>
+<td valign="top">
+Morrison, F.A. Jr;
+Electrophoresis of a particle of arbitrary shape;
+<i>J. Colloid Interface Sci. 34</i> (<b>1970</b>)
+210&ndash;214.
+</td>
+</tr>
+
+
+<tr>
+<td valign="top">[Noggle&nbsp;1989]</td>
+<td valign="top">
+Noggle, J.H.;
+Physical Chemistry 2nd Ed;
+<i>Glenview: Scott, Foresman &amp; Co</i> (<b>1989</b>).
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Sillero&nbsp;1989]</td>
+<td valign="top">
+Sillero, A., Ribeiro, J.M.;
+Isoelectric points of proteins: Theoretical determination;
+<i>Analytical Biochemistry 179</i> (<b>1989</b>) 319&ndash;325.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[von&nbsp;Smoluchowski&nbsp;1921]</td>
+<td valign="top">
+von Smoluchowski, M.;
+Elektrische Endosmose und Str&ouml;mungsstr&ouml;e;
+<i>In: Handbuch der Elektrizit&auml;t und des Magnetismus. BandI</i>
+(<b>1921</b>) 366&ndash;428.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Velegol&nbsp;2000]</td>
+<td valign="top">
+Velegol, D., Feick, J.D., Collins, L.R.;
+Electrophoresis of Spherical Particles with a Random Distribution of Zeta
+Potential or Surface Charge;
+<i>J. Colloid. Interface Sci. 230</i> (<b>2000</b>)
+114&ndash;121.
+</td>
+</tr>
+
+<tr>
+<td valign="top">[Yoon&nbsp;1991]</td>
+<td valign="top">
+Yoon, B.J.;
+Electrophoretic motion of spherical particles with a non-uniform
+charge distribution;
+<i>J. Colloid. Interface Sci. 142</i> (<b>1991</b>) 575&ndash;581.
+</td>
+</tr>
+
+</table>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:MadCap="http://www.madcapsoftware.com/Schemas/MadCap.xsd" lang="en-US" xml:lang="en-US" data-mc-search-type="Stem" data-mc-help-system-file-name="Documentation.xml" data-mc-path-to-help-system="../" data-mc-target-type="WebHelp2" data-mc-runtime-file-type="Topic" data-mc-preload-images="false" data-mc-in-preview-mode="false" data-mc-toc-path="Help|Jaguar Help">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link href="../Skins/Default/Stylesheets/Slideshow.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/TextEffects.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Topic.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Components/Styles.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Resources/Stylesheets/docs.css" rel="stylesheet" type="text/css" /><title>Optimizing to Transition States with Jaguar</title>
+        <script src="../Resources/Scripts/custom.modernizr.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/jquery.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.config.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/foundation.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/plugins.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/MadCapAll.js" type="text/javascript">
+        </script>
+    </head>
+    <body><a name="aanchor4639"></a>
+        <MadCap:concept term="Help Topics" /><a name="aanchor4640"></a>
+        <MadCap:concept term="Jaguar" />
+        <h1>Optimizing to Transition States with Jaguar</h1>
+        <ul>
+            <li value="1"><a href="#summary">Summary</a>
+            </li>
+            <li value="2"><a href="#using">Running Transition State Searches</a>
+            </li>
+            <li value="3"><a href="#recommendations">Recommendations for Transition State Searches</a>
+            </li>
+            <li value="4"><a href="#links">Related Topics</a>
+            </li>
+        </ul>
+        <h2><a name="summary"></a>Summary</h2>
+        <p>Transition state searches are usually more demanding than optimizations to a minimum on the potential energy surface, and are more likely to fail to converge. The success of transition state searches depends on the quality of the initial guess, the initial Hessian, and the search direction.</p>
+        <p>Jaguar provides several options for the search direction in a standard search from a minimum energy point, all of which involve eigenvalues of the Hessian. In addition, Jaguar uses synchronous transit methods for searches between two structures such as the reactant and product in a chemical reaction. By specifying the two structures - and a guess at the transition state if you have it - the search is initially confined to the curvilinear path between the two structures, and subsequently follows the Hessian eigenvector that is closest to the tangent to this path.</p>
+        <p>The search direction is dependent on the quality of the Hessian. If the initial Hessian is not accurate, it can be refined using a selected number of eigenvectors of the Hessian. This refinement involves SCF and gradient calculations for displacements along these modes, which allow more accurate information about the most important modes to be included in the Hessian.</p>
+        <h2><a name="using"></a>Running Transition State Searches</h2>
+        <p>To set up a transition-state search, first choose <span class="GUI">Applications → Jaguar → Transition State Search</span>. The options specific to transition state searches are set in the <span class="GUI">Transition State</span> tab.</p>
+        <p>The method of selecting structures depends on the search method. For a standard search, which you choose by selecting <span class="GUI">Standard</span> under <span class="GUI">Search method</span>, you select the structure from the <span class="GUI">Use structures from</span> option menu at the top of the panel. For LST or QST searches, this menu is not available. Instead, you select the structures in the <span class="GUI">Structures</span> section. If you select <span class="GUI">LST</span>, you must choose the reactant and product structures, both of which must be entries in the Project Table. If you select <span class="GUI">QST</span>, you must select the reactant, product, and transition-state guess structures, all of which must be entries in the Project Table.</p>
+        <p>For the LST method, you can specify how far along the path from reactant (0.0) to product (1.0) the transition state is expected to lie in the <span class="GUI">Initial LST guess</span> text box. The default is halfway (0.5).</p>
+        <p>If you want an accurate Hessian, you can precompute it and read it in, or request the computation of the Hessian. To read the Hessian, choose <span class="GUI">Other</span> from the <span class="GUI">Initial Hessian</span> option menu in the <span class="GUI">Optimization</span> tab; to calculate the Hessian, choose <span class="GUI">Quantum-mechanical</span>.</p>
+        <p>To refine the initial Hessian, select <span class="GUI">Hessian refinement</span>, then enter the number of low-frequency Hessian eigenvectors to be used in the refinement in the <span class="GUI">Low-frequency modes</span> text box.</p>
+        <p>If you are planning to do an IRC scan after your transition state search, set <code>geoconv_mode=standard</code> in the <b>gen</b> section of the input file (choose <span class="GUI">Edit</span> from the <span class="GUI">Settings</span> button menu to open the input file editor).</p>
+        <p>When you have finished making settings, start the job.</p>
+        <h2><a name="recommendations"></a>Recommendations for Transition State Searches</h2>
+        <p>Searching for a transition state is one of the more difficult tasks for molecular modeling software. In contrast to geometry optimization, in which moving downhill in energy to the nearest minimum does not require that any particular path be followed, in transition-state searching it is essential that the correct reaction coordinate be followed uphill to the desired transition state. Over the years we have accumulated experience with transition-state searching to make the following recommendations.</p>
+        <ul>
+            <li value="1">
+                <p>Use the QST search method, in preference to LST or the standard method. The QST method requires the most user effort because it requires three input structures, but it is the most likely to find the desired transition-state structure because these three structures allow the optimizer to make the best choice of Hessian eigenvector to follow.</p>
+            </li>
+            <li value="2">
+                <p>Prepare the three QST input structures carefully. The extra time spent in preparing high-quality input will be more than compensated by reduced calculation time.</p> <ul> <li value="1"><p>Start by building your best guess at the TS structure. Use all of your chemical intuition about how molecular structures change as they undergo reactions. Not only do bonds lengthen and shorten, but bond angles also change as atoms change from planar hybridization to pyramidal or vice versa, and torsional motion occurs to avoid steric clashes or to improve orbital overlap. Make all of the changes that you think will distinguish the TS structure from that of the reactant or product. Another option is to perform a geometry optimization in which you constrain those coordinates whose values you feel that you can estimate fairly well, and let everything else relax. The final structure can be used as your guess at the transition state.</p></li><li value="2"><p>Once you have the guess TS structure, duplicate it twice in the Project Table. Modify the duplicates to form the reactant and product structures. Do not optimize these structures. In order for the QST interpolation scheme to work well, it is essential not to use optimized product or reactant structures, because those structures lie too far away from the transition state structure to provide information about the reaction coordinate. Instead, try to build reactant and product structures that are part of the way downhill from the TS structure. When you modify bond lengths to create the reactant and product structures, the adjustments should be about 0.1 angstrom. When you change bond angles, the adjustments should be about 5 degrees. Torsional changes should be about 10-15 degrees.</p></li></ul></li>
+            <li value="3">
+                <p>List any bonds that are created or broken in a connect section in the input file. This section ensures that the specified coordinates are used by the optimizer, which can greatly reduce the number of steps to find the transition state. Specifying these bonds is critical when bonds are broken or formed. Without this section, bonds that are too far outside the normal range are not generated as internal coordinates, and therefore are not used to guide the search.</p>
+            </li>
+            <li value="4">
+                <p>In the <span class="GUI">Optimization</span> tab of the Jaguar panel, choose <span class="GUI">Quantum Mechanical</span> from the <span class="GUI">Initial Hessian</span> option menu. This is an expensive option, particularly for very large structures, but it also provides the best possible initial Hessian. All of the other initial Hessian algorithms are designed for optimizations, not transition state searches, and in particular the Hessians produced by these algorithms are always positive definite (no negative eigenvalues).</p>
+            </li>
+            <li value="5">
+                <p>Since TS searches are often slow to converge and can sometimes fail to find the desired TS, a two-stage approach can be employed. Use a relatively small basis set and cheap level of theory, like B3LYP/6-31G*, to get a transition state or close to it. Then switch to a more accurate method like M06-2X/cc-pVTZ(-f) for the final refinement. If the transition state found by the cheap method is very different from your starting guess stucture, then it might be a good idea to build new product and reactant structures based on the new transition state structure.</p>
+            </li>
+            <li value="6">
+                <p>For atom-transfer reactions, it is usually better to perform a simple relaxed geometry scan rather than a TS search. This is because the reaction coordinate in this situation is completely dominated by the distance coordinate involving the atom being transferred. If your scan increment is small enough, you can accurately locate the transition state.</p>
+            </li>
+        </ul>
+        <h2><a name="verifying"></a>Verifying the Transition State</h2>
+        <p>Once you have located a transition state, it is a good idea to verify that the transition state actually connects the reactants and products. To do this you should run an IRC (Intrinsic Reaction Coordinate) job — see <a href="irc.html">Jaguar Intrinsic Reaction Coordinate Scans</a> for more information. There are two IRC methods, one in which a set of points is calculated along the reaction coordinate, and a second in which the geometry is optimized from the first point on the reaction coordinate on either side of the transition state. Either method should lead to structures that are closely related to your input reactant and product structures. You should visually inspect both structures (for example, by placing them both in the Workspace and using the Tile feature to display them in separate areas) to verify that the complex you expected is indeed found. If the input reactant and product structures are not at a geometric minimum, you might want to run a geometry optimization on them before doing the comparisons, especially if you choose the second IRC method.</p>
+        <p>Another way of comparing the structures is to use the <a href="../maestro_tools_help/super_panel.html"><span class="GUI">Superposition</span> panel</a>, to superimpose the IRC endpoint structures on the input structures, so that they are in a frame of reference where it is easy to compare them. (This changes the coordinates of the entries by a translation and rotation, so if you need to preserve the coordinates, copy the project entry first.) If the input structure is essentially a van der Waals complex, there could be considerable variation in the positioning of the two molecules that have very small differences in energy. In this case, superposition on the entire complex might give fairly substantial differences between the structures. The individual molecules should superimpose well, however. You could try doing a superposition on one of the molecules of the complex, to see where the other molecule is positioned — it might just be rotated with respect to the first, for example.</p>
+        <p>If one of the end points of the IRC calculation does not match the expected structure, this might indicate that you have a two-step process. As an example, if you are studying the ring opening of cyclobutene to form <i>trans</i>-butadiene, the transition state may actually lead to <i>cis</i>-butadiene, and then there is another step to convert <i>cis</i>-butadiene to <i>trans</i>-butadiene. To check whether you have a two-step process, you should run another transition state search, between the end point of the IRC calculation and the structure it was supposed to match but didn't. So in the example given, you would do a transition state search between <i>cis</i>-butadiene and <i>trans</i>-butadiene. If you find a transition state, then you can check it also. If there is no transition state, and the IRC endpoint is a minimum, this suggests that your input structure isn't close to the minimum.</p>
+        <p>If both end points of the IRC calculation do not match the input structures, it is possible that you have a three-step process, and you found the transition state for the middle step. In that case, you should do a transition state search on each end of the reaction path: from the input product complex to the IRC product end point, and from the input reactant complex to the IRC reactant end point.</p>
+        <h2><a name="links"></a>Related Topics</h2>
+        <ul>
+            <li value="1"><a href="jaguar_panel.html" class="MCXref xref" xrefformat="{paratext}">Jaguar Panel</a>
+            </li>
+            <li value="2"><a href="transition_state_tab.html" class="MCXref xref" xrefformat="{paratext}">Jaguar Panel — Transition State Tab</a>
+            </li>
+            <li value="3"><a href="optimization_tab.html" class="MCXref xref" xrefformat="{paratext}">Jaguar Panel — Optimization Tab</a>
+            </li>
+            <li value="4"><a href="irc.html" class="MCXref xref" xrefformat="{paratext}">Jaguar Intrinsic Reaction Coordinate Scans</a>
+            </li>
+            <li value="5"><a href="../maestro_tools_help/super_panel.html" class="MCXref xref" xrefformat="{paratext}">Superposition Panel</a>
+            </li>
+            <li value="6"><a href="../maestro_help/job_settings.html" class="MCXref xref" xrefformat="{paratext}">Job Settings Dialog Box</a>
+            </li>
+            <li value="7"><a href="../materials_help/probe_scan.html" class="MCXref xref" xrefformat="{paratext}">Probe Scan Panel</a>
+            </li>
+        </ul>
+    </body>
+</html>

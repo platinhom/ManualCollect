@@ -20,7 +20,7 @@ layout: page_small
 ## Amber
 
 - [Amber7](./Amber/amber7.pdf), [Amber8](./Amber/amber8.pdf), [Amber9](./Amber/amber9.pdf), [Amber10](./Amber/Amber10i.pdf)
-- [Amber11](./Amber/Amber11.pdf),[Amber12](./Amber/Amber12.pdf), [Amber14](./Amber/Amber14.pdf), [Amber15](./Amber/Amber15.pdf),  
+- [Amber11](./Amber/Amber11.pdf),[Amber12](./Amber/Amber12.pdf), [Amber14](./Amber/Amber14.pdf), [Amber15](./Amber/Amber15.pdf), [Amber16](./Amber/Amber16.pdf), 
 - [AmberTools12](./Amber/AmberTools12.pdf)
 
 ## MOE
@@ -35,12 +35,13 @@ layout: page_small
 ## Gaussian
 
 - G09W-[Gaussian 09W Help Table of Contents](./Gaussian/G09W/help/g09help.htm), [GaussView 5 Reference Table of Contents](./Gaussian/G09W/help/toc.htm)
+- Official OLd Website for [G09 User Guide](./Gaussian/g09ur/index.htm)
 
 -----------------
 
 ## Matlab
 
-- [Official Document](http://www.mathworks.com/help/index.html) [下](http://hotofmonster.github.io/MATLAB2013B-HELP/Matlab/2013b/help/documentation-center.html)方可选择中文.
+- [Official Document](http://www.mathworks.com/help/index.html) , 下方可选择中文.
 
 ## R
 
@@ -51,8 +52,6 @@ layout: page_small
 --------
 
 ## Softwares
-
-
 
 ### Git related
 
@@ -79,3 +78,7 @@ layout: page_small
 ### Sublime 
 
 - Sublime 3.0 -- [Unofficial Documentation](./IDE/Sublime/sublime-text-unofficial-documentation-3.0/)
+
+### VSCode
+
+- 

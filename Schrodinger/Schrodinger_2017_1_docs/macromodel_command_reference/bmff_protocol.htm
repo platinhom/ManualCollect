@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:MadCap="http://www.madcapsoftware.com/Schemas/MadCap.xsd" lang="en-US" xml:lang="en-US" data-mc-search-type="Stem" data-mc-help-system-file-name="Documentation.xml" data-mc-path-to-help-system="../" data-mc-target-type="WebHelp2" data-mc-runtime-file-type="Topic" data-mc-preload-images="false" data-mc-in-preview-mode="false" data-mc-toc-path="Command References|MacroModel Command Reference">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <link href="../Skins/Default/Stylesheets/Slideshow.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/TextEffects.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Topic.css" rel="stylesheet" type="text/css" data-mc-generated="True" />
+        <link href="../Skins/Default/Stylesheets/Components/Styles.css" rel="stylesheet" type="text/css" data-mc-generated="True" /><title>The BMFF Protocol</title>
+        <link href="../Resources/Stylesheets/docs.css" rel="stylesheet" />
+        <script src="../Resources/Scripts/custom.modernizr.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/jquery.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/require.config.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/foundation.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/plugins.min.js" type="text/javascript">
+        </script>
+        <script src="../Resources/Scripts/MadCapAll.js" type="text/javascript">
+        </script>
+    </head>
+    <body><a name="aanchor7141"></a>
+        <MadCap:concept term="Command Reference" /><a name="aanchor7142"></a>
+        <MadCap:concept term="MacroModel" /><a name="bmff_protocol_3957064207_738153"></a>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft">
+                &#160;
+        </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="macromodel_command_referenceTOC.htm" xrefformat="{paratext}">MacroModel Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight">
+                &#160;
+        </td>
+            </tr>
+        </table>
+        <h1 class="Title">The BMFF Protocol</h1>
+        <p>BMFF (BatchMin Force Field) is an interprocess communication protocol which allows MacroModel to obtain force-field interactions from an external process. In this context, MacroModel is the client and the external process is the server.</p>
+        <p>The purpose of this topic is to provide a functional description of the protocol, rather than to define the underlying implementation details. The current implementation is based on pipes. There is no requirement at present that the server be re-entrant; that is, at present, each client process starts up and terminates its own server process.</p>
+        <p>In the current implementation, the named pipes for communication between MacroModel and the server process are set up in:</p>
+        <ul>
+            <li value="1">
+                <p class="ListPara">The directory named in the environment variable <code>FIFO_LOCATION</code>, if this variable exists;</p>
+            </li>
+            <li value="2">
+                <p class="ListPara">Otherwise, <code>/tmp</code>, if this directory exists;</p>
+            </li>
+            <li value="3">
+                <p class="ListPara">Otherwise, the local directory.</p>
+            </li>
+        </ul>
+        <p>A BMFF server normally looks for its startup files (such as its standard parameter file) in the directory <code>$SCHRODINGER/mmshare-v</code><i class="UserReplace">version</i><code>/data/f</code><i class="UserReplace">nn</i>, where <i>nn</i> is the value used in arg1 of the <span class="OpcodeLink"><a href="opcodes_ffld.htm#opcodes_509685220_ffld">FFLD</a></span> command to invoke the server. However, if the environment variable <code>MMFF_PATH</code> exists, <code>mmff_setup</code> expects to find a valid directory name stored in that variable, and looks for its run-time files there instead.</p>
+        <p>The MacroModel force field continues to be specified by means of the <span class="OpcodeLink"><a href="opcodes_ffld.htm#opcodes_509685220_ffld">FFLD</a></span> command in the command file. In the past (i.e., prior to the implementation of BMFF), the first argument of this command was limited to the values 1 through 5; for example, the value 3 specifies the AMBER force field.</p>
+        <p>BMFF extends this mechanism as follows. If the first argument to the <span class="OpcodeLink"><a href="opcodes_ffld.htm#opcodes_509685220_ffld">FFLD</a></span> command is 10, an external process is started to generate force-field interactions. MacroModel obtains information it needs to initiate, control, and utilize the results of this process from an extended force-field file called <code>f</code><i class="UserReplace">nn</i><code>.fld</code>, where <i>nn</i> is the value of this argument.</p>
+        <p>Values between 10 and 99, inclusive, are reserved for assignment by the MacroModel development team; for example, the value 10 is assigned to the MMFF force-field. Then the MMFF force-field file would be called <code>f10.fld</code>. Customers developing their own in-house applications are free to use values of 100 or greater for <i>nn</i>.</p>
+        <p>The extended force-field file contains, on the first non-blank line, the word <code>Process:</code>, followed by a command line: typically, a process name plus (perhaps) command-line arguments. If the process name contains the character <code>/</code>, the named executable image is used; otherwise, the process with the given name is searched for first in the local directory and, if not found, in the <code>$SCHRODINGER/mmshare-v</code><i class="UserReplace">version</i><code>/data</code> directory.</p>
+        <p>Following the <code>Process:</code> line, there may be one or more <code>Option:</code> lines. These specify command-line options for the server process that the user can invoke by means of arg4 of the <span class="OpcodeLink"><a href="opcodes_ffld.htm#opcodes_509685220_ffld">FFLD</a></span> command. Each <code>Option:</code> line should include an integer followed by one or more strings. If an integer given on an <code>Option:</code> line is specified in arg4 of <span class="OpcodeLink"><a href="opcodes_ffld.htm#opcodes_509685220_ffld">FFLD</a></span>, then the strings will be appended to the command-line when the process is started. Right now, only a single option specified in this manner can be used at run-time. Both the <code>Process:</code> and the <code>Option:</code> lines use free format; their contents consist of strings separated by spaces, but no tabs are allowed. </p>
+        <p>Beyond the first few lines, the extended force-field file follows the plan of a normal MacroModel force-field file. The <code>STR</code>, <code>BND</code>, etc. keywords define the equations which MacroModel is to use internally to describe stretches, bends, etc. MacroModel will call on the server, eventually, to obtain the atoms constituting the interactions and the corresponding parameters. For van der Waals and hydrogen-bonding interactions, the constituent atoms are passed to the server as needed, and the corresponding parameters are passed back whenever the pair-list is updated. Universal constants associated with the various interaction equations are specified on the equation lines for BMFF force-fields; see <code>f10.fld</code> for examples. In a BMFF force-field file, </p>
+        <p>The Main Interaction Section of the file may specify general interactions. If present, these will override the corresponding parameters obtained by the server. Similarly, the Substructure Section may contain overriding parameters for molecular substructures. The substructure section may also specify additional interactions (e.g., remote torsions) not created by the server process. If overriding parameters or added interactions are actually used, a warning message will be printed to the MacroModel log file. The server process may also write to the command file simply by writing to the UNIX standard output.</p>
+        <p>When the nonbonded pair list is updated, MacroModel (the client) passes each interacting atom-pair to the server and receives back the parameters for that pair; if overriding parameters exist for this pair, the server is not called. (If fast VDW processing is in effect, the client-side library stores a table of nonbonded parameters by pair type. In this situation, the server is never contacted for a nonbonded update. Here, this table is not consulted if overriding parameters exist for the pair in question.)</p>
+        <p>Before exiting, MacroModel commands the server to terminate.</p>
+        <table class="NavLink" data-mc-conditions="Default.ScreenOnly">
+            <tr class="NavLink">
+                <td class="NavLeft">
+                &#160;
+        </td>
+                <td class="NavCenter"><span class="NavText"><a class="NavLink MCXref xref xrefNavLink" href="macromodel_command_referenceTOC.htm" xrefformat="{paratext}">MacroModel Command Reference Manual</a></span>
+                </td>
+                <td class="NavRight">
+                &#160;
+        </td>
+            </tr>
+        </table>
+    </body>
+</html>

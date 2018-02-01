@@ -1,0 +1,414 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	alpha.htm	manual page for functions in alpha.c
+!! -->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions iconvex_hull, idelaunay>
+<meta functions ialpha_complex2, ialpha_complex3>
+<!-- FUTURE:
+    <_meta functions ialpha_complex, ialpha_complex2, ialpha_complex3>
+-->
+<title>Convex Hull Functions</title>
+</head>
+
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    facets = <a class="fcnlink" href="#iconvex_hull">iconvex_hull</a> [xs,ys,...]
+    simplices = <a class="fcnlink" href="#idelaunay">idelaunay</a> [[xs,ys,...], weights]
+
+<!-- FUTURE:
+    [faces, links] = ialpha_complex  [[xs,ys,...], weights]
+-->
+    [faces, links] = <a class="fcnlink" href="#ialpha_complex2">ialpha_complex2</a> [[xs,ys,...], weights]
+    [faces, links] = <a class="fcnlink" href="#ialpha_complex3">ialpha_complex3</a> [[xs,ys,...], weights]
+</pre>
+
+<p><ul>where <tt>faces</tt> and <tt>links</tt> are laminated vectors:</ul>
+
+<pre>
+    faces = [size, weight, xs, ys, ...]
+    links = [f, g, attached]
+</pre>
+
+<h2>Description</h2>
+
+These functions calculate the <i>alpha-complex</i> of
+a weighted set of points.  The functions differ in the amount
+of information calculated and returned.
+
+<p>An alpha-complex is a grouping of points in space
+based on their mutual <i> weighted distance</i>.
+If the points have zero weight, their weighted distance is
+their Euclidean distance.
+If the points
+have non-zero weight, it is their Euclidean distance
+less their weights:
+<ol>
+dist<sub>W</sub>(x,y) = dist<sub>Eucl</sub>(x,y) - weight(x) - weight(y)
+</ol>
+Each point, together with its weight, is called a <i>vertex</i>.
+Weights do not need to be positive.
+
+<p>Points in the alpha-complex are organized into sets, called
+<i>faces</i>.  The convex regions of the points of each set must overlap
+only on the region boundaries.  Each face is composed of one or more
+points, up to a maximum of K+1, where K is the dimension of the convex
+region of all points.  A 2-point face is called an <i>edge</i>, a
+K-point face is called a <i>facet</i>, and a (K+1)-point face is called a
+<i>simplex</i>.  In a 3-dimensional space, facets are triangles and
+simplices are tetrahedrons.
+
+<p>The set of facets that belong to exactly one simplex form the
+(unique) <i>convex hull</i> of the vertices.  (All other facets are
+shared by exactly two neighboring simplices.)  Formally, we may include
+in the alpha-complex an additional vertex, <i>Infinity</i>, and an
+additional set of simplices formed by this vertex and the facets of the
+convex hull.  The weight of each such simplex is infinite; its center is
+undefined.  The convex region of points in the convex hull will contain
+all other points from the alpha-complex, either in its interior or on its
+boundary.
+
+<p>Each face in the alpha-complex is characterized by a <i>face center</i>
+and <i>face weight</i>.   The face center is a point in space (with, in
+general, non-integral coordinates) that is equidistant to the vertices
+of the face.  The face weight is such that a vertex that is positioned
+at the face center and whose weight is equal to the face weight has zero
+distance (using the distance formula above) to all vertices that define
+the face.
+
+In the special case that all vertices of a face have zero weight, the
+face center coincides with the center of a ball that contains all the
+face's vertices on its boundary (i.e. the <i>circumball</i> of the
+vertices).  The face weight is then equal to the squared radius of that
+ball.
+
+In the case that vertices of a face do not all have zero weight, but the
+face weight is zero, the balls positioned at the face vertices with
+squared radii equal to the vertex weights will intersect at the face
+center.
+
+<p>Each simplex of the alpha-complex is further characterized by the
+important property that no vertex has smaller distance to the center of
+the simplex than the vertices that define the simplex.
+
+If all vertices have zero weights, then the interior of the circumball
+of each simplex is void of any vertices.  In 2 dimensions, the
+alpha-complex of zero-weight vertices is usually called
+
+<i>Delaunay triangulation</i> or
+<i>closest-point Delaunay triangulation</i>.
+
+<p>The SVL alpha-complex functions operate on integral weights and
+coordinates.  Non-integral values are all rounded to the nearest integral
+value.  To obtain a result for non-integral values, you must scale up
+the input coordinates and weights by a chosen multiplicative factor, and
+scale down the result by the same factor.  Note that the functions work
+most efficiently for values that span a range narrower than
+2<sup>15</sup> and are capable of handling ranges of up to approximately
+2<sup>20..24</sup>.  Values spanning larger ranges will be rounded to
+the maximum available precision, which depends on the relative position
+and order of the input points.
+
+<p>Note that if you scale the input by multiplying the vertex positions
+by M, you must multiply the input vertex weights by M<sup>2</sup>.
+
+To obtain the non-scaled result from the scaled result returned by the
+SVL functions, divide the output face centers by M and divide the output
+face weights by M<sup>2</sup>.
+
+<p><a name="iconvex_hull"></a></p>
+<p><hr noshade="noshade" />
+<pre>
+facets = <span class="fcndef">iconvex_hull</span> [xs,ys,...]
+</pre>
+
+<p>Function <tt>iconvex_hull</tt> returns the facets of the convex hull
+of a set of points of integral coordinates.
+The facets are returned as tuples of point indices.
+
+<p><a name="idelaunay"></a></p>
+<p><hr noshade="noshade" />
+<pre>
+simplices = <span class="fcndef">idelaunay</span> [[xs,ys,...], weights]
+</pre>
+
+<p>Function <tt>idelaunay</tt> returns the simplices of the alpha-complex
+of a set of points of integral coordinates and integral weights.
+The simplices are returned as tuples of point indices.
+The <i>Infinity</i> vertex is assigned index 0.
+
+<p><a name="ialpha_complex3"></a></p>
+<p><a name="ialpha_complex2"></a></p>
+<p><hr noshade="noshade" />
+<pre>
+<!-- FUTURE:
+[faces, links] = ialpha_complex [[xs,ys,...], weights]
+-->
+[faces, links] = <span class="fcndef">ialpha_complex2</span> [[xs,ys,...], weights]
+[faces, links] = <span class="fcndef">ialpha_complex3</span> [[xs,ys,...], weights]
+</pre>
+
+<p>where <tt>faces</tt> and <tt>links</tt> are laminated vectors:
+
+<pre>
+faces = [size, weight, xs, ys, ...]
+links = [f, g, attached]
+</pre>
+
+<!-- FUTURE:
+    <p>Function <tt>ialpha_complex</tt> returns the faces of the alpha-complex
+-->
+    <p>Functions <tt>ialpha_complex2</tt> and <tt>ialpha_complex3</tt>
+    return the faces of the alpha-complex
+
+of a set of points of integral coordinates and integral weights.
+
+<!-- FUTURE: The function returns --> The functions return
+
+a vector of two elements, <tt>faces</tt> and <tt>links</tt>.
+of a set of points of integral coordinates and integral weights.
+
+<p>Vector <tt>faces</tt> is a laminated vector of face sizes (i.e. the
+number of vertices that define a face), face weights and face center
+coordinates.
+
+The N input vertices are always reported as the first N (0-dimensional)
+1-point faces.  The weight of each 1-point face is the negative weight
+of the vertex that defines it.  Duplicate vertices are reported as
+faces of size 0.
+
+<p>Vector <tt>links</tt> is a laminated vector of face indices.
+
+<!-- FUTURE: The function reports --> The functions report
+
+pairs of faces, <i>f</i>, <i>g</i>, such that <i>f</i>
+is a subset of <i>g</i>.  The indices indicate the position of each face
+in the laminated vector <tt>faces</tt>.
+The <i>Infinity</i> vertex is assigned index 0.
+
+In addition,
+
+<!-- FUTURE: the function returns --> the functions return
+
+the <tt>attached</tt> flag,
+which is set to 1 if there is a vertex from <i>g</i> that
+is closer to the center of <i>f</i> than <i>f</i>'s own vertices,
+e.g. when <i>f</i> is the long edge of an obtuse triangle <i>g</i>.
+
+<!-- FUTURE:
+<p>Functions <tt>ialpha_complex2</tt> or <tt>ialpha_complex3</tt> return
+only a subset of the full result returned by function <tt>alpha_complex</tt>.
+-->
+<p>
+
+Function <tt>ialpha_complex2</tt> returns only information about faces
+that are either a vertex or a facet or a simplex.
+
+Function <tt>ialpha_complex3</tt> returns only information about faces
+that are either a vertex or a simplex.
+
+<p><hr noshade="noshade" />
+<p><b>1D Example:</b>
+
+Consider 4 points on the X-axis in the range
+x<sub>1</sub>=10 to x<sub>3</sub>=40:
+
+<pre>
+    svl&gt; x = [10,20,40,30]
+</pre>
+
+The convex hull has two 1-point facets: the two extreme vertices,
+x<sub>1</sub> and x<sub>3</sub>:
+
+<pre>
+    svl&gt; iconvex_hull [x]
+    [1,3]
+</pre>
+
+The 2-point simplices of the Delaunay triangulation are pairs of closest
+neighbors.  In addition, the extreme points pair with the <i>Infinity</i>
+vertex (index 0):
+
+<pre>
+    svl&gt; idelaunay [[x], 0]
+    [ [1,0], [1,2], [2,4], [4,3], [3,0] ]
+</pre>
+
+<p><hr noshade="noshade" />
+<p><b>2D Example:</b>
+
+Consider 4 points in a plane, such that point v<sub>2</sub>=(10,10) lies
+inside the triangle formed by the remaining points v<sub>1</sub>,
+v<sub>3</sub> and v<sub>4</sub>:
+
+<pre>
+    svl&gt; xy = tr [[0,0], [10,10], [0,50] ,[50,0]]
+</pre>
+
+The facets of the convex hull are the edges of the triangle
+(v<sub>1</sub>, v<sub>3</sub>, v<sub>4</sub>):
+
+<pre>
+    svl&gt; iconvex_hull xy
+    [ [4,1], [4,3], [1,3] ]
+</pre>
+
+The simplices of the Delaunay triangulation connect the pairs of the
+convex hull vertices to the vertex v<sub>2</sub>, inside the convex
+hull, or to the <i>Infinity</i> vertex, "outside" the convex hull:
+
+<pre>
+    svl&gt; idelaunay [xy, 0]
+    [ [1,2,4], [1,2,3], [1,0,3], [4,0,3], [1,4,0], [2,4,3] ]
+</pre>
+
+<p>The function <tt>ialpha_complex3</tt> returns information
+about the face weights, face centers and face connectivity:
+
+<pre>
+    svl&gt; [faces, links] = ialpha_complex3 [xy, 0]
+
+    svl&gt; apt write ['{}:\t{}\n', igen l_length faces, tr faces];
+    1:      1 -0 0 0
+    2:      1 -0 10 10
+    3:      1 -0 0 50
+    4:      1 -0 50 0
+    5:      3 850 25 -15
+    6:      3 850 -15 25
+    7:      3 Inf Inf Inf
+    8:      3 Inf Inf Inf
+    9:      3 Inf Inf Inf
+    10:     3 1605.56 38.3333 38.3333
+
+    svl&gt; apt write [ '{}-{} ',links(1), links(2)]; write '\n'
+    4-5 2-5 1-5 3-6 2-6 1-6 3-7 0-7 1-7 3-8 0-8 4-8 0-9 4-9 1-9 3-10 4-10 2-10
+</pre>
+
+For example,  face 5 (the 5<sup>th</sup> laminated element
+of vector <tt>faces</tt>) is a 3-point face (i.e. a simplex)
+with weight 850=29.16<sup>2</sup> (i.e. the circumradius 29.16)
+and center at (25,-15):
+
+<pre>
+...
+    5:      3 850 25 -15
+...
+</pre>
+
+The connectivity of that face is given by the first three laminated
+elements of vector <tt>links</tt>: pairs (4,5), (2,5), and (1,5),
+which indicate that face 5 contains faces (vertices) 4, 2, and 1:
+
+<pre>
+    4-5 2-5 1-5 ...
+</pre>
+
+<p><hr noshade="noshade" />
+<p><b>Nontrivial Example:</b>
+
+Here is how the <tt>ialpha_complex3</tt> function can be used to determine
+which atoms are "accessible" to a probe sphere of radius 1.4.
+(The probe must touch the accessible atoms without intersecting any other
+atoms.)
+
+<p>To find such atoms is straightforward: we first increase the atom
+radius by the radius of the probe, or 1.4.  We then calculate the
+alpha-complex of the atoms with the weight of each atom set to the
+square of the (increased) atom radius.
+
+Any accessible atom is one that participates in
+at least one simplex of nonnegative weight.
+
+<p>We start by getting the positions and radii of the atoms:
+
+<pre>
+    local pos = aPos atoms;				// atom centers
+    local rad = el_VDW_Radius aElement atoms + 1.4;	// atom + probe
+</pre>
+
+<p>We scale up the positions and the radii by a factor of M to maintain
+the accuracy of log<sub>10</sub>M digits (or, more precisely,
+log<sub>2</sub>M bits) after the decimal point:
+
+<pre>
+    const M = 1024;			// round to 1/1024 of an Angstrom
+    local [faces, links] = ialpha_complex3 [M*pos, sqr(M*rad)];
+</pre>
+
+<p>The resulting face centers and weights must then be scaled down,
+again by a factor of M:
+
+<pre>
+    local size = faces(1);			// #of vertices per face
+    local weight = inv sqr M * faces(2);	// face weight
+    local centers = inv M * drop [faces, 2];	// face center
+</pre>
+
+
+<p>We then calculate the facet number, <tt>smx</tt>,
+of all simplices that have nonnegative weight and collect all facet
+numbers, <tt>vtx</tt>, of vertices that participate in such
+simplices:
+<pre>
+    local [f, g, attached] = links;			// face links
+    local smx = x_pack (size == max size and weight &gt;= 0.0);
+    local vtx = f[x_join [g,smx]];	// OR: vtx = f | m_join [g,smx];
+</pre>
+
+<p>Note that while <tt>smx</tt> is a sorted array of
+unique numbers, <tt>vtx</tt>, in general, is unsorted and
+contains duplicates.  The number of duplicates of each vertex
+is equal to the number of simplices of nonnegative weight that
+contain that vertex.
+
+<p>We can now construct a mask, <tt>mask</tt>, to extract the accessible
+atoms with <tt>atoms|mask</tt>.  Alternatively, we can use an
+index, <tt>idx</tt>, to do the same job with <tt>atoms[idx]</tt>:
+
+<pre>
+    local mask = m_join [x_id atoms, vtx];
+    local idx = x_pack mask;
+</pre>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+

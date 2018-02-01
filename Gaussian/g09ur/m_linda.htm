@@ -1,0 +1,128 @@
+<html><head><title>G09 with Linda</title></head><body>
+
+<h1>Using Gaussian 09 with Linda</h1>
+<p> This section describes the process of installing the Linda software you have purchased through Gaussian, Inc. and building a distributed-memory parallel version of Gaussian. It assumes that you have already built and tested the regular version of the program. It also assumes that you have read the normal installation instructions and also that you have access to the Gaussian 09 User&rsquo;s Reference.</p>
+<h2>Linda Parallel Methods</h2>
+<p>HF, CIS=Direct, and DFT calculations on molecules are Linda parallel, including energies, optimizations and frequencies. TDDFT energies and gradients and MP2 energies and gradients are also Linda parallel.  Portions of MP2 frequency and CCSD calculations are Linda parallel, but others are only SMP-parallel, so they see some speedup from using a few nodes but no further improvement from larger numbers of nodes.</p>
+<p>It is always best to use SMP-parallelism within nodes and Linda only between nodes. For example on a cluster of 4 nodes, each with a dual quad-core EM64T, one should use</p>
+<pre>
+%NProcShared=8
+%LindaWorkers=node1,node2,node3,node4
+</pre>
+<p>rather than using more than one Linda worker per node.</p>
+<h2>Installing the Linda Software and Compiling G09/Linda</h2>
+<p>If you have purchased Gaussian binaries, Linda is distributed on the same CD as the Gaussian binaries and no additional installation is necessary. Follow the directions in the file <font color="#009933">README</font> file on the distribution CD.</p>
+<p>If you have purchased Gaussian source code, then Linda is distributed on a separate CD. Follow the directions in the file <font color="#009933">README.source</font> file on the Gaussian source distribution CD to install Linda and compile Gaussian to use Linda.</p>
+<p>In either case, you must run the command <font color="#009933">bsd/install</font> as detailed in the README files and installation instruction sheets.</p>
+<h2>Running Gaussian with Linda</h2>
+<p>The Linda parallel programming model involves a master process, which runs on the current processor, and a number of worker processes which can run on other nodes of the network. So a Gaussian 09/Linda run must specify the number of processors to use, the list of processors where the jobs should be run, and occasionally other job parameters. An environment variable is generally the easiest way to specify this information (as we will see).</p>
+<p>Each of these nodes needs to have some access to the Gaussian 09 directory tree. The recommended configuration is to have G09 on each system that will be used for the parallel job. Note that the Linda binaries need to have the same path on each machine. If this is not feasible, the G09 tree can be made accessible via an NFS-mounted disk which is mounted in an identical location on all nodes.</p>  
+<p>For MP2 calculations, each node must also have some local disk where Gaussian 09 can put temporary files. This is defined as usual via the <font color="#009933">GAUSS_SCRDIR</font> environment variable, which should be set in the <font color="#009933">.cshrc</font> or <font color="#009933">.profile</font> for your account on each node.</p>
+<h2>Configuring Gaussian 09/Linda</h2>
+<p>Gaussian 09 gets configuration information from three primary sources</p>
+<ul>
+<li>
+The Gaussian input file via <b><font color="#0000FF">%Link0</font></b> commands.
+</li>
+<li>
+The <font color="#009933">Default.Route</font> file.
+</li>
+<li>
+The environment variable <font color="#009933">GAUSS_LFLAGS</font>.</li>
+<li>Command line argument to the <strong>g09</strong> command.</li>
+</ul>
+<p>Details about <b><font color="#0000FF">%Link0</font></b> commands and the <font color="#009933">Default.Route</font> file can also be found in the Gaussian 09 User&rsquo;s Reference manual. Entries specific to Gaussian 09/Linda are described below.</p>
+<h3><font size="-1" color="#222222">SPECIFYING THE WORKER COMPUTERS</font></h3>
+<p>The <b><font color="#0000FF">%LindaWorkers</font></b> directive is used to specify computers where Linda worker processes should run. It has the following syntax:</p>
+<pre>
+<b>%LindaWorkers=</b><font face="Times New Roman, Times, serif" size="3"><i>node1</i></font>[:<font face="Times New Roman, Times, serif" size="3"><i>n1</i></font>][,<font face="Times New Roman, Times, serif" size="3"><i>node2</i></font>[:<font face="Times New Roman, Times, serif" size="3"><i>n2</i></font>]] [&hellip;]
+</pre>
+<p>This lists the TCP node name for each node to use. By default, one Linda worker is started on each node, but the optional value allows this to be varied. A worker is always started on the node where the job is started (the master node) whether or not it appears in the node list. <b><font color="#0000FF">%LindaWorkers</font></b> may be combined with <b><font color="#0000FF">%NProcShared</font></b>. In this case, one or more parallel worker processes will be run on each node (the number still determined by the values in <b><font color="#0000FF">%LindaWorkers</font></b>). The value to <b><font color="#0000FF">%NProcShared</font></b> specifies the number of SMP processors/cores to use on each system in the worker node list.</p>
+<p>Do not use the obsolete <b><font color="#0000FF">%NProcLinda</font></b> directive. G09 will compute the total number of Linda workers based on the <b><font color="#0000FF">%LindaWorkers</font></b> input.</p>
+<p>The following directive causes a network parallel job to be run across the specified 5 nodes. Nodes <font face="Times New Roman, Times, serif" size="3"><i>hamlet</i></font> and <font face="Times New Roman, Times, serif" size="3"><i>ophelia</i></font> will each run two worker processes.</p>
+<pre>
+%LindaWorkers=hamlet:2,ophelia:2,laertes,horatio,lear
+</pre>
+<p>The following directives specify that a parallel job will be executed on hosts <font face="Times New Roman, Times, serif" size="3"><i>norway</i></font>, <font face="Times New Roman, Times, serif" size="3"><i>italy</i></font> and <font face="Times New Roman, Times, serif" size="3"><i>spain</i></font>. Nodes <font face="Times New Roman, Times, serif" size="3"><i>norway</i></font> and <font face="Times New Roman, Times, serif" size="3"><i>italy</i></font> will each run one 4-way SMP parallel worker, and <font face="Times New Roman, Times, serif" size="3"><i>spain</i></font> will run two such workers:</p>
+<pre>
+%NProcShared=4 &nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Specifies four-way SMP parallelism.</i></font></font>
+%LindaWorkers=norway,italy,spain:2
+</pre>
+<p>These directives make sense when <font face="Times New Roman, Times, serif" size="3"><i>norway</i></font> and <font face="Times New Roman, Times, serif" size="3"><i>italy</i></font> are 4 processor/core computers, and <font face="Times New Roman, Times, serif" size="3"><i>spain</i></font> is an 8 processor/core computer.</p>
+<p>Note that the <b><font color="#0000FF">%NProc</font></b> directive used in earlier Gaussian versions is obsolete.</p>
+<p>You can also specify these items in two other ways. You can define the following environment variables: </p>
+<pre>$ <strong>export GAUSS_WDEF=&quot;norway,italy,spain:2&quot;</strong> &nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>bash</i></font></font>
+$ <strong>export GAUSS_PDEF=&quot;4&quot;</strong>
+
+% <strong>setenv GAUSS_WDEF &quot;norway,italy,spain:2&quot;</strong> &nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>tcsh</i></font></font> 
+% <strong>setenv GAUSS_PDEF 4</strong> </pre>
+<p>Finally, these items can also be specified on the <strong>g09</strong> command line: </p>
+<pre>$ <strong>g09 -w=&quot;norway,italy,spain:2&quot; -p=&quot;4&quot;</strong></pre>
+
+<h3><font size="-1" color="#222222">SPECIFYING CORES/NODES IN A MULTIPROCESSOR COMPUTER</font></h3>
+<p>The <b><font color="#0000FF">%CPUNumber</font></b> directive specifies which cores/nodes to use for the calculation by node number (beginning with 0). For example, the following directive specifies that the job should use all four cores on a quad-core system:</p> 
+<pre>%CPUNumber=0,1,2,3</pre>
+<h3><font size="-1" color="#222222">SPECIFYING THE AMOUNT OF MEMORY FOR A PARALLEL CALCULATION</font></h3>
+<p>Memory is specified using the <b><font color="#0000FF">%Mem</font></b> Link0 command, just as for serial calculations.</p>
+<h3><font size="-1" color="#222222">USING SSH INSTEAD OF RSH</font></h3>
+<p>By default, Linda uses <b>rsh</b> to communicate between nodes. You can use <b>ssh</b> instead by including the following Link 0 option within the job file: </p>
+<pre>%UseSSH </pre>
+<p>You can also specify <strong>ssh</strong> use in the  <font color="#009933">GAUSS_LFLAGS</font> environment variable:</p>
+<pre>
+% <b>setenv GAUSS_LFLAGS '&hellip; -opt "Tsnet.Node.lindarsharg: ssh"'</b>
+</pre>
+<p>Finally, you can create a configuration file  on the master node named <font color="#009933">.tsnet.config</font> which contains the following line:</p>
+<pre>
+Tsnet.Node.lindarsharg: ssh
+</pre>
+<p>This will cause <b>ssh</b> to be used instead. This file can be placed in your home directory or in the directory from which you launch calculations.</p>
+<p>Note that passwordless <b>ssh</b> logins must already be configured from the master to all worker nodes.</p>
+<h3><font size="-1" color="#222222">SPECIFYING OTHER LINDA OPTIONS</font></h3>
+<p>A few Linda options that are sometime useful are:</p>
+<pre>
+ -v &nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Display verbose messages</i></font></font>
+-vv &nbsp;&nbsp;&nbsp;&nbsp;<font face="Times New Roman, Times, serif" color="#CC0000"><i>Display very verbose messages</i></font></font>
+</pre>
+<p>Use the <font color="#009933">GAUSS_LFLAGS</font> environment variable to set them.</p>
+<p>For example, one could turn on very verbose Linda output using:</p>
+<pre>
+% <b>setenv GAUSS_LFLAGS -vv</b>
+</pre>
+<p>There are many other Linda options but most of them are not used by Gaussian.  Check 
+the Linda manual <a href="../../g_dl/lindamanual.pdf">which can be downloaded here</a>. The <b>-opt</b> form can be used in <font color="#009933">GAUSS_LFLAGS</font> to invoke any valid <font color="#009933">.tsnet.config</font> file directive. Note that Gaussian 09/Linda does not use the native Linda resources <font face="Times New Roman, Times, serif" size="3"><i>minworker</i></font> and <font face="Times New Roman, Times, serif" size="3"><i>maxworker</i></font>.</p>
+<h2>Starting Parallel Gaussian 09 Jobs</h2>
+<p>The <b>g09</b> command is used as usual to initiate a distributed memory parallel a Gaussian 09 job. For a Linda parallel job to execute successfully, the following conditions must be true:</p>
+<ul>
+<li>
+<p>You have already executed the appropriate Gaussian 09 initialization file (<font color="#009933">$g09root/g09/bsd/g09.login</font> or <font color="#009933"> $g09root/g09/bsd/g09.profile</font>). Test this by running a serial Gaussian 09 calculation on the master node.</p>
+</li>
+<li>
+<p>The directory <font color="#009933">$g09root/g09</font> is accessible on all nodes.</p>
+</li>
+<li>
+<p>The <font color="#009933">LD_LIBRARY_PATH</font> environment variable is set (see the G09 install notes) to locate the Linda shared libraries.</p>
+</li>
+<li>
+<p>Local scratch space is available on each node if needed (via <font color="#009933">GAUSS_SCRDIR</font>).</p>
+</li>
+<li>
+<p>All nodes on which the program will run are trusted by the current host. You should be able to login  remotely with the <b>rlogin</b> or <b>ssh</b> command without having to give a password to each of them. Contact your system administrator about configuring security for the nodes in the network.</p>
+</li></ul>
+<p>Calculations can then be started as you would for a serial calculations :</p>
+<pre>
+% <b>g09 input &amp;</b>
+</pre>
+<p>and Gaussian 09 will start the master and worker processes as needed.</p>
+<h2>Monitoring the Calculation</h2>
+<p>You will see processes started on the worker nodes for those links which have been parallelized, e.g. they will have a *<font color="#009933">.exel</font> entry in the main G09 directory. Using the <b>top</b> or other commands on worker nodes will let you see <font color="#009933">lxxx.exel</font> when it starts.</p>
+<p>The relevant measure of performance for a parallel calculation is the elapsed or wall clock time. The easiest way to check this is to use an external monitor like <b>time</b>, <b>times</b>, or <b>timex</b>, e.g.</p>
+<pre>
+% <b>times g09 input &amp;</b>
+</pre>
+<p>which will report elapsed, CPU and system times. Note that the last two are only on the master node and similar amounts of CPU and system time are expended on each node. So the speedup is the ratio of the elapsed time running a serial job and the elapsed time for the parallel job.</p>
+<h2>Specifying Workers Per Node on PPC-based Macs.</h2>
+<p>The <b>-mp</b> <font face="Times New Roman, Times, serif" size="3"><i>n</i></font> option can be used to run Gaussian with Linda across multiple power PC-based Mac OS X and other multiprocessor systems. It specifies the maximum number of Linda processes to be scheduled per node. Set it to 2 when all of the individual nodes are dual processors.</p>
+<p>&nbsp;</p>
+<hr />
+<p class="upd">Last update: 27 April 2016</p>
+</body></html>

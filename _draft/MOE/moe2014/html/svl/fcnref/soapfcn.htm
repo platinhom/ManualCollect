@@ -1,0 +1,539 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!      soapfcn.htm                     SOAP functions
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+
+<meta keywords SOAP />
+<meta functions soap_* />
+
+<title>SOAP Interface Functions</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    soap_spec_{NAME} [] = [input, output, option];
+    result = soap_{NAME} [arg, opt]
+</pre>
+
+<h2>Description</h2>
+
+<p>The MOE/web application server can be used to expose SVL functions to third
+party applications using SOAP (Simple Object Access Protocol). SVL functions
+which are loaded by the server, and start with the prefix <tt>soap_</tt>, are
+made available via the webservice protocol.
+</p>
+<p>To write an SVL function and make it available via SOAP, the following steps
+are required:
+</p>
+<ol>
+
+ <li>Determine the function name, input arguments and output arguments.</li>
+
+ <li>Write the SOAP interface function.</li>
+
+ <li>Restart the MOE/web application server, and instruct it to load the file
+which provides the interface function.</li>
+
+</ol>
+
+<p>The SOAP interface function is written in SVL. The web service protocol
+interchange is handled entirely by the server. In order to conform to web
+standards, however, the definition for the SVL function is tightly constrained,
+in order to ensure compatibility with all conformable third party applications.
+</p>
+<h2>Function Specification</h2>
+
+<p>There are two SVL functions required for each SOAP interface function.
+Both functions must be global. One of the
+functions, which defines the SOAP interface specification (input, output, ...),
+must start with the prefix <tt>soap_spec_</tt>. The other function
+must have the prefix <tt>soap_</tt> and
+is used as the interface name. For example, to implement a SOAP interface
+function called "DoSomething", the two functions would look like this:
+</p>
+<pre>
+    global function soap_spec_DoSomething [] = [input, output, option];
+
+    global function soap_DoSomething [arg, opt]
+        ...
+	return ret;
+    endfunction
+</pre>
+
+<h3>Register function soap_spec_*</h3>
+
+<p>When the MOE/web application server is started, every global SVL function
+that starts with the <tt>soap_spec_</tt> prefix will be called for registration,
+in order to ascertain which SOAP functions are available via the webservice.
+</p>
+<p>The form of the function is:
+</p>
+<pre>
+    soap_spec_{NAME} [] = [input, output, option]
+</pre>
+
+<p>The function is required to describe itself using three return values: 
+</p>
+<blockquote><dl>
+
+<dt><tt>input</tt></dt>
+
+<dd><p>A tagged vector containing a tag for each of
+the input data items. The value associated with each tag is itself
+a tagged vector, containing the following attribute-value pairs:
+    <ul>
+    <li><tt>type</tt>: input data type (token)
+    </li>
+    <li><tt>title</tt>: title of the input data (token)
+    </li>
+    <li><tt>description</tt>: full description of the input data (token)
+    </li>
+    <li><tt>default</tt>: the default value;
+	if set, it also indicates that this input item is optional.<br/>
+	<b>NOTE</b>: the default attribute can only be used for scalar types:
+	byte, int, real, token, boolean, url, url.path, url.fnum, url.content.
+	<br/>All other types of data cannot have a default defined, and they are
+	implicitly optional. They need to be checked in the <a href="#execSoap">
+	soap function</a> against null values and be given defaults when
+	necessary.
+    </li>
+    </ul>
+</p></dd>
+<dd>
+<p>For example:</p>
+<pre>
+    [ thing1: [type: 'int',    description: "First thing" ], 
+      thing2: [type: 'string', description: "Second thing"] ]
+</pre>
+</dd>
+<dt><tt>output</tt></dt>
+
+<dd><p> A tagged vector containing a tag for each of
+the output data items.  The value associated with each tag is itself
+a tagged vector, containing the following attribute-value pairs: 
+    <ul>
+    <li><tt>type</tt>: output data type (token)
+    </li>
+     <li><tt>title</tt>: title of the output data (token)
+    </li>
+    <li><tt>description</tt>: full description of the output data (token)
+    </li>
+    </ul>
+</p></dd>
+<dt><tt>option</tt></dt>
+
+<dd><p>A tagged vector containing the following attribute-value pairs:
+    <ul>
+    <li><tt>title</tt>: The title of the SOAP function. (token)
+    </li>
+    <li><tt>description</tt>: A full description the SOAP function. (token)
+    </li>
+    </ul>
+</p></dd>
+</dl></blockquote>
+
+<p>The types for arguments and return values are specified by tokens, which must
+be selected from the following list:
+</p>
+<blockquote><dl>
+
+<dt><tt>byte</tt>, <tt>int</tt>, <tt>real</tt></dt>
+
+<dd><p>Primitive numeric types, where <tt>byte</tt> is an unsigned 8-bit
+integer, <tt>int</tt> is a 32-bit signed integer, and <tt>real</tt> is a
+double-precision floating point value. While SVL numeric types are
+interchangeable, client programs are directed to ensure that the types are
+cast as necessary.</p></dd>
+
+<dt><tt>string</tt></dt>
+
+<dd><p>A primitive string representation, which is represented in SVL as a
+character vector (i.e. an SVL string, such as "hello", rather than an SVL token,
+such as 'hello'). The <tt>string</tt> type is now whitespace sensitive so
+that it can be used for multi-line data as well.  <tt>text</tt> type is deprecated
+by this extension of <tt>string</tt> type.<br>
+<b>NOTE</b>: <tt>string</tt> type data cannot utilize the <tt>default</tt>
+attribute since an empty string is treated the same as data being missing. When a
+default is needed, use the <tt>token</tt> type instead.
+</p></dd>
+
+<dt><tt>token</tt></dt>
+
+<dd><p>Similar to the <tt>string</tt> type, but it is represented in SVL as a token
+(such as, 'hello').
+</p></dd>
+
+<dt><tt>boolean</tt></dt>
+
+<dd><p>A flag, which is represented in SVL as an integer value of 0 or 1.
+External programs may cast the value to their own internal boolean type.
+</p></dd>
+
+<dt><tt>url</tt></dt>
+
+<dd><p>A URL string, which is represented in SVL as a token and represented
+in a SOAP message under the XML schema data type 
+<a href="http://www.w3.org/TR/2004/PER-xmlschema-2-20040318/#anyURI">anyURI</a>.
+</p></dd>
+
+<dt><tt><a name="url"></a>url.path</tt></dt>
+
+<dd><p>
+Same as the <tt>url</tt> type, but it will be translated into a local file path
+by the MOE/Web server when it is an input. If it is an output value, the server 
+will treat it as a file path and map it into a MOE/Web URL. See the
+<a href="#ComplexExample">example</a> below.
+</p></dd>
+
+<dt><tt>url.fnum</tt></dt>
+
+<dd><p>This type can only be used for input. Similar to <tt>url.path</tt>, it
+causes the MOE/Web server to download the source data from the input URL if it points
+to some remote resources (e.g. websites) and saves locally on the server. If the input
+URL points to an existing file on the server, then no downloading is needed. The server
+then replaces the input URL string with a read-only file handle.
+</p></dd>
+
+<dt><tt>url.content</tt></dt>
+
+<dd><p>This type can only be used for input. Same as <tt>url.fnum</tt>, but it
+replaces the input URL string with the resource content instead. It is represented 
+in SVL as an array of characters.
+</p></dd>
+
+<dt><tt>file</tt></dt>
+
+<dd><p> A string value which in its SVL SOAP function is translated into, or
+	interpreted as, a local file path (SVL token).
+	For a SOAP function client, this value can be one of the following:
+    <ul>
+	<p><li>
+
+	URL: The data is a URL string.
+	    <ul>
+
+		<li>On input, the client must provide the data's web address
+		(its universal resource locator). The URL could point to a
+		file stored on the MOE/web server or to some other resource,
+		e.g. a website such as the RCSB.
+
+		</li><li>If the return data is to be returned using a URL,
+		the data will be saved locally on the server, and its MOE/Web
+		URL returned to the client.
+
+		</li>
+
+	    </ul>
+
+	</li></p><p><li>
+
+	Base64 encoded data stream: The data is run-length 64-bit
+	encoded, and the encoded data is transferred directly to or from
+	the client. This kind of data encoding is needed when transferring
+	binary data through XML.
+
+	</li></p><p><li>
+
+	Raw data stream: The data is transferred directly to or
+	from the client.  When doing so, the data needs be specified within
+	a <a href="http://www.w3.org/TR/REC-xml/#sec-cdata-sect">CDATA
+	section </a> to prevent XML from parsing the data content which
+	may contain special characters, such as <tt>'&lt;'</tt> ,
+	<tt>'&gt;'</tt> and <tt>'&amp;'</tt>, that would otherwise be
+	recognized as XML markup.
+
+	</li></p>
+    </ul>
+This type is introduced to give the client the flexibility of passing either
+stream data or a URL to the SOAP functions, and to specify whether to receive
+the output values in the form of a stream or a file (URL).
+<p>
+Note that the actual content of the data – URL or stream – is transparent to the
+SOAP SVL function. Input arguments of type 'file' will always be converted by
+the MOE/web framework into local files on the server; the path to these files
+will then become the input arguments actually passed to the soap_{name} function.
+In the same way, when returning output values, the soap_{name} function need
+only to return the path of the files into which it stored its output data, with
+MOE/web taking care of serving the right content to the client in accordance
+with what the client has requested.
+</p><p>
+The client can explicitly set the content of an argument (either input or output) of
+type 'file', as the MOE/web framework will automatically and silently add, for
+each such argument, a special 'Content' input argument. For example, for an
+input argument called myArg, the MOE/web framework would automatically add an
+associated input argument called myArgContent. Similarly, for an output called
+out_myArg, the framework would also automatically add an associated output 
+argument called out_myArgContent. The Content argument can have the following
+values: 'text' (the default), 'base64', and 'url'.
+</p><p>
+<b>NOTE:</b> Do not overuse this 'file' type. Only when the SOAP function cannot
+predict whether the input or output data will be large, it may consider applying
+the 'file' type. Otherwise, use other types such as 'string' or 'url.path' instead.
+</p></dd>
+
+<dt><tt>byteArray</tt></dt>
+
+<dd><p>A representation for an array of bytes. In SVL this type is an array of
+characters, but the SOAP/WSDL wrapping scheme uses base64 encoding, so it is
+safe to encode any kind of binary data within this type.</p></dd>
+
+<dt><tt>intArray</tt>, <tt>realArray</tt>, <tt>booleanArray</tt>,
+<tt>stringArray</tt></dt>
+
+<dd><p>Flat vectors of the corresponding primitive types. Multidimensional
+arrays are not supported, nor are arrays with mixed types.</p></dd>
+
+</dl></blockquote>
+
+<a name="execSoap">
+<h3>Execution function soap_*</h3>
+</a>
+
+<p>Each time an SVL SOAP interface function is called, the soap_{NAME} function
+is executed in the following way:
+</p>
+<pre>
+    result = soap_{NAME} [arg, opt]
+</pre>
+
+<p>The <tt>arg</tt> parameter is a tagged vector which contains one entry for
+each of the input defined in soap_spec_{NAME}. The value contained in 
+<tt>arg</tt> is the SVL type corresponding to the input which was requested. 
+For example, input specified as <tt>'int'</tt> or <tt>'real'</tt> will be scalar numeric
+values, while those specified as <tt>'string'</tt> will be SVL strings, and those specified
+as <tt>'intArray'</tt> will be flat vectors of numeric values, etc.
+</p>
+<p>The return value must be a tagged vector, where the values are formulated
+according to an SVL type appropriate to the specified output type. The return
+values may be specified in any order. Extra values will be ignored but missing
+values or values of the wrong type will be reported as an error.
+</p>
+<p>The <tt>opt</tt> parameter is reserved for providing information about the
+execution environment.
+</p>
+<h3>Example</h3>
+
+<p>An example of a very simple SVL SOAP function is as follows:</p>
+
+<pre>
+    global function soap_spec_AddTwoNumbers [] = [[
+
+	number1: [type: 'real', description: "First number"],
+	number2: [type: 'real', description: "Second number"]
+
+    ],[
+
+	    // RETVALS: returns a number as the result.
+
+	addition: [type: 'real', description: "Both numbers added together"]
+    ],[
+
+	    // OPTION: title and description of the function.
+
+	title: 'Add Two Numbers ',
+	description: 'Takes two numbers and adds them together.'
+    ]];
+
+
+    global function soap_AddTwoNumbers [arg, opt]
+
+        local number1 = arg.number1;
+        local number2 = arg.number2;
+
+        return [addition: number1 + number2];
+    endfunction
+</pre>
+
+<a name="ReportProgress"></a>
+<h3>Report Progress</h3>
+<p>
+It is recommended to report progress information when the SOAP function takes
+a long time to run. The syntax for sending progress is as follow:
+<pre>
+    webw_SetProgress [percent, message]
+</pre>
+<tt>percent</tt> is a rough estimate on the percentage of job finished. It
+should be a number between 0 and 1. <br />
+<tt>message</tt> is a string containing extra
+information about the job progress.
+
+<h3><a name="DataStorage"/>Data Storage</h3>
+A dynamic directory is created under the
+<a href="../../install/web_inst.htm#DataStorage">cache directory</a> and is
+guaranteed to be unique between SOAP requests.
+A SOAP SVL function can write files under this directory by using the <b>$DATA</b>
+environment variable and return the result as a MOE/Web URL. Return items need
+to be specified with a proper url type, as described <a href="#url">above</a>,
+for this to work correctly. See below for an example.
+<p>
+In addition, each moebatch worker has an associated temporary directory,
+which is also its <a href="cd.htm">current working directory</a>.
+This directory will be automatically cleaned up by MOE/Web after the SOAP job
+finishes.
+
+<h3><a name="ComplexExample"/>Example</h3>
+<p>An example of a more complex SVL SOAP function is as follows:</p>
+
+<pre>
+    global function soap_spec_DBTest [] = [[		//register function
+
+	mdb: [
+	    type: '<b>url.path</b>',
+	    description: 'Source MDB database URL'
+	]
+
+    ],[
+	mdbTrim: [
+	    type: '<b>url.path</b>',
+	    description: 'Trimed MDB database URL'
+	]
+    ],[
+
+	    // Optional attributes of this function.
+
+	title: 'Trim Database',
+	description: 'Takes a MDB database and trims it to contain only every 10th of entry'
+    ]];
+
+
+    global function soap_DBTest [arg, opt]
+
+	<b>webw_SetProgress</b> [0.1, "DBTest starts"];    // report progress
+
+	    // Database output will be saved to a persistent directory($DATA).
+
+	local dbfile = '<b>$DATA</b>/trim.mdb';
+	local newdb = db_Open [dbfile, 'create'];
+
+	    // arg.mdb has already been translated from an URL to
+	    // server local file path.
+
+	local db = db_Open [arg.mdb, 'read'];
+	apt db_CreateField cat [[newdb], db_Fields db];
+
+	<b>webw_SetProgress</b> [0.4, "copying database entries"];
+
+	local ent = 0, i = 1;
+	while ent = db_NextEntry [db, ent] loop
+	    if i == 10 then
+		db_Write [newdb, 0, db_Read [db, ent]];
+		i = 1;
+	    else
+		i = i + 1;
+	    endif
+	endloop
+
+	<b>webw_SetProgress</b> [0.99, "closing database handle"];
+
+	db_Close newdb;
+	db_Close db;
+
+	    // The file path (dbfile) will be translated
+	    // automatically into an MOE/Web URL.
+
+	return [mdbTrim: dbfile];
+    endfunction
+
+</pre>
+
+<h2>Programming Guidelines</h2>
+
+<p>The following guidelines and caveats should be considered when designing a
+new SVL SOAP function:
+</p>
+<ul>
+
+<li>The input arguments and output results are rigid, and must be declared
+by the function before it is executed. </li>
+
+<li>An SVL SOAP function cannot rely on state. Two subsequent calls to the
+same function should be assumed to be effectively running on two different
+servers, and may even be running simultaneously. Any temporary files, MOE atom
+keys, global variables, etc., should be assumed to be nonexistent when the
+second request executes. The only exceptions are persistent network resources,
+such as files in a shared network directory, or a relational database.</li>
+
+<li>It can generally be assumed that the MOE system will be cleaned up
+automatically after a SOAP function has finished executing, even if it failed.
+For example, atom keys, file handles, monitor tasks, etc., are automatically
+destroyed. It is nonetheless recommended that efforts be taken to ensure that
+all resources are properly released when no longer needed.</li>
+
+<li>SVL function crashes are not necessarily a severe problem. When an
+unhandled SVL error occurs during a SOAP request, the request will fail, the
+error will be logged, and the server will continue on to process the next
+request.</li>
+
+<li>Non-terminating code, such as a loop which waits indefinitely, is a
+severe problem, as the server will lose a MOE token until it is shutdown.</li>
+
+<li>SVL SOAP functions should be used to wrap reliable and well tested code,
+rather than experimental algorithms. It is often a good idea to write a separate
+entrypoint (e.g. by providing a <tt>main&nbsp;[]</tt> function), so that the
+underlying algorithm can be easily tested from within an interactive MOE
+session.</li>
+
+<li>Running a personal MOE/web application server on the same workstation is
+easy, and requires only one MOE token. The console output is an effective source
+of debugging information.</li>
+
+<li>When an SVL SOAP function sends output to the standard error stream (e.g.
+by use of the SVL functions <tt>write</tt>, <tt>print</tt> or <tt>pr</tt>), the
+text is echoed through the server and sent to the log file (which is the console
+by default). This can be used as a debugging tool.</li>
+
+<li>SOAP functions can be called by using third party software, or they can
+be tested using the built-in test page created by the server for each function.
+The directory of test pages can be accessed using the URL
+<tt>http://{hostname}:{port}/soap.html</tt>, where the host name and port are
+decided during the installation process.</li>
+
+</ul>
+
+<h2>See Also</h2>
+
+<a href="../../install/web_inst.htm">Installing and Running MOE/web</a><br />
+<a href="../../moe/moesoap.htm">MOE/web SOAP Service and Functions</a><br />
+<a href="http://www.w3.org/TR/soap12-part1">
+Simple Object Access Protocol (SOAP)</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

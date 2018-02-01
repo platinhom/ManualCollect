@@ -1,0 +1,904 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Energy Minimization</title>
+
+<meta panel Energy Minimize>
+<meta panel Database Minimize>
+
+<meta main_keywords energy minimize, minimization, geometry, optimization />
+<meta main_keywords forcefield, potential setup, refinement, tether />
+<meta main_keywords PM3, AM1, MNDO, MOPAC, Amber, Amber12EHT, CHARMM, MMFF94 />
+<meta main_keywords steepest descent, SD, conjugate gradient, CG />
+<meta main_keywords truncated newton, TN, interpolation />
+
+<meta keywords molecular dynamics, conformations, search />
+<meta keywords periodic boundary conditions, crystal parameters />
+<meta keywords quantum, orbital />
+<meta keywords chiral, distance, angle, dihedral constraint, restraint />
+<meta keywords hamiltonian, root mean square, RMS, test, limit />
+
+<meta keywords four-dimensional energy minimization />
+<meta keywords database energy minimization />
+
+</head>
+
+<body>
+<div id="useMathJax"></div>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+
+<h6 class="h-two">Contents</h6>
+<div id="toc-list"><script>var gman_OrderedListTOC=false; </script></div>
+
+
+<p>
+The Energy Minimize application in MOE calculates atomic coordinates that are
+local minima of a potential energy function.  Energy minimization is useful
+for molecule building, determining low energy conformations, conformational
+search and preparation for molecular dynamics simulations.
+The supported energy functions are:
+</p>
+<ul>
+<li>The current MOE forcefield (e.g. Amber, Amber12EHT, CHARMM, MMFF94, etc.)
+</li><li>
+The MOPAC semi-empirical energy functions (e.g. PM3, AM1, MNDO)
+</li><li>
+Third party quantum mechanical (QM) engines such as Gaussian, GAMESS, ADF, etc.
+</li>
+</ul>
+<p>
+The MOPAC and third party QM energy functions are fundamentally different
+from molecular mechanics forcefields in that they do not view the
+molecular topology as fixed.  This allows them to simulate chemical
+reactions or other structural rearrangements.
+For information on configuring MOPAC to run in MOE,
+please see the section on
+<a href="scf.htm#MOPAC">MOPAC Engine</a>.  For information on configuring
+third party engines, please see the section on the
+<a href="scf.htm#Configuration">appropriate program</a>.
+</p>
+
+<p>In forcefield minimization, the Energy Minimize application is
+capable of calculating constrained geometries through the use of MOE's
+chiral, distance, angle and dihedral restraints.  In addition, atoms may
+be constrained with a tether or fixed during the calculation.
+</p>
+
+
+<a name="Theory"></a>
+<h2>Theory</h2>
+
+<p>
+Energy minimization consists of finding a set of atomic coordinates
+that correspond to a local minimum of the molecular energy function (such
+as the potential energy model).  This is done by applying large scale non-linear
+optimization techniques to calculate a conformation (near to the starting
+geometry) for which the forces on the atoms are zero.
+</p>
+<p>
+<b>Forcefield Optimization</b>.
+Non-linear optimization algorithms typically have the following structure
+[Gill&nbsp;1981].   Let <span class='LaTeX'>\(x_{k}\)</span> denote the vector of
+atomic coordinates at step <span class='LaTeX'>\(k\)</span> of the procedure and let
+<span class='LaTeX'>\(U\)</span>
+be the energy function.  Then,
+</p>
+<ol>
+<li>
+<i>Test for convergence</i>.
+If the convergence criteria are satisfied (see below), then
+<span class='LaTeX'>\(x_{k}\)</span> is returned.
+</li>
+<li>
+<i>Compute the search direction</i>.
+Compute a non-zero vector <span class='LaTeX'>\(p_{k}\)</span> called the
+<i>search direction</i>.
+</li>
+<li>
+<i>Compute the step size</i>.
+Compute a non-zero scalar <span class='LaTeX'>\(a_{k}\)</span>, called the
+<i>step size</i>, for which 
+<span class='LaTeX'>\(U\left(x_{k} + a_{k} p_{k}\right) < U\left(x_{k}\right)\)</span>.
+</li>
+<li>
+<i>Advance</i>.
+Set <span class='LaTeX'>\(x_{k+1} = x_{k}\)</span>
+and
+<span class='LaTeX'>\(k = k+1\)</span> and go to Step 1.
+</li>
+</ol>
+
+<p>
+The step size in Step&nbsp;3 is computed by using a safeguarded bicubic
+interpolation search along the search direction.  In Step&nbsp;1, the
+optimization is terminated when any of the following three conditions
+are satisfied:
+</p>
+
+<ol>
+<li><i>Root Mean Square gradient Test</i>:
+<span class='LaTeX'>\(\left| \nabla U\left(x_{k}\right) \right| < e_{A} \sqrt{n}\)</span>,
+where <span class='LaTeX'>\(e_{A}\)</span> is a predefined
+constant and <span class='LaTeX'>\(n\)</span> is the number of unfixed atoms.
+</li>
+
+<li>
+<i>Iteration Limit Test</i>:
+<span class='LaTeX'>\(k > K\)</span>, where <span class='LaTeX'>\(K\)</span>
+is a predefined upper limit on the maximum number of iterations.
+</li>
+
+<li>
+<i>Progress Tests</i>:
+The following three conditions are simultaneously satisfied:
+
+<span class='LaTeX'>
+\begin{align}
+U\left(x_{k-1}\right) - U\left(x_{k}\right) &< T \left( 1 + \left| U\left(x_{k}\right) \right| \right)
+\\
+\left| x_{k-1} - x_{k} \right| &< T^{1/2} \left( 1 + \left| x_{k} \right| \right)
+\\
+\left| \nabla U\left(x_{k}\right) \right| &\leq T^{1/3} \left( 1 + \left| U\left(x_{k}\right) \right| \right)
+\end{align}
+</span>
+
+<p>In these conditions, <span class='LaTeX'>\(T\)</span> is a predefined constant indicating the
+number of significant figures in <span class='LaTeX'>\(U\)</span> that are required (the
+<i>function test</i>). For example, if <span class='LaTeX'>\(T=10^{-6}\)</span>
+then six figures of accuracy are required.</p>
+</li>
+</ol>
+
+<p>
+If the iteration limit is exceeded then it is typically due to a failure
+of the algorithm.  Note that saddle points satisfy criterion 1; the
+conformation should be perturbed slightly and optimization restarted.
+If criterion 3 is satisfied then it is very likely that a local minimum
+has been achieved.
+</p>
+<p>
+The choice of search direction <span class='LaTeX'>\(p_{k}\)</span> in Step 2 is what
+distinguishes the different nonlinear optimization methods.  MOE uses
+a succession of three methods to effect an energy minimization: Steepest
+Descent (SD), Conjugate Gradient (CG) and Truncated Newton (TN).
+In SD optimization
+<span class='LaTeX'>\(p_{k} = - \nabla U\left(x_{k}\right)\)</span>;
+that is, the search proceeds along the direction of the forces.
+While intuitive, SD is extremely inefficient after a few iterations and
+it is only used when the gradient is extremely high.  When the gradient
+is sufficiently small (but still quite high) the CG method is used.
+The Conjugate Gradient (CG) method improves upon SD by choosing the
+next search direction in a way to not undo the progress accomplished
+by the previous step. CG performs well in strained conditions; however, it
+exhibits poor convergence properties.  Once the gradient is reasonable,
+the TN method is used.
+</p>
+<p>The Truncated Newton (TN) method is the most efficient large-scale
+nonlinear optimization method known.  It exhibits superlinear convergence
+even in highly nonlinear conditions.  The Truncated Newton method attempts
+to use curvature information to improve convergence.  The Newton
+direction <span class='LaTeX'>\(p\)</span> satisfies:</p>
+
+<span class='LaTeX'>
+\begin{equation}
+G_{k} \left(x_{k}\right) p = -\nabla U \left(x_{k}\right)
+\end{equation}
+</span>
+
+<p>where <span class='LaTeX'>\(G_{k}\)</span> is the second derivative, or Hessian, of
+<span class='LaTeX'>\(U\)</span>.
+These equations are called the Newton equations.
+TN solves the Newton equations approximately using an iterative linear
+equation solver. The iterative linear equation solver (based on the Linear
+Conjugate Gradient method) is terminated after a few
+iterations; hence the name Truncated Newton.
+</p>
+<p>
+<b>Quantum Mechanical Optimization</b>.
+Using the external MOPAC semi-empirical QM program [Stewart&nbsp;1993],
+calculations can use PM3, AM1, MNDO or MINDO/3 as the energy model.
+Third party QM programs such as Gaussian or GAMESS (reference below)
+provide a wide range of energy models: semi-empirical, Hartree-Fock,
+post-Hartree-Fock or Density Functional Theory (DFT).  These programs
+are parameterized for much of the periodic table, and can calculate
+geometries,
+transition states, vibrational spectra, thermodynamic quantities and force
+constants for molecules, radicals and ions.
+They also use different optimization methodology
+from MOE and a complete description is beyond the scope of this document.
+</p>
+<p>
+Chemical Computing Group Inc. (CCG) makes no copyright, confidentiality, or
+other intellectual property rights claim regarding the MOPAC 7.0 program which
+has been placed, by its authors, entirely into the public domain. CCG has
+limited its activities in relation to the MOPAC program to providing
+executables for various computer platforms and authoring interoperability
+software. CHEMICAL COMPUTING GROUP INC. AND ITS AFFILIATES DISCLAIM ALL
+WARRANTIES WITH REGARD TO THE MOPAC PROGRAM, INCLUDING ALL IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS: THE MOPAC PROGRAM IS PROVIDED "AS-IS".
+</p>
+
+
+<a name="Run"></a>
+<h2>Running an Energy Minimization</h2>
+
+<p>
+In general, the following steps should be taken to locate an energy minimum:
+</p>
+<ol>
+<p><li>
+Select and configure the forcefield and related parameters with the
+<span class="menu">MOE | Footer | <i>forcefield</i></span> button.
+Configure the periodic system parameters with
+<span class="menu">MOE | Footer | PBC</span>,
+the periodic boundary conditions button (if the crystal parameters
+have been set, the button label will be the current space group).
+</li></p>
+
+<p><li>
+Add Hydrogens and Lone Pair atoms as required using 
+the <span class="menu">MOE | Edit | Build | Hydrogens | Add Hydrogens</span> menu
+items.  
+Alternatively, the Energy Minimize panel can add/remove hydrogen and lone 
+pair atoms as required by the current forcefield.
+</li></p>
+
+<p><li>
+Decide which atoms are to be held fixed in space (i.e. frozen during
+the minimization calculation).  Fixed atoms can be detected using
+<span class="menu">MOE | Select | Potential | Fixed</span> and modified with
+<span class="menu">MOE | Edit | Potential | Fix</span> or
+<span class="menu">MOE | Edit | Potential | Unfix</span>.
+If a large protein is in a highly strained state, it is a good idea to
+fix the backbone or C-alpha atoms.
+Alternatively, the Energy Minimize panel also allows temporary (only in effect
+during minimization) tethers to be set up for common situations.
+</li></p>
+
+<p><li>
+Decide if restraints are to be added to the system (to constrain geometry).
+Use <span class="menu">MOE | Edit | Potential | Restrain</span> to add
+distance, angle and dihedral restraints.  
+Use
+<span class="menu">MOE | Footer | <i>forcefield</i> | Restraints</span>
+to review or delete restraints.
+</li></p>
+</ol>
+
+<p>
+When ready to perform the energy minimization, choose
+<span class="menu">MOE | Compute | Energy Minimize</span> and the Energy
+Minimize window will appear.  The panel has four &quot;modes&quot; each of
+which can be selected by pressing on the vertical mode selector on the
+left side of the window:</p>
+<ul>
+<li><b>General.</b>
+Forcefield minimization (default) with emphasis on tether layers.
+</li><li><b>Domain.</b>
+Forcefield minimization with emphasis on rigid body classes.
+</li><li><b>MOPAC.</b>
+Semi-empirical energy minimization using MOPAC.
+</li><li><b>QM.</b>
+Quantum Mechanics minimization using third party SCF engines.
+</li>
+</ul>
+<p>
+When the Energy Minimize application starts, the <b>General</b> mode is
+selected:
+</p>
+<p align="center">
+<img src="emin/ff_page.png" alt="General" />
+</p>
+
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="top"><b>Input Data</b></td>
+<td valign="top">
+Determines the atoms that will be the primary focus of the minimization.
+This can be an atom set or entries in an input database.
+<b>Note!</b> All atoms in the current system are subject to the calculation
+even if Ligand atoms, for example, are selected in Input Data. Press the
+<b>?</b> to the right of Input Data to briefly flash the chosen atom set
+in the MOE window.
+
+</td></tr>
+<tr>
+<td valign="top"><b>Restraints</b></td>
+<td valign="top">
+If enabled by the checkboxes, temporary restraints may be applied to portions
+of the system during the calculation.  These restraints will be removed upon
+termination of the energy minimization.  All the atoms in the system are
+partitioned into three categories:
+<ol>
+<li><i>Atoms.</i> The &quot;focus&quot; atoms specified in
+<span class="nobr"><b>Input Data</b></span></li>
+<li><i>Interface.</i> Remaining atoms within a specified <b>Distance</b> of
+focus Atoms.</li>
+<li><i>Remainder.</i> Atoms not in the Atoms or Interface categories
+will be fixed unless <b>Other Atoms in System are Inert</b> is
+enabled.  Pressing <b>?</b> will temporarily highlight the atoms
+in this category.</li>
+</ol>
+The <b>Mode</b> selects the type of restraint to apply to either/or the
+Atoms or Interface partitions.
+<ul>
+<li><i>Free.</i> No restraint is applied.</li>
+<li><i>Fix.</i> The coordinates will not be changed.</li>
+<li><i>Rigid.</i> Each molecule (connected component) in the partition
+will be treated as a rigid body.</li>
+<li><i>Backbone.</i> Each molecule's biopolymer backbone (if any) in
+the partition will be treated as a rigid body.</li>
+<li><i>Tether.</i> Each atom is tethered by a harmonic potential to its
+starting coordinates with a force constant of
+<span class='LaTeX'>\(\left(3/2\right) k T / \sigma^2\)</span>
+where <span class='LaTeX'>\(\sigma\)</span> is the value specified by <b>Deviation</b> (in Angstrom).
+Zero means a fixed atom and larger values lead to weaker force constants.</li>
+</ul>
+</td></tr>
+<tr>
+<td valign="top"><b>Forcefield</b></td>
+<td valign="top">
+Summarizes the current forcefield and non-bonded settings.
+Press the configure icon to change the forcefield.
+</td>
+</tr>
+<tr>
+<td valign="top"><b>Cell</b></td>
+<td valign="top">
+Summarizes the current periodicity settings.
+Press the configure icon to change the periodicity.
+</td></tr>
+<tr>
+<td valign="top"><b>Charges</b></td>
+<td valign="top">
+Summarizes the status of the partial charges as well as the status of any
+missing hydrogen or lone pair atoms required by the forcefield.
+Press the configure icon to calculate partial charges.
+</td></tr>
+<tr>
+<td valign="top"><b>Constraints</b></td>
+<td valign="top">
+Optional additional constraints can be applied to the calculation.
+<b>Fixed OH Bond Length</b> will treat all hydroxyl groups as rigid bodies.
+<b>Rigid Water Molecules</b> will treat all H<sub>2</sub>O molecules as
+rigid bodies.
+<b>Planar Systems are Rigid Bodies</b> will treat all <span class='LaTeX'>\(\pi\)</span> systems (connected
+components consisting of atoms connected with bonds of high <span class='LaTeX'>\(\pi\)</span> bond
+order) as rigid bodies.
+</td></tr>
+<tr>
+<td valign="top"><b>Gradient</b></td>
+<td valign="top">
+Energy minimization will be terminated when the root mean square gradient
+falls below the specified value.  The root mean square gradient is the
+norm of the gradient times the square root of the number of (unfixed) atoms.
+In preparation for molecular dynamics, an RMS gradient of 0.1 is sufficient.
+For vibrational analysis, the RMS gradient should be smaller than
+<span class='LaTeX'>\(10^{-5}\)</span>.
+</td></tr>
+</table>
+
+Energy Minimization can also be applied to a database of compounds by
+selecting <span class="nobr"><b>MDB File</b></span> in the
+<span class="nobr"><b>Input Data</b></span> menu.  In this case, additional GUI
+entries become active:
+
+<p align="center">
+<img src="emin/ff_page2.png" alt="General" /></p>
+
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="top"><b>Selected Entries Only</b></td>
+<td valign="top">
+If on, then only the selected entries of the input MDB file will be minimized.
+</td></tr>
+<tr>
+<td valign="top"><b>Add Hydrogens</b></td>
+<td valign="top">
+If on, then hydrogens will be added to each structure prior to minimization.
+</td></tr>
+<tr>
+<td valign="top"><b>Calculate Partial Charges</b></td>
+<td valign="top">
+If on, then the partial charges for each structure will be calculated prior
+to minimization.
+</td></tr>
+<tr>
+<td valign="top"><b>Preserve Existing Chirality</b></td>
+<td valign="top">
+If on, chiral constraints will be added to each structure to preserve its
+initial chirality prior to minimization.
+</td></tr>
+<tr>
+<td valign="top"><b>Source</b></td>
+<td valign="top">
+The name of the database field that contains the structures to be minimized.
+</td></tr>
+<tr>
+<td valign="top"><b>Output</b></td>
+<td valign="top">
+The name of the database field that will contain the minimized structures,
+which will be created if necessary.  If blank, the minimized coordinates
+will overwrite those of the source field.
+</td></tr>
+<tr>
+<td valign="top">
+<img src="emin/plus.png" alt="plus sign" />
+<td valign="top">
+Press the plus icon to specify which additional properties and field names
+should be added to the database when recording the results of each
+minimization.  These vary with each minimization mode.
+</td></tr>
+</table>
+
+<p>
+Press <b>OK</b> to begin the calculation.</p>
+<p><span class="tip">Note!</span> The restraint specifications can be used in a
+number of common energy minimization situations:
+</p>
+<blockquote><table class="titlebar" border="1" width="100%" cellpadding="5">
+<tr>
+<th>Minimize</th>
+<th>Steps</th>
+</tr>
+<tr>
+<td>Light Atoms Only</td>
+<td>
+Clear the selection in the MOE window and select only the light atoms.
+Ensure that Input Data specifies <b>Selected Atoms</b>.  Enable the Atoms
+restraint checkbox and set the Mode to <b>Free</b>.
+</td></tr>
+<tr>
+<td>Sidechain Atoms Only</td>
+<td>
+Clear the selection in the MOE window and select only the sidechain atoms.
+Ensure that Input Data specifies <b>Selected Atoms</b>.  Enable the Atoms
+restraint checkbox and set the Mode to <b>Free</b>.
+</td></tr>
+<tr>
+<td>Ligand in a Rigid Pocket</td>
+<td>
+Ensure that Input Data specifies <b>Ligand</b>.  Disable the Atoms
+restraint and enable the Interface restraint.  Set the Interface Mode
+to <b>Fix</b>.
+</td></tr>
+<tr>
+<td>Ligand in a Flexible Pocket</td>
+<td>
+Ensure that Input Data specifies <b>Ligand</b>.  Disable the Atoms
+restraint and enable the Interface restraint.  Set the Interface Mode
+to <b>Free</b>.  The pocket extent is given by the <b>Distance</b> value and
+remaining atoms will be held fixed.
+</td></tr>
+<tr>
+<td>Independent Ligand</td>
+<td>
+Ensure that Input Data specifies <b>Ligand</b>.  Ensure that both Atoms and
+Interface restraints are disabled.  Enable <b>Other Atoms in System are
+Inert</b>.
+</td></tr>
+</table></blockquote>
+<p>
+The <b>Domain</b> mode has much in common with the <b>General</b> mode.
+The differences are:
+</p>
+<p align="center">
+<img src="emin/dom_page.png" alt="Domain" />
+</p>
+
+<table width="100%" cellpadding="5">
+
+<tr>
+<td valign="top"><b>Tether</b></td>
+<td valign="top">
+Assign a harmonic potential to the atoms specified in
+<span class="nobr"><b>Input Data</b></span>
+using a force constant of
+<span class='LaTeX'>\(\left(3/2\right) k T / \sigma^2\)</span>
+where <span class='LaTeX'>\(\sigma\)</span>
+is the radial standard deviation (at 300&nbsp;K) specified
+in the text field to the right (in Angstroms).
+Zero means a fixed atom and larger values lead to weaker force constants.
+A subset of the atoms may be tethered by selecting it to the right of the
+Tether checkbox.
+</td></tr>
+
+<tr>
+<td valign="top"><b>Rigid&nbsp;Body</b></td>
+<td valign="top">
+Treat some or all of the atoms specified by
+<span class="nobr"><b>Input Data</b></span> as rigid bodies.
+The rigid body mode is specified in the option menu to the right:
+<ul>
+<li>Tag &ndash; Each individual chain tag (<tt>cTag</tt>) is a rigid body.
+</li>
+<li>Domain &ndash; Each individual domain (<tt>rDomain</tt>) is a rigid body.
+</li>
+<li>Chain &ndash; Each individual chain is a rigid body.
+</li>
+<li>Molecule &ndash; Each individual molecule (<tt>aMoleculeNumber</tt>)
+is a rigid body.
+</li>
+<li>Planar &ndash; Each <span class='LaTeX'>\(\pi\)</span> system (connected components of atoms
+connected with high <span class='LaTeX'>\(\pi\)</span> bond order) are rigid bodies.</li>
+<li>Set &ndash;  Each collection of atoms belonging to a set matching the
+specified patterns (to the right) will be separate rigid bodies.  Wildcards
+are allowed in the comma-separated patterns.
+</li>
+</ul>
+</td></tr>
+</table>
+
+The <b>MOPAC</b> mode provides for energy minimization and atomic orbital
+display using the MOPAC program.
+
+<p style="text-align:center">
+<img src="emin/mo_page.png" alt="MOPAC" /></p>
+
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="top"><b>Input Data</b></td>
+<td valign="top">
+Determine the set of atoms that will be subject to the calculation.  Either
+All Atoms, Selected Atoms or an MDB file may be specified.
+Due to the computational demands, only small systems can be handled.
+<b>Note!</b> If Selected Atoms is chosen then all other atoms in the system
+will be ignored.
+If <span class="nobr"><b>Add Hydrogens</b></span> is on, then hydrogen atoms
+will be added or subtracted to fill valence requirements and lone pair
+atoms will be deleted.
+</td></tr>
+<tr>
+<td valign="top"><b>Hamiltonian</b></td>
+<td valign="top">
+Select either of PM3, AM1 or MNDO.
+The next option to the right of the Hamiltonian controls the type of quantum
+mechanical calculation to perform.  RHF means Restricted Hartree-Fock,
+UHF means Unrestricted Hartree-Fock, Biradical means that the system is
+constrained to have two unpaired electrons and Excited means that the system
+is in an excited state.
+<br /><br />The <b>Spin State</b> can be one of
+All (meaning all spin states), Singlet, Doublet, Triplet, Quartet,
+Quintet or Sextet (meaning that the system is constrained to be in
+that specified spin state).
+<br /><br />
+If <b>Increase Peptide Rotational Barrier</b> is on, then the torsion force
+of peptide bonds is increased (to 14 kcal/mol) due to the fact that
+semi-empirical methods routinely underestimate this rotational barrier.
+<br /><br />
+<b>Geometry Optimization</b> is active when <b>Input Data</b> is set to
+<span class="nobr"><b>MDB File</b></span>.  If on, the output energy will
+reflect the minimized structure otherwise it reflects the input structure.
+This provids a means of calculating MOPAC energies for databases.
+<br /><br />
+The <b>Keywords</b> displays the keywords provided to MOPAC.  Additional
+keywords may be specified in the text field below.  Consult the MOPAC
+manual for a description of supported keywords.
+</td></tr>
+<tr>
+<td valign="top"><b>Gradient</b></td>
+<td valign="top">
+Energy minimization will be terminated when the root mean square gradient
+falls below the specified value.  The root mean square gradient is the
+norm of the gradient times the square root of the number of (unfixed) atoms.
+In preparation for molecular dynamics, an RMS gradient of 0.1 is sufficient.
+For vibrational analysis, the RMS gradient should be smaller than
+<span class='LaTeX'>\(10^{-5}\)</span>.
+</td></tr>
+<tr>
+<td valign="top"><b>Output</b></td>
+<td valign="top">
+If <b>Open MOPAC Output File in Text Editor</b> is on, then the (voluminous)
+MOPAC output report is opened in a MOE text editor for inspection.  This is
+useful if the calculation appears to have gone wrong.
+<br /><br />
+If <b>Recalculate Connectivity of Optimized System</b> is on, then after
+the calculation, the topology of the system is recalculated; that is,
+bonds, hybridization, ionization and hint LP values are determined from
+the resulting geometry (typically after a chemical reaction has taken place).
+</td></tr>
+<tr>
+<td valign="top"><b>Plot</b></td>
+<td valign="top">
+If <b>Plot Orbitals</b> is on, then MOE will plot the molecular orbitals
+about the HOMO and LUMO as isosurfaces (with names starting with
+Molecular Orbital).  The <b>Quality</b> parameter determines the smoothness
+of the surfaces; higher values mean smoother surfaces.
+</td></tr>
+</table>
+
+Press <b>OK</b> to begin the calculation.
+<b>Warning!</b> The PM3, AM1 and MNDO Hamiltonians' calculation requirements
+scale as the cube of the number of basis functions.  Still, calculations
+involving drug-sized molecules can be completed reasonably quickly.
+
+<p>
+The <b>QM</b> mode provides for energy minimization using third-party
+Quantum Mechanics programs such as Gaussian, GAMESS, ADF, etc.
+</p>
+
+<p style="text-align:center">
+<img src="emin/qm_page.png" alt="QM" /></p>
+
+<table width="100%" cellpadding="5">
+<tr>
+<td valign="top"><b>Input Data</b></td>
+<td valign="top">
+Determine the set of atoms that will be subject to the calculation.  Either
+All Atoms, Selected Atoms or an MDB file may be specified.
+Due to the computational demands, only small systems can be handled.
+<b>Note!</b> If Selected Atoms is chosen then all other atoms in the system
+will be ignored.
+If <span class="nobr"><b>Add Hydrogens</b></span> is on, then hydrogen atoms
+will be added or subtracted to fill valence requirements and lone pair
+atoms will be deleted.
+</td></tr>
+<tr>
+<td valign="top"><b>Engine</b></td>
+<td valign="top">
+The third party Quantum Mechanics program to use.  By default MOPAC is
+selected (and distributed with MOE).  See
+<a href="scf.htm#Configuration">SCF Wavefunctions Configuration</a>
+for more information.  The configure icon, if supported by the SCF
+engine, provides an easier means of setting the RC settings required to
+run the external application.
+</td></tr>
+<tr>
+<td valign="top"><b>Basis Set</b></td>
+<td valign="top">
+All SCF engines present a variety of basis sets which affect the
+quality and performance of the calculation. This menu contains
+Hamiltonians (e.g. the AM1, PM3 and MNDO methods) with the <tt>MOPAC</tt>
+engine and atomic orbital basis sets (e.g. STO-3G,  6-31G* etc.) otherwise.
+Atomic orbital basis sets can be modified via the <b>Polarization</b>
+and/or <b>Diffuse</b> menus if active.
+</td></tr>
+<tr>
+<td valign="top"><b>Polarization</b></td>
+<td valign="top">
+Polarization functions, if available, can be used to augment the atomic
+orbital basis set and are particularly valuable when hypervalent atoms
+are present.  These are denoted by <tt>*</tt> and <tt>**</tt> in the
+Pople basis sets (e.g. <span class="nobr">6-31G*</span>).  Other basis
+sets will have other designations.
+</td></tr>
+<tr>
+<td valign="top"><b>Diffuse</b></td>
+<td valign="top">
+Diffuse functions, if available, can be used to augment the atomic
+orbital basis set and are particularly valuable when anions or "soft"
+atoms are present.  These are denoted by <tt>+</tt> and <tt>++</tt>
+in the Pople basis sets (e.g. <span class="nobr">6-31+G</span>).  Other
+basis sets will have other designations.
+</td></tr>
+<tr>
+<td valign="top"><b>Multiplicity</b></td>
+<td valign="top">
+Specifies the number of unpaired electrons, and whether the calculation is
+performed as a closed shell, open shell or excited state system. Multiplicity is
+defined as <i>2S+1</i> where <i>S</i> is the spin of the system, and each
+electron has a spin of &frac12;. Common multiplicity values are: 1 = closed
+shell system, 2 = radical ground state, 3 = biradical or first excited state of
+an ordinarily closed-shell system, etc. Closed shell calculations are usually
+done with an RHF (Restricted Hartree-Fock) treatment, open shell calculations
+with UHF (Unrestricted Hartree-Fock).
+</td></tr>
+<tr>
+<td valign="top"><b>Method</b></td>
+<td valign="top">
+The computational method that will be used for the calculation.  These
+include Semi-Empirical, Hartree-Fock, Density Functional Theory and/or
+post-Hartree-Fock options.  Each SCF engine provides a range of methods
+of varying cost and complexity.
+</td></tr>
+<tr>
+<td valign="top"><b>Multi-step Convergence</b></td>
+<td valign="top">
+If on, a multi-step calculation is performed to increase the likelihood of
+successful geometry optimization.  This is described in
+<a href="scf.htm#MultiStep">SCF Wavefunctions</a>.
+</td></tr>
+<tr>
+<td valign="top"><b>Geometry Optimization</b></td>
+<td valign="top">
+<b>Geometry Optimization</b> is active when <b>Input Data</b> is set to
+<span class="nobr"><b>MDB File</b></span>.  If on, the output energy will
+reflect the minimized structure otherwise it reflects the input structure.
+This provids a means of calculating QM energies for databases.
+</td></tr>
+<tr>
+<td valign="top"><b>Linear&nbsp;Scaling</b></td>
+<td valign="top">
+If on and supported by the SCF engine, linear scaling methods will be
+used.  This makes calculations on large-scale possible in reasonable
+amounds of time and can result in some loss of precision.
+</td></tr>
+<tr>
+<td valign="top"><b>Keep&nbsp;QM&nbsp;Files</b></td>
+<td valign="top">
+If on, the input and output files from the SCF calculation will be retained.
+These will be saved in the execution directory whose name is drawn from the
+Wavefunction file (if specified) or in the directory specified by the
+<tt>TMP</tt> constant.
+</td></tr>
+<tr>
+<td valign="top"><b>Update Connectivity</b></td>
+<td valign="top">
+If on, the topology of the system is recalculated when the minimization
+completes:
+bonds, hybridization, ionization and hint LP values are determined from
+the resulting geometry. This is typically used after a chemical reaction
+has taken place.
+</td></tr>
+
+<tr>
+<td valign="top"><b>Solvent&nbsp;Model</b></td>
+<td valign="top">
+Many computational engines support one or more types of solvent models in
+order to mimic the effect of being in solution. When available, the solvent
+model may be selected from a list, and the dielectric (&epsilon;) and
+solute radius may be tweaked as necessary.
+</td></tr>
+<tr>
+<td valign="top"><b>Job&nbsp;Title</b></td>
+<td valign="top">
+An arbitrary name can be given to the calculation.
+</td></tr>
+<tr>
+<td valign="top"><b>Keywords</b></td>
+<td valign="top">
+If available, additional engine-specific keywords can be specified to affect
+the calculation.  Consult the third party documentation
+manual for a description of supported keywords.
+</td></tr>
+<tr>
+<td valign="top"><b>View&nbsp;QM<br />Input&nbsp;File</b></td>
+<td valign="top">
+The input file that will be given to the SCF engine will be opened in a
+text editor.
+</td></tr>
+<tr>
+<td valign="top"><b>Save Settings</b></td>
+<td valign="top">
+Pressing <b>Save Settings</b> saves the current settings of the
+<span class="nobr"><b>Energy Minimize</b></span> panel as the new defaults.
+These defaults are also used by the
+<span class="nobr"><b>SCF Calculation</b></span> and
+<span class="nobr"><b>Conformational Search</b></span> applications.
+</td></tr>
+<tr>
+<td valign="top"><b>Standard Settings</b></td>
+<td valign="top">
+Pressing <b>Standard Settings</b> restores the settings of the
+<span class="nobr"><b>Energy Minimize</b></span> panel to the original
+default values for the current SCF engine.
+These defaults are also used by the
+<span class="nobr"><b>SCF Calculation</b></span> and
+<span class="nobr"><b>Conformational Search</b></span> applications.
+</td></tr>
+</table>
+
+<p>
+Press <b>OK</b> to begin the calculation. 
+<b>Warning!</b> The QM calculation requirements
+scale as the fourth power of the number of basis functions, possibly higher
+for post-Hartree-Fock calculations.  Depending on the choice of basis
+set and method, these calculations may take quite a lot of time to complete.
+
+
+<a name="DBMin"></a>
+<h2>Database Minimization</h2>
+
+In many instances, a database contains a collection of molecules whose
+structures should be energy minimized.  To do this, set the desired
+forcefield via <span class="menu">MOE | Footer |
+<a href="../moe/pot.htm"><i>forcefield</i></a></span>.  Open the database
+in the
+<a href="../mdb/db.htm"><span class="nobr"><b>Database Viewer</b></span></a>
+and choose 
+<span class="menu">DBV | Compute | Molecule | Energy Minimize</span>.
+This opens the <span class="nobr"><b>Energy Minimize</b></span> panel
+with the appropriate settings for
+<span class="nobr"><b>Input Data</b></span>:
+
+<p align="center">
+<img src="emin/ff_page3.png" alt="DBV General" /></p>
+
+All the previously described methods and options can be used for the
+minimization.  Press <b>OK</b> to start the calculation.  Progress
+information is displayed in the MOE window and written to the
+<span class="nobr"><b>SVL Commands</b></span> window.
+
+<a name="Ref"></a>
+<h2>References</h2>
+
+<table>
+<tr>
+<td valign="top">[ADF]</td>
+<td valign="top">
+Amsterdam Density Functional (<a href="http://www.scm.com">ADF</a>),
+Scientific Computing &amp; Modelling NV</td>
+</tr>
+<tr>
+<td valign="top">[GAMESS]</td>
+<td valign="top">
+General Atomic and Molecular Electronic Structure System (<a
+href="http://www.msg.ameslab.gov/GAMESS/GAMESS.html">GAMESS</a>), Iowa State
+University
+</td></tr>
+<tr>
+<td valign="top">[Gaussian]</td>
+<td valign="top">
+Gaussian series of programs
+(<a href="http://www.gaussian.com">Gaussian</a>),
+Gaussian Inc.
+</td></tr>
+<tr>
+<td valign="top" width="20%">[Gill&nbsp;1981]</td>
+<td valign="top">
+Gill, P., Murray, W., Wright, M.; <i>Practical Optimization</i>;
+Academic Press, London (1981).
+</td></tr>
+<tr>
+<td valign="top">[Stewart&nbsp;1993]</td>
+<td valign="top">
+Stewart, J.J.P.; <i>MOPAC Manual (Seventh Edition)</i> (1993).
+<a href="http://openmopac.net">Stewart Computational Chemistry</a>. 
+</td></tr>
+</table>
+
+<h2>See Also</h2>
+<a href="../moe/gui/mainwin.htm">MOE Window</a><br />
+<a href="../moe/pot.htm">Potential Energy Model</a><br />
+<a href="../moe/fcnref/chrgfcn.htm">Partial Charge Functions</a><br />
+<a href="../moe/fcnref/atom_p.htm">Atom Potential Functions</a><br />
+<br />
+<a href="../mdb/dbedit.htm">Creating a Database</a><br />
+<a href="../mdb/db.htm">Database Viewer</a><br />
+
+<a name="SVL"></a>
+<h2>SVL Commands</h2>
+
+<a class="svl" href="../moe/fcnref/mm.htm">MM</a><br />
+<a href="../moe/fcnref/mopacfcn.htm">MOPAC Function Reference</a><br />
+<a class="svl" href="../moe/fcnref/collect.htm">oSetCollection</a><br />
+<a class="svl" href="../moe/fcnref/dbmin.htm#db_Minimize">db_Minimize</a>
+<br />
+<a class="svl" href="../moe/fcnref/dbmin.htm#dbv_Minimize">dbv_Minimize</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>QuaSAR Overview</title>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<p>
+The QuaSAR suite of applications in MOE is used to analyze experimental data
+and build numerical models of the data for prediction and interpretation
+purposes.</p>
+
+<p>
+Suppose that experimental results for <i>m</i> molecules have been obtained.
+For purposes of notation, let <i>y<sub>i</sub></i> denote the experimental
+result for molecule <i>i</i> and <i>m<sub>i</sub></i> denote molecule <i>i</i>.
+This collection is referred to as the <i>data set</i> or <i>training set</i>,
+for example:
+</p>
+
+<ul>
+
+<li>
+If the <i>y<sub>i</sub></i> are IC<sub>50</sub> values representing the
+biological activity of a ligand, then one would build a numerical model from
+the training set in order to predict IC<sub>50</sub> of molecules not in the
+training set.
+
+<li>
+If the <i>y<sub>i</sub></i> are High Throughput Screening Pass/Fail results,
+then one would build a numerical model from the training set in order to
+predict whether or not a new molecule would pass or fail.
+
+<li>
+
+If the <i>y<sub>i</sub></i> are a physical property measurement (e.g.
+octanol/water partition coefficient) of each molecule, then one would
+build a numerical model to predict the physical property of a molecule
+not in the training set.
+
+</ul>
+
+<p>
+In order to build numerical models that depend on molecules it is necessary to
+construct a numerical representation of a molecule.  Although the connection
+table representation of a molecule (lists of atoms and bonds) is numerical, it
+is not amenable to model building; a simpler representation is required.  To
+this end, molecules are described with <i>n</i>-vectors of numbers called
+<i>molecular descriptors</i>, or just <i>descriptors</i>, for the purposes of
+model building.  A descriptor can be any quantity that depends on the molecule,
+such as molecular weight, van der Waals volume, dipole moment and number of
+carbon atoms.  Let <i>x<sub>ij</sub></i> denote the <i>j</i>-th descriptor of
+the <i>i</i>-th molecule and
+<i>x<sub>i</sub></i> denote the vector of <i>n</i> descriptors for the
+<i>i</i>-th molecule.
+
+<p>
+A model is a numerical formula that is parameterized using the training set.
+This numerical formula accepts, as input, a vector of molecular descriptors
+which is used to predict an experimental result.  Any number of formulae can be
+used to predict experimental results. The QuaSAR application suite contains
+two:
+</p>
+
+<ol>
+
+<li>
+<i>Linear Regression Models</i>.  A linear model is a model in which the
+experimental result is expressed as a linear combination of the descriptors
+plus a constant.  The parameters, or coefficients, for the model are determined
+in such a way that the mean squared error between the training set's
+experimental results and the model's results is minimized.
+
+<p>
+<li>
+<i>Binary Models</i>.  A binary model assumes that the experimental result is a
+binary value (1 or 0) representing Pass/Fail or Active/Inactive.  The binary
+model is statistical in that it uses the training set to estimate the
+probability that a new molecule will have an experimental result of 1.
+
+</ol>
+
+<p>
+The quality of a model is reported in statistical terms (e.g.
+correlation coefficient or percent accurate).  This means that an underlying
+assumption of model building is the fact that the training set is
+<i>representative</i>; in other words, it is an unbiased, sufficiently large
+sample of molecules.  More precisely, the methods assume that the training set
+can be modeled with independent and identically distributed random
+variables. Unfortunately, it is impossible to determine empirically whether or
+not this is true for a given data set.  It is up to the user of the method to
+make this assessment.
+
+<p>
+Some of the effects of training set bias can be corrected. In particular, the
+assignment of <i>importance weights</i> or <i>row weights</i> is used to remove
+bias.  For example, suppose that the training set contained molecules <i>A</i>
+and <i>B</i> that are very similar (in some sense), and molecules <i>C</i>,
+<i>D</i> and <i>E</i> that are mutually similar.  Rather than remove molecules
+<i>B, D</i> and <i>E</i> from the training set to remove bias, one can weight
+<i>A</i> and <i>B</i> each with 1/2 and <i>C</i>, <i>D</i> and <i>E</i> each
+with 1/3.  This weighting scheme allows all of the training set to be used and
+at the same time &quot;flattens&quot; the distribution of molecules.
+
+<p>
+Once a model has been built, it is necessary to assess its predictiveness.  A
+model that is capable of reproducing the training set experimental results
+accurately may not perform well on new molecules.  This phenomenon is called
+<i>overfitting</i> and generally indicates that there are too many parameters
+in the model or that the training set is not large enough.  The QuaSAR
+application suite contains methods for removing outliers (training set
+molecules with very large model errors) as well as
+<i>cross-validation</i>. Cross-validation is a procedure by which portions of
+the training set are left out of the model building and subsequently used to
+simulate &quot;new&quot; molecules.
+
+<p>
+In summary, the process of building a model of experimental data generally
+proceeds as follows:
+
+<ol>
+<li>
+Assemble a database of experimental results and molecular structures.
+
+<li>
+Calculate importance weights for each molecule in the training set.
+
+<li>
+Calculate molecular descriptors for each molecule in the training set.
+
+<li>
+Estimate the parameters of a numerical model.
+
+<li>
+Remove outliers from the training set (this can be done using the plot
+area in the Database Viewer).
+
+<li>
+Assess the predictiveness of the model.
+
+<li>
+If the model is not satisfactory, return to step 3.
+</ol>
+
+<p>
+The MOE QuaSAR application suite contains all the tools required to
+build models.  
+Once a satisfactory model has been built, it can be used to predict experimental
+data for new molecules or analyzed in order to understand the
+important factors determining the experimental value.
+QuaSAR applications in MOE include:
+
+<ul>
+<p><li><b><a href="qbct.htm">QuaSAR-Classify</a></b> creates a binary
+classification tree used to classify items for which measurements have been
+made. It can also be used to predict data classes.
+
+<p><li><b><a href="cluster.htm">QuaSAR-Cluster</a></b> is used to assign
+importance weights to the training set.
+
+<p><li><b><a href="qcont.htm">QuaSAR-Contingency</a></b> is a statistical
+application designed to assist in the selection of descriptors for QSAR or
+QSPR.  It performs a contingency analysis for each descriptor and produces a
+table of coefficients.
+
+<p><li><b><a href="descr.htm">QuaSAR-Descriptor</a></b> is used to calculate
+molecular descriptors.
+
+<p><li><b><a href="hole.htm">QuaSAR-HoleFiller</a></b> generates a new database
+of compounds that spans the diversity of molecules in multiple source
+databases.
+
+<p><li><b><a href="model.htm">QuaSAR-Model</a></b> estimates the
+parameters of the numerical model and assesses the quality and
+predictiveness of the model.
+
+<p><li><b><a href="modcomp.htm">Model-Composer</a></b> is used to specify
+how to combine predictions of linear and binary QSAR
+models, pharmacophore queries, and fingerprint models into a new model.
+
+<p><li><b><a href="modcomp.htm">Model-Evaluate</a></b> is used to save
+and evaluate a model on a database of new molecules.
+
+<p><li><b><a href="../mdb/db.htm">Molecular Database Viewer</a></b> holds 
+the experimental results, molecular structures and descriptors.  
+Used to visualize the model results and remove
+outliers.
+
+<p><li><b><a href="../apps/combitools.htm">Combinatorial Library</a></b>
+enumerates a virtual library represented as a chemical reaction and a set of
+reagent libraries or estimates the contribution to biological activity
+of the R-groups of a virtual library.
+
+</ul>
+
+
+<h2>See Also</h2>
+
+<a href="../tutorials/quasar_tut.htm">QuaSAR Tutorial</a>
+
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+
+

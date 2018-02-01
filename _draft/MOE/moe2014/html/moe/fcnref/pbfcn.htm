@@ -1,0 +1,793 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<title>Poisson-Boltzmann Electrostatics</title>
+<meta functions pboltz_GridShape>
+<meta functions pboltz_logD, pboltz_ilogK, pboltz_ChargeDensity>
+<meta functions pboltz_LinearResidual, pboltz_RelaxLinearNGS>
+<meta functions pboltz_Interpolate, pboltz_Smooth, pboltz_ZeroBoundary>
+<meta functions pboltz_Boundary, pboltz_Solve>
+<meta functions pboltz_AtomParameters, pboltz_IonREdqC>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+<h2>Syntax</h2>
+
+<pre>
+    shape     = <a class="fcnlink" href="#pboltz_GridShape">pboltz_GridShape</a> [ pos, rad, extend, spacing ]
+    pos_REd   = <a class="fcnlink" href="#pboltz_AtomParameters">pboltz_AtomParameters</a> atoms
+    ion_REdqcp = <a class="fcnlink" href="#pboltz_IonREdqC">pboltz_IonREdqC</a> formula_string
+
+    logD = <a class="fcnlink" href="#pboltz_logD">pboltz_logD</a> [shape, pos, pos_REd, [
+        T:        number
+        d_in:     number,
+        d_out:    number,
+        d_offset: number,
+        verbose:  flag
+    ]]
+
+    ilogK = <a class="fcnlink" href="#pboltz_ilogK">pboltz_ilogK</a> [shape, pos, pos_REd, ion_REdqC, logD, [
+        T:        number
+        verbose:  flag
+    ]]
+
+    f = <a class="fcnlink" href="#pboltz_ChargeDensity">pboltz_ChargeDensity</a>   [shape, pos, q, sigma]
+    u = <a class="fcnlink" href="#pboltz_Boundary">pboltz_Boundary</a>        [shape, data, pos, q, sigma, inv_kappa, logD]
+
+    u = <a class="fcnlink" href="#pboltz_Solve">pboltz_Solve</a> [shape, logD, iQ, ilogK, u, F, [
+        T:        number,
+        rtol:     number,
+        linear:   flag,
+        verbose:  flag
+    ]]
+
+    r = <a class="fcnlink" href="#pboltz_LinearResidual">pboltz_LinearResidual</a>  [H, dim, logD, K, u, F]
+    u = <a class="fcnlink" href="#pboltz_RelaxLinearNGS">pboltz_RelaxLinearNGS</a>  [H, dim, logD, K, u, F, maxit]
+
+    u = <a class="fcnlink" href="#pboltz_Interpolate">pboltz_Interpolate</a>     [H, dim, u, newdim]
+    u = <a class="fcnlink" href="#pboltz_Smooth">pboltz_Smooth</a>          [H, dim, u]
+    u = <a class="fcnlink" href="#pboltz_ZeroBoundary">pboltz_ZeroBoundary</a>    [H, dim, u]
+</pre>
+
+<h2>Description</h2>
+
+<p>
+The collection of functions documented here are intended for use when
+solving the Poisson-Boltzmann Equation, useful in a number of contexts
+including implicit solvent electrostatics.
+<p>
+The Poisson Equation can, at equilibrium, relate an electrostatic potential
+<i>u</i>, a positive relative permittivity <i>d</i>, a charge density <i>f</i>
+and a mobile ion charge density <i>f<sub>I</sub></i> :
+
+<p align=center>
+  <b>L</b><i>u</i>(<i>r</i>)
++
+  <i>d</i><sup> -1</sup>(<i>r</i>)
+  <b>D</b><i>d</i>(<i>r</i>) <b>D</b><i>u</i>(<i>r</i>)<sup>T</sup>
++
+  [
+	<i>f<sub>I</sub></i>(<i>r</i>) + <i>f</i>(<i>r</i>)
+  ]
+  <i>d</i><sup> -1</sup>(<i>r</i>) e<sup>2</sup>
+  e<sub>0</sub><sup>-1</sup>
+= 0
+</p>
+
+<p>
+subject to the boundary condition that <i>u</i>(<i>r</i>) tends to 0 for
+large |<i>r</i>|; in the equation, e is the charge of an electron,
+e<sub>0</sub> is the absolute permittivity, <b>D</b> is the derivative
+operator (transpose of the gradient) and <b>L</b> is the Laplacian operator
+<span class="nobr"><i>d</i><sup>2</sup>/<i>dx</i><sup>2</sup>
++ <i>d</i><sup>2</sup>/<i>dy</i><sup>2</sup>
++ <i>d</i><sup>2</sup>/<i>dz</i><sup>2</sup>.
+</span>
+For multiple types of mobile ions, the foregoing equation is easily extended
+by replacing the lone <i>f<sub>I</sub></i> with a sum of similar densities
+(one for each type).  For the purposes of exposition, only one mobile ion type
+will be considered.
+
+<p>
+Suppose that each mobile ion carries a charge of <i>q</i>; further suppose
+that the ions are subject to a spatial potential <i>v<sub>I</sub></i> that
+tends to 0 for large |<i>r</i>|.
+Fix a temperature <i>T</i> and assume a Boltzmann density of states for the
+mobile ions (ignoring mobile ion interactions); we can then write
+<p align=center>
+<i>f<sub>I</sub></i>(<i>r</i>) =
+    <i>q</i> Pr(<i>r</i>) =
+    <i>q</i>
+    <i>Q</i><sup>-1</sup>
+    exp { - <i>q</i> [
+	<i>u</i>(<i>r</i>) + <i>v<sub>I</sub></i>(<i>r</i>)
+    ] / <i>kT</i>
+    }
+</p>
+
+<p>
+where <i>Q</i> is the sum of states of the Boltzmann distribution
+(the normalizing constant).  For large |<i>r</i>| both <i>u</i> and
+<i>v<sub>I</sub></i> vanish and so we take 1/<i>Q</i> to be the bulk number
+concentration, <i>C</i>, of the mobile charge.  This allows a combination of
+the Poisson Equation and the Boltzmann density resulting in a
+Poisson-Boltzmann Equation (PBE):
+
+<p align=center>
+  <b>L</b><i>u</i>(<i>r</i>)
++
+    <i>d</i><sup> -1</sup>(<i>r</i>)
+    <b>D</b><i>d</i>(<i>r</i>) <b>D</b><i>u</i>(<i>r</i>)<sup>T</sup>
++
+  [
+      <i>q C</i> exp {
+	- <i>q</i> [ <i>u</i>(<i>r</i>)
+	+ <i>v<sub>I</sub></i>(<i>r</i>) ] / <i>kT</i>
+      }
+    + <i>f</i>(<i>r</i>)
+  ]
+  <i>d</i><sup> -1</sup>(<i>r</i>) e<sup>2</sup>
+  e<sub>0</sub><sup>-1</sup>
+= 0.
+</p>
+
+<p>
+Simplifying and collecting terms we obtain
+
+<p align=center>
+  <b>L</b><i>u</i>(<i>r</i>)
++
+    <b>D</b> log <i>d</i>(<i>r</i>) <b>D</b><i>u</i>(<i>r</i>)<sup>T</sup>
++
+    <i>K</i>(<i>r</i>)
+    exp {
+	- <i>q</i> <i>u</i>(<i>r</i>) / <i>kT</i>
+    }
++
+    <i>f</i>(<i>r</i>)
+    e<sup>2</sup> / <i>d</i>(<i>r</i>) e<sub>0</sub>
+= 0
+<br />
+<i>K</i>(<i>r</i>) =
+    exp { - <i>v<sub>I</sub></i>(<i>r</i>) / <i>kT</i> }
+    <i>q C</i>
+    e<sup>2</sup> / <i>d</i>(<i>r</i>) e<sub>0</sub>
+</p>
+
+<p>
+This equation can be linearized by approximating exp(<i>x</i>) with
+(1&nbsp;+&nbsp;<i>x</i>) leading to the Linear Poisson-Boltzmann Equation
+(LPBE).
+
+Either the PBE and LPBE can be solved numerically with functions described
+herein (with careful selection of the arguments).
+
+<p>
+In this document we will make use of the following notation and argument
+conventions:
+
+<p align=center><table class="titlebar" border="1" cellpadding="3">
+<tr>
+<th>Symbol</th>
+<th>Description</th>
+</tr>
+<tr>
+<td valign="baseline"><tt>u</tt>
+<td valign="baseline">
+The electric field in units where
+<span class="nobr">e<sup>2</sup>e<sub>0</sub><sup>-1</sup> = 1</span>.
+<tr>
+<td valign="baseline"><tt>F</tt>
+<td valign="baseline">
+The charge density with dielectric constants,
+<i>F</i>(<i>r</i>) = <i>f</i>(<i>r</i>) / <i>d</i>(<i>r</i>)
+<tr>
+<td valign="baseline"><tt>logD</tt>
+<td valign="baseline">
+The natural logarithm of the relative dielectric, log&nbsp;<i>d</i>(<i>r</i>)
+<tr>
+<td valign="baseline"><span class="nobr"><tt>ilogK(i)</tt></span>
+<td valign="baseline">
+The natural logarithm of the <i>i</i>'th absolute ionic density constant,
+log&nbsp;|<i>K</i>(<i>r</i>)|.
+<tr>
+<td valign="baseline"><tt>iQ(i)</tt>
+<td valign="baseline">
+The formal charge of the <i>i</i>'th ion class, <i>q</i>.
+<tr>
+<td valign="baseline"><tt>H</tt>
+<td valign="baseline">
+The grid spacing along each axis <tt>H = [Hx,Hy,Hz]</tt>; each value must
+be positive.
+<tr>
+<td valign="baseline"><tt>dim</tt>
+<td valign="baseline">
+The integral number of lattice points along each axis of the grids used
+to solve the PB equation, <tt>dim = [Nx,Ny,Nz]</tt>; the number of values
+on the grid is <span class="nobr"><tt>Nx * Ny * Nz</tt></span>.
+</table></p>
+
+<p>
+The following code may be used to solve the Poisson-Boltzmann equation.
+For a description of the individual functions and their arguments, see
+below.
+
+<blockquote><pre>
+    local pos = aPos atoms, q = aCharge atoms;
+    local pos_REd = <span class="fcndef">pboltz_AtomParameters</span> atoms;
+
+        // Calculate a grid shape that encompasses the system with
+	// a grid spacing of 0.75 angstroms.
+
+    local shape = pboltz_GridShape [pos, pos_REd(1), 5.0, 0.75];
+
+        // Calculate the log of the dielectric field.
+
+    local logD = <span class="fcndef">pboltz_logD</span> [ shape, pos, pos_REd, [
+        d_in  : 1,
+        d_out : 80
+    ]];
+
+        // Calculate the ion densities for MgCl2 (at the default of 300K)
+	// at a concentration of 0.1 mol/L.
+
+    local ion_REdqC = droplast <span class="fcndef">pboltz_IonREdqC</span> 'MgCl2' * [1,1,1,1,0.1];
+    local ilogK = <span class="fcndef">pboltz_ilogK</span> [shape, pos, pos_REd, ion_REdqC, logD];
+    local iQ = ion_REdqC(4);
+
+        // Calculate the charge density using R/2.5 as the standard
+	// deviation and then calculate the density with the folded
+        // constants and 1/dielectric for the solver.
+
+    local sigma = 0.4 * pos_REd(1)];	// R/2.5
+    local f = <span class="fcndef">pboltz_ChargeDensity</span> [shape, pos, q, sigma];
+    local F = f * exp (- logD);
+
+	// Calculate the initial estimate including the boundary.
+
+    const AVOGADRO = 6.022045e23;
+    const T = 300;
+
+    local inv_kappa = sqrt (
+	  (AVOGADRO * 1e-27 * add (sqr ion_REdqC(4) * ion_REdqC(5)))
+	* (4 * PI * COULOMB_SCALE) / (KBOLTZ * T)
+    );
+
+    local u = <span class="fcndef">pboltz_Boundary</span> [shape, 0, pos, q, sigma, inv_kappa, logD];
+
+        // Solve the Poisson-Boltzmann Equation (nonlinear)
+	// and then calculate the total energy and scale to kcal/mol.
+
+    u = <span class="fcndef">pboltz_Solve</span> [shape, logD, iQ, ilogK, u, F, [T: T, linear:0]];
+    local E = (COULOMB_SCALE * 4 * PI) * 0.5 * grid_cellvolume [f * u, shape];
+</pre></blockquote>
+
+<p><a name="pboltz_GridShape"></a></p>
+
+<hr noshade="noshade" /></p>
+
+<pre>shape = <span class="fcndef">pboltz_GridShape</span> [pos, rad, extend, spacing]
+</pre>
+
+<p>
+The <tt>pboltz_GridShape</tt> function prepares a 3D grid shape vector for
+a collection of atoms with specific radii.  The position of atom <i>i</i> is 
+<span class="nobr"><tt>[pos(1)(i),pos(2)(i),pos(3)(i)]</tt></span> and
+the radius of atom <i>i</i> is <span class="nobr"><tt>rad(i)</tt></span>.
+The bounding box of the atoms is calculated and then extended in each
+direction by at least the value of the maximum of <tt>extend</tt>, 3.0 and
+three times the maximum radius.
+<p>
+The <tt>spacing</tt> argument defines the number of grid points as follows.
+If <tt>spacing</tt> is a numeric scalar less than or equal to 5 then it is
+taken as the dimensions of a lattice cell cube and if it is greater than 5
+it is rounded and taken as the number of cells along each axis.
+If <tt>spacing</tt> is a string or a token then if it is of the form
+<tt>'AxBxC'</tt> then A, B, and C are the dimensions of the grid along each
+axis; otherwise the characters are converted to a number and interpreted
+as in the numeric scalar case.
+
+<p>
+For example, the following call to <tt>pboltz_GridShape</tt>:
+
+<blockquote><pre>local atoms = Atoms[];
+local shape = pboltz_GridShape [aPos atoms, aRadius atoms, 5.0, 33];
+</pre></blockquote>
+
+<p>
+creates a 33x33x33 grid shape around all the atoms using their current force
+field van der Waals radii with an extension of 5.0 angstroms.
+
+<p><a name="pboltz_AtomParameters"></a></p><p><hr noshade="noshade" /></p>
+
+<pre>pos_REd = <span class="fcndef">pboltz_AtomParameters</span> atoms
+</pre>
+
+The <tt>pboltz_AtomParameters</tt> function accepts a vector of atom keys
+and returns a laminated vector <tt>pos_REd</tt> of the form
+<span class="nobr"><tt>[R,E,d]</tt></span> containing the van der Waals radius,
+the van der Waals well-depth (in kcal/mol) and the local dielectric
+constant (currently set to 1.0).  The parameters are modified OPLS-AA
+van der Waals parameters tuned to reproduce the free energy of solvation
+of a collection of small molecules.
+
+<p><a name="pboltz_IonREdqC"></a></p><p><hr noshade="noshade" /></p>
+
+<pre>ion_REdqcp = <span class="fcndef">pboltz_IonREdqC</span> string
+</pre>
+
+The <tt>pboltz_IonREdqC</tt> function accepts a string or token contain
+the chemical formula of ionic salts.  The return value is a laminated
+vector <tt>[R,E,d,q,C,p]</tt> of ionic parameters:
+
+<blockquote><dl>
+<dt><tt>R</tt>
+<dd><tt>R(i)</tt> is the van der Waals radius parameter of the <i>i</i>-th
+ionic species.
+<dt><tt>E</tt>
+<dd><tt>E(i)</tt> is the van der Waals well depth parameter of the <i>i</i>-th
+ionic species.
+<dt><tt>d</tt>
+<dd><tt>d(i)</tt> is the local dielectric of the <i>i</i>-th ionic species.
+<dt><tt>q</tt>
+<dd><tt>q(i)</tt> is the charge of the <i>i</i>-th ionic species.
+<dt><tt>C</tt>
+<dd><tt>C(i)</tt> is the concentration multiplier of the
+<i>i</i>-th ionic species.  For example, in MgCl2, the <tt>C</tt> value for
+Mg is 1 and for Cl is 2.
+<dt><tt>p</tt>
+<dd><tt>p(i)</tt> is the number of protons of the <i>i</i>-th ionic species.
+</dl></blockquote>
+
+<p>
+Currently, OPLS parameters are used for the van der Waals parameters.
+
+<p><a name="pboltz_logD"></a></p><p><hr noshade="noshade" /></p>
+
+<pre>logD = <span class="fcndef">pboltz_logD</span> [shape, pos, pos_REd, opt]
+</pre>
+
+<p>
+The <tt>pboltz_logD</tt> function calculates the log of the dielectric
+field for use in the Poisson-Boltzmann equation given a grid shape
+specification, atomic coordinates and parameters.  The arguments to the
+function are:
+
+<blockquote><dl>
+<dt><tt>shape</tt>
+<dd>A 3D grid shape specification containing the axis coordinates of the
+lattice.
+<p>
+<dt><tt>pos</tt>
+<dd>A laminated vector <tt>[x,y,z]</tt> containing the coordinates of the
+atoms that define the dielectric region; <tt>[x(i),y(i),z(i)]</tt> are the
+coordinates of the <i>i</i>-th atom of the solute.
+<p>
+<dt><tt>pos_REd</tt>
+<dd>A laminated vector <tt>[R,E,d]</tt> of atomic parameters;
+<tt>R(i)</tt> is the van der Waals radius of the <i>i</i>-th atom,
+<tt>E(i)</tt> is the van der Waals well depth of the <i>i</i>-th atom,
+and
+<tt>d(i)</tt> is the local dielectric constant of the <i>i</i>-th atom
+which can be calculated from 
+<span class="nobr">(1 + 2 <i>m</i>) / (1 - <i>m</i>)</span>
+where <i>m</i> is the molar refractivity of an atom.
+
+<p>
+<dt><tt>opt</tt>
+<dd>A tagged vector of options that affect the calculation:
+<tt>opt.T</tt> is the temperature of the system in Kelvin (the default is 300),
+<tt>opt.d_in</tt> is the interior dielectric of the atoms (the default is 1),
+<tt>opt.d_out</tt> is the interior dielectric of the solvent, exterior to the
+atoms (the default is 1),
+<tt>opt.d_offset</tt> is the distance from the solute atoms of the solvent
+region (the default is 0),
+and <tt>opt.verbose</tt> is a flag which, if true, will cause the function
+to print information to the CLI (the default is False).
+</dl></blockquote>
+
+<p>
+The dielectric field is calculated with the following three-step algorithm:
+<ol>
+<li>[Interior]
+If <tt>opt.d_in</tt> &gt;= 1 then set
+<i>d</i><sub>1</sub>(<i>r</i>)&nbsp;=&nbsp;<tt>opt.d_in</tt>; otherwise,
+use the Clausius-Mossotti equation to blend the individual atomic
+dielectric constants together:
+<span class="nobr">
+<i>d</i><sub>1</sub>(<i>r</i>) =
+    [ 1 + 2 <i>a</i>(<i>r</i>) ] / [ 1 - <i>a</i>(<i>r</i>) ]
+</span> with
+
+<p align=center>
+<i>a</i>(<i>r</i>) = Sum<sub><i>i</i></sub> [
+    <i>a<sub>i</sub></i>
+    exp (
+	-1/2 |<i>r</i> - <i>x<sub>i</sub></i>|<sup>2</sup>
+	/ <i>s<sub>i</sub></i><sup>2</sup>
+    )
+]
+<br />
+<i>s<sub>i</sub></i>
+= <tt>pos_REd(1)(i)</tt> (4/3 PI)<sup>1/3</sup> (2 PI)<sup>-1/2</sup>,
+&nbsp;&nbsp;&nbsp;
+<i>a<sub>i</sub></i> = (<tt>pos_REd(3)(i)</tt> - 1)
+/ (<tt>pos_REd(3)(i)</tt> + 2).
+</p>
+
+<p>
+where
+<i>x<sub>i</sub></i> are the coordinates of atom <i>i</i>.
+
+<p>
+<li>[Exterior] Calculate the exterior solvent density with a sum-of-Gaussians
+approximation to the molecular surface.
+
+<p>
+<li>[Merge]
+Set <i>d</i>(<i>r</i>) =
+<i>d</i><sub>1</sub>(<i>r</i>)
++
+[<tt>opt.d_out</tt> - <i>d</i><sub>1</sub>(<i>r</i>)]
+exp (- <i>v</i>(<i>r</i>) / <i>kT</i>) with <i>T</i> = <tt>opt.T</tt>.
+</ol>
+
+<p>
+The logarithm of <i>d</i> is then taken and the result returned.
+
+<p><a name="pboltz_ilogK"></a></p><p><hr noshade="noshade" /></p>
+
+<pre>ilogK = <span class="fcndef">pboltz_ilogK</span> [shape, pos, pos_REd, ion_REdqC, logD, opt]
+</pre>
+
+<p>
+The <tt>pboltz_ilogK</tt> function calculates the log absolute value
+of the ionic density fields <i>K</i> in the Poisson-Boltzmann equation
+given a grid shape specification, atomic coordinates and atomic and ionic
+parameters.  The arguments to the function are:
+
+<blockquote><dl>
+<dt><tt>shape</tt>
+<dd>A 3D grid shape specification containing the axis coordinates of the
+lattice.
+<p>
+<dt><tt>pos</tt>
+<dd>A laminated vector <tt>[x,y,z]</tt> containing the coordinates of the
+atoms that define the dielectric region; <tt>[x(i),y(i),z(i)]</tt> are the
+coordinates of the <i>i</i>-th atom of the solute.
+
+<p>
+<dt><tt>pos_REd</tt>
+<dd>A laminated vector <tt>[R,E,d]</tt> of atomic parameters;
+<tt>R(i)</tt> is the van der Waals radius of the <i>i</i>-th atom,
+<tt>E(i)</tt> is the van der Waals well depth of the <i>i</i>-th atom,
+and
+<tt>d(i)</tt> is the local dielectric constant of the <i>i</i>-th atom
+which can be calculated from 
+<span class="nobr">(1 + 2 <i>m</i>) / (1 - <i>m</i>)</span>
+where <i>m</i> is the molar refractivity of an atom.
+
+<p>
+<dt><tt>ion_REdqC</tt>
+<dd>A laminated vector <tt>[R,E,d,q,C]</tt> of ion parameters;
+
+<tt>R(i)</tt> is the van der Waals radius of the <i>i</i>-th ion,
+<tt>E(i)</tt> is the van der Waals well depth of the <i>i</i>-th ion,
+<tt>d(i)</tt> is the local dielectric constant of the <i>i</i>-th ion
+which can be calculated from 
+<span class="nobr">(1 + 2 <i>m</i>) / (1 - <i>m</i>)</span>
+where <i>m</i> is the molar refractivity of the ion,
+<tt>q(i)</tt> is the formal charge of the <i>i</i>-th ion,
+and
+<tt>C(i)</tt> is the concentration (in mol/L) of the <i>i</i>-th ion.
+
+<p>
+<dt><tt>logD</tt>
+<dd>The log of the dielectric field (e.g. as returned by
+<tt>pboltz_logD</tt>).
+
+<p>
+<dt><tt>opt</tt>
+<dd>A tagged vector of options that affect the calculation:
+<tt>opt.T</tt> is the temperature of the system in Kelvin (the default is 300)
+and <tt>opt.verbose</tt> is a flag which, if true, will cause the function
+to print information to the CLI (the default is False).
+</dl></blockquote>
+
+<p>
+The return value is a vector of ion fields, one for each ion.  The
+values are calculated
+using a Lennard-Jones 12-6 potential with geometric mixing rules and
+with the log ionic concentration and dielectric values added in.
+
+<p><a name="pboltz_Boundary"></a></p><p><a name="pboltz_ChargeDensity"></a></p><p><hr noshade="noshade" /></p>
+
+<pre>f = <span class="fcndef">pboltz_ChargeDensity</span> [shape, pos, q, sigma]
+u = <span class="fcndef">pboltz_Boundary</span> [shape, data, pos, q, sigma, inv_kappa, logD]
+</pre>
+
+<p>
+The <tt>pboltz_ChargeDensity</tt> function calculates a Gaussian electron
+density for a given set of atoms.  The arguments are
+
+<blockquote><dl>
+<dt><tt>shape</tt>
+<dd>A 3D grid shape specification containing the axis coordinates of the
+lattice.
+<p>
+<dt><tt>pos</tt>
+<dd>A laminated vector <tt>[x,y,z]</tt> containing the coordinates of the
+atoms that define the dielectric region; <tt>[x(i),y(i),z(i)]</tt> are the
+coordinates of the <i>i</i>-th atom of the solute.
+<p>
+<dt><tt>q</tt>
+<dd>A vector of partial charges, one for each atom;
+<tt>q(i)</tt> is the partial charge of the <i>i</i>-th atom,
+<p>
+<dt><tt>sigma</tt>
+<dd>The standard deviation of the Gaussian densities;
+<tt>sigma(i)</tt> is the standard deviation of the <i>i</i>-th atom,
+A value of zero denotes a point charge.
+</dl></blockquote>
+
+<p>
+The returned value is the electron density induced by the arguments.  More
+precisely, the returned field is
+
+<p align=center>
+<i>f</i>(<i>r</i>) = Sum<sub>i</sub> [
+    <tt>q(i)</tt> <i>a<sub>i</sub></i> exp {
+	-1/2 |<i>r</i> - <i>x<sub>i</sub></i>|<sup>2</sup> / 
+	<i>s<sub>i</sub></i><sup>2</sup>
+    }
+]
+</p>
+
+<p>
+integrated over each grid cell and divided by the volume of the cell.
+In this equation,
+<i>x<sub>i</sub></i> are the coordinates of the <i>i</i>-th atom,
+<span class="nobr"><i>s<sub>i</sub></i> = <tt>sigma(i)</tt></span> and
+<i>a<sub>i</sub></i> is the normalization constant.
+For small <i>s<sub>i</sub></i>, anti-aliasing can be achieved by setting
+<span class="nobr"><tt>sigma =  norm [sigma, cbrt mul H / 4]</tt></span> prior to
+calling the function.
+
+<p>
+The <tt>pboltz_Boundary</tt> function calculates the boundary values given
+a collection of charges, the dielectric and the Debye screening parameter.
+The arguments are similar to <tt>pboltz_ChargeDensity</tt> except for the
+extra parameters
+<blockquote><dl>
+<dt><tt>inv_kappa</tt>
+<dd>The inverse Debye screening length (in Angstroms).  Typically this is
+calculated with
+<blockquote><pre>
+    const AVOGADRO = 6.022045e23, T = 300;
+    local inv_kappa = sqrt (
+        (AVOGADRO * 1e-27 * add C) * (4 * PI * COULOMB_SCALE) / (KBOLTZ * T)
+    );
+</pre></blockquote>
+where <tt>C</tt> are the concentrations (in mol/L) of the ions.
+<p>
+<dt><tt>logD</tt>
+<dd>The log of the dielectric field (e.g. as returned by <tt>pboltz_logD</tt>).
+</dl></blockquote>
+<p>
+The return value is a zero grid with the boundary set to the sum of the
+atomic potentials
+<p align=center>
+    <i>q<sub>i</sub></i>
+    exp { - <tt>inv_kappa</tt> <i>r<sub>i</sub></i> }
+    erf {<i>r<sub>i</sub></i> / (sqrt(2) <tt>sigma(i)</tt>)}
+    / <i>r<sub>i</sub></i>
+</p>
+where <i>r<sub>i</sub></i> = |<i>r</i> - <i>x<sub>i</sub></i>| which is
+Coulomb's Law when <tt>sigma</tt> is zero and <tt>inv_kappa</tt> is zero.
+
+<p><a name="pboltz_Solve"></a></p><p><hr noshade="noshade" /></p>
+
+<pre>u = <span class="fcndef">pboltz_Solve</span> [shape, logD, iQ, ilogK, u, F, opt]
+</pre>
+
+<p>
+The <tt>pboltz_Solve</tt> function solves either the linear or the non-linear
+Poisson-Boltzmann Equation for the potential <tt>u</tt> in units where
+<span class="nobr">e<sup>2</sup>e<sub>0</sub><sup>-1</sup> = 1</span>.  Multiplying the
+result by <span class="nobr"><tt>4 * PI * COULOMB_SCALE</tt></span> will convert the
+potential to kcal/mol.  The arguments are
+
+<blockquote><dl>
+<dt><tt>shape</tt>
+<dd>A 3D grid shape specification containing the axis coordinates of the
+lattice.  The intervals between the lattice coordinates must be uniform
+in each dimension.
+<p>
+<dt><tt>logD</tt>
+<dd>The natural logarithm of the dielectric field (e.g. as returned
+by <tt>pboltz_logD</tt>).
+<p>
+<dt><tt>iQ</tt>
+<dd>A vector of ion formal charges; <tt>iQ(i)</tt> is the formal charge
+of the <i>i</i>-th ion.
+<p>
+<dt><tt>ilogK</tt>
+<dd>The logarithm of the absolute ion density fields; <tt>ilogK(i)</tt>
+is the field for the <i>i</i>-th ion (e.g. as returned by
+<tt>pboltz_ilogK</tt>).
+<p>
+<dt><tt>u</tt>
+<dd>An initial estimate of the solution on the non-boundary elements
+and the exact solution on the boundary.
+<p>
+<dt><tt>F</tt>
+<dd>The charge density multiplied by the relevant constants in the PB
+equation and divided by the dielectric field; e.g. the return value
+of <tt>pboltz_ChargeDensity</tt> times
+<span class="nobr"><tt>exp (log(4 * PI * COULOMB_SCALE) - logD)</tt></span>.
+<p>
+<dt><tt>opt</tt>
+<dd>A tagged vector of options;
+<tt>opt.T</tt> is the temperature of the system in Kelvin (the default is 300);
+<tt>opt.rtol</tt> is the relative tolerance of the solution: the
+solver will terminate when the norm of the residual is less than
+<tt>opt.rtol</tt> times the norm of the residual incremented by 1;
+<tt>opt.linear</tt> is flag that, if true, will cause a linearized solution
+to be produced (the default is True); and
+<tt>opt.verbose</tt> is a flag that controls CLI printing (the
+default is False).
+</dl></blockquote> 
+
+<p>
+The return value is the solution with the boundary elements as
+input in the <tt>u</tt> argument.  If there are no ions (i.e. <tt>iQ</tt>
+is null) then the equation is linear and the linear solution methods are
+used.  The linearized equation is solved with a Preconditioned Conjugate
+Residual method with a multi-grid preconditioner.  The non-linear equation
+is solved with Newton's method with a safe-guarded line search.
+
+<p><a name="pboltz_RelaxLinearNGS"></a></p><p><a name="pboltz_LinearResidual"></a></p><p><hr noshade="noshade" /></p>
+
+<pre>r = <span class="fcndef">pboltz_LinearResidual</span> [H, dim, logD, K, u, F]
+u = <span class="fcndef">pboltz_RelaxLinearNGS</span> [H, dim, logD, K, u, F, maxit]
+</pre>
+
+<p>
+The function <tt>pboltz_LinearResidual</tt> calculates 
+<span class="nobr">
+   <i>r</i> = <b>L</b><i>u</i>
+    +
+    <b>D</b> log <i>d</i> <b>D</b><i>u</i><sup>T</sup>
+    +
+    <i>K</i> <i>u</i>
+    +
+    <i>F</i>
+</span>
+using an <i>O</i>(<i>H</i><sup>2</sup>) estimate for <b>L</b> and
+an <i>O</i>(<i>H</i><sup>2</sup>) estimate for <b>D</b>;
+<tt>H&nbsp;=&nbsp;[Hx,Hy,Hz]</tt> are the grid spacings
+and <tt>dim&nbsp;=&nbsp;[Nx,Ny,Nz]</tt> are the number of grid points
+along the axes.  This function can also be used to calculate the non-linear
+PBE residual:
+
+<blockquote>
+<pre>local function Residual [H, dim, logD, iQ, ilogK, u, F, kT]
+    local i;
+    for i = 1, l_length [iQ,ilogK] loop
+        F = F + sign iQ(i) * exp (ilogK(i) - iQ(i) / kT * u);
+    endloop
+    return pboltz_LinearResidual [ H, dim, logD, 0, u, F ]
+endfunction
+</pre>
+</blockquote>
+
+<p>
+The function <tt>pboltz_RelaxLinearNGS</tt> performs <tt>maxit</tt> iterations
+of the linear red-black Newton-Gauss-Seidel method for solving partial
+differential equations in an effort to reduce the residual to zero.
+The arguments are the same as those for <tt>pboltz_LinearResidual</tt>.
+The boundary elements of <tt>u</tt> are left as-is.  This function can be
+used to solve the LPBE (although quite inefficiently):
+
+<blockquote>
+<pre>local function SolveLinearNGS [H, dim, logD, iQ, ilogK, u, F]
+    local i;
+    local K = - add (abs iQ(i) * exp ilogK);
+
+    F = F + add (sign iQ * exp ilogK);             // linearize PBE
+
+    for max [100, mul dim] loop
+        u = pboltz_RelaxLinearNGS [H, dim, logD, K, u, F, 3];
+    until norm pboltz_LinearResidual [H, dim, logD, K, u, F] < 1e-6 endloop
+
+    return u;
+endfunction
+</pre>
+</blockquote>
+
+<p>
+assuming that all constants in the PBE are folded into the arguments
+and <tt>u</tt> contains an initial estimate of the solution on the non-boundary
+elements and the correct solution on the boundary elements.
+
+<p><a name="pboltz_ZeroBoundary"></a></p><p><a name="pboltz_Smooth"></a></p><p><a name="pboltz_Interpolate"></a></p><p><hr noshade="noshade" /></p>
+
+<pre>
+u = <span class="fcndef">pboltz_Interpolate</span>  [H, dim, u, newdim]
+u = <span class="fcndef">pboltz_Smooth</span>       [H, dim, u]
+u = <span class="fcndef">pboltz_ZeroBoundary</span> [H, dim, u]
+</pre>
+
+<p>
+The <tt>pboltz_Interpolate</tt> function linearly interpolates grid data
+from one discretization to another.  If <tt>newdim</tt> contains more points
+than <tt>dim</tt> then a finer grid results; otherwise a sub-sampling is
+performed (usually on data smoothed with <tt>pboltz_Smooth</tt>).  In
+multi-grid solvers, the Coarse-to-Fine operator for halving the grid
+spacing can be implemented with
+
+<blockquote><pre>
+local function CoarseToFine [H, dim, u]     // dim = 2**k + 1
+    local newdim = 2 * (dim - 1) + 1;
+    return pboltz_Interpolate [H, dim, u, newdim];
+endfunction
+</pre></blockquote>
+
+<p>
+The <tt>pboltz_Smooth</tt> function performs full-weighting multi-grid
+smoothing on the grid data <tt>u</tt>.  This is a kind of anti-aliasing
+operation used in preparation for mapping fine grid data onto a coarser
+grid in multi-grid solvers.  The Fine-to-Coarse operator for doubling the
+grid spacing can be implemented with
+
+<blockquote><pre>
+local function FineToCoarse [H, dim, u]     // dim = 2**k + 1
+    u = pboltz_Smooth [H, dim, u];
+    local newdim = 1 + ceil ( (dim - 1) / 2 );
+    return pboltz_Interpolate [H, dim, u, newdim];
+endfunction
+</pre></blockquote>
+
+<p>
+The utility function <tt>pboltz_ZeroBoundary</tt> returns the given grid
+data <tt>u</tt> with its boundary elements set to zero.  This function is
+used internally for multi-grid solvers of the PBE; it can also be used
+to enforce homogeneous boundary conditions.
+
+<h2>See Also</h2>
+<a href="../../svl/fcnref/introgrid.htm">Grid Functions</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>

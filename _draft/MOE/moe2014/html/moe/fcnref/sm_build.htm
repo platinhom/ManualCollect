@@ -1,0 +1,969 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!	sm_build.htm			SMILES building functions
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../../include/manstyle.css" />
+
+
+<meta keywords>
+<meta functions sm_BuildSyntax, sm_BuildSyntaxError, sm_BuildParse>
+<meta functions sm_Build, sm_BuildMOL, sm_ExtractFromCTAB, sm_ExtractUnique>
+<meta obsolete sm_Extract>
+<meta obsolete sm_ExtractIso>
+
+<title>SMILES Conversion</title>
+</head>
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+
+<h2>Syntax</h2>
+
+<pre>
+    flag      = <a class="fcnlink" href="#sm_BuildSyntax">sm_BuildSyntax</a> 'SMILES'
+    'message' = <a class="fcnlink" href="#sm_BuildSyntaxError">sm_BuildSyntaxError</a> 'SMILES'
+
+    ctab      = <a class="fcnlink" href="#sm_BuildParse">sm_BuildParse</a> 'SMILES'
+    mol       = <a class="fcnlink" href="#sm_BuildMOL">sm_BuildMOL</a> ['SMILES', opt]
+
+    'SMILES'  = <a class="fcnlink" href="#sm_ExtractFromCTAB">sm_ExtractFromCTAB</a> [ctab]
+    'SMILES'  = <a class="fcnlink" href="#sm_ExtractUnique">sm_ExtractUnique</a> atoms
+
+    atoms     = <a class="fcnlink" href="#sm_Build">sm_Build</a> 'SMILES'
+    atoms     = <a class="fcnlink" href="#sm_Build">sm_Build</a> [ 'SMILES', [], position_vec ]
+    atoms     = <a class="fcnlink" href="#sm_Build">sm_Build</a> [ 'SMILES', atom, orientation_vec ]
+    atoms     = <a class="fcnlink" href="#sm_Build">sm_Build</a> [ 'SMILES', atom ]
+</pre>
+
+<h3 class="obsolete">Obsolete</h3>
+
+<pre>
+    'SMILES'  = <a class="fcnlink" href="#sm_Extract">sm_Extract</a> [ atoms, prios ]
+    'SMILES'  = <a class="fcnlink" href="#sm_ExtractIso">sm_ExtractIso</a> [ atoms, prios ]
+</pre>
+
+<p>
+<tt>sm_ExtractIso</tt> and <tt>sm_Extract</tt>
+should be replaced by <tt>sm_ExtractUnique</tt>.
+
+<h2>Description</h2>
+<p>
+The Simplified Molecular Input Line Entry System (SMILES) proposed by
+Weininger in 1988 is a language for specifying molecules or molecular
+fragments. The molecular descriptions are called SMILES strings, and in MOE,
+SVL routines exist to build molecules from such strings and convert such
+strings to other representations.
+MOE also provides SVL routines for extracting SMILES
+descriptions of molecules and for verifying the syntactic correctness of
+SMILES strings.
+
+<p>
+A SMILES expression is generally supplied as a token and referred to as a
+SMILES string; for example, acetylsalicylic acid is represented as:
+<pre>
+    'c1(C(=O)O)ccccc1OC(=O)C'
+</pre>
+
+<p>A SMILES string is composed of atom specifications arranged
+sequentially according to connectivity in the molecular graph.  Branches
+are indicated by parentheses, and can be nested to any degree.
+Cross-branch connections and ring closures are expressed using paired
+number labels. There are facilities for specifying aromatic elements,
+chirality, multiple bonds, and charges.  A given molecule usually
+has more than one possible SMILES representation; i.e.
+SMILES strings are generally not unique.
+
+<p>
+<b>Atoms</b>.
+Atoms are represented by their one- or two-character atomic symbols,
+enclosed in square brackets; for example, <tt>[Au]</tt> for gold.
+There is one notable exception - atoms belonging to the
+&quot;organic subset&quot; may be written without brackets.
+The &quot;organic subset&quot; comprises the elements B, C, N, O, P, S,
+F, Cl, Br and I. These may be written without brackets provided
+that the number of attached hydrogens satisfies the lowest normal
+valence consistent with explicit bonds.  Brackets are necessary if this is
+not the case.
+
+<p>
+The first character of an atomic symbol is in upper case, and the second,
+if any, is in lower case.  An exception is atoms that can participate in
+aromatic rings, namely, atoms belonging to the organic subset except
+column VII, and elements in rows 3, 4, and 5 of columns IV, V and VI of
+the periodic table.  When found in aromatic rings, these atoms can be
+denoted with lower case letters: b, c, n, o, p, s, si, ge, sn, as, sb, se,
+te.
+
+<p>The bracket notation is an "exact atom" specification - it makes
+explicit the specification of formal charge and number of hydrogens.
+The number of hydrogens is expressed as a capital H, followed by
+a digit. In the case of a single hydrogen, the digit 1 is optional.
+Absence of the H specification indicates that zero hydrogens are
+attached.  Formal charge is given as a <tt>+</tt> or <tt>-</tt> symbol,
+optionally followed by a digit.  For multiple charges, the digit can be
+replaced by multiples of the charge symbol. Absence of any charge symbol
+specifies a neutral atom.</p>
+
+<p>
+A bracketed atom may contain one or more of the following items
+<blockquote><dl>
+<dt><i>element</i>
+<dd>A 1- or 2- character element symbol.  Lower case element symbols
+specify aromatic atoms.  Deuterium may be specified with <tt>D</tt> and
+tritium may be specified with <tt>T</tt>.
+<p>
+<dt><tt>#</tt><i>number</i>
+<dd>Specify an atomic number for the atom; for example, <tt>[#6]</tt> for
+carbon.  Use <tt>#0</tt> to specify lone pair pseudo atoms.
+<p>
+<dt><tt>+</tt><br /><tt>++</tt><br><tt>+</tt><i>number</i>
+<dd>Specify a positive formal charge for the atom; for example,
+<tt>[Ca+2]</tt> denotes a calcium cation.  The <tt>+</tt> and <tt>++</tt>
+are shorthands for <tt>+1</tt> and <tt>+2</tt>, respectively.
+<p>
+<dt><tt>-</tt><br /><tt>--</tt><br><tt>-</tt><i>number</i>
+<dd>Specify a negative formal charge for the atom; for example,
+<tt>[Cl-1]</tt> denotes a chlorine anion.  The <tt>-</tt> and <tt>--</tt>
+are shorthands for <tt>-1</tt> and <tt>-2</tt>, respectively.
+<p>
+<dt><tt>.</tt><br /><tt>..</tt><br><tt>.</tt><i>number</i>
+<dd>Specify a radical count for the atom; for example,
+<tt>[C.]</tt> denotes a carbon radical.  The <tt>.</tt> and <tt>..</tt>
+are shorthands for <tt>.1</tt> and <tt>.2</tt>, respectively.
+<p>
+<dt><tt>H</tt><br /><tt>H</tt><i>number</i>
+<dd>Specify the implicit hydrogen count for the atom; for example,
+<tt>[NH3]</tt> denotes a nitrogen with three implicit attached hydrogen atoms.
+<tt>H</tt> is a shorthand for <tt>H1</tt> when an element symbol has already
+been specified.
+<p>
+<dt><i>number</i>
+<dd>Specify the isotope for the atom; for example, <tt>[14C]</tt> for
+carbon 14.
+<p>
+<dt><tt>R</tt><i>number</i>
+<dd>Specify the R-group number for the atom.  If no element has been 
+specified, carbon will be assumed.
+<p>
+<dt><tt>:</tt><i>number</i>
+<dd>Specify a numeric atom label; for example, as used in reaction numbering.
+<p>
+<dt><tt>@</tt><br /><tt>@@</tt>
+<dd>Specify the tetrahedral chirality of an atom (see below); for example,
+<tt>[C@@H]</tt> for clockwise chirality.
+
+</dl></blockquote>
+
+<p>Here are some examples: <tt>'C'</tt> for methane, <tt>'O'</tt> for water,
+<tt>'[Fe+2]'</tt></td> for iron(II) cation </td> and
+<tt>'[OH-]'</tt> for the hydroxyl anion.
+
+<p>
+<b>Bonds</b>.
+Single and aromatic bonds can be, and usually are, omitted. The SMILES parser
+recognizes them from the context.  If no bond symbol is present, two bonded
+aromatic atoms are linked by default by an aromatic bond.  In the same manner,
+an aromatic bond between two atoms implies that both atoms are aromatic.</p>
+
+<center>
+<table class="titlebar" border="1" cellpadding="3">
+  <tr>
+    <th>Description</th>
+    <th>Bond Symbol</th>
+  </tr>
+  <tr align=center>
+    <td valign="baseline">single</td>
+    <td valign="baseline">-</td>
+  </tr>
+  <tr align=center>
+    <td valign="baseline">double</td>
+    <td valign="baseline">=</td>
+  </tr>
+  <tr align=center>
+    <td valign="baseline">triple</td>
+    <td valign="baseline">#</td>
+  </tr>
+  <tr align=center>
+    <td valign="baseline">aromatic</td>
+    <td valign="baseline">:</td>
+  </tr>
+  <tr align=center>
+    <td valign="baseline">no bond</td>
+    <td valign="baseline">.</td>
+  </tr>
+  <tr align=center>
+    <td valign="baseline">single "down"</td>
+    <td valign="baseline">\</td>
+  </tr>
+  <tr align=center>
+    <td valign="baseline">single "up"</td>
+    <td valign="baseline">/</td>
+  </tr>
+</table>
+</center>
+
+<p>The "up" and "down" bonds are used for specifying <i>cis</i>/<i>trans</i>
+relationships across double bonds, and are meaningful only in the context
+of a double bond system.  The symbols are mnemonics suggestive of the
+relative positioning of bonds (with respect to the double bond) when the
+atoms involved are viewed as being in the plane of the page.  For example,
+a <i>cis</i> relationship can be specified as either
+
+<ul>
+<li><tt>C(/F)=C/F</tt> or <tt>F\C=C/F</tt>,
+with both fluoride groups "above" the bond, or
+<li><tt>C(\F)=C\F</tt> or <tt>F/C=C\F</tt>,
+with both fluoride groups "below" the bond.
+</ul>
+
+<p>Here are some examples:</p>
+
+<ul>
+<table border="0">
+  <tr>
+    <td valign="baseline"><tt>'CC'</tt></td>
+    <td valign="baseline">ethane C<sub>2</sub>H<sub>6</sub> </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'C=C'</tt></td>
+    <td valign="baseline">ethylene C<sub>2</sub>H<sub>4</sub> </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'C#C'</tt></td>
+    <td valign="baseline">acetylene C<sub>2</sub>H<sub>2</sub> </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[H][H]'</tt></td>
+    <td valign="baseline">H<sub>2</sub></td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'F/C=C/F'</tt></td>
+    <td valign="baseline">Z-difluoroethene</td>
+  </tr>
+</table>
+</ul>
+
+<p>Atoms belonging to a branch are enclosed in parentheses. The last
+branch attached to an atom, however, need not be thus enclosed.
+Here are some examples:</p>
+
+<table border="0" cellpadding="3">
+  <tr>
+    <td valign="baseline"><tt>'CC(=O)O'</tt></td>
+    <td valign="baseline">acetic acid CH<sub>3</sub>COOH </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'CCCC(C(C)C)CCC'</tt></td>
+    <td valign="baseline">4-isopropylheptane:</td>
+  </tr>
+</table>
+
+<pre>
+                CH<sub>3</sub>
+                |
+                CHCH<sub>3</sub>
+                | 
+        CH<sub>3</sub>CH<sub>2</sub>CH<sub>2</sub>CHCH<sub>2</sub>CH<sub>2</sub>CH<sub>3</sub>
+</pre>
+
+<p>Cyclic structures and cross-branch connections are expressed in the
+linear SMILES notation by breaking them and then labeling the now
+disconnected ends with matching numbers.  A single atom can bear more than
+one label.  Labels comprising more than one digit must be
+preceded by a percent <tt>%</tt> symbol.  If several labels on an atom
+are listed consecutively, once a <tt>%</tt>-preceded label
+appears, all subsequent consecutive labels must each also be
+preceded by <tt>%</tt>.  Label numbers need not be used in consecutive order.
+
+<p>Connections may be broken
+across multiple bonds, in which case a bond symbol may be applied before
+the resulting labels. If an atom has several labels, each label may be
+preceded by its own bond symbol. Note that if a bond symbol appears before
+a label, the matching label must either have no bond symbol or be preceded by
+exactly the same bond symbol. </p>
+
+<p>Labels may appear anywhere that a branch (parenthesized expression)
+appears; i.e. labels do not have to immediately follow the atom
+with which they are associated.
+
+<p>Here are some examples:</p>
+
+<ul>
+<table border="0">
+  <tr>
+    <td valign="baseline"><tt>'c1ccccc1'</tt></td>
+    <td valign="baseline">benzene</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'[nH]2cccc2'</tt></td>
+    <td valign="baseline">1H-pyrrole</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'c%11%1ccccc%11cccc1'</tt></td>
+    <td valign="baseline">naphthalene</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'c1(ccccc%11cccc1)%11'</tt></td>
+    <td valign="baseline">naphthalene</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'c1(cccc2)c2[nH]cc1C[C@](C(=O)[O-])[NH3+]'</tt></td>
+    <td valign="baseline">TRP</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'C=1.C1'</tt></td>
+    <td valign="baseline">ethylene C<sub>2</sub>H<sub>2</sub></td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'c(O)1ccccc1'</tt>
+    <td valign="baseline">phenol
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>'C(\F)=C\F'</tt></td>
+    <td valign="baseline">E-difluoroethene</td>
+  </tr>
+</table>
+</ul>
+
+<p>When a label matching an earlier label is encountered, the same label
+may be subsequently reused for specifying another connection.  For example,
+bi-phenyl:
+
+<pre>
+    'c1ccccc1c1ccccc1'
+</pre>
+
+<p>
+<b>Chirality</b>.
+SMILES permits specification of several kinds of "chirality." The use
+of the word chirality here is not the same as when describing
+R/S chiralities that are assigned according
+to atom CIP priority. Here, chirality refers to the order in which
+neighbors are placed about an atom.</p>
+
+<p>The SMILES chirality classes are as follows:</p>
+
+<center>
+<table class="titlebar" border="1" cellpadding="3">
+  <tr>
+    <th>Class</th>
+    <th>Notation</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td valign="baseline">Tetrahedral (TH) </td>
+    <td valign="baseline"><tt>TH1 or @<br />
+    TH2 or @@ or @2</tt></td>
+    <td valign="baseline">CCW<br />
+    CW</td>
+  </tr>
+  <tr>
+    <td valign="baseline">Square-planar (SP)</td>
+    <td valign="baseline"><tt>SP1<br />
+    SP2<br />
+    SP3</tt></td>
+    <td valign="baseline">U-shape<br />
+    4-shape <br />
+    Z-shape</td>
+  </tr>
+  <tr>
+    <td valign="baseline">Trigonal-bipyramidal (TB)</td>
+    <td valign="baseline"><tt>TB1 or @<br />
+    TB2 or @@ or @2</tt></td>
+    <td valign="baseline">CCW<br />
+    CW</td>
+  </tr>
+  <tr>
+    <td valign="baseline">Octahedral (OH)</td>
+    <td valign="baseline"><tt>OH1 or @<br />
+    OH2 or @@ or @2</tt></td>
+    <td valign="baseline">CCW <br />
+    CW</td>
+  </tr>
+</table>
+</center>
+
+<p>
+Class <tt>AL</tt>, &quot;allene-like&quot;, is currently
+unsupported by MOE.  Do not use this specification. Furthermore, the
+original SMILES allows for 20 chirality values for the
+trigonal-bipyramidal class, and 30 for the octahedral class. MOE only
+recognizes the clockwise and counter-clockwise specifications.</p>
+
+<div align="center"><center>
+
+<table class="titlebar" border="1" cellpadding="3">
+  <tr>
+    <th>Symbol</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>@</tt></td>
+    <td valign="baseline">counter-clockwise chirality, default class</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>@@</tt></td>
+    <td valign="baseline">clockwise chirality, default class </td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>@&lt;n&gt;</tt></td>
+    <td valign="baseline">chirality value <tt>n</tt> of default class</td>
+  </tr>
+  <tr>
+    <td valign="baseline"><tt>@&lt;c&gt;&lt;n&gt;</tt></td>
+    <td valign="baseline">chirality value <tt>n</tt> of class <tt>c</tt></td>
+  </tr>
+</table>
+</center></div>
+
+<p>The chirality class may be specified only in the exact atom
+specification (bracket notation). The two-letter class code is preceded by
+the symbol <tt>@</tt>, and is optionally followed by a number that
+indicates a particular neighbor configuration in that class. </p>
+
+<p>For all except the square-planar class, chirality can be represented in
+shorthand by a number of <tt>@</tt> symbols. For example, <tt>TH2</tt> can
+be represented by <tt>@@</tt>.  This can be further abbreviated using the
+notation <tt>@&lt;n&gt;</tt>, where <tt>n</tt> is an optional
+specification of the number of <tt>@</tt> symbols (default 1), similarly
+to the way charges are specified. When chirality is denoted in shorthand,
+the default class, ascertained from the context, is used. </p>
+
+<p>For the first two chirality values of the tetrahedral,
+trigonal-bipyramidal and octahedral classes, the <tt>@</tt> symbol is a
+visual mnemonic, resembling a counter-clockwise spiral (spiral from
+the center outward). Thus, two such
+symbols represent a clockwise (counter-counter-clockwise) arrangement.
+</p>
+
+<p>The chirality specification places the neighbors of the central
+(chiral) atom according to the exact order in which they appear in the SMILES
+string. If there is a neighbor atom immediately to the left of the central
+atom in the SMILES string, the bond from this atom (the &quot;from&quot;
+atom) to the central atom is the &quot;axis&quot; about which the central
+atom's neighbors are arranged. For example,
+
+<pre>
+    'N[C@](C)(F)C(=O)O'
+</pre>
+
+will result in a tetrahedral class, counter-clockwise arrangement of atoms.
+The N-C bond is the axis about which to view the molecule for placing the
+rest of the neighbors.  The N atom is the &quot;from&quot; atom, before
+which the viewer's eye is positioned.  The groups CH<sub>3</sub>, F, and
+COOH are then arranged counter-clockwise around the carbon.</p>
+
+<p>If the central atom has an implicit
+hydrogen, this hydrogen becomes the first of the neighbors to be placed
+about the &quot;axis.&quot;  Thus, <tt>'N[C@H](C)F'</tt>
+results in the groups H, CH<sub>3</sub>, and F being arranged counter-clockwise
+about the axis defined by N-C.</p>
+
+<p>If the central atom is the root (very first)
+atom of the SMILES string, then it <b>must</b> have an implicit hydrogen; the
+bond from this hydrogen (the &quot;from&quot; atom) to the central atom is
+then used as the axis; <tt>'[C@H](N)(C)F'</tt>
+will result in N, CH<sub>3</sub>, and F being arranged in a counter-clockwise
+fashion with respect to the H-C axis.</p>
+
+<p>A ring-closure or other connection bond indicated by a label number is
+placed according to the order that the label number appears in the SMILES
+string.  <tt>'O1CCCC[C@@]1(N)C'</tt> 
+produces a ring in which N, O, and the methyl group (trailing C in the SMILES
+string) are arranged clockwise about the axis formed between the carbon atom
+immediately preceding the chiral carbon in the SMILES string and the chiral
+atom itself.</p>
+
+<p>In the trigonal-bipyramidal and octahedral classes, there is once again
+the notion of an "axis" which specifies the placement of the rest of the
+atoms about the chiral center.  For example,
+<tt>'S[As@@](F)(Cl)(Br)C=O'</tt>
+puts S, As, and the carbonyl C on a single axis, and arranges F, Cl, and
+Br in a clockwise manner with respect to this axis.
+In the square-planar class, there is no such axis.
+<tt>'F[Po@SP3H0](Cl)(I)Br'</tt>
+arranges F, Cl, I, and Br in a "Z" shape around Po.</p>
+
+<p><a name="sm_BuildSyntaxError"></a></p>
+<p><a name="sm_BuildSyntax"></a></p>
+<p><hr noshade="noshade" />
+<pre>flag      = <span class="fcndef">sm_BuildSyntax</span> 'SMILES'
+'message' = <span class="fcndef">sm_BuildSyntaxError</span> 'SMILES'
+</pre>
+
+<p>
+The <tt>sm_BuildSyntax</tt> function returns 1 if the given SMILES string
+conforms to SMILES syntax and 0 otherwise.  
+The <tt>sm_BuildSyntaxError</tt> function returns the empty token <tt>''</tt>
+if the given SMILES string conforms to SMILES syntax and a token containing
+an error message otherwise.  Unit extension applies to both functions.
+For example,
+
+<blockquote><pre>svl> sm_BuildSyntax 'CXC'
+0
+
+svl> sm_BuildSyntaxError 'CXC'
+'Unsupported unbracketed element symbol'
+</pre></blockquote>
+
+<p><a name="sm_BuildParse"></a></p>
+<p><hr noshade="noshade" />
+<pre>ctab = <span class="fcndef">sm_BuildParse</span> 'SMILES'
+</pre>
+<p>
+This function parses a single SMILES token and returns a CTAB connection
+table data structure.  If the input SMILES does not conform to SMILES syntax
+then <tt>[]</tt> is returned.  The CTAB values will be filled based upon
+the contents of the SMILES string.
+<p>
+The following values are returned for the CTAB atom fields
+<p><center>
+<table class="titlebar" border="1" cellpadding="3">
+<tr>
+<th>Field</th>
+<th>Value Assigned</th>
+</tr>
+<tr>
+<td valign="baseline"><tt>CTAB_A_X,CTAB_A_Y,CTAB_A_Z</tt>
+<td valign="baseline">0
+<tr>
+<td valign="baseline"><tt>CTAB_A_SYM</tt>
+<td valign="baseline">The element symbol from the SMILES string
+(first letter always upper case).<br />
+<tt>'LP'</tt> is returned for <tt>'[#0]'</tt>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_MASS</tt>
+<td valign="baseline">The isotope number; e.g. 14 for <tt>'[14C]'</tt> and
+0 for <tt>'C'</tt> and <tt>'[C]'</tt>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_CHARGE</tt>
+<td valign="baseline">The formal charge; e.g. 1 for <tt>'[N+]'</tt> and
+0 for <tt>'N'</tt> and <tt>'[N]'</tt>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_STEREO</tt>
+<td valign="baseline">
+0, 15 for <tt>'@'</tt> (<tt>CTAB_AS_SMI_ADJ_CCW</tt>) or 16 for <tt>'@@'</tt>
+(<tt>CTAB_AS_SMI_ADJ_CW</tt>).<br />
+The values may not be identical to those in the SMILES string but will
+encode the same stereochemistry. The implied adjacency list order of a
+stereoactive atom <i>i</i> will be the order of appearance of the atom's
+neighbors in the CTAB bonds component considering only those bonds involving
+atom <i>i</i>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_HCOUNT</tt>
+<td valign="baseline">The implicit hydrogen count as determined in bracketed
+atoms or -1 if outside brackets or unspecified inside brackets.  For example,
+3 for <tt>'[CH3]'</tt> and -1 for <tt>'C'</tt> and <tt>'[C]'</tt>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_RADICAL</tt>
+<td valign="baseline">The radical count in extended SMILES.  For example,
+1 for <tt>'[C.]'</tt> and 0 for <tt>'C'</tt> and <tt>'[C]'</tt>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_APO</tt>
+<td valign="baseline">-1
+<tr>
+<td valign="baseline"><tt>CTAB_A_RGROUP</tt>
+<td valign="baseline">The R-group number in extended SMILES.  For example,
+5 for <tt>'[CR5]'</tt> and -1 for <tt>'C'</tt> and <tt>'[C]'</tt>.
+<tr>
+<td valign="baseline"><tt>CTAB_A_NUM</tt>
+<td valign="baseline">The atom number in reaction numbering notation.  For example,
+5 for <tt>'[C:5]'</tt> and 0 for <tt>'C'</tt> and <tt>'[C]'</tt>.
+</table></center>
+<p>
+The following values are returned for the CTAB bond fields
+<p><center>
+<table class="titlebar" border="1" cellpadding="3">
+<tr>
+<th>Field</th>
+<th>Value Assigned</th>
+<tr>
+<td valign="baseline"><tt>CTAB_B_FROM,CTAB_B_TO</tt>
+<td valign="baseline">Bonds between atoms with indices <i>i</i> and <i>j</i>.
+<tr>
+<td valign="baseline"><tt>CTAB_B_TYPE</tt>
+<td valign="baseline">
+1 through 4 and <tt>CTAB_BT_ARO</tt> according to the bond symbol in
+the SMILES string.  The <tt>'$'</tt> symbol is used for quadruple bonds.
+For example, 1 for <tt>'C-C'</tt>, 2 for <tt>'C=C'</tt>, 3 for <tt>C#C</tt>,
+4 for <tt>C$C</tt> and <tt>CTAB_BT_ARO</tt> for <tt>'c:c'</tt>.
+Zero bond orders are not returned.
+<tr>
+<td valign="baseline"><tt>CTAB_B_STEREO</tt>
+<td valign="baseline">0, 13 (<tt>CTAB_BS_IDX_ODD</tt>)
+or 14 (<tt>CTAB_BS_IDX_EVEN</tt>)
+The values may not be identical to those in the SMILES string but will
+encode the same stereochemistry.  The encoding is similar to the standard
+notation except that hydrogen atoms are not considered highest in index.
+</table></center>
+
+<p><a name="sm_BuildMOL"></a></p>
+<p><hr noshade="noshade" />
+<pre>
+mol = <span class="fcndef">sm_BuildMOL</span> ['SMILES', opt]
+</pre>
+where
+<pre>
+opt = [dim: <i>dim</i>]
+</pre>
+
+<p>
+The <tt>sm_BuildMOL</tt> function converts a valid SMILES string into
+a MOL data structure.  An error is generated if the input SMILES is invalid.
+The <tt>opt</tt> argument is a tagged vector of options. Currently, only
+the <tt>dim</tt> option is supported which can have the value of 1 or 2;
+1 means no coordinates are generated (all coordinates are 0); 2 means
+that a 2D depiction will be generated; the default is 2.
+For example,
+<blockquote>
+<pre>svl> mol = sm_BuildMOL 'CCC'  // same as sm_BuildMOL ['CCC', [dim:2]]
+svl> mol_Create mol
+</pre>
+</blockquote>
+<p>
+will create a three-atom molecule in MOE.  <b>Note!</b> Only the explicit 
+atoms appearing in the SMILES string will be returned in the <tt>mol</tt>
+vector; implicit hydrogen atoms will not be returned.
+
+<p><a name="sm_ExtractUnique"></a></p>
+<p><a name="sm_ExtractFromCTAB"></a></p>
+<p><hr noshade="noshade" />
+<pre>'SMILES' = <span class="fcndef">sm_ExtractFromCTAB</span> [ctab]
+'SMILES' = <span class="fcndef">sm_ExtractUnique</span> atoms
+</pre>
+<p>
+The <tt>sm_ExtractFromCTAB</tt> function converts a CTAB connection table
+data structure into a canonical, or unique SMILES token.  For CTAB structures
+that encode molecules, the returned SMILES will generally serve as its
+name.  For CTAB structures that encode fragments, all attempts will be made
+to return a unique name for the fragment; however, inherent limitations
+of the SMILES syntax may prevent all fragments from being consistently named.
+The returned SMILES will contain all of the atoms given in the CTAB; no
+atomic properties are calculated (such as aromaticity) nor are any attempts
+made to resolve ambiguities - the CTAB must encode a structure that has
+a unique name.
+</p>
+
+<p>
+The <tt>sm_ExtractUnique</tt> function returns a canonical, or unique
+SMILES expression (a token) representing the given atoms.
+Hydrogen and lone pair atoms
+are suppressed, aromatic and stereochemical annotations are added as
+specified by the <tt>atoms</tt>.  
+<b>Note:</b> The extracted string represents
+only the atoms being encoded; neighboring
+atoms which may affect the properties of the encoded atoms
+(e.g. aromaticity) are not taken into account.
+</p>
+
+<p><a name="sm_Build"></a></p>
+<p><hr noshade="noshade" />
+<pre>atoms = <span class="fcndef">sm_Build</span> 'SMILES'
+atoms = <span class="fcndef">sm_Build</span> [ 'SMILES', [], position_vec ]
+atoms = <span class="fcndef">sm_Build</span> [ 'SMILES', atom, orientation_vec ]
+atoms = <span class="fcndef">sm_Build</span> [ 'SMILES', atom ]
+</pre>
+
+<p>This function is used to build 
+a molecule from a molecule input language (SMILES)
+representation.  It also allows you to add a molecular fragment 
+to an existing system or to replace an atom with a substituent.
+Generally, energy minimization, e.g. using 
+<a class="svl" href="mm.htm">MM</a>,
+will be required following building.
+
+
+<p>In all uses of <tt>sm_Build</tt>, the keys of the newly created
+atoms are returned.
+
+
+<h4>Building New Molecules</h4>
+
+<pre>
+atoms = sm_Build 'SMILES'
+atoms = sm_Build [ 'SMILES', [], position_vec ]
+</pre>
+
+The first line of syntax shown here will result in a new molecule being
+built at the origin.  To build a molecule at a specific location, use the
+second syntax, i.e. supply a non-null value for
+<tt>position_vec</tt>.
+
+<dl>
+<dt><tt>'SMILES'</tt> 
+<dd>SMILES representation of the molecular fragment to 
+build, given as a token.
+
+<p><dt><tt>[]</tt>
+<dd>Null vector.
+(A non-null parameter induces replacement or addition, as described below.)
+
+<p><dt><tt>position_vec</tt>
+<dd>Absolute location in space (given as x, y, z coordinates) of the root
+atom of the new molecule.  The root atom is the first atom specified in
+<tt>'SMILES'</tt>.
+
+</dl>
+
+
+<p>Example: 
+
+<pre>
+    svl&gt; sm_Build '[nH]1cccc1' // Build 1H-pyrrole
+</pre>
+
+
+<p><b>Note:</b> If there are syntactic errors, an error message will be
+raised, and no building will take place. Use
+<tt>sm_BuildSyntax</tt> to check the syntactic
+correctness of a string.
+
+
+
+<h4>Adding a Molecular Fragment onto an Existing Molecule</h4>
+
+<pre>
+atoms = sm_Build [ 'SMILES', atom, orientation_vec ]
+</pre>
+
+
+<tt>sm_Build</tt> is used to add a fragment onto an existing molecule.
+You must specify the SMILES expression describing the molecular fragment,
+the atom to which the fragment will be attached, and the direction in
+which the bond to the new fragment is created.
+
+<p>If <tt>atom</tt> is null, the behavior reverts to that of building
+a new molecule, as described above.  If <tt>atom</tt> is non null, but
+<tt>orientation_vec</tt> is null, the behavior is that of replacement,
+as described below.
+
+
+<dl>
+
+<dt><tt>'SMILES'</tt>
+<dd>SMILES representation of the molecular fragment to add, given as a
+token.  If the root of the fragment (the first atom specified in the
+token) is a hydrogen that is bonded to a heavy atom, the heavy atom is
+used as the root instead.  You can begin the SMILES expression with a bond
+symbol to specify the type of bond to be created &ndash; single (default),
+double or triple &ndash; between the root atom and the atom in the already
+existing molecule.
+
+
+<p><dt><tt>atom</tt>
+<dd>Atom to which the root of the newly created molecular
+fragment is bonded. 
+
+<p><dt><tt>orientation_vec</tt>
+<dd>Direction in which the bond to the new fragment is created. Note that
+the orientation vector has no effect on the length of the bond.
+
+<p><tt>orientation_vec</tt> is either a vector of 3 elements or a scalar,
+in which case unit extension applies, i.e.:
+
+<p>If <tt>orientation_vec =
+[x<sub>d</sub>,y<sub>d</sub>,z<sub>d</sub>]</tt>, the length of the bond
+to be created is <tt>L</tt>, and the atom in the existing molecule being
+added to is at position
+<tt>[p<sub>x</sub>,p<sub>y</sub>,p<sub>z</sub>]</tt>, the root atom
+of the new molecular fragment will be positioned at:
+
+<pre>
+    [p<sub>x</sub>,p<sub>y</sub>,p<sub>z</sub>] + L * [x<sub>d</sub>,y<sub>d</sub>,z<sub>d</sub>]/D
+</pre>
+
+<p>where <tt>D</tt> is the magnitude of <tt>orientation_vec</tt>:
+
+<pre>
+    D = sqrt add [sqr x<sub>d</sub>, sqr y<sub>d</sub>, sqr z<sub>d</sub>]
+</pre> 
+
+<p>i.e. <tt>L</tt> is multiplied by the unit vector in the direction
+of <tt>orientation_vec</tt>.
+
+
+<!--
+<li>if <i>p</i> = [<i>p<sub>x</sub></i>, <i>p<sub>y</sub></i>,
+<i>p<sub>z</sub></i>] is the position of the atom specified by
+<tt>atom_key</tt>, then if <tt>orientation_vec</tt> = [<i>d<sub>x</sub>,
+d<sub>y</sub>, d<sub>z</sub></i>], the position of the root of the
+fragment will be [<i>p<sub>x</sub></i>+<i>d<sub>x</sub></i>,
+<i>p<sub>y</sub></i>+<i>d<sub>y</sub></i>,
+<i>p<sub>z</sub></i>+<i>d<sub>z</sub></i>];</li>
+
+
+<p><li>If <tt>orientation_vec</tt> = <i>d</i>, the position of the root will be
+[<i>p<sub>x</sub></i>+<i>d</i>, <i>p<sub>y</sub></i>+<i>d</i>,
+<i>p<sub>z</sub></i>+<i>d</i>].</li>
+</ul>
+-->
+
+</dl>
+
+
+
+<h4>Replacing an Atom with a Substituent</h4>
+
+<pre>
+atoms = sm_Build ['SMILES', atom]
+</pre>
+
+<tt>sm_Build</tt> is used to replace one of the atoms of an existing molecule 
+with a substituent.   If <tt>atom</tt> is null, the behavior reverts to
+that of building a new molecule.
+
+<dl>
+
+<dt><tt>'SMILES'</tt>
+<dd>SMILES representation (a token) of the substituent that
+is to replace an atom in the existing molecule.  The root atom (first atom
+in the SMILES expression) will replace the specified atom.
+If the first atom in the expression is a hydrogen
+that is bonded to a heavy atom, the heavy atom will replace the specified
+atom.
+
+<p><dt><tt>atom</tt>
+<dd>The key of the atom to be replaced.
+This atom, along with all hydrogen atoms bonded
+to it, is destroyed and replaced with the substituent (specified by
+<tt>'SMILES'</tt>).
+
+<p>If the atom has a heavy neighbor, this neighbor will be bonded to
+the root atom of the substituent. The bond type &ndash;
+single (default), double or triple (the &quot;no bond&quot; symbol is
+ignored) &ndash; is specified by beginning the SMILES expression with the
+appropriate bond symbol.
+
+<p>The atom to be replaced may be bonded to only one heavy atom.
+Attempting to replace an atom with bonds to more than one
+heavy atom will produce an error. However, if this is desired, 
+you can use the following procedure:
+
+<ol>
+  <li>Instead of replacing the atom, change its element
+(<a class="svl" href="atom.htm">aSetElement</a>) attribute to match the
+intended root of the substituent fragment.</li>
+
+  <li>Adjust all other attributes of this modified atom, e.g.
+ionization (<a class="svl" href="atom.htm">aSetIon</a>), geometry
+(<a class="svl" href="atom.htm">aSetGeometry</a>) and name
+(<a class="svl" href="atom.htm">aSetName</a>). </li>
+
+  <li>Remove the root atom from the SMILES expression and use the
+add-molecule functionality of <tt>sm_Build</tt>, described above.</li>
+
+</ol>
+
+</dl>
+
+
+
+<p>Examples: 
+
+<pre>
+	// Build HCN
+
+    svl&gt; atoms = sm_Build 'C#N'
+
+	// Now substitute an iso-propyl group onto C#N
+
+    svl&gt; sm_Build ['C(C)C', atoms | (aElement atoms == 'H')]
+</pre>
+
+<p><a name="sm_Extract"></a></p>
+<p><hr noshade="noshade" />
+<h4 class="obsolete">Obsolete</h4>
+
+<pre>
+'SMILES' = <span class="obsfcndef">sm_Extract</span> [ atoms, prios ]
+</pre>
+
+<p>Returns a SMILES expression (a token) representing the given atoms.
+The <tt>prios</tt> argument is a
+flat integer vector of atom priorities, one per atom (unit
+extension applies).
+The atom of highest priority will be the root of the string.
+The order in which neighbors of an atom are visited is determined
+by atom priority; higher priority atoms are visited first.
+</p>
+
+<p>If R/S chiral centers are present, <tt>sm_Extract</tt> will
+generate an isomeric SMILES expression only if chiral constraints (set using
+<a class="svl" href="atom_p.htm">aSetForceRS</a>)
+exist on the chiral centers.
+</p>
+
+<!--
+Molecular fragments are separated in the string by the dot (<b>.</b>)
+&quot;no bond&quot; specification.  The SMILES string is returned as a
+token. 
+-->
+
+<p>This function is now obsolete and should be replaced with
+<tt>sm_ExtractUnique</tt>.
+</p>
+
+<p><a name="sm_ExtractIso"></a></p>
+<p><hr noshade="noshade" />
+<h4 class="obsolete">Obsolete</h4>
+
+<pre>
+'SMILES' = <span class="obsfcndef">sm_ExtractIso</span> [ atoms, prios ]
+</pre>
+
+<p><tt>sm_ExtractIso</tt> 
+takes the same arguments as <tt>sm_Extract</tt> and returns an isomeric SMILES
+representation.
+</p>
+
+<p>This function is now obsolete and should be replaced with
+<tt>sm_ExtractUnique</tt>.
+</p>
+
+
+<h2>See Also</h2>
+
+<a class="svl" href="atom.htm">aPrioSMI</a><br />
+<a class="svl" href="atom_p.htm">aSetForceRS</a><br />
+<a class="svl" href="smartsfcn.htm">sm_Match</a><br />
+<a class="svl" href="sm_string.htm">sm_StringRoot</a><br />
+
+<br />
+<a href="ctabfcn.htm">CTAB Connection Table Functions</a><br />
+<a href="extract.htm">MOL Data Structure</a><br />
+<a href="../molsystems/smiles.htm">SMILES Molecule Input Language</a><br />
+<a href="introsm.htm">Molecule Input Language Functions</a>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
+

@@ -1,0 +1,1276 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<!--
+!!  	protonate3d.htm		Protonate3D Application
+!!-->
+
+<!--
+!!    MOE Online Manuals
+!!    COPYRIGHT (C) 1997-2015
+!!        CHEMICAL COMPUTING GROUP INC.  ALL RIGHTS RESERVED.
+!!-->
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<script type="text/javascript" 
+src="../include/jsincludes_moe.js"></script>
+
+<link rel="stylesheet" type="text/css"
+href="../include/manstyle.css" />
+
+
+<title>Protonate3D - Macromolecular Protonation State Assignment</title>
+<meta panel Protonate 3D>
+</head>
+
+<body>
+<div id="MoeHeader"></div>
+<noscript>
+	<span class="warning">Warning: JavaScript is disabled. This page will not display correctly.</span>
+	<h1 class="title">MOE Documentation</h1>
+	<hr noshade="noshade" />
+	<style>.LaTeX {color: #C08080;}</style>
+</noscript>
+<ul>
+<li><a href="#Method">Methodology</a></li>
+<li><a href="#Run">Running Protonate 3D</a></li>
+<li><a href="#Parm">Parameter File Format</a></li>
+<li><a href="#Example">A Worked Example - 4TMN</a></li>
+<li><a href="#Ref">References</a></li>
+</ul>
+
+<p>
+The purpose of the Protonate&nbsp;3D application [Labute&nbsp;2008]
+is to assign ionization
+states and position hydrogens in a macromolecular structure given its
+3D coordinates (typically from a crystal structure).
+Hydrogen atoms are required for all-atom molecular mechanics, dynamics or
+electrostatic calculations. Unfortunately, most macromolecular crystal
+structures contain little or no hydrogen coordinate data due to limited
+resolution yet the hydrogen bond network and ionization state of titratable
+groups can have a dramatic effect on simulations results.
+The addition of hydrogen atoms to a macromolecule is a non-trivial task;
+generally, one must determine
+</p>
+
+<ol>
+<li>
+the rotamers of -SH -OH -CH3 and -NH3 groups in CYS, SER, TYR, THR, MET and LYS;
+</li>
+<li>
+the ionization states of acids and bases in ARG, ASP, GLU, LYS, HIS;
+</li>
+<li>
+the tautomers of imidazoles (HIS) and carboxylic acids (ASP,GLU);
+</li>
+<li>
+the protonation state of metal ligand atoms CYS, HIS, ASP, GLU, etc.;
+</li>
+<li>
+the ionization state of metals.
+</li>
+</ol>
+
+<p>
+Additionally, the element identities in HIS, terminal amides (ASN,GLN)
+are often uncertain:
+</p>
+
+<p align="center">
+<img src="protonate3d/flip.gif" alt="flipped" />
+</p>
+
+<p>
+and there is uncertainty as to whether these groups should be left as is
+(black) or &quot;flipped&quot; (blue).  In many cases, the local hydrogen bond
+network can be used to decide the flipped state of such groups; however,
+this is not always obvious in more complex networks of amides and histidines.
+</p>
+
+<p>
+The <tt>Reduce</tt> program [Word&nbsp;1999] attempts to determine the
+hydrogen coordinates using steric considerations and geometric hydrogen bond
+network analysis; ionization and flipped states of HIS, GLU and ASP are
+assigned on geometric grounds alone and rotamers are assigned from a fixed
+discrete collection.  In many cases, this program is effective; however,
+since longer range electrostatic effects are not taken into account,
+<tt>Reduce</tt> can fail to make some clear assignments and simply cannot
+properly assess complex ionic environments.
+</p>
+
+<p>
+Were it not for the ionization state assignment (which changes the number
+of particles in the system), forcefield methods, such as energy minimization
+or molecular dynamics, could be used to determine flipped states and rotamers.
+Unfortunately, the large number of local minima requires good initial
+estimates of the hydrogen coordinates in order to properly search the
+conformational space.  The production of good initial estimates lies at
+the heart of the protonation problem - a search over a very large discrete
+set of rotamer states is required.
+The discrete nature of the problem is compounded by the titration portion
+of the calculation.  Computational methods for calculating pKa values of
+residues often require sophisticated electrostatic treatment using multiple
+Poisson-Boltzmann calculations [Bashford&nbsp;1992] [Gilson&nbsp;1993]
+followed by a search of the discrete ionization states for the lowest free
+energy state.
+</p>
+
+<p>
+The rotamer, tautomer and ionization state calculation can be put into
+a single context based upon discrete states.  A particular protonation
+state of a residue (or group) consists of the 3D coordinates of all of its
+hydrogens - tautomer and ionization states as well as a rotamer state.
+The rotamer states can be from a fixed systematic sampling (say at 30 degree
+increments).  A reasonable set of protonation and flip states for the standard
+amino acids is
+</p>
+
+<p align="center">
+<img src="protonate3d/aastates.gif" alt="amino acid states" />
+</p>
+
+<p>
+and the problem of protonation state assignment becomes the selection of
+a single state for each residue (or group).  In this context, the protonation
+problem is very similar to the sidechain placement and protein design problems
+with the protonation states playing the role of the rotamer library popular
+in homology modeling [Bower&nbsp;1997].  Consequently, the methods used to
+solve these problems can be applied to the protonation state problem
+[Looger&nbsp;2001] [Desmet&nbsp;2002] [Canutescu&nbsp;2003].
+</p>
+
+<p>
+In the sidechain placement methods, each residue state (rotamer) is assigned
+so that a pair-wise interaction function is optimized.  Typically, a short
+range steric function is used, such as the SCWRL function [Bower&nbsp;1997].
+Unfortunately, such functions are not accurate enough for titration calculations
+since longer range electrostatic interactions, solvation effects and
+titration free energies are not taken into account.  Once longer range
+effects are taken into account, the performance of algorithms used in
+sidechain placement deteriorate - these algorithms rely on very sparse
+pair-wise interactions.
+Nevertheless, the formalism is applicable to the protonation state assignment
+problem provided that the interaction function is suitable and that the
+search algorithm is capable of handling the more numerous longer range
+interactions common to electrostatics calculations.
+</p>
+
+<p>
+The Protonate&nbsp;3D application assigns protonation states from a discrete
+collection of states by optimizing the titration free energy of all titratable
+groups in the context of an all-atom model of a macromolecular structure
+(including ligands and solvent).  The Generalized Born / Volume Integral
+[Labute&nbsp;2007] electrostatics model is used for longer range interactions
+and solvation effects.  In the remainder of this document, we present the
+details of the method, how to run a calculation and the format of the parameter
+file.
+</p>
+
+<!-- ============================= METHODOLOGY -=========================== -->
+
+<p>
+<a name="Method"></a>
+</p>
+
+<h2>Methodology</h2>
+
+<p>
+The Protonate&nbsp;3D methodology for protonation state assignment proceeds
+as follows
+</p>
+
+<ol>
+<li><i>System Partition</i> - The atoms of the system are partitioned into
+separate chemical groups according to the patterns in a Rule File.  Each
+chemical group will be given one or more protonation states that include
+tautomer states and ionization states.  Each such group will have associated
+with it a pKa and an <i>a priori</i> strain energy used to penalize particular
+tautomeric states.  Each protonation state for each chemical group will
+subjected to conformation generation to generate a collection of rotamers.
+</li>
+<li><i>Interaction Matrix Calculation</i> - The interaction energies between
+each pair of protonation geometry and ionization states will be calculated
+and stored in a matrix, <b>U</b>.
+</li>
+<li><i>Self Energy Calculation</i> - The pKa values and <i>a priori</i>
+strain energies along with interactions to fixed chemical groups will be
+calculated and stored in a vector, <b>u</b>.
+</li>
+<li><i>Dead End Elimination</i> - A provably correct criterion is applied
+in order to eliminate protonation states that cannot appear in an optimal
+solution.  This reduces the complexity of the optimization procedure in
+subsequent steps.
+</li>
+<li><i>System Optimization</i> - A search for the particular configuration
+of protonation states of the chemical groups that minimizes the quadratic
+energy function
+<i>E</i>(<b>x</b>)&nbsp;=&nbsp;<b>x</b><sup>T</sup> <b>U x</b> / 2 + 
+<b>u</b><sup>T</sup><b>x</b> is performed.  In this
+function <b>x</b> is a binary vector that encodes the particular configuration
+of selected protonation states (see below).
+</li>
+<li><i>Incidental Water Placement</i> - The orientation of water molecules
+that were not included in the previous steps are calculated one by one
+after the main calculation.
+</li>
+</ol>
+
+<p>
+<img src="protonate3d/pabc.gif" align="right" alt="pabc" />
+The partition of the system proceeds by (implicitly) cutting bonds connecting
+<i>sp</i><sup>3</sup> carbons followed by the application of pattern matching
+of patterns specified in a Rule File (see below).  The results of the partition
+are a collection of non-intersecting atom sets, each specifying a single
+chemical group.  Each such atom set will have an associated collection of
+one or more ionization states, tautomeric strain energies, pKa values and
+3D geometries (conformers).
+The groups with exactly one state are assigned that single state and collected
+into a single set of atoms <b>P</b>.  Thus, the original system is divided
+into a set of atoms <b>P</b> with a fixed protonation state, and one or
+more chemical groups 
+<span class="nobr">{<i>A</i>, <i>B</i>, <i>C</i>, ...}</span> 
+each
+of which has two or more protonation states (including 3D geometry).
+</p>
+<p>
+A binary vector <b>x</b> is used to encode a particular selection of
+protonation states of 
+<span class="nobr">{<i>A</i>, <i>B</i>, <i>C</i>, ...}</span>
+as follows.  The bits of <b>x</b> are arranged in blocks, one for each
+group with each block containing one bit for each particular configuration
+of a particular chemical group.  For example, if <i>A</i> has 4 protonation
+states, <i>B</i> has 2 states and <i>C</i> has 3 states then the vector
+</p>
+<p align="center">
+<b>x</b> = [ <b>0 1 0 0</b> | <b>1 0</b> |  <b>0 0 1</b> |   ... ]
+</p>
+
+<p>
+specifies the configuration of state 2 for <i>A</i>, state 1 for <i>B</i>
+and state 3 for <i>C</i>.  In this representation, a value of 1 in the
+<b>x</b> vector selects a particular state and 0 de-selects a particular
+state.  Admissible values of the <b>x</b> are those in which there is
+exactly one 1 bit in each block if bits that correspond to the states
+of a particular chemical group.  This constraint on the values of
+<b>x</b> is called a <i>unary constraint</i> since the individual
+states of the chemical groups are encoded in base 1 or <i>unary notation</i>.
+</p>
+<p>
+Suppose that the interaction matrix <b>U</b> and self energy vector <b>u</b>
+have been calculated as described above in the <i>Self Energy</i> and
+<i>Interaction Matrix</i> steps of the procedure.  (We will describe
+the details of this matrix and vector below.)  The optimization required
+in the <i>System Optimization</i> step of the procedure is an instance
+of Binary Quadratic Programming; the particular instance is called the
+<i>Unary Quadratic Optimization</i> (UQO) problem, which is to optimize a
+multi-dimensional quadratic function defined over binary vectors subject
+to the unary constraint (that of selecting exactly 1 alternative in each block
+of bits).  More precisely, the UQO problem is
+</p>
+<p align="center">
+<img src="protonate3d/uqo_eqn.gif" alt="UQO Equations" />
+</p>
+
+<p>
+Here, the <b>Ax = b</b> condition enforces the unary constraint and the
+<b>x</b> in {0,1}<sup><i>n</i></sup> enforces that <b>x</b> must be
+an <i>n</i>-dimensional <i>binary</i> vector (<i>n</i> is the total number
+of protonation states of <i>A</i>, <i>B</i>, <i>C</i>, ...  Protonate&nbsp;3D
+uses the <tt>opt_UQO</tt> function in MOE to solve the UQO problem thereby
+determining the minimum energy protonation state of the system.  The
+<tt>opt_UQO</tt> performs a recursive search through all of the binary
+vectors <b>x</b> satisfying the unary constraint to locate the vector
+<b>x</b> that minimizes the quadratic energy function <i>E</i>.
+</p>
+
+<p>
+Prior to the recursive state search, an iterative procedure called
+<i>Dead End Elimination</i> is applied in order to reduce the complexity
+of the system.  The Goldstein criterion [Goldstein&nbsp;1994] is a condition
+that can decide if a particular protonation state cannot possibly appear
+in the optimal solution.  Consider a particular chemical group
+<i>A</i> with two particular protonation states <i>r</i> and <i>s</i>; if the
+Goldstein criterion 
+</p>
+
+<p align="center">
+<img src="protonate3d/goldstein.gif" alt="Goldstein" />
+</p>
+<p>
+holds then protonation state <i>r</i> cannot possibly be within <i>cutoff</i>
+energy units above the optimal solution.  In the equation,
+<i>u<sub>r</sub></i> and <i>u<sub>s</sub></i> denote the self energies
+of <i>r</i> and <i>s</i> respectively (elements of the <b>u</b> vector)
+and <i>U<sub>ij</sub></i> denotes the (<i>i</i>,<i>j</i>) entry of the
+interaction matrix, <b>U</b>.  The sum in the Goldstein criterion extends
+over all other chemical groups, <i>B</i>, different from <i>A</i>.
+The Protonate&nbsp;3D application uses a cutoff of 0.
+In the <i>Dead End Elimination</i> step of the procedure, the Goldstein
+criterion is applied repeatedly to all pairs of protonation states for
+all chemical groups until no eliminations are detected.
+The <i>Dead End Elimination</i> step typically reduces the complexity of the
+optimization problem dramatically and rapidly eliminates protonation states
+that are obviously too high in energy (e.g. negatively charged tryptophan).
+Configuration spaces with 10<sup>200</sup> or so states are often reduced
+to 10<sup>10</sup> - hundreds of orders of magnitude.
+</p>
+<p>
+The recursive search in the <i>System Optimization</i> step attempts to
+order the exploration of the space so as to increase the likelihood of
+generating the best solutions first.  This is done by using a <i>Mean Field</i>
+calculation that approximates the fractional population of each protonation
+state of each chemical group <i>A</i>, <i>B</i>, <i>C</i>, ...
+The mean field calculation approximates a probability vector <b>p</b>
+consisting of a probability value for each protonation state of each chemical
+group reflecting its fractional population.  The probability vector <b>p</b>
+satisfies the mean field equation
+</p>
+<p align="center">
+<img src="protonate3d/meanfield.gif" alt="meanfield" />
+</p>
+
+<p>
+In this equation, <b>U</b> and <b>u</b> are the matrix and vector of the
+energy function <i>E</i>,  &beta;&nbsp;=&nbsp;1/<i>kT</i> encodes the
+statistical mechanical temperature and <i>e<sub>k</sub></i> denotes the
+<i>k</i>th axis vector.  Note that the foregoing temperature is not
+that of the atoms under consideration, but that of the mean field equation
+in isolation.  The mean field equation can always be satisfied for any
+&beta;; however, local minima are possible.  Fortunately, there is a value
+of &beta; below which the mean field equation will have a unique solution.
+This critical value is estimated from the <b>U</b> matrix calculated in
+the <i>Interaction Matrix Calculation</i> step.  Armed with the mean field
+values in <b>p</b>, the recursive protonation state search in the
+<i>System Optimization</i> step will visit the high probability protonation
+states first.  This will greatly increase the likelihood that low energy
+states are generated first.
+</p>
+
+<p>
+We now describe the details of the interaction matrix <b>U</b> and self
+energy vector <b>u</b> which define the energy function that is optimized
+in the Protonate&nbsp;3D calculation.  Fundamentally, the energy function
+is a <i>free energy</i> function - the number of particles in a titration
+calculation changes and consequently, potential energy values of the
+different configurations cannot be compared.  The quadratic energy function
+consists of the following terms:
+</p>
+<ol>
+<li>A van der Waals interaction energy;</li>
+<li>An electrostatic interaction energy;</li>
+<li>An implicit solvent interaction energy;</li>
+<li>A tautomeric strain energy;</li>
+<li>A rotamer strain energy;</li>
+<li>A titration free energy.</li>
+</ol>
+
+<p>
+Each of these terms contributes (in some way) to the self energy vector,
+<b>u</b>, or the interaction matrix, <b>U</b>.  The tautomeric and rotamer
+strain energies are inherent to each chemical group and contribute to the
+vector, <b>u</b>.  The tautomeric strain energy is taken from the Rule File
+which associates relative tautomer energies with the tautomers of each chemical
+group.  The rotamer strain energy is calculated when the conformations of
+each chemical group are generated.  Typically, free
+<i>sp</i><sup>2</sup>-<i>sp</i><sup>3</sup> rotors are not assigned rotamer
+strain energies while 
+<i>sp</i><sup>3</sup>-<i>sp</i><sup>3</sup> rotors are assigned strains
+consistent with modern forcefields [Halgren&nbsp;1996].
+</p>
+
+<p>
+The van der Waals interaction energies contribute both to the <b>u</b> vector
+and <b>U</b> matrix.  For each protonation state of a chemical group the van
+der Waals interaction energy between the state and the fixed part of the
+protein <b>P</b> is added to the <b>u</b> vector.  For each pair for
+protonation states of different chemical groups, the van der Waals interaction
+energy is added to the appropriate element of the <b>U</b> matrix.
+The van der Waals functional form is configurable, and may be one of
+</p>
+
+<p align="center">
+<img src="protonate3d/vdw_eqn.gif" alt="VDW" />
+</p>
+
+<p>
+<img src="protonate3d/vdwfcn.gif" align="right" alt="VDW functions" />
+which are the Lennard-Jones 12-6, 9-6, 800R3 and SCWRL functional forms.
+The first two are standard forcefield forms, SCWRL [Bower&nbsp;1997] is
+often used in homology modeling and the 800R3 lies in between the 12-6
+and 9-6 potentials and models only the repulsive part of the van der Waals
+interactions (which is more appropriate in implicit solvent model conditions).
+</p>
+<p>
+The plot to the right shows the various functional forms for a carbon-carbon
+interaction.  Close contacts are &quot;capped&quot; to avoid unrealistically
+large energy values.  The particular functional form is multiplied by
+well-depth parameters using a geometric mixing rule.  The van der Waals
+radii and well-depth parameters are those of the Engh-Huber forcefield
+[Engh&nbsp;1991] commonly used in crystallographic refinement.
+</p>
+<p>
+The van der Waals interactions play a relatively small role in the
+Protonate&nbsp;3D calculation; mostly they are used to distinguish
+flipped states of terminal imidazoles and terminal amides, but sometimes
+they may help distinguish correct protonation geometry [Word&nbsp;1999].
+</p>
+<p>
+The electrostatic energy terms are Coulombic in nature and make similar
+contributions as the van der Waals interactions.
+The electrostatic interaction energies contribute both to the <b>u</b> vector
+and <b>U</b> matrix.  For each protonation state of a chemical group the
+electrostatic interaction energy between the state and the fixed part of the
+protein <b>P</b> is added to the <b>u</b> vector.  For each pair for
+protonation states of different chemical groups, the electrostatic interaction
+energy is added to the appropriate element of the <b>U</b> matrix.
+The electrostatic functional form is configurable, and may be Coulomb's law,
+a shifted-force Coulomb's law or a distance-dependent dielectric form of
+Coulomb's law.  For implicit solvent interaction energies, the electrostatic
+energy is always Coulomb's law.  Partial charges are those of the
+MMFF94 [Halgren&nbsp;1996] forcefield.
+</p>
+<p>
+The implicit solvent interaction energy and the titration free energy
+form the basis of the titration calculation.  Together with the pKa values
+of the chemical groups and an input pH, free energies of titrations are
+approximated with the following methodology.  The fundamental implicit
+solvent model that is used by Protonate&nbsp;3D is the Generalized Born /
+Volume Integral formalism [Labute&nbsp;2007] with an additional salt
+term:
+</p>
+<p align="center">
+<img src="protonate3d/gbvi.gif" alt="gbvi" />
+</p>
+
+<p>
+The GB/VI solvation free energy estimate consists of two parts, the
+&quot;self&quot;, or VI, part which calculates self energies of atoms
+and the interaction, or GB, part, which estimates polarization interaction
+energies between atoms.  The inputs are fixed parameters (e.g. the
+{<i>R<sub>i</sub></i>} and {<i>&gamma;<sub>i</sub></i>}) and the
+partial charges {<i>q<sub>i</sub></i>} of the atoms and the salt concentration
+(from which &kappa; is derived).
+</p>
+
+<p>
+Consider a titratable group AH in a protein environment <b>P</b>.  In order
+to estimate the free energy of the reaction <b>PAH</b> deprotonating to
+<span class="nobr"><b>PA-</b> + <b>H+</b></span>
+we introduce the thermodynamic cycle
+</p>
+
+<p align="center">
+<img src="protonate3d/titr1.jpg" alt="titr" />
+</p>
+
+<p>
+In this cycle, the charges within the fixed protein <b>P</b> are removed
+(thermodynamically) and reintroduced along the vertical directions by
+using specific interaction terms of the electrostatic and GB/VI energy
+models.  The symbol <i>E<sup>XY</sup></i> denotes the interaction energy
+between two sets of atoms <i>X</i> and <i>Y</i>.
+The blue &Delta;G values on the horizontal paths denote unknown quantities.
+The top value is the required free energy and the bottom horizontal value
+arises from the pKa shift due to the protein cavity (without charges).
+This bottom &Delta;G value can be estimated with another thermodynamic
+cycle
+</p>
+
+<p align="center">
+<img src="protonate3d/titr2.jpg" alt="titr" />
+</p>
+
+<p>
+In this cycle, the protein cavity is removed and reintroduced along the
+vertical directions.  The vertical free energies are estimated, again,
+from the GB/VI model and correspond to GB/VI calculations with different
+Born factors (inversely proportional to the Born radii).  Thus, the
+previously unknown &Delta;G value (on top) is estimated with the vertical
+free energy estimates and an experimental pKa value derived from the Rule
+File and the pH.
+</p>
+
+<p>
+For polyprotic species (such as histidine) the above considerations generalize
+to the following thermodynamic diagram.
+</p>
+
+<p align="center">
+<img src="protonate3d/titr3.jpg" alt="titr" />
+</p>
+
+<p>
+in which the top horizontal &Delta;G values are the required titration
+free energies of a titratable group <i>A</i> <i>in situ</i> in a protein
+environment <b>P</b>.  The bottom horizontal &Delta;G values are free
+energy differences derived from the pKa values and the pH (as above).
+The vertical &Delta;G values are those estimated from the GB/VI model
+(as in the previous thermodynamic diagrams).  The blue <i>G</i> values
+are the free energies of the protonation states of the chemical group
+<i>A</i> and have the property that their differences are equal to the
+top horizontal &Delta;G values for the titration reactions; these values
+will be added to the corresponding elements of the self energy vector
+<b>u</b> required for the UQO formulation of the problem.
+</p>
+
+<p>
+<img src="protonate3d/pabch.jpg" align="right" alt="pabch" />
+The interaction matrix, <b>U</b> is populated with the GB interaction
+energies between the various chemical group protonation states in a
+straightforward way.  Collecting all of the electrostatic, implicit
+solvent and titration free energy values together, we arrive at the final
+UQO energy function formulation
+</p>
+
+<p align="center">
+<img src="protonate3d/uqo_setup1.jpg" alt="uqo_setup" />
+</p>
+
+<p align="center">
+<img src="protonate3d/uqo_matrix.jpg" alt="uqo_matrix" />
+</p>
+
+<p>
+These values, together with the van der Waals contributions, the tautomeric
+and rotamer strain energies form the complete free energy function <i>E</i>
+required to compare different protonation state configurations of the entire
+collection of chemical groups.  This function <i>E</i> is optimized with the
+<tt>opt_UQO</tt> function to produce optimal protonation state.
+</p>
+
+<p>
+It remains to describe how water molecules are dealt with.  In principle,
+water molecules can be included in the <i>System Optimization</i> step.
+In such a case, each water molecule is given 300-500 protonation states
+each of which is corresponds to the orientation of the two hydrogen atoms
+about the oxygen.  Unfortunately, the performance of the Protonate&nbsp;3D
+method degrades.  Consequently, it is recommended that only a few selected
+waters be included in the main calculation; for example, waters involved
+in mediation interactions between a protein and a ligand.  The remaining
+waters, the <i>incidental waters</i> are treated separately from the
+main calculation.
+</p>
+
+<p>
+The Protonate&nbsp;3D application calculates an optimal orientation of
+each incidental water in a sequential manner.  A water is selected and
+an orientation that optimizes the interaction energy between the water
+and the previously protonated system is chosen.  This procedure is repeated
+until all incidental waters have been optimized.  The sequential ordering
+of the waters is performed by always selecting the unoptimized water that is
+located in the strongest electrostatic field.
+</p>
+
+<!-- ============================ RUNNING ================================ !-->
+
+<p>
+<a name="Run"></a>
+</p>
+
+<h2>Running Protonate 3D</h2>
+
+<p>To use the Protonate&nbsp;3D application, load a macromolecular structure
+and select 
+<span class="nobr"><b>MOE | Compute | Prepare | Protonate 3D</b></span>
+.  The following panel will appear:
+</p>
+
+<p align="center"><img src="protonate3d/panel.png" alt="panel" /></p>
+
+<table cellpadding="5">
+<tr>
+<td  valign="top"><b>Atoms</b></td>
+<td valign="top">
+The collection of atoms to which the calculation will apply.  Hydrogens
+attached to atoms in the <b>Atoms</b> set will also be included.  Dummy atoms
+and inert atoms will be ignored as well as all other atoms not specified
+in the <b>Atoms</b> set system will be ignored.
+&nbsp;
+</td></tr>
+<tr>
+<td  valign="top"><b>Titrate</b></td>
+<td valign="top">
+The collection of atoms that will be titrated in the calculation; that is,
+the atoms for which ionization states will possibly be modified.  The
+ionization state of atoms not in the <b>Titrate</b> set will be constrained
+to their current values.
+<b>Note!</b> Atoms will be titrated according to rules that are
+specified in the <b>Rule&nbsp;File</b>; if there is no appropriate pattern
+that matches an atom specified in the <b>Titration</b> set then its ionization
+state will be left at its current value.
+</td></tr>
+<tr>
+<td  valign="top"><b>Flip</b></td>
+<td valign="top">
+The collection of atoms that will be allowed to &quot;flip&quot;. Typically,
+such atoms are those of terminal amides (as in ASN, GLN) and terminal
+imidazole (HIS).  Often, these atoms are assigned incorrectly and require
+adjustment by exchange of elements; e.g. the N and O in terminal amides.
+<b>Note!</b> Atoms will be &quot;flipped&quot; according to rules that
+are specified in the <b>Rule&nbsp;File</b>; if there is no appropriate pattern
+that matches an atom specified in the <b>Flip</b> set then its element
+identities will be left at their current values.
+</td></tr>
+<tr>
+<td  valign="top"><b>Protect</b></td>
+<td valign="top">
+The collection of atoms that will be constrained to their current states.
+Membership in the <b>Protect</b> takes precedence over atoms in the
+<b>Titrate</b> and <b>Flip</b> sets; in other words, if an atom belongs
+to the <b>Protect</b> and in the <b>Flip</b> or <b>Titrate</b> sets then
+it will be neither &quot;flipped&quot; nor titrated.  If a hydrogen atom
+belongs to the <b>Protect</b> set then its geometry will be preserved
+during the calculation (allowing assignment of proton geometry to only
+a portion of the <b>Atoms</b> set).
+</td></tr>
+<tr>
+<td  valign="top"><b>Precise</b></td>
+<td valign="top">
+The collection of atoms that will be treated in a more precise manner.
+Typically this applied to important bound water molecules or water molecules
+mediating between a ligand and receptor.  Normally, water molecules are
+treated after the main calculation; assignment of water molecules to the
+<b>Precise</b> set will cause them to be included in the main calculation.
+<b>Warning!</b> The performance of Protonate&nbsp;3D may degrade significantly
+if many water molecules are in the <b>Precise</b> set (more than 10).
+</td></tr>
+<tr>
+<td  valign="top"><b>T</b></td>
+<td valign="top">
+The temperature (in Kelvin) of the system.  This value is used
+for titration calculations and is unimportant if the <b>Titrate</b> set
+is empty.
+</td></tr>
+<tr>
+<td  valign="top"><b>pH</b></td>
+<td valign="top">
+The pH of the (implicit) solvent.  This value is used
+for titration calculations and is unimportant if the <b>Titrate</b> set
+is empty.
+</td></tr>
+<tr>
+<td  valign="top"><b>Salt</b></td>
+<td valign="top">
+The concentration (in mol/L) of salt in the (implicit) solvent.  This value
+is used only in the Generalized Born / Volume Integral implicit solvent model.
+</td></tr>
+<tr>
+<td  valign="top"><b>Rule&nbsp;File</b></td>
+<td valign="top">
+The name of the file that contains titration and tautomer patterns.  This
+file must conform to the specifications described elsewhere in this document.
+If <b>Enable Disconnected Metal Treatment</b> is on, then metals in
+Groups I and II as well as transition metals alone in their residue will
+be disconnected from their ligated neighbors prior to commencing the
+calculation.  If such metals are left connected then it is more likely that
+a pattern for them will not be found in the <b>Rule&nbsp;File</b>.
+The default rule file is <tt>$MOE/lib/protonate3d.dat</tt>.
+</td></tr>
+<tr>
+<td  valign="top"><b>Electrostatics</b></td>
+<td valign="top">
+The electrostatics functional form used for the calculation; electrostatic
+interactions between two atoms will be ignored if their separation distance
+is larger than the <b>Cutoff</b> values.
+<b>GB/VI</b> means the Generalized Born / Volume Integral formalism.
+<b>1/r</b> means Coulomb's Law.
+<b>1/r2</b> is the distance-dependant dielectric form of Coulomb's Law.
+<b>SF/r</b> is the shifted force variant of Coulomb's Law.
+<b>Warning!</b> The GB/VI model must be used if the <b>Titrate</b> set
+is non-empty.
+</td></tr>
+<tr>
+<td  valign="top"><b>Dielectric</b></td>
+<td valign="top">
+The dielectric constants used in the electrostatics calculations.  The
+first value is the dielectric constant of the solute (the atoms in the
+<b>Atoms</b> set) and is normally set to 1; a value of 4 should be
+used if the <b>Electrostatics</b> model is <b>1/r2</b>.
+The second value is used only for the GB/VI model and specifies the dielectric
+of the solvent (e.g. 80 for water).
+</td></tr>
+<tr>
+<td  valign="top"><b>van&nbsp;der&nbsp;Waals</b></td>
+<td valign="top">
+The van der Waals functional form: <b>800R3</b> and <b>SCWRL</b> simulate
+the repulsive part of the van der Waals energy while <b>12-6</b> and <b>9-6</b>
+are Lennard-Jones forms that include the attractive part of the van der Waals
+energy.  The van der Waals interactions between two atoms will be ignored
+if their separation distance is greater than the specified <b>Cutoff</b>
+value.
+</td></tr>
+</table>
+
+<p>
+After selecting the appropriate values of the panel, press <b>OK</b> to
+being the calculation.  Progress will be displayed in the MOE window (at
+the top) as well as on the SVL Commands window.  The calculation time
+depends on the size and complexity of the system as well as whether titration
+is enabled.  Normally 30-60 seconds are required to complete the calculation;
+however, if there are a large number of water molecules or if the system
+is very large, much more time may be required.
+</p>
+
+<p>
+Protonate&nbsp;3D will write a substantial amount of information to the
+SVL Commands window.  Firstly, the SVL syntax used to start the calculation
+is written:
+</p>
+
+<blockquote><pre>Protonate3D [
+    [] // ... 981 atoms ...
+,   [] // ... 981 titrate atoms ...
+,   [] // ... 981 flip atoms ...
+,   [] // ... 0 protected atoms ...
+,   [] // ... 0 precise atoms ...
+,   [
+    ,   vdw        : '800R3'
+    ,   vdw_cutoff : 10.00
+    ,   ele        : 'GB'
+    ,   ele_cutoff : 15.00
+    ,   d_in       : 1.00
+    ,   d_out      : 80.00
+    ,   T          : 300.00
+    ,   ionC       : 0.10
+    ,   pH         : 7.00
+    ,   rulefile   : 'protonate3d.dat'
+    ,   verbose    : 1
+    ]
+];
+</pre></blockquote>
+
+<p>
+This text can be cut and pasted into an SVL script.  The first 5 arguments
+are placeholders for the collection of atoms that specify the various sets.
+The last argument contains the configurable options selected in the panel.
+</p>
+
+<p>
+Once the system has been partitioned and examined, a report of all of the
+Rule File patterns that apply to the system is written out.  The patterns
+are listed on a per-residue basis:
+</p>
+
+<blockquote><pre>chain    1 : (2RTD) 2RTD.D (STREPTAVIDIN) BIOTIN-BINDING PROTEIN
+    [   1] ALA    13  : -NCO- -NH2
+    [   2] GLU    14  : -NCO- -CH2-COOH
+    [   3] ALA    15  : -NCO-
+    [   4] GLY    16  : -NCO-
+    [   5] ILE    17  : -NCO-
+    [   6] THR    18  : -NCO- &gt;CH-OH
+    [   7] GLY    19  : -NCO-
+    [   8] THR    20  : -NCO- &gt;CH-OH
+    [   9] TRP    21  : -NCO- TRP
+    [  10] TYR    22  : -NCO- TYR
+    [  11] ASN    23  : -NCO- -CONH2
+    [  12] GLN    24  : -NCO- -CONH2
+    [  13] LEU    25  : -NCO-
+    [  14] GLY    26  : -NCO-
+    [  15] SER    27  : -NCO- -CH2-OH
+    ....
+chain    2 : (2RTD) 2RTD.D (BIOTIN) BIOTIN
+    [   1] BTN   300  : -CH2-COOH -S- -NCON-
+</pre></blockquote>
+
+<p>
+If the system contains atoms that match no pattern, they will be
+identified at the end of the residue list.  For each such unrecognized
+group, a SMILES [Weininger&nbsp;1988] string will be written which gives a
+starting point for developing a new pattern for the Rule File.
+</p>
+
+<p>
+Once the number of states for each non-trivial group has been determined
+(tautomer, ionization and rotamer) a histogram will be written:
+</p>
+
+<blockquote><pre>    states  :    2    3    5    7    8   11
+            :   17   11    4   28    5    6
+    average : 5.5 (deviation 2.81)
+</pre></blockquote>
+
+<p>
+The first row (<tt>states:</tt>) is the state count for the various chemical
+groups in the system.  The second row shows the number of groups that have
+the associated state count.  In the above example, there 17 groups with 2
+states and 28 groups with 7 states.  The average state count and its
+standard deviation are also listed.
+</p>
+
+<p>
+The various energy terms are then calculated (which may require some time).
+Upon completion, a summary of the all-state interaction matrix is written:
+</p>
+
+<blockquote><pre>Protonate 3D: Matrix:
+    size    : 389 x 389, 37.06% fill-in
+    values  : min: -8.18628, max: 20.5914
+    Eself   : min: 0, max: 30.8422
+</pre></blockquote>
+
+<p>
+The <tt>size</tt> line shows the dimensions of the matrix as well has
+the number of non-zero entries in the matrix (the fill-in); the <tt>values</tt>
+line shows the range of energy values in the matrix (minimum and maximum);
+the <tt>Eself</tt> line shows the minimum and maximum values of the 
+state self energies.
+</p>
+
+<p>
+The calculation will then proceed with the determination of the lowest
+(free) energy state.  Prior to the recursive state search a Dead End
+Elimination step is performed to prune out states that provably cannot
+appear in the optimal solution.  This step is iterative and progress is
+written during the calculation:
+</p>
+
+<blockquote><pre>UQO_DeadEnd: dead-end elimination (cutoff=0) ...
+[         0] complexity: 10**(    47.5883)
+[         1] complexity: 10**(     4.6915)
+[         2] complexity: 10**(     2.7604)
+[         3] complexity: 10**(     2.4594)
+UQO_DeadEnd: 0.30 sec
+</pre></blockquote>
+
+<p>
+In the progress listing the complexity of the system is given as
+log<sub>10</sub> of the total number of configurations of the entire system.
+In the above example, the interaction matrix specifies a system with
+10<sup>47.5883</sup> configurations and the Dead End Elimination procedure
+was applied three times and managed to reduce the total number of
+configurations to 10<sup>2.4584</sup>.
+<b>Note!</b> The Dead End Elimination procedure is provably correct - it
+will never eliminate an optimal configuration.
+</p>
+
+<p>
+After the Dead End Elimination step, a Mean Field calculation is conducted
+in order to help order the search and produce the best results first.  The
+calculation is iterative and convergence results are printed at each iteration:
+</p>
+
+<blockquote><pre>UQO_MeanField: calculating mean field (beta=0.272387) ...
+[         1] error: 9.09091e-001 (   0.000 seconds)
+[         2] error: 3.31112e-002 (   0.000 seconds)
+[         3] error: 1.13114e-002 (   0.000 seconds)
+[         4] error: 3.67010e-003 (   0.000 seconds)
+[         5] error: 1.39498e-003 (   0.000 seconds)
+[         6] error: 4.53541e-004 (   0.000 seconds)
+[         7] error: 1.71373e-004 (   0.000 seconds)
+[         8] error: 5.57418e-005 (   0.000 seconds)
+[         9] error: 2.10468e-005 (   0.000 seconds)
+[        10] error: 6.84628e-006 (   0.015 seconds)
+</pre></blockquote>
+
+<p>
+In the above example, the Mean Field calculation required 10 steps to 
+converge to a relative error of approximately 0.000006.  If convergence
+is not achieved, a warning will be printed.  <b>Warning!</b> If the mean
+field procedure fails to converge then the results of Protonate3D may not
+be optimal.
+</p>
+
+<p>
+Protonate&nbsp;3D then proceeds to search the configuration space for the
+optimal assignment of protonation states.  Progress is written as better
+solutions are found:
+</p>
+
+<blockquote><pre>UQO: searching tree...
+[        73] best= 4.89975229e+001 E= 4.89975229e+001
+[        92] best= 4.88885404e+001 E= 4.88885404e+001
+[       173] best= 4.88885404e+001
+UQO: done (0.50 seconds)
+</pre></blockquote>
+
+<p>
+In the above example, 173 iterations were required to search the configuration
+space and best solution was found on iteration 92.  The <tt>E</tt> value
+shows the energy of the discovered configurations and the <tt>best</tt> value
+is the lowest energy configuration found thus far.
+<b>Note!</b> The output energy values are free energy differences from an
+unspecified reference value - these values will not, in general, agree with
+the Potential Energy calculation.
+</p>
+
+<p>
+Finally, the geometry of incidental waters will be calculated one-by-one.
+The time required for this is proportional to the number of incidental
+waters.  Often, this is the longest part of the calculation.  At the end,
+a timing summary is output:
+</p>
+
+<blockquote><pre>Protonate 3D: Timing:
+    System Partition      :     0.14 sec
+    Conformer Generation  :     0.48 sec
+    Energy Matrix VDW     :     0.19 sec
+    Born Self Energy      :     3.95 sec
+    Isolated Group Energy :     0.19 sec
+    Energy Matrix ELE     :     2.26 sec
+    System Optimization   :     0.50 sec
+    Incidental Waters     :    16.09 sec
+</pre></blockquote>
+
+<p>
+which signals the end of the calculation.
+<b>Warning!</b> If the Protonate&nbsp;3D calculation is Canceled prior to
+termination, the protonation state of the system will likely be in a
+non-optimal state.  
+</p>
+
+<!-- ========================== PARAMTER FILE FORMAT ===================== !-->
+
+<p>
+<a name="Parm"></a>
+</p>
+
+<h2>Parameter File Format</h2>
+
+<p>
+The Protonate&nbsp;3D parameter file contains the rules used to determine
+ionization states and tautomer states of chemical groups.  The Rule File
+also contains the energetic data and pKa values for ionizable groups for
+titration and tautomer calculations.  Fundamentally, the Rule File is
+a list of SMARTS patterns to identify groups and SMILES [Weininger&nbsp;1988]
+strings to specify protonation state alternatives for the groups.  For protein
+structures, little change is required to the Rule File.  However, the Rule
+File may not contain patterns for certain ligands and, consequently, new
+SMARTS patterns may have to be added (to fully explore the protonation states
+of these ligands).  In this section we will describe the syntax and format
+of the Rule File.
+</p>
+
+<p>
+A Rule File is a line-based ASCII text file.  Comments are started with
+a <tt>#</tt> character and terminate with the end of line.  Blank lines
+are ignored.  Lines that end with a backslash character are continued lines;
+such lines are stripped of the backslash at the end of the line and
+concatenated with the following line (or lines if subsequent lines are
+continued lines).  Other lines must be one of
+</p>
+
+<blockquote>
+<dl>
+ <dt><tt><b>define</b></tt> <i>name</i> <i>SMARTS</i> <i>SMARTS</i> ...</dt>
+<dd>
+Associates a pattern name with one or more SMARTS patterns.  The <i>name</i>
+must consist of start with a character in <tt>[A-Za-z_]</tt> followed by
+zero or more characters in <tt>[A-Za-z0-9_]</tt>.
+The <i>SMARTS</i> patterns must be legal SMARTS strings.  Once defined,
+<i>name</i> can be used in the SMARTS patterns of <tt>map</tt> or
+<tt>group</tt> lines; for example,
+<blockquote><tt>define Npl3 [N;iX3] [N;!iX3]C=O</tt></blockquote>
+defines the <tt>Npl3</tt> name which can then be used as a named pattern
+in a SMARTS match; for example, <tt>C[$Npl3]</tt> would match an aliphatic
+carbon attached to either a 3-coordinated pi bonded nitrogen or a 3-coordinated
+amide nitrogen.
+</dd>
+
+<dt><tt><b>map</b></tt> <i>name</i> <i>SMARTS</i> <i>SMILES</i></dt>
+<dd>
+Defines a single alternative group.  The <i>name</i> must be unique among
+all <tt>map</tt> and <tt>group</tt> lines.  The SMARTS pattern is used to
+identify the group and the <tt>SMILES</tt> string is used to set a
+precise topology (see below).
+</dd>
+<dt><tt><b>group</b></tt> <i>name</i> <i>SMARTS</i><br />
+&nbsp;&nbsp;&nbsp;&nbsp;<i>... group lines ...</i><br />
+<tt><b>endgroup</b></tt>
+</dt>
+<dd>
+Defines a chemical group to be identified with the <i>SMARTS</i> pattern
+and associates one or more alternative topological states (tautomer, flip,
+ionization, etc.) along with pKa data and tautomeric "strain" energies.
+The <i>name</i> must be unique among all <tt>map</tt>
+and <tt>group</tt> lines.  Each <i>group line</i> must have the form
+<blockquote><i>Estrain</i> <i>pKa</i> <i>SMILES</i></blockquote>
+<br />
+where <i>Estrain</i> is a relative energy (in kcal/mol), <i>pKa</i> is the
+pKa for the group and the <i>SMILES</i> string specifies a precise
+topology (see below).  The <i>Estrain</i> is relative to all other
+topologies for the group with the same total charge.  The <i>pKa</i> value
+must be the same for all topologies with an equal total charge.
+</dd>
+</dl>
+</blockquote>
+
+<p>
+The SMARTS and SMILES patterns must have the same atom order; that is, there
+is a one-to-one, left-to-right correspondence between the atoms in the
+SMARTS pattern and the SMILES string.  A set of atoms in the MOE window
+will be identified with the SMARTS pattern and the SMILES string will be
+used to specify the topology alternatives of the matched atoms.
+The SMILES string makes use of the reaction numbering of reaction SMILES;
+that is, an atom in the SMILES string may be labeled with an integer; for
+example, <tt>[C:1][N:2]</tt> numbers the first atom with 1 and the second
+atom with 2.  These numbers are used to identify which atoms of the SMARTS
+pattern are considered part of the chemical group and to assign topological
+properties (like ionization states) to the atoms.
+</p>
+
+<p>
+To see the relationship between SMARTS, SMILES and atom numbering, consider
+the definition of the terminal imidazole in histidine.
+</p>
+
+<blockquote><pre>group HIS [nQ2]1[cQ2][nQ2][cQ2][cQ3]1[CX4]
+    0	  6.92	[nH+:1]1[c:2][nH:3][c:4][c:5]1
+    0	 14.5	[n:1]1[c:2][nH:3][c:4][c:5]1
+    0.6	 14.5	[nH:1]1[c:2][n:3][c:4][c:5]1
+    0	  -	[n:1]1[c:2][n-:3][c:4][c:5]1
+
+    0	  6.92	[nH+:4]1[c:3][nH:2][c:1][c:5]1		# flipped states
+    0	 14.5	[n:4]1[c:3][nH:2][c:1][c:5]1
+    0.6	 14.5	[nH:4]1[c:3][n:2][c:1][c:5]1
+    0	  -	[n:4]1[c:3][n-:2][c:1][c:5]1
+endgroup
+</pre></blockquote>
+
+<p>
+The <tt>HIS</tt> name after the <tt>group</tt> keyword names the group as
+<tt>HIS</tt>.  The pattern on the <tt>group</tt> line is the SMARTS pattern
+used to match atoms in the MOE window.  In this particular case, the
+SMARTS pattern matches all aromatic 5-rings with in an imidazole nitrogen
+carbon pattern and exactly one <i>sp</i><sup>3</sup> carbon substituent.
+Thus, no matter what ionization state is present in this aromatic system,
+the <tt>HIS</tt> rules will apply.
+</p>
+
+<p>
+All of the SMILES strings in the group lines have the same
+left-to-right order as the SMARTS patterns.  Each atom in the SMILES
+strings is numbered with the <tt>:n</tt> numbering.  These numbers
+refer to atoms in the left-to-right SMARTS pattern.  If an atom in the
+SMARTS pattern is not referenced by one of the SMILES strings, it will
+be left out of the chemical group; that is, it supplies context only.
+</p>
+
+<p>
+The group line block specifies 8 separate topological states for the
+imidazole ring.  The first four preserve the element identities of the
+matched atoms while the second four &quot;flip&quot; the imidazole ring
+(and exchange element identities).
+In neutral HIS, there is 0.6&nbsp;kcal/mol strain energy penalty for
+protonating N<sub>&delta;</sub> versus protonating N<sub>&epsilon;</sub>
+specified in the first column of numbers (the tautomeric strain).
+The negatively charged HIS state is last in each block of four topologies
+and contains a dash for the pKa value, indicating that no more titration
+is possible.  The other states specify pKa values for the +1 and neutral
+states.
+</p>
+
+<!-- =============================== EXAMPLE ============================= -->
+
+<p>
+<a name="Example"></a>
+</p>
+
+<h2>A Worked Example - 4TMN</h2>
+
+<p>
+In this section we will present the application of Protonate&nbsp;3D to
+the metalloproteinase in PDB entry 4TMN.  To prepare for the calculation,
+select 
+<span class="nobr"><b>MOE | File | Close</b></span>
+to clear the system.  Then
+use <span class="nobr"><b>MOE | File | Open</b></span>
+to load the file
+<tt>$MOE/sample/mol/4tmn.pdb</tt>.  The 4TMN entry contains a single
+protein chain, 4 calcium ions, a zinc transition metal, a complexed ligand
+at the zinc center and 162 waters.
+</p>
+
+<p>
+Use 
+<span class="nobr"><b>MOE | RHS | SiteView</b></span>
+and turn on residue labeling with
+<span class="nobr"><b>MOE | Footer | Atoms | Label Residue</b></span> and
+turn off the riibbons with
+<span class="nobr"><b>MOE | Footer | Ribbon</b></span>.
+This will render a close-up of the ligand in the active site in the MOE window.
+</p>
+
+<p align="center">
+<img src="protonate3d/4tmn_act2.png" alt="4TMN" /></p>
+
+<p>
+Note that the zinc-bound HIS142, HIS146, HIS231, the ligand phosphate and
+carboxylate, GLU142 and GLU166 are all in close proximity.  The protonation
+states of all of these groups have been set to default values by the PDB
+reader.  Consequently, there is little likelihood that they are in realistic
+states.
+</p>
+
+<p>
+Run the Protonate&nbsp;3D application with
+<span class="nobr"><b>MOE | Compute | Prepare | Protonate 3D</b></span>
+, leave the panel in the
+default settings and press <b>OK</b> to start the calculation.  When the
+calculation has completed, use
+<span class="nobr">
+<b>MOE | Render | Hide | Nonpolar Hydrogens</b>
+</span>
+to reduce the clutter in the MOE window.
+</p>
+
+<p align="center">
+<img src="protonate3d/4tmn_p3d2.png" alt="protonated" /></p>
+
+<p>
+An examination of the resulting protonation states should reveal that
+</p>
+<ol>
+<li>HIS142 has been assigned a neutral state, pointing its NE lone pair
+toward the zinc;
+</li>
+<li>HIS146 has been assigned a -1 state indicating a covalent bond to the
+zinc (in contrast to the coordination bond of HIS132);
+</li>
+<li>HIS231 has been assigned a +1 state due to its proximity to the phosphate
+and carboxylate groups in the ligand;
+</li>
+<li>GLU166 (coordinated to the zinc) has been assigned -1 state;</li>
+<li>GLU143 has been assigned a neutral state (protonated) and donates its
+proton in a hydrogen bond to the phosphate of the ligand.
+</li>
+</ol>
+
+<p>
+It is interesting to repeat the calculation after deleting the ligand.  This
+can be done by actually deleting the ligand atoms, or by selecting
+<b>Receptor+Solvent</b> as the <b>Atoms</b> set in the Protonate&nbsp;3D
+panel.  Upon completion of the calculation one can see that GLU143 has
+been assigned a -1 (deprotonated) state, which is different from the
+result with the ligand.  This change supports the assertion that there
+is a protonation state change upon binding.
+</p>
+
+<h2>See Also</h2>
+<p>
+<a href="emin.htm">Energy Minimization</a><br />
+<a href="../svl/fcnref/optfcn.htm">Optimization Functions</a><br />
+<a href="../moe/fcnref/uqofcn.htm">Unary Quadratic Optimization Utilities</a>
+</p>
+<a name="Ref"></a>
+<h2>References</h2>
+
+<table cellpadding="5" width="100%">
+<tr>
+<td valign="top">[Bashford&nbsp;1992]</td>
+<td valign="top">
+Bashford, D., Gerwert, K.;
+Electrostatic Calculations of pKa Values of Ionizable Groups in
+Bacteriorhodopsin;
+<span class="nobr"><i>J. Mol. Biol. 224</i></span>
+(<b>1992</b>) 473&ndash;486.
+</td></tr>
+<tr>
+<td valign="top">[Bower&nbsp;1997]</td>
+<td valign="top">
+Bower, M.M., Cohen, F.E., Dunbrack Jr., R.L.;
+Prediction of Protein Side-chain Rotamers from a Backbone Dependent Rotamer
+Library: A New Homology Modeling Tool;
+<span class="nobr"><i>J. Mol. Biol. 267</i></span>
+(<b>1997</b>) 1268&ndash;1282.
+</td></tr>
+<tr>
+<td valign="top">[Canutescu&nbsp;2003]</td>
+<td valign="top">
+Canutescu, A.A., Shelenkov, A.A., Dunbrack Jr., R.L.;
+A Graph-Theory Algorithm for Rapid Protein Side-chain Prediction;
+<i>Prot. Sci. 12</i> (<b>2003</b>) 2001&ndash;2004.
+</td></tr>
+<tr>
+<td valign="top">[Desmet&nbsp;2003]</td>
+<td valign="top">
+Desmet, J., Spriet, J., Lasters, I.;
+Fast and Accurate Side-Chain Topology and Energy Refinement (FASTER)
+as a New Method for Protein Structure Optimization;
+<i>Proteins 48</i> (<b>2002</b>) 31&ndash;43.
+</td></tr>
+<tr>
+<td valign="top">[Engh&nbsp;1991]</td>
+<td valign="top">
+Engh, R.A., Huber, R.;
+Accurate Bond and Angle Parameters for X-ray Protein Structure Refinement;
+<span class="nobr"><i>Acta Cryst. A47</i></span>
+(<b>1991</b>) 392&ndash;400.
+</td></tr>
+<tr>
+<td valign="top">[Gilson&nbsp;1993]</td>
+<td valign="top">
+Gilson, M.K.;
+Multiple-Site Titration and Molecular Modeling: Two Rapid Methods for
+Computing Energies and Forces for Ionizable Groups in Proteins;
+<i>Proteins 15</i> (<b>1993</b>) 266&ndash;282.
+</td></tr>
+<tr>
+<td valign="top">[Goldstein&nbsp;1994]</td>
+<td valign="top">
+Goldstein, R.F.;
+Efficient Rotamer Elimination Applied to Protein Side Chains
+and Related Spin Glasses;
+<span class="nobr"><i>Biophys. J. 66</i><span>
+(<b>1994</b>) 1335&ndash;1340.
+</td></tr>
+<tr>
+<td valign="top">[Halgren&nbsp;1996]</td>
+<td valign="top">
+Halgren, T.A.;
+The Merck Force Field;
+<i>J. Comp. Chem. 17</i> (<b>1996</b>) 490&ndash;641.
+</td></tr>
+<tr>
+<td valign="top">[Labute&nbsp;2007]</td>
+<td valign="top">
+Labute, P.;
+The Generalized Born / Volume Integral (GB/VI) Implicit Solvent Model:
+Estimation of the Free Energy of Hydration Using London Dispersion Instead
+of Atomic Surface Area; <i>J. Comp. Chem. 19</i> (<b>2008</b>) 1693&ndash;1698.
+</td></tr>
+<tr>
+<td valign="top">[Labute&nbsp;2008]</td>
+<td valign="top">
+Labute, P.;
+Protonate3D: Assignment of Ionization States and Hydrogen Coordinates
+to Macromolecular Structures; <i>Proteins 75</i> (<b>2008</b>) 187&ndash;205.
+</td></tr>
+<tr>
+<td valign="top">[Looger&nbsp;2001]</td>
+<td valign="top">
+Looger, L.L., Hellinga, H.W.;
+Generalized Dead-end Elimination Algorithms Make Large-scale Protein
+Side-chain Structure Prediction Tractable: Implications for Protein
+Design and Structural Genomics;
+<i>J. Mol. Biol. 307</i> (<b>2001</b>) 429&ndash;445.
+</td></tr>
+<tr>
+<td valign="top">[Weininger&nbsp;1988]</td>
+<td valign="top">
+Weininger, D.;
+SMILES 1. Introduction and Encoding Rules;
+<i>J. Chem. Inf. Comput. Sci. 28</i> (<b>1988</b>) 31&ndash;36.
+</td></tr>
+<tr>
+<td valign="top">[Word&nbsp;1999]</td>
+<td valign="top">
+Word, M.M., Lovell, S.C., Richardson, J.S., Richardson, D.C.;
+Asparagine and Glutamine: Using Hydrogen Atom Contacts in the Choice of
+Side-chain Amide Orientation;
+<i>J. Mol. Biol. 285</i> (<b>1999</b>) 1735&ndash;1747.
+</td></tr>
+</table>
+
+<noscript>
+	<hr noshade="noshade" />
+	<font size="2"> Copyright &copy; 1997&ndash;2015
+	<a href="http://www.chemcomp.com">Chemical Computing Group Inc.</a> </font>
+</noscript>
+<div id="MoeFooter"></div>
+</body>
+</html>
