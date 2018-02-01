@@ -36,7 +36,7 @@ layout: page_small
 ## Gaussian
 
 - G09W-[Gaussian 09W Help Table of Contents](./Gaussian/G09W/help/g09help.htm), [GaussView 5 Reference Table of Contents](./Gaussian/G09W/help/toc.htm)
-- Official OLd Website for [G09 User Guide](./Gaussian/g09ur/index.htm)
+- Missing Official Website for [G09 User Guide](./Gaussian/g09ur/index.htm)
 
 -----------------
 
